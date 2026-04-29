@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom"
 import { Helmet } from "react-helmet-async"
 import { register } from "@teamhanko/hanko-elements"
 import { ArrowLeft, Sparkles, Zap, Shield, Code } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardSection } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
 import { config } from "@/lib/config"
@@ -159,10 +159,10 @@ export default function LoginPage() {
               </div>
 
               {/* Login card */}
-              <Card className="border-border/50 shadow-lg">
-                <CardContent className="pt-6">
+              <Card className="shadow-lg">
+                <CardSection>
                   <hanko-auth />
-                </CardContent>
+                </CardSection>
               </Card>
 
               {/* Footer */}

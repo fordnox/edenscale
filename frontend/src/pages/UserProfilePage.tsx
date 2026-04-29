@@ -5,7 +5,7 @@ import { register } from "@teamhanko/hanko-elements"
 import { config } from "@/lib/config.ts"
 import { useAuth } from "@/hooks/useAuth"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardHeader, CardSection } from "@/components/ui/card"
 import { User, LogOut, Loader2 } from "lucide-react"
 
 export default function UserProfilePage() {
@@ -67,24 +67,24 @@ export default function UserProfilePage() {
 
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Account</CardTitle>
+              <h2 className="es-eyebrow">Account</h2>
             </CardHeader>
-            <CardContent>
+            <CardSection>
               <hanko-profile />
-            </CardContent>
+            </CardSection>
           </Card>
 
           <Card>
-            <CardContent className="pt-6">
+            <CardSection>
               <Button
-                variant="outline"
-                className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                variant="secondary"
+                className="w-full"
                 onClick={handleLogout}
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Log Out
               </Button>
-            </CardContent>
+            </CardSection>
           </Card>
         </div>
       </main>

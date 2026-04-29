@@ -1,5 +1,16 @@
-from sqlalchemy import (Column, Date, DateTime, Enum, ForeignKey, Integer,
-                        Numeric, String, Text, UniqueConstraint, func)
+from sqlalchemy import (
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base

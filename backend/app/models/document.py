@@ -1,5 +1,15 @@
-from sqlalchemy import (BigInteger, Boolean, Column, DateTime, Enum,
-                        ForeignKey, Integer, String, Text, func)
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base

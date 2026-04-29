@@ -7,10 +7,18 @@ from app.models.communication_recipient import CommunicationRecipient
 from app.models.distribution import Distribution
 from app.models.distribution_item import DistributionItem
 from app.models.document import Document
-from app.models.enums import (CapitalCallStatus, CommitmentStatus,
-                              CommunicationType, DistributionStatus,
-                              DocumentType, FundStatus, NotificationStatus,
-                              OrganizationType, TaskStatus, UserRole)
+from app.models.enums import (
+    CapitalCallStatus,
+    CommitmentStatus,
+    CommunicationType,
+    DistributionStatus,
+    DocumentType,
+    FundStatus,
+    NotificationStatus,
+    OrganizationType,
+    TaskStatus,
+    UserRole,
+)
 from app.models.fund import Fund
 from app.models.fund_group import FundGroup
 from app.models.fund_team_member import FundTeamMember
