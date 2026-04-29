@@ -25,6 +25,11 @@ from app.schemas.investor import (
     InvestorRead,
     InvestorUpdate,
 )
+from app.schemas.investor_contact import (
+    InvestorContactCreate,
+    InvestorContactRead,
+    InvestorContactUpdate,
+)
 from app.schemas.message import Message
 from app.schemas.organization import (
     OrganizationCreate,
@@ -53,6 +58,9 @@ __all__ = [
     "FundTeamMemberRead",
     "FundTeamMemberUpdate",
     "FundUpdate",
+    "InvestorContactCreate",
+    "InvestorContactRead",
+    "InvestorContactUpdate",
     "InvestorCreate",
     "InvestorListItem",
     "InvestorRead",

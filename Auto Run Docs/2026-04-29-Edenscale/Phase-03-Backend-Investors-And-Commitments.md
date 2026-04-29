@@ -28,10 +28,16 @@ This phase builds the LP side of the data model: investors (legal entities), inv
   - `DELETE /investors/{id}` returns 409 when commitments exist (via `repo.has_commitments`) and 204 on successful hard delete.
   - Fund-manager create overrides `organization_id` from the caller's org (same behavior as `POST /funds`); admin must supply it explicitly.
 
-- [ ] Implement Investor Contacts:
+- [x] Implement Investor Contacts:
   - Schemas/repository/router with endpoints `GET /investors/{investor_id}/contacts`, `POST /investors/{investor_id}/contacts`, `PATCH /investors/{investor_id}/contacts/{contact_id}`, `DELETE /investors/{investor_id}/contacts/{contact_id}`
   - Enforce the rule that an investor has exactly one `is_primary=True` contact: when a contact is set primary, set all sibling contacts to `is_primary=False` in the same transaction
   - Allow LPs to read their own contact rows (those whose `user_id` matches the local User record); editing requires fund_manager+admin
+
+  Notes from implementation:
+  - `InvestorContactRepository.create` flushes the new row first, then `_clear_other_primaries(except_contact_id=new_id)` so the just-inserted primary survives — same pattern reused in `update` when `is_primary=True` is set.
+  - LP visibility on `GET /investors/{investor_id}/contacts` returns only the rows where `user_id == current_user.id`; if the LP has no matching row the response is 403 (not 404 — the investor exists, the LP just isn't a contact).
+  - Router mounted in `app/main.py` under `/investors` (separate `include_router` call from `investors.router`, mirroring the way `fund_team_members.router` is mounted alongside `funds.router` under `/funds`).
+  - `is_primary` has no DB-level uniqueness — enforcement is purely transactional in the repository, matching the Phase 01 model where the column has no partial-unique index.
 
 - [ ] Implement Commitments:
   - `backend/app/schemas/commitment.py` — `CommitmentCreate`, `CommitmentUpdate`, `CommitmentRead` with `committed_amount`, `called_amount`, `distributed_amount`, `commitment_date`, `status`, `share_class`, `notes`, plus nested `fund: FundSummary` and `investor: InvestorSummary` for read responses

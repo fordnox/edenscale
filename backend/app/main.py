@@ -9,6 +9,7 @@ from app.routers import (
     fund_groups,
     fund_team_members,
     funds,
+    investor_contacts,
     investors,
     organizations,
     users,
@@ -85,6 +86,12 @@ app.include_router(
     investors.router,
     prefix="/investors",
     tags=["investors"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    investor_contacts.router,
+    prefix="/investors",
+    tags=["investor-contacts"],
     dependencies=[Depends(get_current_user)],
 )
 

@@ -254,6 +254,79 @@ export interface paths {
         patch: operations["update_team_member_funds__fund_id__team__member_id__patch"];
         trace?: never;
     };
+    "/investors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Investors */
+        get: operations["list_investors_investors_get"];
+        put?: never;
+        /** Create Investor */
+        post: operations["create_investor_investors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investors/{investor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Investor */
+        get: operations["get_investor_investors__investor_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Investor */
+        delete: operations["delete_investor_investors__investor_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Investor */
+        patch: operations["update_investor_investors__investor_id__patch"];
+        trace?: never;
+    };
+    "/investors/{investor_id}/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Investor Contacts */
+        get: operations["list_investor_contacts_investors__investor_id__contacts_get"];
+        put?: never;
+        /** Create Investor Contact */
+        post: operations["create_investor_contact_investors__investor_id__contacts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investors/{investor_id}/contacts/{contact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Investor Contact */
+        delete: operations["delete_investor_contact_investors__investor_id__contacts__contact_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Investor Contact */
+        patch: operations["update_investor_contact_investors__investor_id__contacts__contact_id__patch"];
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -527,6 +600,143 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** InvestorContactCreate */
+        InvestorContactCreate: {
+            /** User Id */
+            user_id?: number | null;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Title */
+            title?: string | null;
+            /**
+             * Is Primary
+             * @default false
+             */
+            is_primary: boolean | null;
+        };
+        /** InvestorContactRead */
+        InvestorContactRead: {
+            /** Id */
+            id: number;
+            /** Investor Id */
+            investor_id: number;
+            /** User Id */
+            user_id: number | null;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Email */
+            email: string | null;
+            /** Phone */
+            phone: string | null;
+            /** Title */
+            title: string | null;
+            /** Is Primary */
+            is_primary: boolean | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** InvestorContactUpdate */
+        InvestorContactUpdate: {
+            /** User Id */
+            user_id?: number | null;
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Is Primary */
+            is_primary?: boolean | null;
+        };
+        /** InvestorCreate */
+        InvestorCreate: {
+            /** Organization Id */
+            organization_id?: number | null;
+            /** Investor Code */
+            investor_code?: string | null;
+            /** Name */
+            name: string;
+            /** Investor Type */
+            investor_type?: string | null;
+            /**
+             * Accredited
+             * @default false
+             */
+            accredited: boolean | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** InvestorListItem */
+        InvestorListItem: {
+            /** Id */
+            id: number;
+            /** Organization Id */
+            organization_id: number;
+            /** Investor Code */
+            investor_code: string | null;
+            /** Name */
+            name: string;
+            /** Investor Type */
+            investor_type: string | null;
+            /** Accredited */
+            accredited: boolean | null;
+            /** Total Committed */
+            total_committed: string;
+            /** Fund Count */
+            fund_count: number;
+        };
+        /** InvestorRead */
+        InvestorRead: {
+            /** Id */
+            id: number;
+            /** Organization Id */
+            organization_id: number;
+            /** Investor Code */
+            investor_code: string | null;
+            /** Name */
+            name: string;
+            /** Investor Type */
+            investor_type: string | null;
+            /** Accredited */
+            accredited: boolean | null;
+            /** Notes */
+            notes: string | null;
+            /** Total Committed */
+            total_committed: string;
+            /** Fund Count */
+            fund_count: number;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** InvestorUpdate */
+        InvestorUpdate: {
+            /** Investor Code */
+            investor_code?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Investor Type */
+            investor_type?: string | null;
+            /** Accredited */
+            accredited?: boolean | null;
+            /** Notes */
+            notes?: string | null;
         };
         /** OrganizationCreate */
         OrganizationCreate: {
@@ -1509,6 +1719,303 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FundTeamMemberRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_investors_investors_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestorListItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_investor_investors_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvestorCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestorRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_investor_investors__investor_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                investor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestorRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_investor_investors__investor_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                investor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_investor_investors__investor_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                investor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvestorUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestorRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_investor_contacts_investors__investor_id__contacts_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                investor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestorContactRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_investor_contact_investors__investor_id__contacts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                investor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvestorContactCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestorContactRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_investor_contact_investors__investor_id__contacts__contact_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                investor_id: number;
+                contact_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestorContactRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_investor_contact_investors__investor_id__contacts__contact_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                investor_id: number;
+                contact_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvestorContactUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestorContactRead"];
                 };
             };
             /** @description Validation Error */
