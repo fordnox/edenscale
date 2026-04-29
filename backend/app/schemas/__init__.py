@@ -9,7 +9,13 @@ from app.schemas.organization import (
     OrganizationRead,
     OrganizationUpdate,
 )
-from app.schemas.user import UserCreate, UserResponse, UserUpdate
+from app.schemas.user import (
+    UserCreate,
+    UserRead,
+    UserRoleUpdate,
+    UserSelfUpdate,
+    UserUpdate,
+)
 
 __all__ = [
     "CapitalCallSummary",
@@ -20,6 +26,8 @@ __all__ = [
     "OrganizationRead",
     "OrganizationUpdate",
     "UserCreate",
-    "UserResponse",
+    "UserRead",
+    "UserRoleUpdate",
+    "UserSelfUpdate",
     "UserUpdate",
 ]

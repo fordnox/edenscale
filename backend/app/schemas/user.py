@@ -1,27 +1,53 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from app.models.enums import UserRole
 
 
 class UserCreate(BaseModel):
-    id: str
-    email: str
-    name: str | None = None
-    picture: str | None = None
+    organization_id: int | None = None
+    role: UserRole
+    first_name: str = Field(min_length=1, max_length=100)
+    last_name: str = Field(min_length=1, max_length=100)
+    email: EmailStr
+    phone: str | None = Field(default=None, max_length=50)
+    title: str | None = Field(default=None, max_length=150)
+    hanko_subject_id: str | None = Field(default=None, max_length=255)
 
 
 class UserUpdate(BaseModel):
-    email: str | None = None
-    name: str | None = None
-    picture: str | None = None
+    first_name: str | None = Field(default=None, min_length=1, max_length=100)
+    last_name: str | None = Field(default=None, min_length=1, max_length=100)
+    phone: str | None = Field(default=None, max_length=50)
+    title: str | None = Field(default=None, max_length=150)
+    is_active: bool | None = None
 
 
-class UserResponse(BaseModel):
-    id: str
+class UserSelfUpdate(BaseModel):
+    first_name: str | None = Field(default=None, min_length=1, max_length=100)
+    last_name: str | None = Field(default=None, min_length=1, max_length=100)
+    phone: str | None = Field(default=None, max_length=50)
+    title: str | None = Field(default=None, max_length=150)
+
+
+class UserRoleUpdate(BaseModel):
+    role: UserRole
+
+
+class UserRead(BaseModel):
+    id: int
+    organization_id: int | None
+    role: UserRole
+    first_name: str
+    last_name: str
     email: str
-    name: str | None
-    picture: str | None
-    created_at: datetime
-    updated_at: datetime
+    phone: str | None
+    title: str | None
+    is_active: bool
+    last_login_at: datetime | None
+    hanko_subject_id: str | None
+    created_at: datetime | None
+    updated_at: datetime | None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

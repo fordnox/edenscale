@@ -1,62 +1,127 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.rbac import get_current_user_record, require_roles
+from app.models.enums import UserRole
+from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserCreate, UserResponse, UserUpdate
+from app.schemas.user import (
+    UserCreate,
+    UserRead,
+    UserRoleUpdate,
+    UserSelfUpdate,
+    UserUpdate,
+)
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[UserResponse])
+@router.get("/me", response_model=UserRead)
+async def read_current_user(
+    current_user: User = Depends(get_current_user_record),
+):
+    return current_user
+
+
+@router.patch("/me", response_model=UserRead)
+async def update_current_user(
+    data: UserSelfUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_record),
+):
+    repo = UserRepository(db)
+    updated = repo.update(
+        current_user.id,  # type: ignore[invalid-argument-type]
+        UserUpdate(**data.model_dump(exclude_unset=True)),
+    )
+    if updated is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return updated
+
+
+@router.get("", response_model=list[UserRead])
 async def list_users(
     skip: int = 0,
     limit: int = 100,
+    include_inactive: bool = False,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
 ):
+    if current_user.organization_id is None:
+        return []
     repo = UserRepository(db)
-    return repo.get_all(skip=skip, limit=limit)
+    return repo.list_by_organization(
+        organization_id=current_user.organization_id,  # type: ignore[invalid-argument-type]
+        skip=skip,
+        limit=limit,
+        include_inactive=include_inactive,
+    )
 
 
-@router.get("/{user_id}", response_model=UserResponse)
-async def get_user(
-    user_id: int,
-    db: Session = Depends(get_db),
-):
-    repo = UserRepository(db)
-    user = repo.get_by_id(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
-
-
-@router.post("/", response_model=UserResponse, status_code=201)
-async def create_user(
+@router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+async def invite_user(
     data: UserCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
 ):
+    payload = data.model_dump()
+    if current_user.role is UserRole.fund_manager:
+        if current_user.organization_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Fund managers must belong to an organization to invite users",
+            )
+        payload["organization_id"] = current_user.organization_id
     repo = UserRepository(db)
-    return repo.create(data)
+    if repo.get_by_email(payload["email"]):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with this email already exists",
+        )
+    return repo.create(UserCreate(**payload))
 
 
-@router.put("/{user_id}", response_model=UserResponse)
+@router.patch("/{user_id}", response_model=UserRead)
 async def update_user(
     user_id: int,
     data: UserUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
 ):
     repo = UserRepository(db)
-    user = repo.update(user_id, data)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+    target = repo.get_by_id(user_id)
+    if target is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    if (
+        current_user.role is UserRole.fund_manager
+        and target.organization_id != current_user.organization_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot edit users outside your organization",
+        )
+    return repo.update(user_id, data)
 
 
-@router.delete("/{user_id}", status_code=204)
-async def delete_user(
+@router.patch(
+    "/{user_id}/role",
+    response_model=UserRead,
+    dependencies=[Depends(require_roles(UserRole.admin))],
+)
+async def update_user_role(
     user_id: int,
+    data: UserRoleUpdate,
     db: Session = Depends(get_db),
 ):
     repo = UserRepository(db)
-    if not repo.delete(user_id):
-        raise HTTPException(status_code=404, detail="User not found")
+    user = repo.update_role(user_id, data.role)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return user
