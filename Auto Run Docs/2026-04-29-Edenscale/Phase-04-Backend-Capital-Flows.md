@@ -4,7 +4,14 @@ This phase builds the capital flow engine. Capital calls and distributions follo
 
 ## Tasks
 
-- [ ] Read Phase 03's commitment repository, especially `recompute_totals`, before extending it; review the `capital_call`, `capital_call_item`, `distribution`, `distribution_item` model files from Phase 01 so the foreign keys and unique constraints are correct
+- [x] Read Phase 03's commitment repository, especially `recompute_totals`, before extending it; review the `capital_call`, `capital_call_item`, `distribution`, `distribution_item` model files from Phase 01 so the foreign keys and unique constraints are correct
+  - Notes from review:
+    - `CommitmentRepository.recompute_totals` (`backend/app/repositories/commitment_repository.py:113`) currently aggregates `CapitalCallItem.amount_due` into `called_amount` and `DistributionItem.amount_due` into `distributed_amount`. The Phase 04 test described later asserts `called_amount` equals the sum of `amount_paid` — that switch (or an `amount_paid`-based recompute) needs to land in the line-item-lifecycle task.
+    - `CapitalCall` (`backend/app/models/capital_call.py`): fund_id FK → funds.id; status enum `CapitalCallStatus` (draft/scheduled/sent/partially_paid/paid/overdue/cancelled); has `due_date` (NOT NULL), `call_date` (NULL), `amount`, `created_by_user_id`. Relationship `items` → `CapitalCallItem`.
+    - `CapitalCallItem` (`backend/app/models/capital_call_item.py`): unique constraint `uq_capital_call_item_call_commitment` on `(capital_call_id, commitment_id)` — bulk add must reject duplicates per call. `amount_paid` defaults to 0; `paid_at` nullable.
+    - `Distribution` (`backend/app/models/distribution.py`): mirrors CapitalCall but uses `distribution_date` (NOT NULL) and `record_date` (NULL); status enum `DistributionStatus` lacks `overdue`.
+    - `DistributionItem` (`backend/app/models/distribution_item.py`): unique constraint `uq_distribution_item_dist_commitment` on `(distribution_id, commitment_id)`; same `amount_due`/`amount_paid`/`paid_at` shape as `CapitalCallItem`.
+    - `CommitmentRepository.list` already implements RBAC (admin all, fund_manager scoped to their org via `Fund.organization_id`, lp scoped via `InvestorContact`) — capital-call/distribution repositories should mirror that pattern, joining through the parent's fund or via `commitment` for LPs.
 
 - [ ] Implement Capital Calls:
   - `backend/app/schemas/capital_call.py` — `CapitalCallCreate` (fund_id, title, description, due_date, call_date, amount), `CapitalCallUpdate`, `CapitalCallRead` with nested `items: list[CapitalCallItemRead]` and `fund: FundSummary`, plus `CapitalCallItemCreate`/`Update`/`Read`
