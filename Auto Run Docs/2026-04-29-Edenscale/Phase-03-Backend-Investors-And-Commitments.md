@@ -39,12 +39,21 @@ This phase builds the LP side of the data model: investors (legal entities), inv
   - Router mounted in `app/main.py` under `/investors` (separate `include_router` call from `investors.router`, mirroring the way `fund_team_members.router` is mounted alongside `funds.router` under `/funds`).
   - `is_primary` has no DB-level uniqueness — enforcement is purely transactional in the repository, matching the Phase 01 model where the column has no partial-unique index.
 
-- [ ] Implement Commitments:
+- [x] Implement Commitments:
   - `backend/app/schemas/commitment.py` — `CommitmentCreate`, `CommitmentUpdate`, `CommitmentRead` with `committed_amount`, `called_amount`, `distributed_amount`, `commitment_date`, `status`, `share_class`, `notes`, plus nested `fund: FundSummary` and `investor: InvestorSummary` for read responses
   - `backend/app/repositories/commitment_repository.py` — `list(filter_by_fund=None, filter_by_investor=None, user=...)` with the same RBAC visibility rules used for funds/investors, `get`, `create` (rejects with 409 if `(fund_id, investor_id)` already exists), `update`, `set_status`, `recompute_totals(commitment_id)` that recalculates `called_amount` and `distributed_amount` from related capital_call_items and distribution_items (will be exercised in Phase 04 but stub the method now so it can be called when items are created)
   - `backend/app/routers/commitments.py` — `GET /commitments`, `GET /commitments/{id}`, `POST /commitments`, `PATCH /commitments/{id}`, `POST /commitments/{id}/status` (approve/decline/cancel)
   - Add convenience routes nested under funds and investors: `GET /funds/{fund_id}/commitments`, `GET /investors/{investor_id}/commitments`
   - Mount under `/commitments`, and register the nested routes in their respective routers
+
+  Notes from implementation:
+  - Defined commitment-local `CommitmentFundSummary` / `CommitmentInvestorSummary` rather than reusing `app.schemas.dashboard.FundSummary` (which carries dashboard-only aggregates like `committed_amount`/`irr`/`tvpi` that would conflict with commitment ledger fields). Pydantic auto-populates them from the SQLAlchemy `fund` / `investor` relationships at read time via `from_attributes=True`.
+  - `CommitmentRepository._base_query()` returns plain `Commitment` rows (no aggregate tuple) since the per-commitment totals already live on the row; the `_to_dict` helper isn't needed and the router returns the model directly.
+  - RBAC: fund_manager visibility joins `Fund` and filters `fund.organization_id`; LP visibility filters `investor_id` to those reached via `InvestorContact.user_id == user.id`. This deliberately ignores `investor.organization_id` for fund_manager scope — the fund's org is the authoritative ownership signal for a commitment.
+  - Duplicate `(fund_id, investor_id)` is checked pre-flight via `get_by_fund_and_investor` AND via an `IntegrityError` fallback; both paths return 409.
+  - `POST /commitments/{id}/status` rejects transitions out of terminal `declined`/`cancelled` states with 409. Pending → approved/declined/cancelled and approved → cancelled are allowed.
+  - `recompute_totals` sums `amount_due` from capital_call_items / distribution_items (Phase 04 will wire it up when items get created/updated).
+  - Nested convenience routes use two extra `APIRouter` instances (`fund_commitments_router`, `investor_commitments_router`) mounted under `/funds` and `/investors` in `app/main.py` — same pattern as `fund_team_members.router` and `investor_contacts.router`. They reuse `CommitmentRepository.list(...)` so RBAC rules apply identically.
 
 - [ ] Add validation at the schema and DB level:
   - Pydantic validators on `committed_amount > 0`, `called_amount <= committed_amount`, `distributed_amount` not bounded by committed (distributions can exceed contributions in private funds — leave it unconstrained but document the choice in a `# Why:` comment)
