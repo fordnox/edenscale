@@ -22,10 +22,11 @@ This phase delivers the first slice of real CRUD for the platform: organizations
     - Auth contract: `get_current_user` (`backend/app/core/auth.py`) returns the decoded JWT payload as a `dict`. Phase 02's `get_current_user_record` must accept this dict (not a typed model) and key on `payload["sub"]` for `hanko_subject_id`. JWT claim names for email/given_name/family_name should be probed defensively (`payload.get("email")`, `payload.get("given_name")`, `payload.get("family_name")`) and fall back to empty strings since first_name/last_name are NOT NULL.
     - All routers under Phase 02 mount via `app.include_router(..., dependencies=[Depends(get_current_user)])` to match the existing pattern; per-route role enforcement uses `Depends(require_roles(...))` from the new `app/core/rbac.py`.
 
-- [ ] Add an RBAC dependency layer alongside the existing JWT check:
+- [x] Add an RBAC dependency layer alongside the existing JWT check:
   - Create `backend/app/core/rbac.py` exposing `get_current_user_record(db: Session = Depends(get_db), payload: dict = Depends(get_current_user)) -> User` which finds-or-creates the local `User` row keyed by `hanko_subject_id = payload["sub"]`. On first sight, create the row with `role=UserRole.lp` and copy email/first_name/last_name from the JWT claims if present; otherwise leave them blank and let the user complete their profile later
   - Add `require_roles(*allowed: UserRole)` factory that returns a FastAPI dependency raising `HTTPException(403)` when `current_user.role not in allowed`
   - Add unit tests in `backend/tests/test_rbac.py` covering: unknown subject auto-provisioning, role-allowed pass-through, role-denied 403
+  - **Notes:** Implemented `get_current_user_record` to raise 401 (not autoprovision) when the JWT lacks a `sub` claim — without `hanko_subject_id` the unique constraint would force a NULL collision later. New users default to `role=UserRole.lp` per spec; claims pulled defensively via `payload.get(...)`. Six unit tests in `backend/tests/test_rbac.py` cover provisioning (with and without claims), idempotent return for an existing user (claims do NOT overwrite stored values), missing-subject 401, and role allow/deny on the `require_roles` factory.
 
 - [ ] Implement the Organizations slice end-to-end:
   - `backend/app/schemas/organization.py` — `OrganizationCreate`, `OrganizationUpdate`, `OrganizationRead` with all dbml fields
