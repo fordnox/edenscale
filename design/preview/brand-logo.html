@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Logo & wordmark</title>
+<link rel="stylesheet" href="_base.css">
+</head>
+<body>
+<div class="card">
+  <div class="eyebrow">Logo · Seed with Arrow Cutout</div>
+  <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:24px;align-items:stretch">
+    <!-- Mark on light ground: cutout shows the parchment page color through it -->
+    <div style="background:var(--bg-page);border:1px solid var(--border-hairline);padding:28px;display:flex;justify-content:center;align-items:center;color:var(--conifer-700)">
+      <svg width="84" height="84" viewBox="0 0 64 64" fill="none">
+        <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"
+              d="M32 4 C 18 12, 10 24, 10 36 C 10 49, 20 60, 32 60 C 44 60, 54 49, 54 36 C 54 24, 46 12, 32 4 Z M32 50 L 32 30 L 26 30 L 32 22 L 38 30 L 32 30 L 32 50 Z"/>
+      </svg>
+    </div>
+    <!-- Wordmark on conifer ground: cutout shows the conifer through the parchment-colored seed -->
+    <div style="background:var(--conifer-700);padding:28px;display:flex;justify-content:center;align-items:center;color:var(--parchment-50)">
+      <div style="display:flex;align-items:center;gap:14px">
+        <svg width="40" height="40" viewBox="0 0 64 64" fill="none">
+          <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"
+                d="M32 4 C 18 12, 10 24, 10 36 C 10 49, 20 60, 32 60 C 44 60, 54 49, 54 36 C 54 24, 46 12, 32 4 Z M32 50 L 32 30 L 26 30 L 32 22 L 38 30 L 32 30 L 32 50 Z"/>
+        </svg>
+        <span style="font-family:var(--font-sans);font-weight:600;font-size:34px;letter-spacing:-0.04em;color:var(--parchment-50)">EdenScale</span>
+      </div>
+    </div>
+  </div>
+  <hr class="hairline">
+  <div style="font-size:11px;color:var(--fg-tertiary);line-height:1.55">A seed silhouette with an upward arrow knocked out of its body — potential and trajectory in a single solid form. The cutout reveals whatever ground the mark sits on, so context becomes part of the logo. Single path, <code>fill-rule: evenodd</code>; works at favicon scale.</div>
+</div>
+</body>
+</html>

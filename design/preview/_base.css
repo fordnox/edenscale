@@ -1,0 +1,68 @@
+/* Base styles for preview cards — sized for the Design System tab.
+   Cards target ~700×<varies>, viewport-locked. */
+
+@import url("../colors_and_type.css");
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-page);
+  color: var(--fg-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.card {
+  width: 700px;
+  box-sizing: border-box;
+  padding: 24px 28px;
+  background: var(--bg-page);
+}
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.swatch-chip {
+  height: 64px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 0;
+}
+.swatch-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  color: var(--fg-tertiary);
+  font-feature-settings: "tnum" 1;
+}
+.swatch-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-primary);
+}
+
+.row { display: flex; gap: 12px; }
+.col { display: flex; flex-direction: column; gap: 12px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.grid-9 { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; }
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--fg-accent);
+  line-height: 1;
+  margin: 0 0 14px 0;
+}
+
+.hairline {
+  border: 0;
+  border-top: 1px solid var(--border-hairline);
+  margin: 16px 0;
+}

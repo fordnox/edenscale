@@ -1,0 +1,332 @@
+/* ============================================================
+   EdenScale Design System — Foundations
+   Colors, type, spacing, and semantic tokens
+   ============================================================ */
+
+/* ---------- Webfonts ---------- */
+
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/CormorantGaramond-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/CormorantGaramond-400Italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/CormorantGaramond-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/CormorantGaramond-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/InterTight-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/InterTight-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/InterTight-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("fonts/InterTight-700.woff2") format("woff2");
+}
+
+/* ============================================================
+   COLOR TOKENS
+   ============================================================ */
+
+:root {
+  /* ---------- Brand: Conifer (deep botanical green) ---------- */
+  --conifer-50:  #F1F4F1;
+  --conifer-100: #DDE5DE;
+  --conifer-200: #B8C7BB;
+  --conifer-300: #8AA290;
+  --conifer-400: #5C7C66;
+  --conifer-500: #3A5C46;
+  --conifer-600: #2A4736;   /* primary brand */
+  --conifer-700: #1F3D2E;
+  --conifer-800: #16291F;
+  --conifer-900: #0E1B14;
+
+  /* ---------- Accent: Aged Brass (single warm accent — use sparingly) ---------- */
+  --brass-50:  #FAF4EA;
+  --brass-100: #F2E5CB;
+  --brass-300: #D6B785;
+  --brass-500: #B8915C;     /* accent */
+  --brass-700: #8A6A3F;
+  --brass-900: #4D3A22;
+
+  /* ---------- Neutrals: Parchment & Ink ---------- */
+  --parchment-50:  #FBF9F4;  /* page background */
+  --parchment-100: #F5F1E8;  /* card / elevated */
+  --parchment-200: #EDE7D8;  /* dividers, raised */
+  --parchment-300: #DFD7C3;
+  --ink-300: #B8B5AC;
+  --ink-500: #6F6E68;
+  --ink-700: #3A3A36;
+  --ink-900: #1A1A18;        /* primary text */
+
+  /* ---------- Semantic status (muted, institutional) ---------- */
+  --status-positive: #4A7A4F;  /* gain, confirmed */
+  --status-negative: #9A4A3D;  /* loss, alert */
+  --status-info:     #4A6A8A;
+  --status-warning:  #B8915C;
+
+  /* ---------- Semantic surfaces ---------- */
+  --bg-page:        var(--parchment-50);
+  --bg-surface:     #FFFFFF;
+  --bg-raised:      var(--parchment-100);
+  --bg-sunken:      var(--parchment-200);
+  --bg-inverse:     var(--conifer-700);
+  --bg-overlay:     rgba(14, 27, 20, 0.55);
+
+  /* ---------- Semantic foreground ---------- */
+  --fg-primary:     var(--ink-900);
+  --fg-secondary:   var(--ink-700);
+  --fg-tertiary:    var(--ink-500);
+  --fg-muted:       var(--ink-300);
+  --fg-inverse:     var(--parchment-50);
+  --fg-brand:       var(--conifer-700);
+  --fg-accent:      var(--brass-700);
+  --fg-link:        var(--conifer-700);
+
+  /* ---------- Borders / rules ---------- */
+  --border-hairline: rgba(26, 26, 24, 0.10);   /* default rule */
+  --border-default:  rgba(26, 26, 24, 0.18);
+  --border-strong:   rgba(26, 26, 24, 0.32);
+  --border-inverse:  rgba(251, 249, 244, 0.18);
+  --border-brand:    var(--conifer-600);
+
+  /* ============================================================
+     TYPE TOKENS
+     ============================================================ */
+
+  --font-display: "Cormorant Garamond", "Times New Roman", Times, serif;
+  --font-sans: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Consolas, monospace;
+
+  /* Type scale — display side leans large + tight; body side is calm */
+  --fs-display-xl: clamp(56px, 7vw, 96px);  /* hero */
+  --fs-display-l:  clamp(44px, 5.5vw, 72px);
+  --fs-display-m:  clamp(36px, 4.5vw, 56px);
+  --fs-display-s:  clamp(28px, 3.5vw, 40px);
+
+  --fs-h1: 40px;
+  --fs-h2: 32px;
+  --fs-h3: 24px;
+  --fs-h4: 18px;
+
+  --fs-body-l:  18px;
+  --fs-body:    16px;
+  --fs-body-s:  14px;
+  --fs-caption: 12px;
+  --fs-eyebrow: 11px;   /* small caps eyebrow */
+
+  --lh-display: 1.05;
+  --lh-heading: 1.20;
+  --lh-body:    1.55;
+  --lh-tight:   1.30;
+
+  --ls-eyebrow: 0.16em;   /* generous tracking on small caps */
+  --ls-caps:    0.08em;
+  --ls-display: -0.015em; /* light optical tightening on big serif */
+  --ls-body:    0;
+
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  /* ============================================================
+     SPACING — 4px base, generous side
+     ============================================================ */
+
+  --sp-0:   0;
+  --sp-1:   4px;
+  --sp-2:   8px;
+  --sp-3:   12px;
+  --sp-4:   16px;
+  --sp-5:   24px;
+  --sp-6:   32px;
+  --sp-7:   48px;
+  --sp-8:   64px;
+  --sp-9:   96px;
+  --sp-10: 128px;
+  --sp-11: 192px;
+
+  /* ============================================================
+     RADII — square is the default; minimal rounding on inputs only
+     ============================================================ */
+  --radius-none: 0px;
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-pill: 999px;  /* used only on tags / status pills */
+
+  /* ============================================================
+     ELEVATION — restrained; mostly we use rules, not shadows
+     ============================================================ */
+  --shadow-none: none;
+  --shadow-xs:   0 1px 0 rgba(26, 26, 24, 0.04);
+  --shadow-sm:   0 1px 2px rgba(26, 26, 24, 0.05), 0 1px 0 rgba(26, 26, 24, 0.04);
+  --shadow-md:   0 4px 12px rgba(26, 26, 24, 0.06), 0 1px 0 rgba(26, 26, 24, 0.04);
+  --shadow-lg:   0 18px 40px -12px rgba(14, 27, 20, 0.18);
+
+  /* ============================================================
+     MOTION — restrained; institutional, never bouncy
+     ============================================================ */
+  --motion-fast:   140ms;
+  --motion-base:   220ms;
+  --motion-slow:   400ms;
+  --ease-standard: cubic-bezier(0.4, 0.0, 0.2, 1);   /* smooth entry/exit */
+  --ease-out:      cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-in:       cubic-bezier(0.4, 0.0, 1.0, 1);
+
+  /* ============================================================
+     LAYOUT
+     ============================================================ */
+  --container-narrow: 720px;
+  --container-text:   880px;
+  --container-default: 1200px;
+  --container-wide:   1440px;
+}
+
+/* ============================================================
+   SEMANTIC TYPE CLASSES
+   Use these directly OR replicate in component CSS
+   ============================================================ */
+
+.es-display-xl,
+.es-display-l,
+.es-display-m,
+.es-display-s {
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  line-height: var(--lh-display);
+  letter-spacing: var(--ls-display);
+  color: var(--fg-primary);
+  text-wrap: balance;
+}
+.es-display-xl { font-size: var(--fs-display-xl); }
+.es-display-l  { font-size: var(--fs-display-l); }
+.es-display-m  { font-size: var(--fs-display-m); }
+.es-display-s  { font-size: var(--fs-display-s); }
+
+.es-h1, .es-h2, .es-h3, .es-h4 {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-heading);
+  color: var(--fg-primary);
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+.es-h1 { font-size: var(--fs-h1); }
+.es-h2 { font-size: var(--fs-h2); }
+.es-h3 { font-size: var(--fs-h3); }
+.es-h4 { font-size: var(--fs-h4); }
+
+.es-body-l, .es-body, .es-body-s {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-body);
+  color: var(--fg-secondary);
+  text-wrap: pretty;
+}
+.es-body-l { font-size: var(--fs-body-l); }
+.es-body   { font-size: var(--fs-body); }
+.es-body-s { font-size: var(--fs-body-s); }
+
+.es-caption {
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-tight);
+  color: var(--fg-tertiary);
+}
+
+.es-eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--fs-eyebrow);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-eyebrow);
+  color: var(--fg-accent);
+  line-height: 1;
+}
+
+.es-quote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-display-s);
+  line-height: var(--lh-tight);
+  color: var(--fg-primary);
+}
+
+.es-numeric {
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1, "lnum" 1;  /* tabular lining figures for tables */
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.es-numeric-oldstyle {
+  font-family: var(--font-display);
+  font-feature-settings: "onum" 1;            /* oldstyle figures for editorial */
+  font-variant-numeric: oldstyle-nums;
+}
+
+/* ============================================================
+   PAGE DEFAULTS (apply on <body> if you want them globally)
+   ============================================================ */
+
+.es-page {
+  background: var(--bg-page);
+  color: var(--fg-primary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.es-rule {
+  border: 0;
+  border-top: 1px solid var(--border-hairline);
+  margin: var(--sp-6) 0;
+}
+
+.es-rule--strong {
+  border-top-color: var(--border-default);
+}

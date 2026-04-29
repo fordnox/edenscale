@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Form inputs</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .field { display:flex; flex-direction:column; gap:6px; font-family:var(--font-sans); }
+  .field label { font-size:12px; font-weight:500; color:var(--fg-secondary); letter-spacing:0.01em; }
+  .field input, .field select, .field textarea {
+    font-family:var(--font-sans); font-size:14px; color:var(--fg-primary);
+    padding:10px 12px; border:1px solid var(--border-default); border-radius:2px;
+    background:var(--bg-surface); outline:none;
+    transition: border-color 140ms var(--ease-standard);
+  }
+  .field input:focus { border-color:var(--conifer-700); box-shadow:0 0 0 3px rgba(31,61,46,0.1); }
+  .field .help { font-size:11px; color:var(--fg-tertiary); }
+  .field .err { font-size:11px; color:#9A4A3D; }
+  .field-err input { border-color:#9A4A3D; }
+  .check { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--fg-primary); }
+  .check input[type=checkbox] { width:16px; height:16px; accent-color:var(--conifer-700); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="eyebrow">Form Inputs</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="field">
+      <label>Full Name</label>
+      <input type="text" value="Imants Vilks">
+      <div class="help">As it appears on subscription documents.</div>
+    </div>
+    <div class="field field-err">
+      <label>Accreditation</label>
+      <input type="text" value="">
+      <div class="err">Required for limited-partner status.</div>
+    </div>
+    <div class="field">
+      <label>Investor Type</label>
+      <select><option>Family Office</option><option>Endowment</option></select>
+    </div>
+    <div class="field">
+      <label>Allocation</label>
+      <input type="text" value="$2,500,000" class="es-numeric">
+    </div>
+  </div>
+  <hr class="hairline">
+  <label class="check"><input type="checkbox" checked> I have reviewed the private placement memorandum.</label>
+</div>
+</body>
+</html>

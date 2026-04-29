@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Data table</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  table { width:100%; border-collapse:collapse; font-family:var(--font-sans); font-size:13px; color:var(--fg-primary); }
+  th { font-weight:500; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
+       color:var(--fg-tertiary); text-align:left; padding:10px 12px;
+       border-bottom:1px solid var(--border-default); }
+  th.right, td.right { text-align:right; font-feature-settings:'tnum' 1,'lnum' 1; }
+  td { padding:14px 12px; border-bottom:1px solid var(--border-hairline); }
+  tr:last-child td { border-bottom:0; }
+  .gain { color:#4A7A4F; }
+  .loss { color:#9A4A3D; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="eyebrow">Data Table · tabular figures</div>
+  <table>
+    <thead>
+      <tr><th>Holding</th><th>Sector</th><th class="right">NAV</th><th class="right">YTD</th><th class="right">Since</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Linnér Forestry</td><td style="color:var(--fg-tertiary)">Real Assets</td><td class="right">$184,200,000</td><td class="right gain">+8.4%</td><td class="right">2019</td></tr>
+      <tr><td>Aurelia Industrial</td><td style="color:var(--fg-tertiary)">Private Equity</td><td class="right">$312,750,000</td><td class="right gain">+12.1%</td><td class="right">2017</td></tr>
+      <tr><td>Calder Credit Fund</td><td style="color:var(--fg-tertiary)">Credit</td><td class="right">$96,400,000</td><td class="right loss">−1.8%</td><td class="right">2022</td></tr>
+      <tr><td>Meridian Infrastructure</td><td style="color:var(--fg-tertiary)">Real Assets</td><td class="right">$241,900,000</td><td class="right gain">+6.7%</td><td class="right">2020</td></tr>
+    </tbody>
+  </table>
+</div>
+</body>
+</html>

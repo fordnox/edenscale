@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Type — Display</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .display-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .display-row {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    align-items: baseline;
+    gap: 20px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-hairline);
+  }
+  .display-row:last-child { border-bottom: 0; }
+  .display-tag {
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--fg-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-feature-settings: "tnum" 1;
+  }
+  .display-spec {
+    font-family: var(--font-sans);
+    font-size: 10px;
+    color: var(--fg-muted);
+    font-feature-settings: "tnum" 1;
+    white-space: nowrap;
+  }
+  .specimen {
+    font-family: var(--font-sans);
+    color: var(--ink-900);
+    line-height: 1;
+  }
+  .specimen.s-xl { font-size: 64px; font-weight: 600; letter-spacing: -0.04em; }
+  .specimen.s-l  { font-size: 48px; font-weight: 600; letter-spacing: -0.035em; }
+  .specimen.s-m  { font-size: 36px; font-weight: 500; letter-spacing: -0.03em; }
+  .specimen.s-s  { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--fg-secondary); }
+  .accent { color: var(--brass-700); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="eyebrow">Display · Inter Tight · Tight Tracking</div>
+
+  <div class="display-grid">
+    <div class="display-row">
+      <span class="display-tag">XL</span>
+      <span class="specimen s-xl">Patient&nbsp;capital.</span>
+      <span class="display-spec">64 / 600 / -4%</span>
+    </div>
+    <div class="display-row">
+      <span class="display-tag">L</span>
+      <span class="specimen s-l">Deployed&nbsp;<span class="accent">deliberately</span>.</span>
+      <span class="display-spec">48 / 600 / -3.5%</span>
+    </div>
+    <div class="display-row">
+      <span class="display-tag">M</span>
+      <span class="specimen s-m">A measured horizon.</span>
+      <span class="display-spec">36 / 500 / -3%</span>
+    </div>
+    <div class="display-row">
+      <span class="display-tag">S</span>
+      <span class="specimen s-s">Three rules unchanged since 2009.</span>
+      <span class="display-spec">26 / 500 / -2%</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

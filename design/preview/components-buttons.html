@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Buttons</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .btn { font-family: var(--font-sans); font-size:14px; font-weight:500; letter-spacing:0.01em;
+         padding:12px 22px; border-radius:2px; border:1px solid transparent; cursor:pointer;
+         transition: background 140ms var(--ease-standard), color 140ms var(--ease-standard), border-color 140ms var(--ease-standard); }
+  .btn-primary { background:var(--conifer-700); color:var(--fg-inverse); }
+  .btn-primary:hover { background:var(--conifer-800); }
+  .btn-secondary { background:transparent; color:var(--fg-primary); border-color:var(--border-default); }
+  .btn-secondary:hover { background:var(--parchment-200); }
+  .btn-ghost { background:transparent; color:var(--fg-primary); border-color:transparent; padding:12px 14px; }
+  .btn-ghost:hover { background:var(--parchment-200); }
+  .btn-link { background:transparent; border:0; color:var(--fg-primary); padding:0;
+              font-weight:500; border-bottom:1px solid var(--brass-500); padding-bottom:2px; }
+  .btn-disabled { background:var(--parchment-200); color:var(--fg-muted); cursor:not-allowed; }
+  .btn-sm { padding:8px 16px; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="eyebrow">Buttons</div>
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+    <button class="btn btn-primary">Become a partner</button>
+    <button class="btn btn-secondary">Read the letter</button>
+    <button class="btn btn-ghost">Cancel</button>
+    <a class="btn-link" href="#">View prospectus →</a>
+  </div>
+  <hr class="hairline">
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <button class="btn btn-primary btn-sm">Confirm</button>
+    <button class="btn btn-secondary btn-sm">Decline</button>
+    <button class="btn btn-disabled btn-sm">Pending</button>
+    <span style="font-size:11px;color:var(--fg-tertiary);margin-left:auto">2px radius · 140ms hover · no scale, no shadow</span>
+  </div>
+</div>
+</body>
+</html>

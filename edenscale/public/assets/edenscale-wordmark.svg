@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" fill="none" aria-label="EdenScale">
+  <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M32 4&#xA;           C 18 12, 10 24, 10 36&#xA;           C 10 49, 20 60, 32 60&#xA;           C 44 60, 54 49, 54 36&#xA;           C 54 24, 46 12, 32 4 Z&#xA;           M32 50&#xA;           L 32 30&#xA;           L 26 30&#xA;           L 32 22&#xA;           L 38 30&#xA;           L 32 30&#xA;           L 32 50 Z"></path>
+  <text x="76" y="42" font-family="Inter Tight, -apple-system, sans-serif" font-size="34" font-weight="600" letter-spacing="-1.2" fill="currentColor">EdenScale</text>
+</svg>

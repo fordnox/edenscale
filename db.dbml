@@ -1,0 +1,339 @@
+Project fund_manager_lp_platform {
+  database_type: 'PostgreSQL'
+  Note: 'Database schema for a private fund manager and LP relationship platform, covering firms, users, funds, investors, commitments, capital calls, distributions, documents, and communications.'
+}
+
+enum user_role {
+  admin [note: 'Platform administrator']
+  fund_manager [note: 'Fund manager user']
+  lp [note: 'Limited partner user']
+}
+
+enum organization_type {
+  fund_manager_firm
+  investor_firm
+  service_provider
+}
+
+enum fund_status {
+  draft
+  active
+  closed
+  liquidating
+  archived
+}
+
+enum commitment_status {
+  pending
+  approved
+  declined
+  cancelled
+}
+
+enum capital_call_status {
+  draft
+  scheduled
+  sent
+  partially_paid
+  paid
+  overdue
+  cancelled
+}
+
+enum distribution_status {
+  draft
+  scheduled
+  sent
+  partially_paid
+  paid
+  cancelled
+}
+
+enum document_type {
+  legal
+  kyc_aml
+  financial
+  report
+  notice
+  other
+}
+
+enum communication_type {
+  announcement
+  message
+  notification
+}
+
+enum notification_status {
+  unread
+  read
+  archived
+}
+
+enum task_status {
+  open
+  in_progress
+  done
+  cancelled
+}
+
+Table organizations {
+  id int [pk, increment]
+  type organization_type [not null]
+  name varchar(255) [not null]
+  legal_name varchar(255)
+  tax_id varchar(100)
+  website varchar(255)
+  description text
+  is_active boolean [not null, default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table users {
+  id int [pk, increment]
+  organization_id int [ref: > organizations.id]
+  role user_role [not null]
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  email varchar(255) [not null, unique]
+  phone varchar(50)
+  title varchar(150)
+  password_hash varchar(255) [not null]
+  is_active boolean [not null, default: true]
+  last_login_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table fund_groups {
+  id int [pk, increment]
+  organization_id int [not null, ref: > organizations.id]
+  name varchar(255) [not null]
+  description text
+  created_by_user_id int [ref: > users.id]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table funds {
+  id int [pk, increment]
+  organization_id int [not null, ref: > organizations.id]
+  fund_group_id int [ref: > fund_groups.id]
+  name varchar(255) [not null]
+  legal_name varchar(255)
+  vintage_year int
+  strategy varchar(255)
+  currency_code varchar(3) [not null, default: 'USD']
+  target_size decimal(18,2)
+  hard_cap decimal(18,2)
+  current_size decimal(18,2) [default: 0]
+  status fund_status [not null, default: "draft"]
+  inception_date date
+  close_date date
+  description text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table fund_team_members {
+  id int [pk, increment]
+  fund_id int [not null, ref: > funds.id]
+  user_id int [not null, ref: > users.id]
+  title varchar(150)
+  permissions text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    (fund_id, user_id) [unique]
+  }
+}
+
+Table investors {
+  id int [pk, increment]
+  organization_id int [not null, ref: > organizations.id]
+  investor_code varchar(50) [unique]
+  name varchar(255) [not null]
+  investor_type varchar(100)
+  accredited boolean [default: false]
+  notes text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table investor_contacts {
+  id int [pk, increment]
+  investor_id int [not null, ref: > investors.id]
+  user_id int [ref: > users.id]
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  email varchar(255)
+  phone varchar(50)
+  title varchar(150)
+  is_primary boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table commitments {
+  id int [pk, increment]
+  fund_id int [not null, ref: > funds.id]
+  investor_id int [not null, ref: > investors.id]
+  committed_amount decimal(18,2) [not null]
+  called_amount decimal(18,2) [not null, default: 0]
+  distributed_amount decimal(18,2) [not null, default: 0]
+  commitment_date date [not null]
+  status commitment_status [not null, default: "pending"]
+  share_class varchar(100)
+  notes text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    (fund_id, investor_id) [unique]
+  }
+}
+
+Table capital_calls {
+  id int [pk, increment]
+  fund_id int [not null, ref: > funds.id]
+  title varchar(255) [not null]
+  description text
+  due_date date [not null]
+  call_date date
+  amount decimal(18,2) [not null]
+  status capital_call_status [not null, default: "draft"]
+  created_by_user_id int [ref: > users.id]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table capital_call_items {
+  id int [pk, increment]
+  capital_call_id int [not null, ref: > capital_calls.id]
+  commitment_id int [not null, ref: > commitments.id]
+  amount_due decimal(18,2) [not null]
+  amount_paid decimal(18,2) [not null, default: 0]
+  paid_at timestamp
+  note text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    (capital_call_id, commitment_id) [unique]
+  }
+}
+
+Table distributions {
+  id int [pk, increment]
+  fund_id int [not null, ref: > funds.id]
+  title varchar(255) [not null]
+  description text
+  distribution_date date [not null]
+  record_date date
+  amount decimal(18,2) [not null]
+  status distribution_status [not null, default: "draft"]
+  created_by_user_id int [ref: > users.id]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table distribution_items {
+  id int [pk, increment]
+  distribution_id int [not null, ref: > distributions.id]
+  commitment_id int [not null, ref: > commitments.id]
+  amount_due decimal(18,2) [not null]
+  amount_paid decimal(18,2) [not null, default: 0]
+  paid_at timestamp
+  note text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    (distribution_id, commitment_id) [unique]
+  }
+}
+
+Table documents {
+  id int [pk, increment]
+  organization_id int [ref: > organizations.id]
+  fund_id int [ref: > funds.id]
+  investor_id int [ref: > investors.id]
+  uploaded_by_user_id int [ref: > users.id]
+  document_type document_type [not null]
+  title varchar(255) [not null]
+  file_name varchar(255) [not null]
+  file_url text [not null]
+  mime_type varchar(100)
+  file_size bigint
+  is_confidential boolean [not null, default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table communications {
+  id int [pk, increment]
+  fund_id int [ref: > funds.id]
+  sender_user_id int [ref: > users.id]
+  type communication_type [not null]
+  subject varchar(255) [not null]
+  body text [not null]
+  sent_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table communication_recipients {
+  id int [pk, increment]
+  communication_id int [not null, ref: > communications.id]
+  user_id int [ref: > users.id]
+  investor_contact_id int [ref: > investor_contacts.id]
+  delivered_at timestamp
+  read_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    (communication_id, user_id) [unique]
+  }
+}
+
+Table notifications {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  title varchar(255) [not null]
+  message text [not null]
+  status notification_status [not null, default: "unread"]
+  related_type varchar(100)
+  related_id int
+  read_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table tasks {
+  id int [pk, increment]
+  fund_id int [ref: > funds.id]
+  assigned_to_user_id int [ref: > users.id]
+  created_by_user_id int [ref: > users.id]
+  title varchar(255) [not null]
+  description text
+  status task_status [not null, default: "open"]
+  due_date date
+  completed_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table audit_logs {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  organization_id int [ref: > organizations.id]
+  action varchar(150) [not null]
+  entity_type varchar(100)
+  entity_id int
+  metadata text
+  ip_address varchar(45)
+  created_at timestamp [default: `now()`]
+}

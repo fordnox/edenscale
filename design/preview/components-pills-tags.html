@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Status pills & tags</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .pill { display:inline-flex; align-items:center; gap:6px;
+          padding:4px 10px; border-radius:999px; font-family:var(--font-sans);
+          font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase;
+          border:1px solid currentColor; }
+  .pill .dot { width:6px; height:6px; border-radius:999px; background:currentColor; }
+  .tag { display:inline-flex; padding:3px 8px; font-size:11px; font-weight:500;
+         color:var(--ink-700); background:var(--parchment-200); border-radius:2px;
+         font-family:var(--font-sans); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="eyebrow">Status Pills</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+    <span class="pill" style="color:#4A7A4F"><span class="dot"></span>Funded</span>
+    <span class="pill" style="color:#9A4A3D"><span class="dot"></span>Closed</span>
+    <span class="pill" style="color:#4A6A8A"><span class="dot"></span>Open</span>
+    <span class="pill" style="color:#8A6A3F"><span class="dot"></span>Reviewing</span>
+    <span class="pill" style="color:var(--ink-500)"><span class="dot"></span>Archived</span>
+  </div>
+  <hr class="hairline">
+  <div class="eyebrow" style="color:var(--fg-tertiary)">Tags · category labels</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <span class="tag">Private Equity</span>
+    <span class="tag">Real Assets</span>
+    <span class="tag">Credit</span>
+    <span class="tag">Public Markets</span>
+    <span class="tag">Co-Investment</span>
+  </div>
+</div>
+</body>
+</html>
