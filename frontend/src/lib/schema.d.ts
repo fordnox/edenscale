@@ -21,7 +21,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/users/": {
+    "/users/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Current User */
+        get: operations["read_current_user_users_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Current User */
+        patch: operations["update_current_user_users_me_patch"];
+        trace?: never;
+    };
+    "/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -29,10 +47,10 @@ export interface paths {
             cookie?: never;
         };
         /** List Users */
-        get: operations["list_users_users__get"];
+        get: operations["list_users_users_get"];
         put?: never;
-        /** Create User */
-        post: operations["create_user_users__post"];
+        /** Invite User */
+        post: operations["invite_user_users_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -46,16 +64,194 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get User */
-        get: operations["get_user_users__user_id__get"];
-        /** Update User */
-        put: operations["update_user_users__user_id__put"];
+        get?: never;
+        put?: never;
         post?: never;
-        /** Delete User */
-        delete: operations["delete_user_users__user_id__delete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update User */
+        patch: operations["update_user_users__user_id__patch"];
+        trace?: never;
+    };
+    "/users/{user_id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update User Role */
+        patch: operations["update_user_role_users__user_id__role_patch"];
+        trace?: never;
+    };
+    "/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Organizations */
+        get: operations["list_organizations_organizations_get"];
+        put?: never;
+        /** Create Organization */
+        post: operations["create_organization_organizations_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/organizations/{organization_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Organization */
+        get: operations["get_organization_organizations__organization_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Organization */
+        delete: operations["delete_organization_organizations__organization_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Organization */
+        patch: operations["update_organization_organizations__organization_id__patch"];
+        trace?: never;
+    };
+    "/fund-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Fund Groups */
+        get: operations["list_fund_groups_fund_groups_get"];
+        put?: never;
+        /** Create Fund Group */
+        post: operations["create_fund_group_fund_groups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fund-groups/{fund_group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Fund Group */
+        get: operations["get_fund_group_fund_groups__fund_group_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Fund Group */
+        delete: operations["delete_fund_group_fund_groups__fund_group_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Fund Group */
+        patch: operations["update_fund_group_fund_groups__fund_group_id__patch"];
+        trace?: never;
+    };
+    "/funds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Funds */
+        get: operations["list_funds_funds_get"];
+        put?: never;
+        /** Create Fund */
+        post: operations["create_fund_funds_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/funds/{fund_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Fund */
+        get: operations["get_fund_funds__fund_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Fund */
+        patch: operations["update_fund_funds__fund_id__patch"];
+        trace?: never;
+    };
+    "/funds/{fund_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive Fund */
+        post: operations["archive_fund_funds__fund_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/funds/{fund_id}/team": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Team Members */
+        get: operations["list_team_members_funds__fund_id__team_get"];
+        put?: never;
+        /** Add Team Member */
+        post: operations["add_team_member_funds__fund_id__team_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/funds/{fund_id}/team/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Team Member */
+        delete: operations["remove_team_member_funds__fund_id__team__member_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Team Member */
+        patch: operations["update_team_member_funds__fund_id__team__member_id__patch"];
         trace?: never;
     };
     "/": {
@@ -120,6 +316,127 @@ export interface components {
             /** Upcoming Capital Calls */
             upcoming_capital_calls: components["schemas"]["CapitalCallSummary"][];
         };
+        /** FundCreate */
+        FundCreate: {
+            /** Organization Id */
+            organization_id?: number | null;
+            /** Fund Group Id */
+            fund_group_id?: number | null;
+            /** Name */
+            name: string;
+            /** Legal Name */
+            legal_name?: string | null;
+            /** Vintage Year */
+            vintage_year?: number | null;
+            /** Strategy */
+            strategy?: string | null;
+            /**
+             * Currency Code
+             * @default USD
+             */
+            currency_code: string;
+            /** Target Size */
+            target_size?: number | string | null;
+            /** Hard Cap */
+            hard_cap?: number | string | null;
+            /** @default draft */
+            status: components["schemas"]["FundStatus"];
+            /** Inception Date */
+            inception_date?: string | null;
+            /** Close Date */
+            close_date?: string | null;
+            /** Description */
+            description?: string | null;
+        };
+        /** FundGroupCreate */
+        FundGroupCreate: {
+            /** Organization Id */
+            organization_id?: number | null;
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+        };
+        /** FundGroupRead */
+        FundGroupRead: {
+            /** Id */
+            id: number;
+            /** Organization Id */
+            organization_id: number;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string | null;
+            /** Created By User Id */
+            created_by_user_id: number | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** FundGroupUpdate */
+        FundGroupUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+        };
+        /** FundListItem */
+        FundListItem: {
+            /** Id */
+            id: number;
+            /** Organization Id */
+            organization_id: number;
+            /** Fund Group Id */
+            fund_group_id: number | null;
+            /** Name */
+            name: string;
+            /** Currency Code */
+            currency_code: string;
+            /** Target Size */
+            target_size: string | null;
+            /** Current Size */
+            current_size: string;
+            status: components["schemas"]["FundStatus"];
+            /** Vintage Year */
+            vintage_year: number | null;
+        };
+        /** FundRead */
+        FundRead: {
+            /** Id */
+            id: number;
+            /** Organization Id */
+            organization_id: number;
+            /** Fund Group Id */
+            fund_group_id: number | null;
+            /** Name */
+            name: string;
+            /** Legal Name */
+            legal_name: string | null;
+            /** Vintage Year */
+            vintage_year: number | null;
+            /** Strategy */
+            strategy: string | null;
+            /** Currency Code */
+            currency_code: string;
+            /** Target Size */
+            target_size: string | null;
+            /** Hard Cap */
+            hard_cap: string | null;
+            /** Current Size */
+            current_size: string;
+            status: components["schemas"]["FundStatus"];
+            /** Inception Date */
+            inception_date: string | null;
+            /** Close Date */
+            close_date: string | null;
+            /** Description */
+            description: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
         /**
          * FundStatus
          * @enum {string}
@@ -147,51 +464,208 @@ export interface components {
             /** Tvpi */
             tvpi?: string | null;
         };
+        /** FundTeamMemberCreate */
+        FundTeamMemberCreate: {
+            /** User Id */
+            user_id: number;
+            /** Title */
+            title?: string | null;
+            /** Permissions */
+            permissions?: string | null;
+        };
+        /** FundTeamMemberRead */
+        FundTeamMemberRead: {
+            /** Id */
+            id: number;
+            /** Fund Id */
+            fund_id: number;
+            /** User Id */
+            user_id: number;
+            /** Title */
+            title: string | null;
+            /** Permissions */
+            permissions: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** FundTeamMemberUpdate */
+        FundTeamMemberUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Permissions */
+            permissions?: string | null;
+        };
+        /** FundUpdate */
+        FundUpdate: {
+            /** Fund Group Id */
+            fund_group_id?: number | null;
+            /** Name */
+            name?: string | null;
+            /** Legal Name */
+            legal_name?: string | null;
+            /** Vintage Year */
+            vintage_year?: number | null;
+            /** Strategy */
+            strategy?: string | null;
+            /** Currency Code */
+            currency_code?: string | null;
+            /** Target Size */
+            target_size?: number | string | null;
+            /** Hard Cap */
+            hard_cap?: number | string | null;
+            status?: components["schemas"]["FundStatus"] | null;
+            /** Inception Date */
+            inception_date?: string | null;
+            /** Close Date */
+            close_date?: string | null;
+            /** Description */
+            description?: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** UserCreate */
-        UserCreate: {
+        /** OrganizationCreate */
+        OrganizationCreate: {
+            type: components["schemas"]["OrganizationType"];
+            /** Name */
+            name: string;
+            /** Legal Name */
+            legal_name?: string | null;
+            /** Tax Id */
+            tax_id?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Description */
+            description?: string | null;
+        };
+        /** OrganizationRead */
+        OrganizationRead: {
             /** Id */
-            id: string;
-            /** Email */
-            email: string;
+            id: number;
+            type: components["schemas"]["OrganizationType"];
+            /** Name */
+            name: string;
+            /** Legal Name */
+            legal_name: string | null;
+            /** Tax Id */
+            tax_id: string | null;
+            /** Website */
+            website: string | null;
+            /** Description */
+            description: string | null;
+            /** Is Active */
+            is_active: boolean;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /**
+         * OrganizationType
+         * @enum {string}
+         */
+        OrganizationType: "fund_manager_firm" | "investor_firm" | "service_provider";
+        /** OrganizationUpdate */
+        OrganizationUpdate: {
+            type?: components["schemas"]["OrganizationType"] | null;
             /** Name */
             name?: string | null;
-            /** Picture */
-            picture?: string | null;
+            /** Legal Name */
+            legal_name?: string | null;
+            /** Tax Id */
+            tax_id?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
-        /** UserResponse */
-        UserResponse: {
+        /** UserCreate */
+        UserCreate: {
+            /** Organization Id */
+            organization_id?: number | null;
+            role: components["schemas"]["UserRole"];
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Phone */
+            phone?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Hanko Subject Id */
+            hanko_subject_id?: string | null;
+        };
+        /** UserRead */
+        UserRead: {
             /** Id */
-            id: string;
+            id: number;
+            /** Organization Id */
+            organization_id: number | null;
+            role: components["schemas"]["UserRole"];
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
             /** Email */
             email: string;
-            /** Name */
-            name: string | null;
-            /** Picture */
-            picture: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
+            /** Phone */
+            phone: string | null;
+            /** Title */
+            title: string | null;
+            /** Is Active */
+            is_active: boolean;
+            /** Last Login At */
+            last_login_at: string | null;
+            /** Hanko Subject Id */
+            hanko_subject_id: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /**
+         * UserRole
+         * @enum {string}
+         */
+        UserRole: "admin" | "fund_manager" | "lp";
+        /** UserRoleUpdate */
+        UserRoleUpdate: {
+            role: components["schemas"]["UserRole"];
+        };
+        /** UserSelfUpdate */
+        UserSelfUpdate: {
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Title */
+            title?: string | null;
         };
         /** UserUpdate */
         UserUpdate: {
-            /** Email */
-            email?: string | null;
-            /** Name */
-            name?: string | null;
-            /** Picture */
-            picture?: string | null;
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -235,12 +709,9 @@ export interface operations {
             };
         };
     };
-    list_users_users__get: {
+    read_current_user_users_me_get: {
         parameters: {
-            query?: {
-                skip?: number;
-                limit?: number;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -253,7 +724,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponse"][];
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+        };
+    };
+    update_current_user_users_me_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserSelfUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
                 };
             };
             /** @description Validation Error */
@@ -267,7 +762,40 @@ export interface operations {
             };
         };
     };
-    create_user_users__post: {
+    list_users_users_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invite_user_users_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -286,7 +814,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponse"];
+                    "application/json": components["schemas"]["UserRead"];
                 };
             };
             /** @description Validation Error */
@@ -300,38 +828,7 @@ export interface operations {
             };
         };
     };
-    get_user_users__user_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_user_users__user_id__put: {
+    update_user_users__user_id__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -352,7 +849,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponse"];
+                    "application/json": components["schemas"]["UserRead"];
                 };
             };
             /** @description Validation Error */
@@ -366,7 +863,7 @@ export interface operations {
             };
         };
     };
-    delete_user_users__user_id__delete: {
+    update_user_role_users__user_id__role_patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -375,14 +872,644 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserRoleUpdate"];
+            };
+        };
         responses: {
             /** @description Successful Response */
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_organizations_organizations_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_organization_organizations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_organization_organizations__organization_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_organization_organizations__organization_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_organization_organizations__organization_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_fund_groups_fund_groups_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundGroupRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_fund_group_fund_groups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundGroupCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundGroupRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_fund_group_fund_groups__fund_group_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fund_group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundGroupRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_fund_group_fund_groups__fund_group_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fund_group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundGroupRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_fund_group_fund_groups__fund_group_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fund_group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundGroupUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundGroupRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_funds_funds_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundListItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_fund_funds_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_fund_funds__fund_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_fund_funds__fund_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_fund_funds__fund_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_team_members_funds__fund_id__team_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                fund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundTeamMemberRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_team_member_funds__fund_id__team_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundTeamMemberCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundTeamMemberRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_team_member_funds__fund_id__team__member_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fund_id: number;
+                member_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundTeamMemberRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_team_member_funds__fund_id__team__member_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fund_id: number;
+                member_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundTeamMemberUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundTeamMemberRead"];
+                };
             };
             /** @description Validation Error */
             422: {
