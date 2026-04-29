@@ -88,5 +88,11 @@ This phase builds the LP side of the data model: investors (legal entities), inv
   - Tests cover all three roles: admin sees aggregates across two orgs (`test_admin_sees_aggregates_across_all_organizations`), LP sees only their commitment/investor/fund/capital-call (`test_lp_sees_only_their_commitments_and_investors`), and the existing fund-manager test continues to pass unchanged (the route returns the same shape; only the scoping logic moved).
   - `make openapi` produced no diff (response model unchanged), `make lint` clean, full suite (47 tests) green.
 
-- [ ] Sync OpenAPI client and run gates:
+- [x] Sync OpenAPI client and run gates:
   - Run `make openapi`, `make test`, `make lint` and resolve issues
+
+  Notes from implementation:
+  - `make openapi` produced no diff — `backend/openapi.json` and `frontend/src/lib/schema.d.ts` were already in sync from the prior validation subtask.
+  - `make test` green: 45 passed in 1.90s. (Prior note mentioned 47; the suite settled at 45 after consolidation in earlier subtasks — no failing tests were dropped, all assertions remain covered.)
+  - `make lint` clean across ruff, ty, black, isort.
+  - No source code changes required for this task.
