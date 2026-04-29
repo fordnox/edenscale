@@ -4,15 +4,15 @@
  */
 
 export interface paths {
-    "/dashboard/": {
+    "/dashboard/overview": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Statistics */
-        get: operations["get_statistics_dashboard__get"];
+        /** Get Overview */
+        get: operations["get_overview_dashboard_overview_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -79,15 +79,78 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * CapitalCallStatus
+         * @enum {string}
+         */
+        CapitalCallStatus: "draft" | "scheduled" | "sent" | "partially_paid" | "paid" | "overdue" | "cancelled";
+        /** CapitalCallSummary */
+        CapitalCallSummary: {
+            /** Id */
+            id: number;
+            /** Fund Id */
+            fund_id: number;
+            /** Fund Name */
+            fund_name: string;
+            /** Title */
+            title: string;
+            /** Amount */
+            amount: string;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            status: components["schemas"]["CapitalCallStatus"];
+        };
+        /** DashboardOverviewResponse */
+        DashboardOverviewResponse: {
+            /** Funds Active */
+            funds_active: number;
+            /** Investors Total */
+            investors_total: number;
+            /** Commitments Total Amount */
+            commitments_total_amount: string;
+            /** Capital Calls Outstanding */
+            capital_calls_outstanding: number;
+            /** Distributions Ytd Amount */
+            distributions_ytd_amount: string;
+            /** Recent Funds */
+            recent_funds: components["schemas"]["FundSummary"][];
+            /** Upcoming Capital Calls */
+            upcoming_capital_calls: components["schemas"]["CapitalCallSummary"][];
+        };
+        /**
+         * FundStatus
+         * @enum {string}
+         */
+        FundStatus: "draft" | "active" | "closed" | "liquidating" | "archived";
+        /** FundSummary */
+        FundSummary: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Vintage Year */
+            vintage_year?: number | null;
+            /** Strategy */
+            strategy?: string | null;
+            status: components["schemas"]["FundStatus"];
+            /** Currency Code */
+            currency_code: string;
+            /** Committed Amount */
+            committed_amount: string;
+            /** Called Amount */
+            called_amount: string;
+            /** Irr */
+            irr?: string | null;
+            /** Tvpi */
+            tvpi?: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
-        };
-        /** Message */
-        Message: {
-            /** Message */
-            message: string;
         };
         /** UserCreate */
         UserCreate: {
@@ -152,7 +215,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    get_statistics_dashboard__get: {
+    get_overview_dashboard_overview_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -167,7 +230,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Message"];
+                    "application/json": components["schemas"]["DashboardOverviewResponse"];
                 };
             };
         };
@@ -242,7 +305,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                user_id: string;
+                user_id: number;
             };
             cookie?: never;
         };
@@ -273,7 +336,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                user_id: string;
+                user_id: number;
             };
             cookie?: never;
         };
@@ -308,7 +371,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                user_id: string;
+                user_id: number;
             };
             cookie?: never;
         };

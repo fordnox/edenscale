@@ -115,10 +115,17 @@ This phase establishes the project foundation by porting EdenScale design tokens
     3. User has org with funds/investors/commitments/capital-calls/distributions across the org boundary → response counts and sums correctly filter to the caller's org and exclude data from a sibling org. Verifies `funds_active` excludes closed funds, `capital_calls_outstanding` excludes `paid`, `distributions_ytd_amount` excludes prior-year distributions, and `recent_funds` includes both active and closed funds (the API does not filter `recent_funds` by status — that's a UI concern matching the prototype).
     Tests use `app.dependency_overrides[get_current_user]` to inject a fake JWT payload and clean up via fixture teardown. All 4 tests pass (1 prior + 3 new); `make lint` exits 0 with the same pre-existing black/isort oscillation noted in earlier tasks (out of scope).
 
-- [ ] Regenerate the OpenAPI client and confirm types are in sync:
+- [x] Regenerate the OpenAPI client and confirm types are in sync:
   - From the repo root, run `make openapi`
   - Confirm `backend/openapi.json` contains the new `/dashboard/overview` schema
   - Confirm `frontend/src/lib/schema.d.ts` now exposes `paths["/dashboard/overview"]` and the new response types
+
+  **Notes (Iteration 00001):**
+  - `make openapi` ran cleanly: backend openapi.json regenerated from `app.main.app.openapi()`, then `pnpm run generate-client` produced `frontend/src/lib/schema.d.ts` (openapi-typescript 7.13.0, 22.1ms, no errors).
+  - `backend/openapi.json` now exposes `paths["/dashboard/overview"]` (operationId `get_overview_dashboard_overview_get`, secured by HTTPBearer, 200 → `DashboardOverviewResponse`) and the four supporting component schemas: `DashboardOverviewResponse`, `FundSummary`, `CapitalCallSummary`, `FundStatus` enum, `CapitalCallStatus` enum. `Decimal` fields serialize as `{"type": "string"}` (Pydantic's default for Decimal — preserves precision through JSON), matching the schema declarations from the prior task.
+  - `frontend/src/lib/schema.d.ts` now exposes `paths["/dashboard/overview"]` (line 7), `components["schemas"]["DashboardOverviewResponse"]` (line 107), `FundSummary` (line 129), `CapitalCallSummary` (line 88). The 200 response on the GET handler types correctly to `components["schemas"]["DashboardOverviewResponse"]` (line 233) so `api.GET("/dashboard/overview")` in the next task will be fully type-safe.
+  - **Pre-existing drift surfaced (not introduced by this task):** the regenerated openapi still contains `UserCreate`/`UserUpdate`/`UserResponse` shaped against the legacy Hanko-only fields (`id: str`, `name`, `picture`) rather than the new dbml User columns. This was flagged as deliberately out-of-scope in Task 4's notes ("Out-of-scope drift: schemas/user.py still references the legacy fields"). Leaving as-is per that task's contract — frontend doesn't consume the user CRUD types yet.
+  - No Python code changed; only generated artifacts (`backend/openapi.json`, `frontend/src/lib/schema.d.ts`) updated. `make test` and `make lint` were not re-run since no source changed since the last task's verification.
 
 - [ ] Port the Dashboard layout and page into the production frontend:
   - Create `frontend/src/components/layout/Sidebar.tsx` and `frontend/src/components/layout/Topbar.tsx` based on the prototype copies, but adapt the navigation to use `react-router-dom`'s `<NavLink>` / `useNavigate` and route paths (`/`, `/funds`, `/investors`, `/calls`, `/distributions`, `/documents`, `/letters`, `/tasks`, `/notifications`) instead of the prototype's `Route` enum
