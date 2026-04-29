@@ -15,11 +15,18 @@ This phase builds the LP side of the data model: investors (legal entities), inv
   - Router pattern (`app/routers/funds.py`): keep handlers thin — instantiate repo, call method, raise 404/403, return dict shaped by a private `_to_read_dict` / `_to_list_item` helper (because the row is `(Model, Decimal)` and Pydantic's `from_attributes` cannot pull a tuple field). Reuse this dict-helper pattern for investors and commitments where a computed column is involved.
   - Mounting: routers are included in `app/main.py` under their path prefix and gated by `Depends(get_current_user)` at the `include_router` level — do NOT re-add auth on individual routes.
 
-- [ ] Implement Investors:
+- [x] Implement Investors:
   - `backend/app/schemas/investor.py` — `InvestorCreate`, `InvestorUpdate`, `InvestorRead`, `InvestorListItem` with `total_committed` and `fund_count` aggregate fields (computed at read time)
   - `backend/app/repositories/investor_repository.py` — `list_for_user(user)` (admin: all; fund_manager: org-scoped; lp: only investors that the caller's investor_contact rows reference), `get`, `create`, `update`, `delete` (hard delete only if no commitments exist; otherwise raise a 409)
   - `backend/app/routers/investors.py` — `GET /investors`, `GET /investors/{id}`, `POST /investors` (fund_manager+admin), `PATCH /investors/{id}`, `DELETE /investors/{id}`
   - Mount under `/investors`
+
+  Notes from implementation:
+  - Repository `_base_query()` mirrors `FundRepository`: subquery sums `Commitment.committed_amount` and counts distinct `fund_id` per investor, outer-joined so investors with no commitments get `(0, 0)`.
+  - LP visibility filter joins `InvestorContact.user_id == user.id` (no need to traverse Commitment — LPs can see investors they're a contact for even before any commitment exists).
+  - Router reuses the `_to_read_dict` / `_to_list_item` dict-helper pattern because `repo.get()` returns a `(Investor, Decimal, int)` tuple that Pydantic `from_attributes` can't unpack.
+  - `DELETE /investors/{id}` returns 409 when commitments exist (via `repo.has_commitments`) and 204 on successful hard delete.
+  - Fund-manager create overrides `organization_id` from the caller's org (same behavior as `POST /funds`); admin must supply it explicitly.
 
 - [ ] Implement Investor Contacts:
   - Schemas/repository/router with endpoints `GET /investors/{investor_id}/contacts`, `POST /investors/{investor_id}/contacts`, `PATCH /investors/{investor_id}/contacts/{contact_id}`, `DELETE /investors/{investor_id}/contacts/{contact_id}`
