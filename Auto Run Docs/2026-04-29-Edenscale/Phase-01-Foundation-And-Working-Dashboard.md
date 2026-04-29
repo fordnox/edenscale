@@ -92,9 +92,28 @@ This phase establishes the project foundation by porting EdenScale design tokens
   - Re-exported all three classes from `app/schemas/__init__.py` (kept the `__all__` list alphabetized) so the dashboard router can do `from app.schemas import DashboardOverviewResponse`.
   - **Validation:** `uv run python -c "from app.schemas import DashboardOverviewResponse, FundSummary, CapitalCallSummary"` imports cleanly; `model_json_schema()` serializes correctly with the expected `$defs` for both enums. `make test` 1/1 passes; `make lint` exits 0 (with the same pre-existing black/isort oscillation noted in prior tasks — not introduced by this change).
 
-- [ ] Replace the placeholder dashboard router with a real overview endpoint:
+- [x] Replace the placeholder dashboard router with a real overview endpoint:
   - Update `backend/app/routers/dashboard.py` so `GET /dashboard/overview` returns a `DashboardOverviewResponse` populated by SQL aggregates (`func.count`, `func.sum`, `func.coalesce`) over the new tables, filtered to the caller's organization when the JWT carries one (read `current_user` from `Depends(get_current_user)` and look up the matching `User` row by `hanko_subject_id`; if no row exists, fall back to returning zeros and empty arrays so the endpoint never 500s on a fresh DB)
   - Keep the existing `Depends(get_current_user)` wiring at the `include_router` level — do not duplicate it on the route
+
+  **Notes (Iteration 00001):**
+  - Replaced the placeholder `GET /dashboard/` (which returned `Message("Hello World")`) with `GET /dashboard/overview` returning `DashboardOverviewResponse`. The legacy `Message` schema is left in place under `app/schemas/` since other future routers may reuse it.
+  - **Auth flow:** the route uses `current_user: dict = Depends(get_current_user)` as a parameter dependency to access the JWT payload. FastAPI deduplicates dependencies per request, so this does not duplicate the include-router-level auth check — it just exposes the already-decoded payload to the handler. The path-prefix `dependencies=[Depends(get_current_user)]` in `app/main.py` is unchanged.
+  - **Empty-state safety:** if `sub` is missing from the JWT, the User row is not found, or `User.organization_id` is null, the endpoint returns zeros + empty arrays via `_empty_response()` rather than 500ing. This is the documented contract for a fresh DB and for LP-only users not yet attached to an organization.
+  - **Aggregates** (all filtered through `Fund.organization_id == user.organization_id` so multi-tenant isolation holds):
+    - `funds_active` — `count(funds where status='active')`
+    - `investors_total` — `count(investors)` for the org
+    - `commitments_total_amount` — `coalesce(sum(commitments.committed_amount), 0)` joined to funds
+    - `capital_calls_outstanding` — count of capital calls with status in `(scheduled, sent, partially_paid, overdue)` — same status filter the prototype Dashboard uses for its "Upcoming" table (extended to include `partially_paid`, which the dbml has but the prototype mock-data filter omitted)
+    - `distributions_ytd_amount` — `coalesce(sum(distributions.amount), 0)` where `distribution_date >= Jan 1 of current year`
+  - **`recent_funds`** — top 5 funds by `created_at desc` for the org. Per-fund `committed_amount` and `called_amount` come from a `commitments` `GROUP BY fund_id` subquery joined via `OUTER JOIN` (so funds with no commitments still appear with zeros). `irr` and `tvpi` are returned as `None` since those columns do not yet exist on `funds` — they were defined as optional in the FundSummary schema by the previous task specifically for this reason and will be populated once an analytics layer is added.
+  - **`upcoming_capital_calls`** — top 5 calls with status in the same outstanding-set as the KPI, ordered by `due_date asc`, with `fund_name` denormalized via the join (matches the prototype's table column shape).
+  - **Decimal handling:** `coalesce(sum(...), 0)` returns either a `Decimal` (when rows exist) or the int `0` (when none). Wrapping in `Decimal(str(...))` normalizes both cases so Pydantic always receives a Decimal-coercible string.
+  - **Tests** (`backend/tests/test_dashboard.py`, 3 new test cases):
+    1. JWT subject with no matching User row → 200 with zeros + empty arrays
+    2. User exists but `organization_id is None` → 200 with zeros + empty arrays
+    3. User has org with funds/investors/commitments/capital-calls/distributions across the org boundary → response counts and sums correctly filter to the caller's org and exclude data from a sibling org. Verifies `funds_active` excludes closed funds, `capital_calls_outstanding` excludes `paid`, `distributions_ytd_amount` excludes prior-year distributions, and `recent_funds` includes both active and closed funds (the API does not filter `recent_funds` by status — that's a UI concern matching the prototype).
+    Tests use `app.dependency_overrides[get_current_user]` to inject a fake JWT payload and clean up via fixture teardown. All 4 tests pass (1 prior + 3 new); `make lint` exits 0 with the same pre-existing black/isort oscillation noted in earlier tasks (out of scope).
 
 - [ ] Regenerate the OpenAPI client and confirm types are in sync:
   - From the repo root, run `make openapi`
