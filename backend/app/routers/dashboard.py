@@ -2,11 +2,11 @@ from datetime import date
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy import Select, func, select
+from sqlalchemy.orm import Query, Session
 
-from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.core.rbac import get_current_user_record
 from app.models import (
     CapitalCall,
     CapitalCallStatus,
@@ -15,7 +15,9 @@ from app.models import (
     Fund,
     FundStatus,
     Investor,
+    InvestorContact,
     User,
+    UserRole,
 )
 from app.schemas import CapitalCallSummary, DashboardOverviewResponse, FundSummary
 
@@ -41,63 +43,92 @@ def _empty_response() -> DashboardOverviewResponse:
     )
 
 
+def _visible_fund_ids(user: User) -> Select | None:
+    """Subquery yielding fund ids the caller can see, or None for admin (no filter)."""
+    if user.role is UserRole.admin:
+        return None
+    if user.role is UserRole.fund_manager:
+        return select(Fund.id).where(Fund.organization_id == user.organization_id)
+    return (
+        select(Commitment.fund_id)
+        .join(InvestorContact, InvestorContact.investor_id == Commitment.investor_id)
+        .where(InvestorContact.user_id == user.id)
+    )
+
+
+def _visible_investor_ids(user: User) -> Select | None:
+    """Subquery yielding investor ids the caller can see, or None for admin (no filter)."""
+    if user.role is UserRole.admin:
+        return None
+    if user.role is UserRole.fund_manager:
+        return select(Investor.id).where(
+            Investor.organization_id == user.organization_id
+        )
+    return select(InvestorContact.investor_id).where(InvestorContact.user_id == user.id)
+
+
+def _scope_by_fund(query: Query, fund_id_column, fund_filter: Select | None) -> Query:
+    if fund_filter is None:
+        return query
+    return query.filter(fund_id_column.in_(fund_filter))
+
+
+def _scope_by_investor(
+    query: Query, investor_id_column, investor_filter: Select | None
+) -> Query:
+    if investor_filter is None:
+        return query
+    return query.filter(investor_id_column.in_(investor_filter))
+
+
 @router.get("/overview", response_model=DashboardOverviewResponse)
 async def get_overview(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_record),
 ) -> DashboardOverviewResponse:
-    subject_id = current_user.get("sub")
-    if not subject_id:
+    if (
+        current_user.role is UserRole.fund_manager
+        and current_user.organization_id is None
+    ):
         return _empty_response()
 
-    user = db.query(User).filter(User.hanko_subject_id == subject_id).first()
-    if user is None or user.organization_id is None:
-        return _empty_response()
+    fund_filter = _visible_fund_ids(current_user)
+    investor_filter = _visible_investor_ids(current_user)
 
-    org_id = user.organization_id
-
-    funds_active = (
-        db.query(func.count(Fund.id))
-        .filter(Fund.organization_id == org_id, Fund.status == FundStatus.active)
-        .scalar()
-        or 0
+    funds_active_q = db.query(func.count(Fund.id)).filter(
+        Fund.status == FundStatus.active
     )
+    funds_active = _scope_by_fund(funds_active_q, Fund.id, fund_filter).scalar() or 0
 
+    investors_total_q = db.query(func.count(Investor.id))
     investors_total = (
-        db.query(func.count(Investor.id))
-        .filter(Investor.organization_id == org_id)
-        .scalar()
+        _scope_by_investor(investors_total_q, Investor.id, investor_filter).scalar()
         or 0
     )
 
-    commitments_total_amount = (
-        db.query(func.coalesce(func.sum(Commitment.committed_amount), 0))
-        .join(Fund, Fund.id == Commitment.fund_id)
-        .filter(Fund.organization_id == org_id)
-        .scalar()
-    )
-
-    capital_calls_outstanding = (
-        db.query(func.count(CapitalCall.id))
-        .join(Fund, Fund.id == CapitalCall.fund_id)
-        .filter(
-            Fund.organization_id == org_id,
-            CapitalCall.status.in_(OUTSTANDING_CAPITAL_CALL_STATUSES),
+    commitments_q = db.query(func.coalesce(func.sum(Commitment.committed_amount), 0))
+    if current_user.role is UserRole.fund_manager:
+        commitments_q = _scope_by_fund(commitments_q, Commitment.fund_id, fund_filter)
+    else:
+        commitments_q = _scope_by_investor(
+            commitments_q, Commitment.investor_id, investor_filter
         )
-        .scalar()
-        or 0
+    commitments_total_amount = commitments_q.scalar()
+
+    capital_calls_q = db.query(func.count(CapitalCall.id)).filter(
+        CapitalCall.status.in_(OUTSTANDING_CAPITAL_CALL_STATUSES)
+    )
+    capital_calls_outstanding = (
+        _scope_by_fund(capital_calls_q, CapitalCall.fund_id, fund_filter).scalar() or 0
     )
 
     year_start = date(date.today().year, 1, 1)
-    distributions_ytd_amount = (
-        db.query(func.coalesce(func.sum(Distribution.amount), 0))
-        .join(Fund, Fund.id == Distribution.fund_id)
-        .filter(
-            Fund.organization_id == org_id,
-            Distribution.distribution_date >= year_start,
-        )
-        .scalar()
+    distributions_q = db.query(func.coalesce(func.sum(Distribution.amount), 0)).filter(
+        Distribution.distribution_date >= year_start
     )
+    distributions_ytd_amount = _scope_by_fund(
+        distributions_q, Distribution.fund_id, fund_filter
+    ).scalar()
 
     fund_agg_subq = (
         db.query(
@@ -111,16 +142,13 @@ async def get_overview(
         .subquery()
     )
 
+    fund_rows_q = db.query(
+        Fund,
+        func.coalesce(fund_agg_subq.c.committed_amount, 0).label("committed_amount"),
+        func.coalesce(fund_agg_subq.c.called_amount, 0).label("called_amount"),
+    ).outerjoin(fund_agg_subq, fund_agg_subq.c.fund_id == Fund.id)
     fund_rows = (
-        db.query(
-            Fund,
-            func.coalesce(fund_agg_subq.c.committed_amount, 0).label(
-                "committed_amount"
-            ),
-            func.coalesce(fund_agg_subq.c.called_amount, 0).label("called_amount"),
-        )
-        .outerjoin(fund_agg_subq, fund_agg_subq.c.fund_id == Fund.id)
-        .filter(Fund.organization_id == org_id)
+        _scope_by_fund(fund_rows_q, Fund.id, fund_filter)
         .order_by(Fund.created_at.desc())
         .limit(5)
         .all()
@@ -142,13 +170,13 @@ async def get_overview(
         for fund, committed, called in fund_rows
     ]
 
-    upcoming_rows = (
+    upcoming_q = (
         db.query(CapitalCall, Fund.name)
         .join(Fund, Fund.id == CapitalCall.fund_id)
-        .filter(
-            Fund.organization_id == org_id,
-            CapitalCall.status.in_(OUTSTANDING_CAPITAL_CALL_STATUSES),
-        )
+        .filter(CapitalCall.status.in_(OUTSTANDING_CAPITAL_CALL_STATUSES))
+    )
+    upcoming_rows = (
+        _scope_by_fund(upcoming_q, Fund.id, fund_filter)
         .order_by(CapitalCall.due_date.asc())
         .limit(5)
         .all()

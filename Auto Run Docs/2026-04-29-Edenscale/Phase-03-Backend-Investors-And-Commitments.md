@@ -75,9 +75,18 @@ This phase builds the LP side of the data model: investors (legal entities), inv
   - `test_commitments_api.py` covers fund_manager create with nested fund/investor summaries in the response, duplicate-pair 409 (pre-flight check path), Pydantic schema rejection of `called_amount > committed_amount` (422), pending→approved and approved→cancelled transitions, both terminal states (declined, cancelled) blocking further transitions with 409, LP visibility on both `/commitments` and the nested `/investors/{id}/commitments`, and the nested `/funds/{id}/commitments` listing for fund managers.
   - Total 18 new tests, all 43 across the suite green; `make lint` clean. No source code changes — tests only.
 
-- [ ] Wire the new totals into the Dashboard overview:
+- [x] Wire the new totals into the Dashboard overview:
   - Update `backend/app/routers/dashboard.py` and the `/dashboard/overview` aggregates so `investors_total` and `commitments_total_amount` are sourced from the new tables and respect the caller's RBAC scope
   - Update `backend/tests/` to cover the dashboard with seeded data
+
+  Notes from implementation:
+  - Switched the route's auth dep from `get_current_user` (raw JWT payload) to `get_current_user_record` so the handler has the local `User` row (with `role` + `organization_id`) without re-querying. The `include_router(..., dependencies=[Depends(get_current_user)])` mount in `app/main.py` already runs the JWT check, so adding `get_current_user_record` as the route-level dep just adds the role lookup on top.
+  - Two tiny helpers — `_visible_fund_ids(user)` and `_visible_investor_ids(user)` — return SQLAlchemy `select(...)` subqueries (or `None` for admin) shaped exactly like `FundRepository.list_for_user` / `InvestorRepository.list_for_user` so the dashboard's RBAC scope mirrors the rest of the API. Two more — `_scope_by_fund` / `_scope_by_investor` — apply those subqueries via `.in_(...)` when non-`None`. Admin gets `None` and skips the filter, so global aggregates fall out naturally.
+  - For `commitments_total_amount` we deliberately scope fund_manager by `Commitment.fund_id IN visible_fund_ids` (matches `CommitmentRepository.list`), and LP by `Commitment.investor_id IN visible_investor_ids` — same dual-axis as the repository so a fund_manager sees commitments to investors from outside their org as long as the fund is theirs, while an LP sees only their own investors' commitments.
+  - Early-return `_empty_response()` is now scoped to `fund_manager` with `organization_id IS NULL` only. Admin without an org is fine (sees everything), and LP without an org just gets the LP path which returns 0 when they have no contacts.
+  - The `fund_rows` and `upcoming_capital_calls` queries had to be restructured: the prior code applied `.order_by().limit(5)` first, but `Query.filter` after `LIMIT/OFFSET` raises `InvalidRequestError` in SQLAlchemy. Filter is now applied before `order_by/limit` via the helper.
+  - Tests cover all three roles: admin sees aggregates across two orgs (`test_admin_sees_aggregates_across_all_organizations`), LP sees only their commitment/investor/fund/capital-call (`test_lp_sees_only_their_commitments_and_investors`), and the existing fund-manager test continues to pass unchanged (the route returns the same shape; only the scoping logic moved).
+  - `make openapi` produced no diff (response model unchanged), `make lint` clean, full suite (47 tests) green.
 
 - [ ] Sync OpenAPI client and run gates:
   - Run `make openapi`, `make test`, `make lint` and resolve issues

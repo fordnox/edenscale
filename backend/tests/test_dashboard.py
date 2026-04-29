@@ -11,8 +11,8 @@ from app.core.database import Base, SessionLocal, engine
 from app.main import app
 from app.models import (CapitalCall, CapitalCallStatus, Commitment,
                         CommitmentStatus, Distribution, DistributionStatus,
-                        Fund, FundStatus, Investor, Organization,
-                        OrganizationType, User, UserRole)
+                        Fund, FundStatus, Investor, InvestorContact,
+                        Organization, OrganizationType, User, UserRole)
 
 
 @pytest.fixture(autouse=True)
@@ -40,16 +40,21 @@ def override_user():
     app.dependency_overrides.clear()
 
 
-def _create_org_user(subject_id: str = "hanko-1") -> tuple[int, int]:
+def _create_org_user(
+    subject_id: str = "hanko-1",
+    role: UserRole = UserRole.fund_manager,
+    *,
+    org_name: str = "Eden Capital",
+) -> tuple[int, int]:
     """Insert one Organization + linked User and return (org_id, user_id)."""
     db = SessionLocal()
     try:
-        org = Organization(name="Eden Capital", type=OrganizationType.fund_manager_firm)
+        org = Organization(name=org_name, type=OrganizationType.fund_manager_firm)
         db.add(org)
         db.flush()
         user = User(
             organization_id=org.id,
-            role=UserRole.fund_manager,
+            role=role,
             first_name="Margot",
             last_name="Lane",
             email=f"{subject_id}@example.com",
@@ -58,6 +63,42 @@ def _create_org_user(subject_id: str = "hanko-1") -> tuple[int, int]:
         db.add(user)
         db.commit()
         return org.id, user.id
+    finally:
+        db.close()
+
+
+def _create_admin_user(subject_id: str) -> int:
+    db = SessionLocal()
+    try:
+        user = User(
+            organization_id=None,
+            role=UserRole.admin,
+            first_name="Root",
+            last_name="Admin",
+            email=f"{subject_id}@example.com",
+            hanko_subject_id=subject_id,
+        )
+        db.add(user)
+        db.commit()
+        return user.id
+    finally:
+        db.close()
+
+
+def _create_lp_user(subject_id: str) -> int:
+    db = SessionLocal()
+    try:
+        user = User(
+            organization_id=None,
+            role=UserRole.lp,
+            first_name="Lp",
+            last_name="Holder",
+            email=f"{subject_id}@example.com",
+            hanko_subject_id=subject_id,
+        )
+        db.add(user)
+        db.commit()
+        return user.id
     finally:
         db.close()
 
@@ -223,3 +264,156 @@ class TestDashboardOverview:
         assert upcoming["title"] == "Call 1"
         assert upcoming["fund_name"] == "Eden Growth I"
         assert upcoming["status"] == "scheduled"
+
+    def test_admin_sees_aggregates_across_all_organizations(
+        self, client, override_user
+    ):
+        org_a, _ = _create_org_user("hanko-mgr-a", org_name="Org A")
+        org_b, _ = _create_org_user("hanko-mgr-b", org_name="Org B")
+        _create_admin_user("hanko-admin")
+
+        db = SessionLocal()
+        try:
+            fund_a = Fund(
+                organization_id=org_a,
+                name="Fund A",
+                currency_code="USD",
+                status=FundStatus.active,
+            )
+            fund_b = Fund(
+                organization_id=org_b,
+                name="Fund B",
+                currency_code="USD",
+                status=FundStatus.active,
+            )
+            db.add_all([fund_a, fund_b])
+            db.flush()
+
+            investor_a = Investor(organization_id=org_a, name="Investor A")
+            investor_b = Investor(organization_id=org_b, name="Investor B")
+            db.add_all([investor_a, investor_b])
+            db.flush()
+
+            db.add_all(
+                [
+                    Commitment(
+                        fund_id=fund_a.id,
+                        investor_id=investor_a.id,
+                        committed_amount=Decimal("400000.00"),
+                        commitment_date=date(2024, 1, 1),
+                        status=CommitmentStatus.approved,
+                    ),
+                    Commitment(
+                        fund_id=fund_b.id,
+                        investor_id=investor_b.id,
+                        committed_amount=Decimal("600000.00"),
+                        commitment_date=date(2024, 2, 1),
+                        status=CommitmentStatus.approved,
+                    ),
+                ]
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        override_user("hanko-admin")
+        response = client.get("/dashboard/overview")
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["funds_active"] == 2
+        assert data["investors_total"] == 2
+        assert Decimal(data["commitments_total_amount"]) == Decimal("1000000.00")
+        assert {f["name"] for f in data["recent_funds"]} == {"Fund A", "Fund B"}
+
+    def test_lp_sees_only_their_commitments_and_investors(self, client, override_user):
+        org_id, _ = _create_org_user("hanko-mgr")
+        lp_user_id = _create_lp_user("hanko-lp")
+
+        db = SessionLocal()
+        try:
+            visible_fund = Fund(
+                organization_id=org_id,
+                name="Visible Fund",
+                currency_code="USD",
+                status=FundStatus.active,
+            )
+            hidden_fund = Fund(
+                organization_id=org_id,
+                name="Hidden Fund",
+                currency_code="USD",
+                status=FundStatus.active,
+            )
+            db.add_all([visible_fund, hidden_fund])
+            db.flush()
+
+            visible_investor = Investor(organization_id=org_id, name="LP Investor")
+            other_investor = Investor(organization_id=org_id, name="Other Investor")
+            db.add_all([visible_investor, other_investor])
+            db.flush()
+
+            db.add(
+                InvestorContact(
+                    investor_id=visible_investor.id,
+                    user_id=lp_user_id,
+                    first_name="Lp",
+                    last_name="Contact",
+                )
+            )
+
+            db.add_all(
+                [
+                    Commitment(
+                        fund_id=visible_fund.id,
+                        investor_id=visible_investor.id,
+                        committed_amount=Decimal("250000.00"),
+                        commitment_date=date(2024, 1, 1),
+                        status=CommitmentStatus.approved,
+                    ),
+                    Commitment(
+                        fund_id=hidden_fund.id,
+                        investor_id=other_investor.id,
+                        committed_amount=Decimal("999999.00"),
+                        commitment_date=date(2024, 2, 1),
+                        status=CommitmentStatus.approved,
+                    ),
+                ]
+            )
+
+            db.add_all(
+                [
+                    CapitalCall(
+                        fund_id=visible_fund.id,
+                        title="Visible call",
+                        due_date=date(2026, 6, 1),
+                        amount=Decimal("50000.00"),
+                        status=CapitalCallStatus.scheduled,
+                    ),
+                    CapitalCall(
+                        fund_id=hidden_fund.id,
+                        title="Hidden call",
+                        due_date=date(2026, 5, 1),
+                        amount=Decimal("75000.00"),
+                        status=CapitalCallStatus.scheduled,
+                    ),
+                ]
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        override_user("hanko-lp")
+        response = client.get("/dashboard/overview")
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["funds_active"] == 1
+        assert data["investors_total"] == 1
+        assert Decimal(data["commitments_total_amount"]) == Decimal("250000.00")
+        assert data["capital_calls_outstanding"] == 1
+
+        fund_names = {f["name"] for f in data["recent_funds"]}
+        assert fund_names == {"Visible Fund"}
+
+        upcoming_titles = {c["title"] for c in data["upcoming_capital_calls"]}
+        assert upcoming_titles == {"Visible call"}
