@@ -20,7 +20,7 @@ async def list_users(
 
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
-    user_id: str,
+    user_id: int,
     db: Session = Depends(get_db),
 ):
     repo = UserRepository(db)
@@ -41,7 +41,7 @@ async def create_user(
 
 @router.put("/{user_id}", response_model=UserResponse)
 async def update_user(
-    user_id: str,
+    user_id: int,
     data: UserUpdate,
     db: Session = Depends(get_db),
 ):
@@ -54,7 +54,7 @@ async def update_user(
 
 @router.delete("/{user_id}", status_code=204)
 async def delete_user(
-    user_id: str,
+    user_id: int,
     db: Session = Depends(get_db),
 ):
     repo = UserRepository(db)

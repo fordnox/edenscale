@@ -11,7 +11,7 @@ class UserRepository:
     def get_all(self, skip: int = 0, limit: int = 100) -> list[User]:
         return self.db.query(User).offset(skip).limit(limit).all()
 
-    def get_by_id(self, user_id: str) -> User | None:
+    def get_by_id(self, user_id: int) -> User | None:
         return self.db.query(User).filter(User.id == user_id).first()
 
     def create(self, data: UserCreate) -> User:
@@ -21,7 +21,7 @@ class UserRepository:
         self.db.refresh(user)
         return user
 
-    def update(self, user_id: str, data: UserUpdate) -> User | None:
+    def update(self, user_id: int, data: UserUpdate) -> User | None:
         user = self.get_by_id(user_id)
         if not user:
             return None
@@ -31,7 +31,7 @@ class UserRepository:
         self.db.refresh(user)
         return user
 
-    def delete(self, user_id: str) -> bool:
+    def delete(self, user_id: int) -> bool:
         user = self.get_by_id(user_id)
         if not user:
             return False
