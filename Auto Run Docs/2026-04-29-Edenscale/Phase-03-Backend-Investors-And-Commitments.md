@@ -65,9 +65,15 @@ This phase builds the LP side of the data model: investors (legal entities), inv
   - DB-level: the `UniqueConstraint("fund_id", "investor_id", name="uq_commitment_fund_investor")` is already present in `app/alembic/versions/20260429_2310_d496f70bae71_initial_schema_from_dbml.py:218`, so no follow-up migration is required.
   - `make openapi` regenerated `backend/openapi.json` and `frontend/src/lib/schema.d.ts` (the schema diff also picked up Phase 03 commitments/contacts routes that hadn't been re-synced after their original commit).
 
-- [ ] Add integration tests:
+- [x] Add integration tests:
   - `backend/tests/test_investors_api.py` — fund_manager creates an investor + 2 contacts, primary flag flips correctly when reassigned, delete with commitments returns 409
   - `backend/tests/test_commitments_api.py` — fund_manager creates a commitment, duplicate `(fund_id, investor_id)` returns 409, status transitions validated, LP can read their own commitments via `GET /investors/{id}/commitments`
+
+  Notes from implementation:
+  - Both files mirror the `tests/test_funds_api.py` shape: `TestClient(app)` with `app.dependency_overrides[get_current_user]` swapping in a stub payload, sibling-DB metadata create/drop per test, and small `_seed_*` helpers that open and close their own `SessionLocal` so a row's id is detached cleanly before the test resumes.
+  - `test_investors_api.py` covers create-in-own-org with `organization_id` override behavior, LP can't create, two-contact create with primary toggling, `PATCH` reassigning primary clears the old one, `DELETE` with commitments returns 409 vs. clean delete returns 204, and LP-visibility filter via `InvestorContact.user_id`.
+  - `test_commitments_api.py` covers fund_manager create with nested fund/investor summaries in the response, duplicate-pair 409 (pre-flight check path), Pydantic schema rejection of `called_amount > committed_amount` (422), pending→approved and approved→cancelled transitions, both terminal states (declined, cancelled) blocking further transitions with 409, LP visibility on both `/commitments` and the nested `/investors/{id}/commitments`, and the nested `/funds/{id}/commitments` listing for fund managers.
+  - Total 18 new tests, all 43 across the suite green; `make lint` clean. No source code changes — tests only.
 
 - [ ] Wire the new totals into the Dashboard overview:
   - Update `backend/app/routers/dashboard.py` and the `/dashboard/overview` aggregates so `investors_total` and `commitments_total_amount` are sourced from the new tables and respect the caller's RBAC scope
