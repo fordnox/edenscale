@@ -4,6 +4,11 @@ from app.schemas.dashboard import (
     FundSummary,
 )
 from app.schemas.message import Message
+from app.schemas.organization import (
+    OrganizationCreate,
+    OrganizationRead,
+    OrganizationUpdate,
+)
 from app.schemas.user import UserCreate, UserResponse, UserUpdate
 
 __all__ = [
@@ -11,6 +16,9 @@ __all__ = [
     "DashboardOverviewResponse",
     "FundSummary",
     "Message",
+    "OrganizationCreate",
+    "OrganizationRead",
+    "OrganizationUpdate",
     "UserCreate",
     "UserResponse",
     "UserUpdate",

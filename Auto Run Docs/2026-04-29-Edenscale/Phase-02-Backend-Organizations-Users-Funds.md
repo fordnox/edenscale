@@ -28,11 +28,12 @@ This phase delivers the first slice of real CRUD for the platform: organizations
   - Add unit tests in `backend/tests/test_rbac.py` covering: unknown subject auto-provisioning, role-allowed pass-through, role-denied 403
   - **Notes:** Implemented `get_current_user_record` to raise 401 (not autoprovision) when the JWT lacks a `sub` claim — without `hanko_subject_id` the unique constraint would force a NULL collision later. New users default to `role=UserRole.lp` per spec; claims pulled defensively via `payload.get(...)`. Six unit tests in `backend/tests/test_rbac.py` cover provisioning (with and without claims), idempotent return for an existing user (claims do NOT overwrite stored values), missing-subject 401, and role allow/deny on the `require_roles` factory.
 
-- [ ] Implement the Organizations slice end-to-end:
+- [x] Implement the Organizations slice end-to-end:
   - `backend/app/schemas/organization.py` — `OrganizationCreate`, `OrganizationUpdate`, `OrganizationRead` with all dbml fields
   - `backend/app/repositories/organization_repository.py` — `list`, `get`, `create`, `update`, `soft_delete` (set `is_active=False`)
   - `backend/app/routers/organizations.py` — `GET /organizations`, `GET /organizations/{id}`, `POST /organizations` (admin or fund_manager only), `PATCH /organizations/{id}`, `DELETE /organizations/{id}` (admin only)
   - Mount the router in `backend/app/main.py` under `/organizations` with `Depends(get_current_user)` on `include_router`
+  - **Notes:** All five fields from `OrganizationUpdate` are optional via `model_dump(exclude_unset=True)` so PATCH stays sparse. `list()` defaults to active rows only with an `include_inactive=true` query knob for admins. `DELETE` returns the soft-deleted row (`is_active=False`) using `OrganizationRead` so the client can confirm — no body-less 204 because the row isn't actually gone. Role gates via `require_roles(...)` from `app/core/rbac.py`; admin-only on DELETE, admin+fund_manager on POST/PATCH, all authenticated users (already gated by `Depends(get_current_user)` on `include_router`) on GETs. Skipped omitting tests here — the task doc has a dedicated `test_organizations_api.py` checkbox under "Add focused integration tests". Skipped the OpenAPI regen for the same reason ("Sync the OpenAPI client" is its own task). `make lint` / `make test` (10/10) green.
 
 - [ ] Implement the Users slice (extending the existing module):
   - Extend `backend/app/schemas/user.py` with `UserRead`, `UserCreate`, `UserUpdate`, `UserRoleUpdate` covering all dbml columns plus `hanko_subject_id`

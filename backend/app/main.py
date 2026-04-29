@@ -4,7 +4,7 @@ from starlette.responses import Response
 
 from app.core.auth import get_current_user
 from app.core.config import settings
-from app.routers import dashboard, users
+from app.routers import dashboard, organizations, users
 
 app = FastAPI(
     title=settings.APP_DOMAIN,
@@ -47,6 +47,12 @@ app.include_router(
     users.router,
     prefix="/users",
     tags=["users"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    organizations.router,
+    prefix="/organizations",
+    tags=["organizations"],
     dependencies=[Depends(get_current_user)],
 )
 
