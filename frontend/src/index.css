@@ -1,115 +1,271 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* ============================================================
+   EdenScale webfonts — self-hosted from /public/fonts
+   ============================================================ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/CormorantGaramond-400.woff2") format("woff2");
 }
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/CormorantGaramond-400Italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/CormorantGaramond-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/CormorantGaramond-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/InterTight-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/InterTight-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/InterTight-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/InterTight-700.woff2") format("woff2");
+}
+
+/* ============================================================
+   EdenScale tokens — exposed both as CSS vars and Tailwind theme
+   ============================================================ */
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.714);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  /* Brand: Conifer */
+  --conifer-50: #f1f4f1;
+  --conifer-100: #dde5de;
+  --conifer-200: #b8c7bb;
+  --conifer-300: #8aa290;
+  --conifer-400: #5c7c66;
+  --conifer-500: #3a5c46;
+  --conifer-600: #2a4736;
+  --conifer-700: #1f3d2e;
+  --conifer-800: #16291f;
+  --conifer-900: #0e1b14;
+
+  /* Accent: Aged Brass */
+  --brass-50: #faf4ea;
+  --brass-100: #f2e5cb;
+  --brass-300: #d6b785;
+  --brass-500: #b8915c;
+  --brass-700: #8a6a3f;
+  --brass-900: #4d3a22;
+
+  /* Neutrals: Parchment & Ink */
+  --parchment-50: #fbf9f4;
+  --parchment-100: #f5f1e8;
+  --parchment-200: #ede7d8;
+  --parchment-300: #dfd7c3;
+  --ink-300: #b8b5ac;
+  --ink-500: #6f6e68;
+  --ink-700: #3a3a36;
+  --ink-900: #1a1a18;
+
+  /* Semantic status (muted) */
+  --status-positive: #4a7a4f;
+  --status-negative: #9a4a3d;
+  --status-info: #4a6a8a;
+  --status-warning: #b8915c;
+
+  /* Surfaces */
+  --bg-page: var(--parchment-50);
+  --bg-surface: #ffffff;
+  --bg-raised: var(--parchment-100);
+  --bg-sunken: var(--parchment-200);
+  --bg-inverse: var(--conifer-700);
+  --bg-overlay: rgba(14, 27, 20, 0.55);
+
+  /* Foreground */
+  --fg-primary: var(--ink-900);
+  --fg-secondary: var(--ink-700);
+  --fg-tertiary: var(--ink-500);
+  --fg-muted: var(--ink-300);
+  --fg-inverse: var(--parchment-50);
+  --fg-brand: var(--conifer-700);
+  --fg-accent: var(--brass-700);
+
+  /* Borders */
+  --border-hairline: rgba(26, 26, 24, 0.1);
+  --border-default: rgba(26, 26, 24, 0.18);
+  --border-strong: rgba(26, 26, 24, 0.32);
+  --border-inverse: rgba(251, 249, 244, 0.18);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+@theme {
+  /* Fonts */
+  --font-sans: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Helvetica, Arial, sans-serif;
+  --font-display: "Cormorant Garamond", "Times New Roman", Times, serif;
+  --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Consolas, monospace;
+
+  /* Brand */
+  --color-conifer-50: #f1f4f1;
+  --color-conifer-100: #dde5de;
+  --color-conifer-200: #b8c7bb;
+  --color-conifer-300: #8aa290;
+  --color-conifer-400: #5c7c66;
+  --color-conifer-500: #3a5c46;
+  --color-conifer-600: #2a4736;
+  --color-conifer-700: #1f3d2e;
+  --color-conifer-800: #16291f;
+  --color-conifer-900: #0e1b14;
+
+  --color-brass-50: #faf4ea;
+  --color-brass-100: #f2e5cb;
+  --color-brass-300: #d6b785;
+  --color-brass-500: #b8915c;
+  --color-brass-700: #8a6a3f;
+  --color-brass-900: #4d3a22;
+
+  --color-parchment-50: #fbf9f4;
+  --color-parchment-100: #f5f1e8;
+  --color-parchment-200: #ede7d8;
+  --color-parchment-300: #dfd7c3;
+
+  --color-ink-300: #b8b5ac;
+  --color-ink-500: #6f6e68;
+  --color-ink-700: #3a3a36;
+  --color-ink-900: #1a1a18;
+
+  --color-status-positive: #4a7a4f;
+  --color-status-negative: #9a4a3d;
+  --color-status-info: #4a6a8a;
+  --color-status-warning: #b8915c;
+
+  /* Page-level semantic */
+  --color-page: #fbf9f4;
+  --color-surface: #ffffff;
+  --color-raised: #f5f1e8;
+  --color-sunken: #ede7d8;
+
+  /* Radii — square is the default */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-pill: 999px;
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-hanko-auth,
-hanko-profile {
-  --color: var(--foreground);
-  --color-shade-1: var(--muted-foreground);
-  --brand-color: var(--primary);
-  --brand-color-shade-1: var(--primary-foreground);
-  --brand-contrast-color: var(--primary-foreground);
-  --background-color: var(--card);
-  --input-bg-color: var(--background);
-  --border-color: var(--border);
-  --border-radius: var(--radius);
-  --font-family: inherit;
-  --font-size: 0.875rem;
-  --item-height: 2.5rem;
-}
+/* ============================================================
+   Base / page defaults
+   ============================================================ */
 
 @layer base {
-  * {
-    @apply border-border;
+  html {
+    background: var(--bg-page);
+    color: var(--fg-primary);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   body {
-    @apply bg-background text-foreground;
+    background: var(--bg-page);
+    color: var(--fg-primary);
+    text-wrap: pretty;
+  }
+  ::selection {
+    background: var(--conifer-700);
+    color: var(--parchment-50);
+  }
+  :focus-visible {
+    outline: 2px solid var(--conifer-600);
+    outline-offset: 2px;
+  }
+
+  /* Tabular figures by default in tables — numbers should align */
+  table {
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+}
+
+/* ============================================================
+   EdenScale semantic typography classes
+   ============================================================ */
+
+@layer components {
+  .es-display {
+    font-family: var(--font-display);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    color: var(--fg-primary);
+    text-wrap: balance;
+  }
+  .es-eyebrow {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--brass-700);
+    line-height: 1;
+  }
+  .es-eyebrow-inverse {
+    color: var(--brass-300);
+  }
+  .es-quote {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.3;
+    color: var(--fg-primary);
+  }
+  .es-numeric {
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .es-numeric-display {
+    font-family: var(--font-display);
+    font-feature-settings: "onum" 1;
+    font-variant-numeric: oldstyle-nums;
+  }
+  .es-rule {
+    border: 0;
+    border-top: 1px solid var(--border-hairline);
+  }
+  .es-rule-strong {
+    border: 0;
+    border-top: 1px solid var(--border-default);
   }
 }
