@@ -327,6 +327,93 @@ export interface paths {
         patch: operations["update_investor_contact_investors__investor_id__contacts__contact_id__patch"];
         trace?: never;
     };
+    "/commitments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Commitments */
+        get: operations["list_commitments_commitments_get"];
+        put?: never;
+        /** Create Commitment */
+        post: operations["create_commitment_commitments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/commitments/{commitment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Commitment */
+        get: operations["get_commitment_commitments__commitment_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Commitment */
+        patch: operations["update_commitment_commitments__commitment_id__patch"];
+        trace?: never;
+    };
+    "/commitments/{commitment_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Update Commitment Status */
+        post: operations["update_commitment_status_commitments__commitment_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/funds/{fund_id}/commitments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Commitments For Fund */
+        get: operations["list_commitments_for_fund_funds__fund_id__commitments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investors/{investor_id}/commitments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Commitments For Investor */
+        get: operations["list_commitments_for_investor_investors__investor_id__commitments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -371,6 +458,112 @@ export interface components {
              */
             due_date: string;
             status: components["schemas"]["CapitalCallStatus"];
+        };
+        /** CommitmentCreate */
+        CommitmentCreate: {
+            /** Fund Id */
+            fund_id: number;
+            /** Investor Id */
+            investor_id: number;
+            /** Committed Amount */
+            committed_amount: number | string;
+            /**
+             * Called Amount
+             * @default 0
+             */
+            called_amount: number | string;
+            /**
+             * Distributed Amount
+             * @default 0
+             */
+            distributed_amount: number | string;
+            /**
+             * Commitment Date
+             * Format: date
+             */
+            commitment_date: string;
+            /** @default pending */
+            status: components["schemas"]["CommitmentStatus"];
+            /** Share Class */
+            share_class?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** CommitmentFundSummary */
+        CommitmentFundSummary: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Currency Code */
+            currency_code: string;
+            status: components["schemas"]["FundStatus"];
+            /** Vintage Year */
+            vintage_year?: number | null;
+        };
+        /** CommitmentInvestorSummary */
+        CommitmentInvestorSummary: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Investor Code */
+            investor_code?: string | null;
+        };
+        /** CommitmentRead */
+        CommitmentRead: {
+            /** Id */
+            id: number;
+            /** Fund Id */
+            fund_id: number;
+            /** Investor Id */
+            investor_id: number;
+            /** Committed Amount */
+            committed_amount: string;
+            /** Called Amount */
+            called_amount: string;
+            /** Distributed Amount */
+            distributed_amount: string;
+            /**
+             * Commitment Date
+             * Format: date
+             */
+            commitment_date: string;
+            status: components["schemas"]["CommitmentStatus"];
+            /** Share Class */
+            share_class: string | null;
+            /** Notes */
+            notes: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            fund: components["schemas"]["CommitmentFundSummary"];
+            investor: components["schemas"]["CommitmentInvestorSummary"];
+        };
+        /**
+         * CommitmentStatus
+         * @enum {string}
+         */
+        CommitmentStatus: "pending" | "approved" | "declined" | "cancelled";
+        /** CommitmentStatusUpdate */
+        CommitmentStatusUpdate: {
+            status: components["schemas"]["CommitmentStatus"];
+        };
+        /** CommitmentUpdate */
+        CommitmentUpdate: {
+            /** Committed Amount */
+            committed_amount?: number | string | null;
+            /** Called Amount */
+            called_amount?: number | string | null;
+            /** Distributed Amount */
+            distributed_amount?: number | string | null;
+            /** Commitment Date */
+            commitment_date?: string | null;
+            /** Share Class */
+            share_class?: string | null;
+            /** Notes */
+            notes?: string | null;
         };
         /** DashboardOverviewResponse */
         DashboardOverviewResponse: {
@@ -2016,6 +2209,242 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvestorContactRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_commitments_commitments_get: {
+        parameters: {
+            query?: {
+                fund_id?: number | null;
+                investor_id?: number | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommitmentRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_commitment_commitments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommitmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_commitment_commitments__commitment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commitment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommitmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_commitment_commitments__commitment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commitment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitmentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommitmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_commitment_status_commitments__commitment_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commitment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitmentStatusUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommitmentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_commitments_for_fund_funds__fund_id__commitments_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                fund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommitmentRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_commitments_for_investor_investors__investor_id__commitments_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                investor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommitmentRead"][];
                 };
             };
             /** @description Validation Error */

@@ -55,9 +55,15 @@ This phase builds the LP side of the data model: investors (legal entities), inv
   - `recompute_totals` sums `amount_due` from capital_call_items / distribution_items (Phase 04 will wire it up when items get created/updated).
   - Nested convenience routes use two extra `APIRouter` instances (`fund_commitments_router`, `investor_commitments_router`) mounted under `/funds` and `/investors` in `app/main.py` — same pattern as `fund_team_members.router` and `investor_contacts.router`. They reuse `CommitmentRepository.list(...)` so RBAC rules apply identically.
 
-- [ ] Add validation at the schema and DB level:
+- [x] Add validation at the schema and DB level:
   - Pydantic validators on `committed_amount > 0`, `called_amount <= committed_amount`, `distributed_amount` not bounded by committed (distributions can exceed contributions in private funds — leave it unconstrained but document the choice in a `# Why:` comment)
   - DB-level: confirm the `UniqueConstraint("fund_id", "investor_id")` from the Phase 01 model is reflected in the migration — if not, add a follow-up Alembic migration
+
+  Notes from implementation:
+  - `CommitmentCreate` and `CommitmentUpdate` now share the same rules: `committed_amount > 0`, `called_amount >= 0`, `distributed_amount >= 0`, plus a `model_validator(mode="after")` enforcing `called_amount <= committed_amount` whenever both fields are present in the payload.
+  - For `CommitmentUpdate` the cross-field check only fires when both `committed_amount` and `called_amount` are supplied; partial updates that touch only one side are not validated against the persisted row at the schema layer (cross-row consistency is left to the repository if/when needed).
+  - DB-level: the `UniqueConstraint("fund_id", "investor_id", name="uq_commitment_fund_investor")` is already present in `app/alembic/versions/20260429_2310_d496f70bae71_initial_schema_from_dbml.py:218`, so no follow-up migration is required.
+  - `make openapi` regenerated `backend/openapi.json` and `frontend/src/lib/schema.d.ts` (the schema diff also picked up Phase 03 commitments/contacts routes that hadn't been re-synced after their original commit).
 
 - [ ] Add integration tests:
   - `backend/tests/test_investors_api.py` — fund_manager creates an investor + 2 contacts, primary flag flips correctly when reassigned, delete with commitments returns 409

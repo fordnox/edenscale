@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.enums import CommitmentStatus, FundStatus
 
@@ -39,6 +40,26 @@ class CommitmentCreate(BaseModel):
     share_class: str | None = Field(default=None, max_length=100)
     notes: str | None = None
 
+    @field_validator("committed_amount")
+    @classmethod
+    def _committed_amount_positive(cls, value: Decimal) -> Decimal:
+        if value <= Decimal("0"):
+            raise ValueError("committed_amount must be greater than 0")
+        return value
+
+    @field_validator("called_amount", "distributed_amount")
+    @classmethod
+    def _ledger_amount_non_negative(cls, value: Decimal) -> Decimal:
+        if value < Decimal("0"):
+            raise ValueError("amount must be greater than or equal to 0")
+        return value
+
+    @model_validator(mode="after")
+    def _called_within_committed(self) -> Self:
+        if self.called_amount > self.committed_amount:
+            raise ValueError("called_amount cannot exceed committed_amount")
+        return self
+
 
 class CommitmentUpdate(BaseModel):
     committed_amount: Decimal | None = None
@@ -47,6 +68,34 @@ class CommitmentUpdate(BaseModel):
     commitment_date: date | None = None
     share_class: str | None = Field(default=None, max_length=100)
     notes: str | None = None
+
+    @field_validator("committed_amount")
+    @classmethod
+    def _committed_amount_positive(cls, value: Decimal | None) -> Decimal | None:
+        if value is not None and value <= Decimal("0"):
+            raise ValueError("committed_amount must be greater than 0")
+        return value
+
+    @field_validator("called_amount", "distributed_amount")
+    @classmethod
+    def _ledger_amount_non_negative(cls, value: Decimal | None) -> Decimal | None:
+        if value is not None and value < Decimal("0"):
+            raise ValueError("amount must be greater than or equal to 0")
+        return value
+
+    @model_validator(mode="after")
+    def _called_within_committed(self) -> Self:
+        # Only enforce the cross-field rule when both values are part of the
+        # update payload; partial updates that touch only one side are
+        # validated against the existing row in the repository layer if
+        # tighter cross-row consistency becomes necessary.
+        if (
+            self.called_amount is not None
+            and self.committed_amount is not None
+            and self.called_amount > self.committed_amount
+        ):
+            raise ValueError("called_amount cannot exceed committed_amount")
+        return self
 
 
 class CommitmentStatusUpdate(BaseModel):
