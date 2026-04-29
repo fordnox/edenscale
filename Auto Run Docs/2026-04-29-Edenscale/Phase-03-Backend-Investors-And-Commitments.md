@@ -4,7 +4,16 @@ This phase builds the LP side of the data model: investors (legal entities), inv
 
 ## Tasks
 
-- [ ] Read the Phase 01 models for `Investor`, `InvestorContact`, and `Commitment` and the Phase 02 RBAC dependency, repository, and router patterns; reuse them rather than introducing a new style
+- [x] Read the Phase 01 models for `Investor`, `InvestorContact`, and `Commitment` and the Phase 02 RBAC dependency, repository, and router patterns; reuse them rather than introducing a new style
+
+  Notes from review (do not duplicate when implementing later subtasks):
+  - `Investor` (`app/models/investor.py`): `organization_id` FK + index, `investor_code` unique nullable, `name`, `investor_type`, `accredited`, `notes`. Relationships: `organization`, `contacts`, `commitments`, `documents`.
+  - `InvestorContact` (`app/models/investor_contact.py`): `investor_id` (NOT NULL, indexed), `user_id` (nullable, indexed) — the bridge to local `User` rows used for LP visibility checks; `is_primary` boolean (no DB-level uniqueness, must be enforced in code per the task).
+  - `Commitment` (`app/models/commitment.py`): already has `UniqueConstraint("fund_id", "investor_id", name="uq_commitment_fund_investor")` (Phase 01 migration should reflect this); `committed_amount`/`called_amount`/`distributed_amount` use `Numeric(18, 2)`; `status` is `CommitmentStatus` enum (`pending`/`approved`/`declined`/`cancelled`); relationships to `fund`, `investor`, `capital_call_items`, `distribution_items`.
+  - RBAC pattern (`app/core/rbac.py`): `get_current_user_record` returns local `User` (auto-provisioned with `role=lp`); `require_roles(*allowed)` is the dependency factory used by write endpoints. LP visibility for funds joins `Commitment` → `InvestorContact.user_id == user.id` — reuse this exact join shape for investors and commitments.
+  - Repository pattern (`app/repositories/fund_repository.py`): `_base_query()` returns `(Model, computed_aggregate)` tuples via subquery + outerjoin; `list_for_user(user, skip, limit)` branches on `user.role` (admin all → fund_manager org-scoped → lp investor-contact-scoped); `get`, `user_can_view`, `create`, `update`, soft-state operations (e.g., `archive`) are separate methods. Mirror this for investors (aggregate `total_committed` + `fund_count` via Commitment subquery) and commitments.
+  - Router pattern (`app/routers/funds.py`): keep handlers thin — instantiate repo, call method, raise 404/403, return dict shaped by a private `_to_read_dict` / `_to_list_item` helper (because the row is `(Model, Decimal)` and Pydantic's `from_attributes` cannot pull a tuple field). Reuse this dict-helper pattern for investors and commitments where a computed column is involved.
+  - Mounting: routers are included in `app/main.py` under their path prefix and gated by `Depends(get_current_user)` at the `include_router` level — do NOT re-add auth on individual routes.
 
 - [ ] Implement Investors:
   - `backend/app/schemas/investor.py` — `InvestorCreate`, `InvestorUpdate`, `InvestorRead`, `InvestorListItem` with `total_committed` and `fund_count` aggregate fields (computed at read time)
