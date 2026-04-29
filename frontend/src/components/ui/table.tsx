@@ -1,76 +1,40 @@
-'use client'
+import * as React from "react"
+import { cn } from "@/lib/utils"
 
-import * as React from 'react'
-
-import { cn } from '@/lib/utils'
-
-function Table({ className, ...props }: React.ComponentProps<'table'>) {
+export function DataTable({
+  className,
+  ...props
+}: React.TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div
-      data-slot="table-container"
-      className="relative w-full overflow-x-auto"
-    >
+    <div className="w-full overflow-x-auto">
       <table
-        data-slot="table"
-        className={cn('w-full caption-bottom text-sm', className)}
+        className={cn(
+          "w-full border-collapse font-sans es-numeric",
+          className,
+        )}
         {...props}
       />
     </div>
   )
 }
 
-function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
-  return (
-    <thead
-      data-slot="table-header"
-      className={cn('[&_tr]:border-b', className)}
-      {...props}
-    />
-  )
-}
-
-function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
-  return (
-    <tbody
-      data-slot="table-body"
-      className={cn('[&_tr:last-child]:border-0', className)}
-      {...props}
-    />
-  )
-}
-
-function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
-  return (
-    <tfoot
-      data-slot="table-footer"
-      className={cn(
-        'bg-muted/50 border-t font-medium [&>tr]:last:border-b-0',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-
-function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
-  return (
-    <tr
-      data-slot="table-row"
-      className={cn(
-        'hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-
-function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
+export function TH({
+  className,
+  align = "left",
+  ...props
+}: React.ThHTMLAttributes<HTMLTableCellElement> & {
+  align?: "left" | "right" | "center"
+}) {
   return (
     <th
-      data-slot="table-head"
       className={cn(
-        'text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+        "border-b border-[color:var(--border-default)]",
+        "px-4 py-4 first:pl-0 last:pr-0",
+        "font-sans text-[11px] font-semibold tracking-[0.08em] uppercase",
+        "text-ink-500 whitespace-nowrap",
+        align === "right" && "text-right",
+        align === "center" && "text-center",
+        align === "left" && "text-left",
         className,
       )}
       {...props}
@@ -78,39 +42,43 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
   )
 }
 
-function TableCell({ className, ...props }: React.ComponentProps<'td'>) {
-  return (
-    <td
-      data-slot="table-cell"
-      className={cn(
-        'p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-
-function TableCaption({
+export function TR({
   className,
   ...props
-}: React.ComponentProps<'caption'>) {
+}: React.HTMLAttributes<HTMLTableRowElement>) {
   return (
-    <caption
-      data-slot="table-caption"
-      className={cn('text-muted-foreground mt-4 text-sm', className)}
+    <tr
+      className={cn(
+        "border-b border-[color:var(--border-hairline)]",
+        "transition-colors duration-[140ms] hover:bg-parchment-100",
+        className,
+      )}
       {...props}
     />
   )
 }
 
-export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableCaption,
+export function TD({
+  className,
+  align = "left",
+  primary = false,
+  ...props
+}: React.TdHTMLAttributes<HTMLTableCellElement> & {
+  align?: "left" | "right" | "center"
+  primary?: boolean
+}) {
+  return (
+    <td
+      className={cn(
+        "px-4 py-5 first:pl-0 last:pr-0 align-middle",
+        primary
+          ? "text-ink-900 font-semibold text-[15px] tracking-[-0.01em]"
+          : "text-ink-700 text-[14px]",
+        align === "right" && "text-right",
+        align === "center" && "text-center",
+        className,
+      )}
+      {...props}
+    />
+  )
 }

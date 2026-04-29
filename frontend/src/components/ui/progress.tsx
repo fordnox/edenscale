@@ -1,31 +1,35 @@
-'use client'
+import { cn } from "@/lib/utils"
 
-import * as React from 'react'
-import * as ProgressPrimitive from '@radix-ui/react-progress'
-
-import { cn } from '@/lib/utils'
-
-function Progress({
-  className,
+export function ProgressBar({
   value,
-  ...props
-}: React.ComponentProps<typeof ProgressPrimitive.Root>) {
+  className,
+  tone = "brand",
+}: {
+  value: number
+  className?: string
+  tone?: "brand" | "brass" | "ink"
+}) {
+  const pct = Math.max(0, Math.min(1, value))
   return (
-    <ProgressPrimitive.Root
-      data-slot="progress"
+    <div
       className={cn(
-        'bg-primary/20 relative h-2 w-full overflow-hidden rounded-full',
+        "relative h-1 w-full overflow-hidden bg-parchment-200",
         className,
       )}
-      {...props}
+      role="progressbar"
+      aria-valuenow={Math.round(pct * 100)}
+      aria-valuemin={0}
+      aria-valuemax={100}
     >
-      <ProgressPrimitive.Indicator
-        data-slot="progress-indicator"
-        className="bg-primary h-full w-full flex-1 transition-all"
-        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+      <div
+        className={cn(
+          "absolute inset-y-0 left-0 transition-[width] duration-[220ms]",
+          tone === "brand" && "bg-conifer-700",
+          tone === "brass" && "bg-brass-500",
+          tone === "ink" && "bg-ink-700",
+        )}
+        style={{ width: `${pct * 100}%` }}
       />
-    </ProgressPrimitive.Root>
+    </div>
   )
 }
-
-export { Progress }

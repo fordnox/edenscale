@@ -1,46 +1,101 @@
-import * as React from 'react'
-import { Slot } from '@radix-ui/react-slot'
-import { cva, type VariantProps } from 'class-variance-authority'
+import * as React from "react"
+import { cn } from "@/lib/utils"
 
-import { cn } from '@/lib/utils'
+type Tone =
+  | "neutral"
+  | "active"
+  | "muted"
+  | "positive"
+  | "negative"
+  | "warning"
+  | "info"
+  | "draft"
 
-const badgeVariants = cva(
-  'inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden',
-  {
-    variants: {
-      variant: {
-        default:
-          'border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
-        secondary:
-          'border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90',
-        destructive:
-          'border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
-        outline:
-          'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-    },
-  },
-)
+const toneStyles: Record<Tone, string> = {
+  neutral:
+    "bg-parchment-200 text-ink-700 border-[color:var(--border-hairline)]",
+  active:
+    "bg-conifer-50 text-conifer-700 border-conifer-100",
+  muted:
+    "bg-parchment-100 text-ink-500 border-[color:var(--border-hairline)]",
+  positive:
+    "bg-conifer-50 text-[color:var(--status-positive)] border-conifer-100",
+  negative:
+    "bg-[#F7E7E3] text-[color:var(--status-negative)] border-[#EAD0CA]",
+  warning:
+    "bg-brass-50 text-brass-700 border-brass-100",
+  info:
+    "bg-[#E6ECF2] text-[color:var(--status-info)] border-[#D2DCE6]",
+  draft:
+    "bg-parchment-100 text-ink-500 border-[color:var(--border-hairline)]",
+}
 
-function Badge({
+export function Badge({
+  tone = "neutral",
   className,
-  variant,
-  asChild = false,
+  children,
   ...props
-}: React.ComponentProps<'span'> &
-  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot : 'span'
-
+}: React.HTMLAttributes<HTMLSpanElement> & { tone?: Tone }) {
   return (
-    <Comp
-      data-slot="badge"
-      className={cn(badgeVariants({ variant }), className)}
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5",
+        "font-sans text-[11px] font-medium tracking-[0.04em]",
+        toneStyles[tone],
+        className,
+      )}
       {...props}
-    />
+    >
+      <span
+        className={cn(
+          "inline-block size-1.5 rounded-full",
+          tone === "active" && "bg-conifer-600",
+          tone === "positive" && "bg-[color:var(--status-positive)]",
+          tone === "negative" && "bg-[color:var(--status-negative)]",
+          tone === "warning" && "bg-brass-500",
+          tone === "info" && "bg-[color:var(--status-info)]",
+          (tone === "muted" || tone === "draft" || tone === "neutral") &&
+            "bg-ink-300",
+        )}
+      />
+      {children}
+    </span>
   )
 }
 
-export { Badge, badgeVariants }
+const statusToTone: Record<string, Tone> = {
+  // fund
+  active: "active",
+  draft: "draft",
+  closed: "muted",
+  liquidating: "warning",
+  archived: "muted",
+  // commitment
+  pending: "warning",
+  approved: "active",
+  declined: "negative",
+  cancelled: "muted",
+  // capital call
+  scheduled: "info",
+  sent: "info",
+  partially_paid: "warning",
+  paid: "positive",
+  overdue: "negative",
+  // task
+  open: "info",
+  in_progress: "warning",
+  done: "positive",
+}
+
+export function StatusBadge({
+  status,
+  ...props
+}: React.HTMLAttributes<HTMLSpanElement> & { status: string }) {
+  const tone = statusToTone[status] ?? "neutral"
+  const label = status.split("_").join(" ")
+  return (
+    <Badge tone={tone} {...props}>
+      {label.charAt(0).toUpperCase() + label.slice(1)}
+    </Badge>
+  )
+}
