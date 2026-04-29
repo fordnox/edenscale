@@ -3,6 +3,11 @@ from app.schemas.dashboard import (
     DashboardOverviewResponse,
     FundSummary,
 )
+from app.schemas.fund_group import (
+    FundGroupCreate,
+    FundGroupRead,
+    FundGroupUpdate,
+)
 from app.schemas.message import Message
 from app.schemas.organization import (
     OrganizationCreate,
@@ -20,6 +25,9 @@ from app.schemas.user import (
 __all__ = [
     "CapitalCallSummary",
     "DashboardOverviewResponse",
+    "FundGroupCreate",
+    "FundGroupRead",
+    "FundGroupUpdate",
     "FundSummary",
     "Message",
     "OrganizationCreate",

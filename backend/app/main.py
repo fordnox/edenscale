@@ -4,7 +4,7 @@ from starlette.responses import Response
 
 from app.core.auth import get_current_user
 from app.core.config import settings
-from app.routers import dashboard, organizations, users
+from app.routers import dashboard, fund_groups, organizations, users
 
 app = FastAPI(
     title=settings.APP_DOMAIN,
@@ -53,6 +53,12 @@ app.include_router(
     organizations.router,
     prefix="/organizations",
     tags=["organizations"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    fund_groups.router,
+    prefix="/fund-groups",
+    tags=["fund-groups"],
     dependencies=[Depends(get_current_user)],
 )
 
