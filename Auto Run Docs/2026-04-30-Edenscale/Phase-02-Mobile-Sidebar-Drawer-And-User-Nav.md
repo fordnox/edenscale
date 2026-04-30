@@ -18,7 +18,7 @@ The sidebar (`frontend/src/components/layout/Sidebar.tsx`) is currently `hidden 
   - DropdownMenu `side="top" align="start"` so it opens upward and aligns with the bottom-left anchor
   - Ensure 44px minimum hit target on mobile
 
-- [ ] Add a hamburger trigger and rebuild `Topbar.tsx`:
+- [x] Add a hamburger trigger and rebuild `Topbar.tsx`:
   - Add a state in `frontend/src/layouts/AppShell.tsx` (or hoist to the Topbar+Sidebar layer) controlling the mobile sidebar `open` prop — pass it down to both `Topbar` (which renders the trigger) and `Sidebar` (which renders the sheet)
   - In `frontend/src/components/layout/Topbar.tsx`:
     - Remove the entire `Bell`/notifications `Link` block — notifications are reached via the sidebar's existing nav item
