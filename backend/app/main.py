@@ -2,9 +2,12 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
+from app.core import audit  # noqa: F401 — registers SQLAlchemy event listeners
 from app.core.auth import get_current_user
 from app.core.config import settings
+from app.middleware.audit_context import AuditContextMiddleware
 from app.routers import (
+    audit_logs,
     capital_calls,
     commitments,
     communications,
@@ -55,6 +58,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(AuditContextMiddleware)  # type: ignore[invalid-argument-type]
 
 app.include_router(
     dashboard.router, prefix="/dashboard", dependencies=[Depends(get_current_user)]
@@ -181,6 +186,12 @@ app.include_router(
     notifications.router,
     prefix="/notifications",
     tags=["notifications"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    audit_logs.router,
+    prefix="/audit-logs",
+    tags=["audit-logs"],
     dependencies=[Depends(get_current_user)],
 )
 

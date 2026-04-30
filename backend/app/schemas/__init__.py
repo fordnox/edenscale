@@ -1,3 +1,4 @@
+from app.schemas.audit_log import AuditLogRead
 from app.schemas.capital_call import (
     CapitalCallCreate,
     CapitalCallFundSummary,
@@ -88,6 +89,7 @@ from app.schemas.user import (
 )
 
 __all__ = [
+    "AuditLogRead",
     "CapitalCallCreate",
     "CapitalCallFundSummary",
     "CapitalCallItemBulkCreate",

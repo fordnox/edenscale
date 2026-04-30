@@ -977,6 +977,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Audit Logs */
+        get: operations["list_audit_logs_audit_logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -998,6 +1015,27 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AuditLogRead */
+        AuditLogRead: {
+            /** Id */
+            id: number;
+            /** User Id */
+            user_id: number | null;
+            /** Organization Id */
+            organization_id: number | null;
+            /** Action */
+            action: string;
+            /** Entity Type */
+            entity_type: string | null;
+            /** Entity Id */
+            entity_id: number | null;
+            /** Audit Metadata */
+            audit_metadata: Record<string, never> | null;
+            /** Ip Address */
+            ip_address: string | null;
+            /** Created At */
+            created_at: string | null;
+        };
         /** CapitalCallCreate */
         CapitalCallCreate: {
             /** Fund Id */
@@ -5019,6 +5057,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotificationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_audit_logs_audit_logs_get: {
+        parameters: {
+            query?: {
+                entity_type?: string | null;
+                entity_id?: number | null;
+                user_id?: number | null;
+                action?: string | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogRead"][];
                 };
             };
             /** @description Validation Error */

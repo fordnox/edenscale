@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.middleware.audit_context import set_audit_user
 from app.models.enums import UserRole
 from app.models.user import User
 
@@ -44,6 +45,7 @@ def get_current_user_record(
 
     user = db.query(User).filter(User.hanko_subject_id == subject_id).first()
     if user is not None:
+        set_audit_user(user.id)  # type: ignore[invalid-argument-type]
         return user
 
     user = User(
@@ -56,6 +58,7 @@ def get_current_user_record(
     db.add(user)
     db.commit()
     db.refresh(user)
+    set_audit_user(user.id)  # type: ignore[invalid-argument-type]
     return user
 
 
