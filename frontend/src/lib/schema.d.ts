@@ -752,6 +752,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/communications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Communications */
+        get: operations["list_communications_communications_get"];
+        put?: never;
+        /** Create Communication */
+        post: operations["create_communication_communications_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/communications/{communication_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Communication */
+        get: operations["get_communication_communications__communication_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Communication */
+        patch: operations["update_communication_communications__communication_id__patch"];
+        trace?: never;
+    };
+    "/communications/{communication_id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Communication */
+        post: operations["send_communication_communications__communication_id__send_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/communications/{communication_id}/recipients/{recipient_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Recipient Read */
+        post: operations["mark_recipient_read_communications__communication_id__recipients__recipient_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/funds/{fund_id}/communications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Communications For Fund */
+        get: operations["list_communications_for_fund_funds__fund_id__communications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -1021,6 +1108,90 @@ export interface components {
             share_class?: string | null;
             /** Notes */
             notes?: string | null;
+        };
+        /** CommunicationCreate */
+        CommunicationCreate: {
+            /** Fund Id */
+            fund_id?: number | null;
+            type: components["schemas"]["CommunicationType"];
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
+        };
+        /** CommunicationRead */
+        CommunicationRead: {
+            /** Id */
+            id: number;
+            /** Fund Id */
+            fund_id: number | null;
+            /** Sender User Id */
+            sender_user_id: number | null;
+            type: components["schemas"]["CommunicationType"];
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
+            /** Sent At */
+            sent_at: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            /** Recipients */
+            recipients: components["schemas"]["CommunicationRecipientRead"][];
+        };
+        /** CommunicationRecipientRead */
+        CommunicationRecipientRead: {
+            /** Id */
+            id: number;
+            /** Communication Id */
+            communication_id: number;
+            /** User Id */
+            user_id: number | null;
+            /** Investor Contact Id */
+            investor_contact_id: number | null;
+            /** Delivered At */
+            delivered_at: string | null;
+            /** Read At */
+            read_at: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /**
+         * CommunicationRecipientRef
+         * @description Optional override for who should receive a communication.
+         *
+         *     Either `user_id` or `investor_contact_id` must be set; recipients with both
+         *     populated are allowed and treated as a single row keyed on (user, contact).
+         */
+        CommunicationRecipientRef: {
+            /** User Id */
+            user_id?: number | null;
+            /** Investor Contact Id */
+            investor_contact_id?: number | null;
+        };
+        /** CommunicationSendRequest */
+        CommunicationSendRequest: {
+            /** Recipients */
+            recipients?: components["schemas"]["CommunicationRecipientRef"][];
+        };
+        /**
+         * CommunicationType
+         * @enum {string}
+         */
+        CommunicationType: "announcement" | "message" | "notification";
+        /** CommunicationUpdate */
+        CommunicationUpdate: {
+            /** Fund Id */
+            fund_id?: number | null;
+            type?: components["schemas"]["CommunicationType"] | null;
+            /** Subject */
+            subject?: string | null;
+            /** Body */
+            body?: string | null;
         };
         /** DashboardOverviewResponse */
         DashboardOverviewResponse: {
@@ -4070,6 +4241,241 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_communications_communications_get: {
+        parameters: {
+            query?: {
+                fund_id?: number | null;
+                type?: components["schemas"]["CommunicationType"] | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunicationRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_communication_communications_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunicationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunicationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_communication_communications__communication_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communication_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunicationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_communication_communications__communication_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communication_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunicationUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunicationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_communication_communications__communication_id__send_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communication_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CommunicationSendRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunicationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_recipient_read_communications__communication_id__recipients__recipient_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communication_id: number;
+                recipient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunicationRecipientRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_communications_for_fund_funds__fund_id__communications_get: {
+        parameters: {
+            query?: {
+                type?: components["schemas"]["CommunicationType"] | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                fund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunicationRead"][];
+                };
             };
             /** @description Validation Error */
             422: {

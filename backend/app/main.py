@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.routers import (
     capital_calls,
     commitments,
+    communications,
     dashboard,
     distributions,
     documents,
@@ -149,6 +150,18 @@ app.include_router(
 app.include_router(
     documents.dev_storage_router,
     tags=["dev-storage"],
+)
+app.include_router(
+    communications.router,
+    prefix="/communications",
+    tags=["communications"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    communications.fund_communications_router,
+    prefix="/funds",
+    tags=["communications"],
+    dependencies=[Depends(get_current_user)],
 )
 
 

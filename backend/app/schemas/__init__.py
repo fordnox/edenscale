@@ -16,6 +16,14 @@ from app.schemas.commitment import (
     CommitmentStatusUpdate,
     CommitmentUpdate,
 )
+from app.schemas.communication import (
+    CommunicationCreate,
+    CommunicationRead,
+    CommunicationRecipientRead,
+    CommunicationRecipientRef,
+    CommunicationSendRequest,
+    CommunicationUpdate,
+)
 from app.schemas.dashboard import (
     CapitalCallSummary,
     DashboardOverviewResponse,
@@ -86,6 +94,12 @@ __all__ = [
     "CommitmentRead",
     "CommitmentStatusUpdate",
     "CommitmentUpdate",
+    "CommunicationCreate",
+    "CommunicationRead",
+    "CommunicationRecipientRead",
+    "CommunicationRecipientRef",
+    "CommunicationSendRequest",
+    "CommunicationUpdate",
     "DashboardOverviewResponse",
     "DocumentCreate",
     "DocumentRead",
