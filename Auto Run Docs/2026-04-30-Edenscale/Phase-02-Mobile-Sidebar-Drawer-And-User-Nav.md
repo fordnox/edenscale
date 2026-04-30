@@ -40,8 +40,16 @@ The sidebar (`frontend/src/components/layout/Sidebar.tsx`) is currently `hidden 
   - Updated `drawer.tsx` overlay to `bg-[color:var(--bg-overlay)]` to match the Sheet overlay token (drawer.tsx is only consumed by Sidebar today).
   - `pnpm run lint` (tsc --noEmit) passes.
 
-- [ ] Verify mobile + desktop chrome end-to-end:
+- [x] Verify mobile + desktop chrome end-to-end:
   - With dev server running, on desktop confirm: sidebar visually identical, bottom-left profile is now a dropdown that opens upward with Profile / Sign out, Topbar has no bell and no profile dropdown
   - At ~390px width confirm: hamburger appears top-left of Topbar, taps open the sidebar as a sheet, taps a nav item navigates and auto-closes the sheet, drag/swipe-left dismisses the sheet, profile dropdown opens upward and is reachable from the bottom of the sheet
   - Run `cd frontend && pnpm run lint` and fix any unused-import / type errors introduced by the Topbar refactor
   - If the topbar becomes empty on desktop except for the ⌘K button, that's expected — Phase 03 fills it
+
+  Verification (2026-04-30):
+  - `pnpm run lint` (tsc --noEmit) passes with zero errors — no unused-import / type fallout from the Topbar refactor.
+  - Drove the live Vite dev server with Playwright at 1280×800 and 390×844 viewports (`Auto Run Docs/Working/verify_chrome.py`, `verify_mobile_usermenu.py`).
+  - Desktop confirmed: `aside` sidebar visible, hamburger hidden, ⌘K button visible, **0** bell links and **0** dropdown triggers in `<header>`, sidebar bottom user-menu trigger visible, dropdown opens upward (content top above trigger top) with `Profile` / `Sign out` items (no `Organization settings` because the unauthenticated dev fallback role isn't admin — gating works as designed).
+  - Mobile confirmed: desktop `<aside>` hidden, hamburger visible, ⌘K hidden, hamburger tap opens Vaul drawer with 9 nav items, tapping a nav link navigates (e.g. `/funds`) and auto-closes the drawer (route-change `useEffect`), bottom user-menu trigger inside the drawer opens upward with `Profile` / `Sign out`, swipe-left from the right edge of the drawer to off-screen dismisses it (Vaul gesture).
+  - 404 console errors observed during the run are from unauthenticated `/users/me` and `/dashboard/overview` calls (no Hanko session in headless context) — unrelated to chrome and matched by an existing toast.
+  - Screenshots captured under `Auto Run Docs/Working/`: `desktop_default.png`, `desktop_usermenu.png`, `mobile_default.png`, `mobile_drawer_open.png`, `mobile_drawer_usermenu.png`, `mobile_after_swipe.png`.
