@@ -47,6 +47,21 @@ def test_unknown_subject_is_auto_provisioned(db):
     assert user.last_name == "Lovelace"
 
 
+def test_auto_provision_extracts_address_from_hanko_email_object(db):
+    payload = {
+        "sub": "hanko-new-3",
+        "email": {
+            "address": "arturas@example.com",
+            "is_primary": True,
+            "is_verified": False,
+        },
+    }
+
+    user = get_current_user_record(payload=payload, db=db)
+
+    assert user.email == "arturas@example.com"
+
+
 def test_auto_provision_falls_back_to_blanks_when_claims_missing(db):
     payload = {"sub": "hanko-new-2"}
 

@@ -48,10 +48,16 @@ def get_current_user_record(
         set_audit_user(user.id)  # type: ignore[invalid-argument-type]
         return user
 
+    email_claim = payload.get("email")
+    if isinstance(email_claim, dict):
+        email_value = email_claim.get("address") or ""
+    else:
+        email_value = email_claim or ""
+
     user = User(
         hanko_subject_id=subject_id,
         role=UserRole.lp,
-        email=payload.get("email") or "",
+        email=email_value,
         first_name=payload.get("given_name") or "",
         last_name=payload.get("family_name") or "",
     )
