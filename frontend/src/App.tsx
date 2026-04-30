@@ -4,6 +4,7 @@ import AppShell from './layouts/AppShell'
 import DashboardPage from './pages/DashboardPage'
 import { ComingSoon } from './pages/ComingSoon'
 import FundsPage from './pages/FundsPage'
+import FundDetailPage from './pages/FundDetailPage'
 import UserProfilePage from './pages/UserProfilePage'
 import LoginPage from './pages/LoginPage'
 
@@ -14,6 +15,7 @@ function App() {
       <Route element={<AppShell />}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/funds" element={<FundsPage />} />
+        <Route path="/funds/:fundId" element={<FundDetailPage />} />
         <Route path="/investors" element={<ComingSoon page="Investors" />} />
         <Route path="/calls" element={<ComingSoon page="Capital Calls" />} />
         <Route path="/distributions" element={<ComingSoon page="Distributions" />} />
