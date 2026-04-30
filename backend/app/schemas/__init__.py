@@ -21,6 +21,13 @@ from app.schemas.dashboard import (
     DashboardOverviewResponse,
     FundSummary,
 )
+from app.schemas.document import (
+    DocumentCreate,
+    DocumentRead,
+    DocumentUpdate,
+    DocumentUploadInit,
+    DocumentUploadInitResponse,
+)
 from app.schemas.fund import (
     FundCreate,
     FundListItem,
@@ -80,6 +87,11 @@ __all__ = [
     "CommitmentStatusUpdate",
     "CommitmentUpdate",
     "DashboardOverviewResponse",
+    "DocumentCreate",
+    "DocumentRead",
+    "DocumentUpdate",
+    "DocumentUploadInit",
+    "DocumentUploadInitResponse",
     "FundCreate",
     "FundGroupCreate",
     "FundGroupRead",

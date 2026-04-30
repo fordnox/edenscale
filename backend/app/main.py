@@ -9,6 +9,7 @@ from app.routers import (
     commitments,
     dashboard,
     distributions,
+    documents,
     fund_groups,
     fund_team_members,
     funds,
@@ -138,6 +139,16 @@ app.include_router(
     prefix="/funds",
     tags=["distributions"],
     dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    documents.router,
+    prefix="/documents",
+    tags=["documents"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    documents.dev_storage_router,
+    tags=["dev-storage"],
 )
 
 

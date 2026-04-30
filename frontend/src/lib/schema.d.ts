@@ -673,6 +673,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documents/upload-init": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Init Document Upload */
+        post: operations["init_document_upload_documents_upload_init_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Documents */
+        get: operations["list_documents_documents_get"];
+        put?: never;
+        /** Create Document */
+        post: operations["create_document_documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Document */
+        get: operations["get_document_documents__document_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Document */
+        delete: operations["delete_document_documents__document_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Document */
+        patch: operations["update_document_documents__document_id__patch"];
+        trace?: never;
+    };
+    "/dev-storage/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dev Storage Download */
+        get: operations["dev_storage_download_dev_storage__key__get"];
+        /**
+         * Dev Storage Upload
+         * @description Accept raw bytes for a presigned key. Dev-only; protected by a header token.
+         */
+        put: operations["dev_storage_upload_dev_storage__key__put"];
+        /**
+         * Dev Storage Upload
+         * @description Accept raw bytes for a presigned key. Dev-only; protected by a header token.
+         */
+        post: operations["dev_storage_upload_dev_storage__key__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -1083,6 +1162,109 @@ export interface components {
             record_date?: string | null;
             /** Amount */
             amount?: number | string | null;
+        };
+        /** DocumentCreate */
+        DocumentCreate: {
+            /** Organization Id */
+            organization_id?: number | null;
+            /** Fund Id */
+            fund_id?: number | null;
+            /** Investor Id */
+            investor_id?: number | null;
+            document_type: components["schemas"]["DocumentType"];
+            /** Title */
+            title: string;
+            /** File Name */
+            file_name: string;
+            /** File Url */
+            file_url: string;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** File Size */
+            file_size?: number | null;
+            /**
+             * Is Confidential
+             * @default true
+             */
+            is_confidential: boolean;
+        };
+        /** DocumentRead */
+        DocumentRead: {
+            /** Id */
+            id: number;
+            /** Organization Id */
+            organization_id: number | null;
+            /** Fund Id */
+            fund_id: number | null;
+            /** Investor Id */
+            investor_id: number | null;
+            /** Uploaded By User Id */
+            uploaded_by_user_id: number | null;
+            document_type: components["schemas"]["DocumentType"];
+            /** Title */
+            title: string;
+            /** File Name */
+            file_name: string;
+            /** File Url */
+            file_url: string;
+            /** Download Url */
+            download_url?: string | null;
+            /** Mime Type */
+            mime_type: string | null;
+            /** File Size */
+            file_size: number | null;
+            /** Is Confidential */
+            is_confidential: boolean;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /**
+         * DocumentType
+         * @enum {string}
+         */
+        DocumentType: "legal" | "kyc_aml" | "financial" | "report" | "notice" | "other";
+        /** DocumentUpdate */
+        DocumentUpdate: {
+            /** Organization Id */
+            organization_id?: number | null;
+            /** Fund Id */
+            fund_id?: number | null;
+            /** Investor Id */
+            investor_id?: number | null;
+            document_type?: components["schemas"]["DocumentType"] | null;
+            /** Title */
+            title?: string | null;
+            /** File Name */
+            file_name?: string | null;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** File Size */
+            file_size?: number | null;
+            /** Is Confidential */
+            is_confidential?: boolean | null;
+        };
+        /** DocumentUploadInit */
+        DocumentUploadInit: {
+            /** File Name */
+            file_name: string;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** File Size */
+            file_size?: number | null;
+        };
+        /** DocumentUploadInitResponse */
+        DocumentUploadInitResponse: {
+            /** Upload Url */
+            upload_url: string;
+            /** File Url */
+            file_url: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
         };
         /** FundCreate */
         FundCreate: {
@@ -3602,6 +3784,292 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DistributionRead"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    init_document_upload_documents_upload_init_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentUploadInit"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentUploadInitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_documents_documents_get: {
+        parameters: {
+            query?: {
+                organization_id?: number | null;
+                fund_id?: number | null;
+                investor_id?: number | null;
+                document_type?: components["schemas"]["DocumentType"] | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_document_documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_document_documents__document_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_document_documents__document_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_document_documents__document_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dev_storage_download_dev_storage__key__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dev_storage_upload_dev_storage__key__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dev_storage_upload_dev_storage__key__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
