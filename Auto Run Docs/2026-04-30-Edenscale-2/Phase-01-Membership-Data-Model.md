@@ -25,9 +25,15 @@ This phase lays the data-model foundation for multi-org membership and global su
   - Add SQLAlchemy `relationship` back-references on both sides: `User.memberships` and `Organization.memberships`, both `back_populates="user"` / `back_populates="organization"` respectively
   - Register the new model so it gets imported on app startup (it must be imported by `app/__init__.py` or a model-aggregator so `Base.metadata` sees it — check how the other models are wired)
 
-- [ ] Add the Pydantic schemas for memberships:
+- [x] Add the Pydantic schemas for memberships:
   - Create `backend/app/schemas/user_organization_membership.py` with `MembershipBase` / `MembershipCreate` / `MembershipUpdate` / `MembershipRead` following the style of `schemas/user.py`. `MembershipRead` should include nested `organization: OrganizationRead` and `role: UserRole` so the frontend can render the org switcher off a single endpoint
   - Update `schemas/user.py` `UserRead` to include an optional `memberships: list[MembershipRead] = []` field — but DO NOT remove `organization_id` yet (the migration to drop it lands later; keep both readable for now). Use a forward-ref / late import to avoid circular imports.
+
+  **Implementation notes:**
+  - Created `backend/app/schemas/user_organization_membership.py` with `MembershipBase`, `MembershipCreate`, `MembershipUpdate`, `MembershipRead`. `MembershipRead` exposes `id`, `user_id`, `organization_id`, `role: UserRole`, nested `organization: OrganizationRead`, `created_at`, `updated_at` with `ConfigDict(from_attributes=True)`.
+  - `MembershipUpdate` exposes only `role` (matches the repository's `update_role` operation in the next task; create/delete aren't field updates).
+  - Updated `UserRead` with `memberships: list[MembershipRead] = []` — kept `organization_id` as instructed. No circular import needed because `MembershipRead` imports from `organization` only, not `user`.
+  - Wired the new schemas into `app/schemas/__init__.py` for parity with the rest of the aggregator. Verified `from app.schemas.user import UserRead` resolves and `model_json_schema()` renders both refs cleanly.
 
 - [ ] Build the membership repository:
   - Create `backend/app/repositories/user_organization_membership_repository.py` mirroring the style of `repositories/user_repository.py`

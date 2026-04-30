@@ -88,6 +88,12 @@ from app.schemas.user import (
     UserSelfUpdate,
     UserUpdate,
 )
+from app.schemas.user_organization_membership import (
+    MembershipBase,
+    MembershipCreate,
+    MembershipRead,
+    MembershipUpdate,
+)
 
 __all__ = [
     "AuditLogRead",
@@ -138,6 +144,10 @@ __all__ = [
     "InvestorListItem",
     "InvestorRead",
     "InvestorUpdate",
+    "MembershipBase",
+    "MembershipCreate",
+    "MembershipRead",
+    "MembershipUpdate",
     "Message",
     "NotificationRead",
     "NotificationsReadAllResponse",

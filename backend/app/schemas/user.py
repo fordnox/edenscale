@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.enums import UserRole
+from app.schemas.user_organization_membership import MembershipRead
 
 
 class UserCreate(BaseModel):
@@ -49,5 +50,6 @@ class UserRead(BaseModel):
     hanko_subject_id: str | None
     created_at: datetime | None
     updated_at: datetime | None
+    memberships: list[MembershipRead] = []
 
     model_config = ConfigDict(from_attributes=True)
