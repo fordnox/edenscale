@@ -16,10 +16,17 @@ This phase ports the prototype's app shell (sidebar + topbar + protected routing
   - `components/ui/badge.tsx` already ships a `StatusBadge` with a `statusToTone` map covering fund/commitment/capital-call/task statuses; the planned `StatusPill` component should consolidate or extend this map (covering distribution + notification kinds) rather than duplicate.
   - Prototype `FundsPage` is filterable (all/active/liquidating/closed) with a DataTable of fund rows; `FundDetailPage` shows status pill, KPI strip, commitments table, capital-calls + distributions lists, and documents — all sourced from `edenscale/src/data/mock.ts`. `edenscale/src/lib/router.ts` is just a string-literal route enum; the real frontend uses react-router-dom v7 already.
 
-- [ ] Establish data-fetching primitives the rest of the frontend phases will reuse:
+- [x] Establish data-fetching primitives the rest of the frontend phases will reuse:
   - Add `frontend/src/lib/queryClient.ts` exporting a configured `QueryClient` (5-minute staleTime, retry once)
   - Wrap `<App />` in `<QueryClientProvider>` in `frontend/src/main.tsx`
   - Add `frontend/src/hooks/useApiQuery.ts` and `useApiMutation.ts` thin wrappers over TanStack Query that take an OpenAPI path + params, return typed data via `schema.d.ts`, and surface errors via the existing `sonner` toast in `lib/api.ts` middleware
+
+  **Implementation notes (2026-04-30):**
+  - `frontend/src/lib/queryClient.ts` exports a singleton `QueryClient` with `staleTime: 5min`, `retry: 1`, `refetchOnWindowFocus: false`, and `mutations.retry: 0`. `main.tsx` now imports this configured instance instead of constructing an inline `new QueryClient()`.
+  - `useApiQuery(path, init?, options?)` wraps `client.GET` from `lib/api.ts`. Generic `P` is constrained to GET-supporting paths from `schema.d.ts`; `Init` is derived via `MaybeOptionalInit`. On `{ error }` it throws so React Query surfaces an error state (toast already fired by the existing `lib/api.ts` middleware).
+  - `useApiMutation(method, path, options?)` covers `post | put | patch | delete` and dispatches via the matching client method (`client.POST`, etc.). `mutationFn` takes the OpenAPI `Init` (params + body) as variables.
+  - `openapi-typescript-helpers` is only available transitively under pnpm's hoisting; helper types like `PathsWithMethod` are inlined as `HasMethod`/`MutationPaths` rather than imported, to avoid a brittle direct import.
+  - Added `"ignoreDeprecations": "6.0"` to `frontend/tsconfig.json` to silence the pre-existing TS6.0 `baseUrl` deprecation so `pnpm run lint` actually executes the type-check. New files compile clean; unrelated pre-existing errors (carousel, button variants, useAuth Hanko privates, BrowserRouter `future` prop) are untouched and tracked under later cleanup tasks in this phase.
 
 - [ ] Improve the AppShell layout from Phase 01:
   - Add `Topbar.tsx` (search input, notifications bell that links to `/notifications`, user menu pulled from `GET /users/me`)
