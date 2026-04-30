@@ -40,12 +40,20 @@ This phase ports the prototype's app shell (sidebar + topbar + protected routing
   - Updated `pages/DashboardPage.tsx` and `pages/ComingSoon.tsx` to import the renamed `PageHero` (their per-page heroes still render eyebrow/title/description/actions exactly as before — no visual regression).
   - `pnpm run lint` shows no new errors in the touched files (`Topbar`, `PageHero`, `AppShell`, `DashboardPage`, `ComingSoon`, `useApiQuery`); pre-existing TS errors (carousel/button variants, `useAuth` Hanko privates, `BrowserRouter` `future` prop, etc.) are untouched and remain tracked under the later cleanup task in this phase.
 
-- [ ] Port the Funds list page:
+- [x] Port the Funds list page:
   - Create `frontend/src/pages/FundsPage.tsx` modeled on `edenscale/src/pages/FundsPage.tsx` but using `useApiQuery("/funds")` for data
   - Fund row links to `/funds/${id}` via `react-router-dom` `Link`
   - Add a "New fund" button that opens a `FundCreateDialog` (Radix Dialog) and posts to `POST /funds`; on success, invalidate the `["funds"]` query
   - Empty state: card with "No funds yet" + the new fund button
   - Replace the placeholder `/funds` route in `App.tsx` with this page
+
+  **Implementation notes (2026-04-30):**
+  - Adapted the prototype's column set to the backend's actual `FundListItem` schema (`id`, `name`, `currency_code`, `target_size`, `current_size`, `status`, `vintage_year`). The prototype's mock-only fields (legal_name, strategy, dpi/tvpi/irr) are not surfaced by `GET /funds` so the table now shows: Fund / Vintage / Target / Current (with progress bar against target) / Status. Strategy and other detail fields belong on the Fund Detail page.
+  - Filter chips (All / Active / Liquidating / Closed) match the prototype, with a count caption showing `{filtered} of {total} programmes`. When the filter yields zero rows, the table card swaps in an inline "Nothing matches this filter" message instead of an empty grid.
+  - Empty state (zero funds) renders `Card` with eyebrow + copy + a primary "New fund" button — same as the page hero action — so the user can launch creation from either spot.
+  - Row click uses `useNavigate` programmatically; the Fund-name cell is wrapped in `<Link to="/funds/{id}">` (with `stopPropagation`) so middle-click / right-click open in a new tab as expected. The detail route doesn't exist yet (next task), so the navigate target will 404 until then — intentional.
+  - `FundCreateDialog` (`components/funds/FundCreateDialog.tsx`) uses Radix `Dialog` + the existing shadcn `Input`/`Textarea`/`Label` primitives. Posts via `useApiMutation("post", "/funds")`; on success invalidates `queryKey: ["/funds"]` (matches the `useApiQuery("/funds")` key prefix), resets the form, and closes. Submission is blocked while the mutation is pending and when `name` is blank. Form fields cover `name` (required), `legal_name`, `vintage_year`, `currency_code` (uppercased, default USD), `strategy`, `target_size`, `status` (native `<select>` for now), `description`. Currency-code input is auto-uppercased and capped at 3 chars to match ISO codes.
+  - `App.tsx` swaps `<ComingSoon page="Funds" />` for `<FundsPage />` on the `/funds` route. `pnpm run lint` shows no new errors in the touched files (FundsPage, FundCreateDialog, App.tsx); pre-existing errors (carousel, button variants, useAuth Hanko privates, BrowserRouter `future` prop, etc.) remain tracked under the later cleanup task in this phase. Backend `pytest tests/test_funds_api.py` (11 tests) passes against a valid sqlite DSN — backend untouched.
 
 - [ ] Port the Fund Detail page:
   - Create `frontend/src/pages/FundDetailPage.tsx` keyed on `useParams<{ fundId: string }>()`. Fetch in parallel via `useQueries`:
