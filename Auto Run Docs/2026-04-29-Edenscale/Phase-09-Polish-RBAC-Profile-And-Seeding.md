@@ -4,7 +4,27 @@ This final phase focuses on the seams: a UI for editing the current user's profi
 
 ## Tasks
 
-- [ ] Re-read all prior phase documents to take stock of what is already shipped and avoid re-doing work; cross-reference with `git log` to see what was actually committed
+- [x] Re-read all prior phase documents to take stock of what is already shipped and avoid re-doing work; cross-reference with `git log` to see what was actually committed
+
+  **Stocktaking notes (Iteration 00001, 2026-04-30):** read Phase-01 through Phase-08 docs end-to-end and cross-checked with `git log`. Every prior task is marked `- [x]` and there is a matching `MAESTRO:` commit on `main` for each subtask, ending at `faafe59 MAESTRO: pass Phase 08 repo gates (lint, 144 tests, openapi clean)`.
+
+  **What's already shipped (do NOT redo):**
+  - **Backend (Phase 01-05):** all 18 dbml tables + 10 enums migrated via `app/alembic/versions/d496f70bae71_initial_schema_from_dbml.py`. Full CRUD + RBAC for Organizations, Users, Fund Groups, Funds, Fund Team Members, Investors, Investor Contacts, Commitments, Capital Calls + items (lifecycle + pro-rata allocation), Distributions + items (same shape), Documents (`StoragePort`/`LocalDevStorage`), Communications (recipient resolution + send), Tasks, Notifications (server-emitted via `notification_service.notify` fan-out), Audit Log (SQLAlchemy mapper-level `after_*` listeners + `AuditContextMiddleware` ContextVar). Dashboard `/dashboard/overview` already aggregates `unread_notifications_count`, `open_tasks_count`, `recent_communications`, plus the role-scoped fund/investor/commitment/capital-call/distribution KPIs. **`record_audit` and the listener stack already populate `audit_logs` rows** — Phase 09 only needs the **viewer**, not new write logic. Test suite is **144 green**.
+  - **Frontend (Phase 01, 06-08):** EdenScale design tokens + fonts in place; `AppShell` (sidebar + global Topbar with notifications bell + user menu + search) wraps protected routes. `useApiQuery` / `useApiMutation` hooks, configured `QueryClient`, `StatusPill`, `EmptyState`, `useTabParam`. **All sidebar destinations are ported and wired to live API:** Dashboard, Funds, FundDetail, Investors, CapitalCalls, Distributions, Documents, Letters, Tasks, Notifications. Topbar bell already shows an unread count badge. The Hanko v2.6 SDK migration in `useAuth.ts` and the `react-resizable-panels` v4 migration are also already done.
+  - **Existing `UserProfilePage.tsx`** lives at `frontend/src/pages/UserProfilePage.tsx` (the legacy Hanko-only profile inherited from earlier scaffolding) and is mounted under `MainLayout` at `/profile`. **Phase 09 task 2 explicitly says to replace it** with a `ProfilePage.tsx` wired to `GET /users/me` / `PATCH /users/me` and to mount it under `AppShell` from the Topbar user menu.
+
+  **What's still missing (Phase 09 scope, confirmed by file inspection):**
+  - `frontend/src/pages/ProfilePage.tsx` (does not exist), `OrganizationSettingsPage.tsx` (does not exist), `AuditLogPage.tsx` (does not exist).
+  - `frontend/src/components/RequireRole.tsx` (no `RequireRole` symbol anywhere in `frontend/src`).
+  - `frontend/src/hooks/useNavItems.ts` (no `useNavItems` symbol anywhere in `frontend/src`); current `Sidebar.tsx` is **not** role-aware — it renders the same 9 links for every authenticated user.
+  - `backend/scripts/` directory does not exist; no `seed_demo.py`. `Makefile` has no `seed` target.
+  - `docs/` directory does not exist; none of the seven structured-Markdown architecture/decision files exist yet.
+  - The end-to-end smoke walkthrough and the final repo-gate sweep (`make openapi`/`make test`/`make lint` from a clean state, plus `pnpm run lint` from `frontend/`) are still to run after the new code lands.
+
+  **Patterns to reuse rather than reinvent:**
+  - For role-gated routes: use the role from `GET /users/me` (already typed via the generated client) read once and cached via TanStack Query — same shape used by `Topbar` for the user menu and by `TasksPage` for the my-tasks-vs-all toggle. The backend already returns `role` on `UserRead`.
+  - For new mutations: follow the established `useApiMutation` + `queryClient.invalidateQueries({ queryKey: [path] })` + `sonner` toast trio (see `InvestorDetailPanel`'s `invalidateInvestorScopes` helper as the canonical example).
+  - For the seed script: idempotent upserts keyed by deterministic email / fund name / investor name so re-running doesn't duplicate rows. Reuse the existing repository constructors (`UserRepository(db).create(...)` etc.) instead of touching SQLAlchemy directly so the role logic, default values, and constraints are honoured exactly the same way the API enforces them.
 
 - [ ] Build the user profile page:
   - Create `frontend/src/pages/ProfilePage.tsx` — current user info (read from `GET /users/me`), editable first_name / last_name / phone / title via `PATCH /users/me`
