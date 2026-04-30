@@ -81,5 +81,10 @@ This phase builds the capital flow engine. Capital calls and distributions follo
     - Tests: extended `test_dashboard.py::test_aggregates_filtered_to_user_organization` to seed `DistributionItem` rows (one paid this year, one paid last year) and an `overdue` capital call so the new YTD semantics and the dropped `overdue` status are both exercised. Added `test_funds_api.py::TestFundOverview` (5 cases): KPI totals across two commitments, zero-commitment baseline, 404 on unknown fund, 403 for fund_manager hitting another org, and LP visibility for funds they have a commitment on.
     - `make openapi`, `make test` (83 passing), and `make lint` all clean.
 
-- [ ] Sync OpenAPI client and run gates:
+- [x] Sync OpenAPI client and run gates:
   - Run `make openapi`, `make test`, `make lint` and fix any findings
+  - Implementation notes:
+    - `make openapi` regenerated `backend/openapi.json` and `frontend/src/lib/schema.d.ts`; `git status` reports clean (the prior phase commits left them already in sync — no diff needed).
+    - `make test`: 83 tests passing.
+    - `make lint`: ruff, ty, black, isort all clean; 66 files unchanged.
+    - No findings to fix.
