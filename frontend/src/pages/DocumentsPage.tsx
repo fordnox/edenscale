@@ -7,6 +7,7 @@ import { DocumentUploadDialog } from "@/components/documents/DocumentUploadDialo
 import { PageHero } from "@/components/layout/PageHero"
 import { Button } from "@/components/ui/button"
 import { Card, CardSection } from "@/components/ui/card"
+import { EmptyState } from "@/components/ui/EmptyState"
 import { Eyebrow } from "@/components/ui/eyebrow"
 import {
   Select,
@@ -168,20 +169,20 @@ export default function DocumentsPage() {
                 <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
               </div>
             ) : documents.length === 0 ? (
-              <div className="flex flex-col items-start gap-3 py-10">
-                <Eyebrow>No documents match these filters</Eyebrow>
-                <p className="max-w-md font-sans text-[14px] leading-[1.55] text-ink-700">
-                  Try clearing the filters above, or upload a new document to begin
-                  the library.
-                </p>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setUploadOpen(true)}
-                >
-                  Upload document
-                </Button>
-              </div>
+              <EmptyState
+                icon={<FileText strokeWidth={1.25} />}
+                title="No documents match these filters"
+                body="Try clearing the filters above, or upload a new document to begin the library."
+                action={
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setUploadOpen(true)}
+                  >
+                    Upload document
+                  </Button>
+                }
+              />
             ) : (
               <DataTable>
                 <thead>

@@ -1,7 +1,12 @@
 import { useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { useQueryClient } from "@tanstack/react-query"
-import { CalendarDays, Loader2, MoreHorizontal } from "lucide-react"
+import {
+  CalendarDays,
+  ClipboardList,
+  Loader2,
+  MoreHorizontal,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { TaskCreateDialog } from "@/components/tasks/TaskCreateDialog"
@@ -14,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { EmptyState } from "@/components/ui/EmptyState"
 import { Eyebrow } from "@/components/ui/eyebrow"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import { useApiQuery } from "@/hooks/useApiQuery"
@@ -199,6 +205,33 @@ export default function TasksPage() {
           <div className="flex min-h-[320px] items-center justify-center text-ink-500">
             <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
           </div>
+        ) : tasks.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={<ClipboardList strokeWidth={1.25} />}
+              title={
+                effectiveFilter === "mine"
+                  ? "No tasks assigned to you"
+                  : "No tasks yet"
+              }
+              body={
+                effectiveFilter === "mine"
+                  ? "When a fund manager assigns work to you, it will appear here in the appropriate lane."
+                  : "Capture follow-ups across investor relations, compliance, and finance. Tasks move through open, in progress, done, and cancelled."
+              }
+              action={
+                canManage ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setCreateOpen(true)}
+                  >
+                    New task
+                  </Button>
+                ) : undefined
+              }
+            />
+          </Card>
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
             {lanes.map((lane) => (

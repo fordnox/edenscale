@@ -75,9 +75,14 @@ This phase finishes the page port from the prototype: Documents (with file uploa
   - Topbar bell badge: `Topbar.tsx` no longer reads `overview.unread_notifications_count`; instead it shares the same `useApiQuery("/notifications", { params: { query: { limit: 200 } } })` and counts `n.status === "unread"` client-side. After a mark-read mutation invalidates `["/notifications"]`, the badge decrements automatically without a separate dashboard refetch. Using a 60s `staleTime` keeps the request cheap.
   - `App.tsx` swaps the `ComingSoon` placeholder for `<NotificationsPage />` and drops the now-unused `ComingSoon` import. `pnpm run lint` (`tsc --noEmit`) passes.
 
-- [ ] Add a shared `EmptyState.tsx` component used across all four pages:
+- [x] Add a shared `EmptyState.tsx` component used across all four pages:
   - Props: `icon`, `title`, `body`, optional `action` button
   - Use the `--brass-700` accent for the icon stroke and Cormorant Garamond for the title to match the design
+
+  Notes:
+  - `frontend/src/components/ui/EmptyState.tsx` exposes `{ icon, title, body, action, className }`. The icon slot wraps any node (typically a Lucide icon) and forces `size-8` + `stroke-[1.25]` via `[&_svg]:` arbitrary selectors so callers can pass `<FileText strokeWidth={1.25} />` without separately sizing it. The wrapper applies `text-[color:var(--brass-700)]`, so any SVG using `currentColor` (Lucide default) inherits the aged-brass stroke. The title renders `font-display` (Cormorant Garamond) at 28px / 500 weight with `tracking-[-0.015em]` to mirror the `.es-display` token. Body copy uses the page's standard 14px ink-700 paragraph style and `max-w-md`. The action slot accepts arbitrary nodes (not strictly a button) so a row of buttons or a link could also be passed.
+  - The component is centered (`items-center`, `text-center`) — chosen over the prior left-aligned inline copy because an icon-led empty state reads best symmetrically. Existing inline empty states on Documents and Letters were swapped over: `DocumentsPage` uses `FileText`, `LettersPage` uses `Mail`, `NotificationsPage` uses `BellOff`, and `TasksPage` adds a top-level `ClipboardList` empty state when *all* lanes are empty (per-lane "Nothing here." copy is kept for partially-empty boards since the EmptyState would crowd a narrow Kanban column). The Tasks empty state branches on `effectiveFilter` so an LP/manager viewing "My tasks" sees "No tasks assigned to you" and only managers see the "New task" action.
+  - `pnpm run lint` (`tsc --noEmit`) passes.
 
 - [ ] Type-check + visual smoke test:
   - `pnpm run lint` from `frontend/`

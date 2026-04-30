@@ -8,6 +8,7 @@ import { PageHero } from "@/components/layout/PageHero"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardSection } from "@/components/ui/card"
+import { EmptyState } from "@/components/ui/EmptyState"
 import { Eyebrow } from "@/components/ui/eyebrow"
 import { ProgressBar } from "@/components/ui/progress"
 import {
@@ -141,20 +142,20 @@ export default function LettersPage() {
                 <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
               </div>
             ) : letters.length === 0 ? (
-              <div className="flex flex-col items-start gap-3 py-10">
-                <Eyebrow>No letters yet</Eyebrow>
-                <p className="max-w-md font-sans text-[14px] leading-[1.55] text-ink-700">
-                  Draft a quarterly letter or a quick note to limited partners.
-                  Once sent, the read receipts appear here.
-                </p>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setComposeOpen(true)}
-                >
-                  Draft letter
-                </Button>
-              </div>
+              <EmptyState
+                icon={<Mail strokeWidth={1.25} />}
+                title="No letters yet"
+                body="Draft a quarterly letter or a quick note to limited partners. Once sent, the read receipts appear here."
+                action={
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setComposeOpen(true)}
+                  >
+                    Draft letter
+                  </Button>
+                }
+              />
             ) : (
               <DataTable>
                 <thead>

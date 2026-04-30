@@ -1,13 +1,14 @@
 import { useMemo } from "react"
 import { Helmet } from "react-helmet-async"
 import { useQueryClient } from "@tanstack/react-query"
-import { Archive, CheckCheck, Loader2 } from "lucide-react"
+import { Archive, BellOff, CheckCheck, Loader2 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
 
 import { PageHero } from "@/components/layout/PageHero"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { EmptyState } from "@/components/ui/EmptyState"
 import { Eyebrow } from "@/components/ui/eyebrow"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import { useApiQuery } from "@/hooks/useApiQuery"
@@ -196,13 +197,11 @@ export default function NotificationsPage() {
           </div>
         ) : inbox.length === 0 ? (
           <Card>
-            <div className="flex flex-col items-start gap-3 px-8 py-12">
-              <Eyebrow>All caught up</Eyebrow>
-              <p className="max-w-md font-sans text-[14px] leading-[1.55] text-ink-700">
-                There are no notifications in your inbox. Capital activity,
-                document releases, and investor correspondence will appear here.
-              </p>
-            </div>
+            <EmptyState
+              icon={<BellOff strokeWidth={1.25} />}
+              title="All caught up"
+              body="There are no notifications in your inbox. Capital activity, document releases, and investor correspondence will appear here."
+            />
           </Card>
         ) : (
           <div className="flex flex-col gap-10">
