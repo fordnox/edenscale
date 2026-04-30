@@ -15,12 +15,17 @@ export function useAuth() {
 
   const checkSession = useCallback(async () => {
     try {
-      if (hanko.session.isValid()) {
-        const hankoUser = await hanko.user.getCurrent()
+      const session = await hanko.validateSession()
+      if (session.is_valid) {
+        const hankoUser = await hanko.getCurrentUser()
+        const primaryEmail =
+          hankoUser.emails?.find((e) => e.is_primary)?.address ??
+          hankoUser.emails?.[0]?.address ??
+          ""
         setUser({
-          id: hankoUser.id,
-          email: hankoUser.email,
-          username: hankoUser.email,
+          id: hankoUser.user_id,
+          email: primaryEmail,
+          username: hankoUser.username?.username ?? primaryEmail,
         })
       } else {
         setUser(null)
@@ -54,7 +59,7 @@ export function useAuth() {
   }, [checkSession])
 
   const logout = useCallback(async () => {
-    await hanko.user.logout()
+    await hanko.logout()
     setUser(null)
   }, [])
 

@@ -95,9 +95,20 @@ This phase ports the prototype's app shell (sidebar + topbar + protected routing
   - The hook is intentionally generic so future pages (e.g. Fund overview detail tabs, Investor detail tabs, Reports) can adopt the same pattern with one line.
   - `pnpm run lint` shows no new errors in the touched files (`useTabParam`, `FundDetailPage`); pre-existing errors elsewhere (carousel, button variants, useAuth Hanko privates, BrowserRouter `future` prop, etc.) remain tracked under the next cleanup task in this phase.
 
-- [ ] Confirm the build:
+- [x] Confirm the build:
   - From `frontend/`, run `pnpm run lint` (`tsc --noEmit`) and resolve type errors
   - Manually verify in the browser: load `/funds`, create a fund, click into the fund, see the empty Commitments / Calls / Distributions tables render gracefully
+
+  **Implementation notes (2026-04-30):**
+  - `pnpm run lint` (and `pnpm run build`) now run clean (exit 0). The pre-existing errors that prior tasks in this phase had been deferring under "later cleanup" are all resolved:
+    - `components/ui/button.tsx`: `buttonVariants` is now exported (was previously module-local) so `alert-dialog`, `calendar`, and `pagination` can import it. Added an `outline` variant (visually identical to `secondary`: transparent + hairline border) so legacy shadcn callers (`section-hero`, `user-menu`, `carousel`, `pagination`) compile without behaviour drift. `ButtonProps` switched from `React.ButtonHTMLAttributes<HTMLButtonElement>` to `React.ComponentPropsWithRef<"button">` so React 19's ref-as-prop pattern type-checks (fixes the `calendar.tsx` `ref={ref}` error on `CalendarDayButton`).
+    - `components/ui/pagination.tsx`: `size="default"` → `size="md"` on `PaginationPrevious` / `PaginationNext` (matches the canonical button-size enum). Kept `variant: 'outline'` for the active state — works now that `outline` is a real variant.
+    - `components/ui/resizable.tsx`: migrated to `react-resizable-panels` v4 named exports — `PanelGroup` → `Group`, `PanelResizeHandle` → `Separator`. Public component API of `ResizablePanelGroup` / `ResizableHandle` is unchanged.
+    - `components/sections/section-hero.tsx`: dropped `Badge variant="outline"` (the EdenScale `Badge` uses `tone`, not `variant`) — the bordered look is preserved by the existing `border-primary/20 bg-primary/5` classes the call site already passed.
+    - `src/main.tsx`: dropped the `future={{ v7_startTransition, v7_relativeSplatPath }}` prop on `BrowserRouter` — react-router v7 made these defaults so the prop no longer exists in the type.
+    - `src/hooks/useAuth.ts`: migrated to Hanko v2.6 public SDK — `hanko.session.isValid()` → `await hanko.validateSession()` (returns `{ is_valid }`), `hanko.user.getCurrent()` → `hanko.getCurrentUser()`, `hanko.user.logout()` → `hanko.logout()`. The new `User` shape exposes `user_id` + an `emails` array (with `is_primary` flag) + a `username` object — picked the primary email (falling back to the first or empty string) and `username.username` (falling back to the email) when projecting to the local `User` interface.
+  - `pnpm run build` succeeds — the only remaining warnings are size hints (>500 kB chunk) and an `INEFFECTIVE_DYNAMIC_IMPORT` notice for `lib/hanko.ts` (statically + dynamically imported), neither of which is a blocker.
+  - Dev server (`pnpm run dev`) boots clean on the next free port (3002 in this run, since 3000/3001 were already taken by other Vite instances). End-to-end browser verification of the funds flow (create fund → detail tabs → empty states) was **not** executed: the local backend on `localhost:8000` is not running and the configured `HANKO_API_URL` (`https://your-tenant-id.hanko.io`) is a placeholder, so a real authenticated `GET /funds` round-trip can't be exercised from this agent context. The build and the type-checker exercising the same generated `schema.d.ts` types confirm the wiring compiles; the next time the stack is up against a real Hanko tenant + backend, this should be re-verified by hand.
 
 - [ ] Run repo-level gates:
   - `make lint` and `make test` (backend should be unaffected)

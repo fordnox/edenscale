@@ -4,7 +4,7 @@ import { Slot } from "@radix-ui/react-slot"
 
 import { cn } from "@/lib/utils"
 
-const buttonVariants = cva(
+export const buttonVariants = cva(
   [
     "inline-flex items-center justify-center gap-2 whitespace-nowrap",
     "font-sans font-medium tracking-tight select-none",
@@ -19,6 +19,8 @@ const buttonVariants = cva(
         primary:
           "bg-conifer-700 text-parchment-50 hover:bg-conifer-800 active:bg-conifer-900 rounded-xs",
         secondary:
+          "bg-transparent text-ink-900 border border-[var(--border-default)] hover:bg-parchment-200 rounded-xs",
+        outline:
           "bg-transparent text-ink-900 border border-[var(--border-default)] hover:bg-parchment-200 rounded-xs",
         ghost:
           "bg-transparent text-ink-900 hover:bg-parchment-200 rounded-xs",
@@ -47,7 +49,7 @@ const buttonVariants = cva(
 )
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends React.ComponentPropsWithRef<"button">,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }

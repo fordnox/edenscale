@@ -27,7 +27,7 @@ export function SectionHero() {
       <div className="container relative z-10 mx-auto px-4 md:px-6 py-24 md:py-32">
         <div className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-8">
           {/* Badge */}
-          <Badge variant="outline" className="px-4 py-1.5 text-sm font-medium gap-2 border-primary/20 bg-primary/5">
+          <Badge className="px-4 py-1.5 text-sm font-medium gap-2 border-primary/20 bg-primary/5">
             <Sparkles className="size-3.5 text-primary" />
             {config.VITE_APP_SLOGAN}
           </Badge>
