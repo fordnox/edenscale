@@ -11,6 +11,7 @@ import LettersPage from './pages/LettersPage'
 import TasksPage from './pages/TasksPage'
 import NotificationsPage from './pages/NotificationsPage'
 import ProfilePage from './pages/ProfilePage'
+import OrganizationSettingsPage from './pages/OrganizationSettingsPage'
 import LoginPage from './pages/LoginPage'
 
 function App() {
@@ -29,6 +30,10 @@ function App() {
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route
+          path="/settings/organization"
+          element={<OrganizationSettingsPage />}
+        />
       </Route>
 
       {/* Pages without layout */}

@@ -41,10 +41,19 @@ This final phase focuses on the seams: a UI for editing the current user's profi
   - `App.tsx` now mounts `/profile` inside the `AppShell` (sidebar + Topbar) instead of the legacy `MainLayout`. The legacy `UserProfilePage.tsx` (which embedded `<hanko-profile />` and only worked under the old marketing layout) has been deleted; the now-empty `MainLayout` route block was removed and its import dropped from `App.tsx`. `MainLayout` / `Header` / `Footer` files are left in place as scaffolding for any future marketing route — out of scope to delete here.
   - Verified: `cd frontend && pnpm run lint` (tsc --noEmit) clean, `make lint` clean, `make test` 144 passed, `pnpm vite build` clean. `make openapi` produced an env-only diff (`info.title` flips to local `APP_DOMAIN`) which was reverted to keep the committed `example.com` canonical value — no API contract changed in this task.
 
-- [ ] Add an Organization Settings page (admin + fund_manager only):
+- [x] Add an Organization Settings page (admin + fund_manager only):
   - `frontend/src/pages/OrganizationSettingsPage.tsx` — edit organization name/legal_name/tax_id/website/description via `PATCH /organizations/{id}`
   - List team members with their roles; admin can change roles via `PATCH /users/{id}/role`, fund_manager can invite new users via `POST /users`
   - Mount at `/settings/organization` and gate via a `RequireRole` component
+
+  **Implementation notes (Iteration 00001, 2026-04-30):**
+  - New `frontend/src/components/RequireRole.tsx` reads role from `GET /users/me` (cached 5 min), renders the page when the user's role is in `allowed`, otherwise shows a friendly empty-state with a "Back to dashboard" link. Loading shows the standard `Loader2` spinner used elsewhere.
+  - New `frontend/src/pages/OrganizationSettingsPage.tsx` wraps a `OrganizationSettingsContent` with `RequireRole allowed={["admin", "fund_manager"]}`. Layout follows the established `PageHero` + stacked `Card` pattern from `ProfilePage` / `NotificationsPage`.
+  - **Firm details card:** form seeded from `GET /organizations/{id}` via `useEffect`, dirty-tracking gates the Save button, submit calls `PATCH /organizations/{id}` through `useApiMutation` with sonner success toast and invalidates both the by-id and list queries. Editable fields are name (required), legal_name, tax_id, website, description; the org `type` is rendered as a non-editable `Badge` since it is set at creation.
+  - **Team card:** lists `GET /users` (already org-scoped server-side for fund_managers; admins see their own org members too) sorted alphabetically. Admins see a Radix `Select` to change a member's role and the mutation hits `PATCH /users/{user_id}/role` — admins cannot change their own role (guarded with a toast). Non-admins see the role as a `Badge`. The `is_active` flag renders as an active/inactive badge.
+  - **Invite user dialog:** Both admins and fund_managers can open it (the page-level task wording grants invite to fund_manager; the page also lets admins invite). Posts to `POST /users`. Admins additionally see an organization picker (sourced from `GET /organizations`) so they can invite into any org; fund_managers always invite into their own org per the backend's server-side override. Required fields: first_name, last_name, email, role.
+  - Route mounted at `/settings/organization` inside the `AppShell` block in `App.tsx`. ProfilePage's "Manage organization settings" link now resolves correctly for admin/fund_manager.
+  - Verified: `cd frontend && pnpm run lint` (tsc --noEmit) clean, `pnpm vite build` clean, `make lint` clean, `make test` 144 passed. `make openapi` produced only an env-only `info.title` diff (`localhost` vs canonical `example.com`) which was reverted; `frontend/src/lib/schema.d.ts` had no diff. No backend code changed in this task.
 
 - [ ] Make the sidebar role-aware:
   - Read role from `GET /users/me` once (cached via TanStack Query)
