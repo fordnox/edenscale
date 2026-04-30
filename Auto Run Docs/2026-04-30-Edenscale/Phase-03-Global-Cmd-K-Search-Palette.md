@@ -4,7 +4,7 @@ The Topbar's search `<input>` is a dead placeholder today. This phase replaces i
 
 ## Tasks
 
-- [ ] Build the command palette component:
+- [x] Build the command palette component:
   - Create `frontend/src/components/layout/CommandPalette.tsx` — a controlled `<CommandDialog open onOpenChange>` from `@/components/ui/command` that renders `CommandInput`, multiple `CommandGroup`s, `CommandItem`s, and `CommandEmpty`/`CommandSeparator`
   - Reuse-aware: import existing pieces from `command.tsx` — do NOT install or wrap `cmdk` directly
   - Props: `open: boolean`, `onOpenChange: (next: boolean) => void`
