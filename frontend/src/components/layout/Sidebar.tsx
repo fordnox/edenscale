@@ -1,8 +1,19 @@
 import { useEffect } from "react"
-import { NavLink, useLocation } from "react-router-dom"
+import { NavLink, useLocation, useNavigate } from "react-router-dom"
+import { LogOut, Settings, User as UserIcon } from "lucide-react"
+
 import { cn } from "@/lib/utils"
+import { useApiQuery } from "@/hooks/useApiQuery"
 import { useAuth } from "@/hooks/useAuth"
 import { useNavItems } from "@/hooks/useNavItems"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Sheet,
   SheetContent,
@@ -10,13 +21,18 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet"
 
-function deriveInitials(email: string | null | undefined) {
-  if (!email) return "ES"
-  const local = email.split("@")[0] ?? ""
+function deriveInitials(
+  first?: string | null,
+  last?: string | null,
+  email?: string | null,
+) {
+  const f = (first ?? "").trim()
+  const l = (last ?? "").trim()
+  if (f && l) return (f[0] + l[0]).toUpperCase()
+  if (f.length >= 2) return f.slice(0, 2).toUpperCase()
+  const local = (email ?? "").split("@")[0] ?? ""
   const parts = local.split(/[._-]+/).filter(Boolean)
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase()
-  }
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
   return (local.slice(0, 2) || "ES").toUpperCase()
 }
 
@@ -27,10 +43,27 @@ const ROLE_TAGLINES: Record<string, string> = {
 }
 
 function SidebarBody() {
-  const { user } = useAuth()
-  const initials = deriveInitials(user?.email)
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
   const { items, role } = useNavItems()
   const tagline = (role && ROLE_TAGLINES[role]) ?? "Manager view"
+
+  const { data: me } = useApiQuery("/users/me", undefined, {
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const fullName = [me?.first_name, me?.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim()
+  const email = me?.email ?? user?.email ?? null
+  const displayName = fullName || email || "Signed in"
+  const initials = deriveInitials(me?.first_name, me?.last_name, email)
+
+  const handleSignOut = async () => {
+    await logout()
+    navigate("/login")
+  }
 
   return (
     <>
@@ -95,18 +128,67 @@ function SidebarBody() {
 
       <hr className="es-rule mx-6" />
 
-      <div className="flex items-center gap-3 px-6 py-5">
-        <span className="inline-flex size-9 items-center justify-center bg-conifer-700 text-parchment-50 font-display text-base font-medium">
-          {initials}
-        </span>
-        <div className="flex min-w-0 flex-col leading-tight">
-          <span className="truncate font-sans text-[13px] font-medium text-ink-900">
-            {user?.email ?? "Signed out"}
-          </span>
-          <span className="truncate font-sans text-[11px] text-ink-500">
-            {tagline}
-          </span>
-        </div>
+      <div className="px-3 py-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className={cn(
+              "flex w-full min-h-11 items-center gap-3 rounded-xs px-3 py-2.5 text-left",
+              "transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+              "hover:bg-parchment-100",
+              "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
+            )}
+            aria-label="Open user menu"
+          >
+            <span className="inline-flex size-9 shrink-0 items-center justify-center bg-conifer-700 text-parchment-50 font-display text-base font-medium">
+              {initials}
+            </span>
+            <span className="flex min-w-0 flex-col items-start leading-tight">
+              <span className="max-w-full truncate font-sans text-[13px] font-medium text-ink-900">
+                {displayName}
+              </span>
+              <span className="max-w-full truncate font-sans text-[11px] text-ink-500">
+                {tagline}
+              </span>
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start" className="w-56">
+            <DropdownMenuLabel className="flex flex-col gap-0.5">
+              <span className="truncate font-sans text-[13px] font-medium text-ink-900">
+                {displayName}
+              </span>
+              {email && (
+                <span className="truncate font-sans text-[11px] font-normal text-ink-500">
+                  {email}
+                </span>
+              )}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="min-h-11 md:min-h-0"
+              onSelect={() => navigate("/profile")}
+            >
+              <UserIcon strokeWidth={1.5} />
+              <span>Profile</span>
+            </DropdownMenuItem>
+            {role === "admin" && (
+              <DropdownMenuItem
+                className="min-h-11 md:min-h-0"
+                onSelect={() => navigate("/settings/organization")}
+              >
+                <Settings strokeWidth={1.5} />
+                <span>Organization settings</span>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="min-h-11 md:min-h-0"
+              onSelect={handleSignOut}
+            >
+              <LogOut strokeWidth={1.5} />
+              <span>Sign out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </>
   )

@@ -11,7 +11,7 @@ The sidebar (`frontend/src/components/layout/Sidebar.tsx`) is currently `hidden 
   - Auto-close the mobile sheet on route change (use `useLocation` from `react-router-dom`; close in a `useEffect` watching `pathname`)
   - Reuse-aware: `Sheet` already exists at `frontend/src/components/ui/sheet.tsx` — do NOT add a new drawer library
 
-- [ ] Convert the bottom profile block into an interactive user-menu (replacing the static initials card):
+- [x] Convert the bottom profile block into an interactive user-menu (replacing the static initials card):
   - At the bottom of `SidebarBody`, replace the read-only `div` with a `DropdownMenu` whose trigger is the same initials + name + tagline visual (full-width button, `hover:bg-parchment-100`, focus ring using `--conifer-600`)
   - Reuse the existing user-menu logic from `frontend/src/components/user-menu.tsx` and/or the topbar dropdown — pull the same `useApiQuery("/users/me")`, `useAuth().logout`, `deriveInitials` pattern; if `user-menu.tsx` already encapsulates this, prefer importing it
   - Menu items: Profile (→ `/profile`), Organization settings (→ `/organization-settings`, only if role === "admin"), Sign out (calls `logout()` then `navigate("/login")`)
