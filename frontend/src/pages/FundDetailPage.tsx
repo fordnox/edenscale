@@ -14,6 +14,7 @@ import { StatusPill } from "@/components/ui/StatusPill"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useApiQuery } from "@/hooks/useApiQuery"
+import { useTabParam } from "@/hooks/useTabParam"
 import { config } from "@/lib/config"
 import {
   formatCurrency,
@@ -29,9 +30,18 @@ function parseDecimal(value: string | null | undefined) {
   return Number.isFinite(n) ? n : 0
 }
 
+const FUND_DETAIL_TABS = [
+  "commitments",
+  "calls",
+  "distributions",
+  "team",
+  "letters",
+] as const
+
 function FundDetailPageContent({ fundId }: { fundId: number }) {
   const navigate = useNavigate()
   const [editOpen, setEditOpen] = useState(false)
+  const [activeTab, setActiveTab] = useTabParam(FUND_DETAIL_TABS, "commitments")
 
   const fundQuery = useApiQuery("/funds/{fund_id}", {
     params: { path: { fund_id: fundId } },
@@ -230,7 +240,7 @@ function FundDetailPageContent({ fundId }: { fundId: number }) {
 
         {/* Tabbed sections */}
         <div className="mt-12">
-          <Tabs defaultValue="commitments" className="gap-6">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="gap-6">
             <TabsList className="bg-parchment-100">
               <TabsTrigger value="commitments">
                 Commitments

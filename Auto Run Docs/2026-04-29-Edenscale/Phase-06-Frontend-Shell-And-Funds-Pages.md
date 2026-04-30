@@ -86,7 +86,14 @@ This phase ports the prototype's app shell (sidebar + topbar + protected routing
   - Migrated all four existing `StatusBadge` callers (`pages/DashboardPage.tsx` ×2 — capital_call + fund; `pages/FundsPage.tsx` ×1 — fund; `pages/FundDetailPage.tsx` ×4 — fund + commitment + capital_call + distribution) and removed the now-redundant `StatusBadge` export and flat `statusToTone` map from `components/ui/badge.tsx`. `Badge` itself is unchanged so other pure-tone usages keep working.
   - `pnpm run lint` shows no new errors in the touched files (`StatusPill`, `badge`, `DashboardPage`, `FundsPage`, `FundDetailPage`); pre-existing errors elsewhere (carousel, button variants, useAuth Hanko privates, BrowserRouter `future` prop, etc.) are untouched and remain tracked under the later cleanup task in this phase.
 
-- [ ] Add an in-page navigation pattern that reads/writes `?tab=` query params so refresh preserves tab state on Fund Detail and similar future pages
+- [x] Add an in-page navigation pattern that reads/writes `?tab=` query params so refresh preserves tab state on Fund Detail and similar future pages
+
+  **Implementation notes (2026-04-30):**
+  - `frontend/src/hooks/useTabParam.ts` is a generic hook `useTabParam<T extends string>(validTabs, defaultTab, paramName = "tab")` that reads the current tab from `useSearchParams()` (react-router-dom v7) and exposes a `setTab` setter. Unknown / missing values fall back to `defaultTab` so manually-typed garbage (`?tab=banana`) does not break Radix' controlled `Tabs`.
+  - `setTab` updates the URL via `setSearchParams(prev => ...)` with `{ replace: true }` to avoid polluting browser history on every tab click. When the user selects the default tab, the `?tab=` param is removed entirely so the canonical URL stays clean (`/funds/42` instead of `/funds/42?tab=commitments`); non-default tabs encode as `?tab=calls` etc. The setter preserves any other unrelated search params.
+  - `FundDetailPage.tsx` declares `FUND_DETAIL_TABS = ["commitments","calls","distributions","team","letters"] as const`, calls `useTabParam(FUND_DETAIL_TABS, "commitments")`, and converts the previously uncontrolled Radix `<Tabs defaultValue=...>` to controlled `<Tabs value={activeTab} onValueChange={...}>`. Refreshing on `/funds/42?tab=team` now restores the Team tab; navigating away and back via the browser history also re-renders the previous tab.
+  - The hook is intentionally generic so future pages (e.g. Fund overview detail tabs, Investor detail tabs, Reports) can adopt the same pattern with one line.
+  - `pnpm run lint` shows no new errors in the touched files (`useTabParam`, `FundDetailPage`); pre-existing errors elsewhere (carousel, button variants, useAuth Hanko privates, BrowserRouter `future` prop, etc.) remain tracked under the next cleanup task in this phase.
 
 - [ ] Confirm the build:
   - From `frontend/`, run `pnpm run lint` (`tsc --noEmit`) and resolve type errors
