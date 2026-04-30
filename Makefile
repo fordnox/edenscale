@@ -32,6 +32,9 @@ upgrade: ## Apply migrations
 downgrade: ## Apply downgrade migrations
 	cd backend && uv run alembic downgrade -1
 
+seed: ## Seed the database with a demo dataset (idempotent)
+	cd backend && uv run python -m scripts.seed_demo
+
 start-frontend: ## Start the development frontend
 	cd frontend && npm run dev
 
