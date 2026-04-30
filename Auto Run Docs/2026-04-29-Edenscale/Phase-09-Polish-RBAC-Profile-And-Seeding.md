@@ -26,11 +26,20 @@ This final phase focuses on the seams: a UI for editing the current user's profi
   - For new mutations: follow the established `useApiMutation` + `queryClient.invalidateQueries({ queryKey: [path] })` + `sonner` toast trio (see `InvestorDetailPanel`'s `invalidateInvestorScopes` helper as the canonical example).
   - For the seed script: idempotent upserts keyed by deterministic email / fund name / investor name so re-running doesn't duplicate rows. Reuse the existing repository constructors (`UserRepository(db).create(...)` etc.) instead of touching SQLAlchemy directly so the role logic, default values, and constraints are honoured exactly the same way the API enforces them.
 
-- [ ] Build the user profile page:
+- [x] Build the user profile page:
   - Create `frontend/src/pages/ProfilePage.tsx` — current user info (read from `GET /users/me`), editable first_name / last_name / phone / title via `PATCH /users/me`
   - Show the user's role as a non-editable chip with explanatory text ("Roles are managed by your administrator")
   - Show the user's organization name and a link to organization settings if the user is admin or fund_manager
   - Mount at `/profile` and link from the Topbar user menu (replace any existing `UserProfilePage` if it duplicates)
+
+  **Implementation notes (Iteration 00001, 2026-04-30):**
+  - New `frontend/src/pages/ProfilePage.tsx` follows the established `PageHero` + stacked `Card` layout used by `NotificationsPage` / `TasksPage`. Form state seeded from `GET /users/me` via `useEffect`, dirty tracking gates the Save button, and submit calls `PATCH /users/me` through `useApiMutation` with a `sonner` success toast and `queryClient.invalidateQueries({ queryKey: ["/users/me"] })` on success — the same trio used by `InvestorDetailPanel`.
+  - Email is rendered disabled with the helper text "Email is managed via your sign-in provider." since `UserSelfUpdate` (backend `app/schemas/user.py`) only allows `first_name`, `last_name`, `phone`, `title`.
+  - Role is shown via the existing `Badge` (tone="info") with a per-role description (`Administrator` / `Fund manager` / `Limited partner`) plus the required "Roles are managed by your administrator" line.
+  - Organization card reads from `GET /organizations/{id}` (gated on `organization_id !== null`). For `admin` / `fund_manager` it renders a `Manage organization settings` link to `/settings/organization` (page itself lands in the next checkbox task — link will 404 until then, by design).
+  - Topbar already routes the user-menu "Profile" item to `/profile` — no changes needed there.
+  - `App.tsx` now mounts `/profile` inside the `AppShell` (sidebar + Topbar) instead of the legacy `MainLayout`. The legacy `UserProfilePage.tsx` (which embedded `<hanko-profile />` and only worked under the old marketing layout) has been deleted; the now-empty `MainLayout` route block was removed and its import dropped from `App.tsx`. `MainLayout` / `Header` / `Footer` files are left in place as scaffolding for any future marketing route — out of scope to delete here.
+  - Verified: `cd frontend && pnpm run lint` (tsc --noEmit) clean, `make lint` clean, `make test` 144 passed, `pnpm vite build` clean. `make openapi` produced an env-only diff (`info.title` flips to local `APP_DOMAIN`) which was reverted to keep the committed `example.com` canonical value — no API contract changed in this task.
 
 - [ ] Add an Organization Settings page (admin + fund_manager only):
   - `frontend/src/pages/OrganizationSettingsPage.tsx` — edit organization name/legal_name/tax_id/website/description via `PATCH /organizations/{id}`

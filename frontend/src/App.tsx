@@ -1,5 +1,4 @@
 import { Routes, Route } from 'react-router-dom'
-import MainLayout from './layouts/MainLayout'
 import AppShell from './layouts/AppShell'
 import DashboardPage from './pages/DashboardPage'
 import FundsPage from './pages/FundsPage'
@@ -11,7 +10,7 @@ import DocumentsPage from './pages/DocumentsPage'
 import LettersPage from './pages/LettersPage'
 import TasksPage from './pages/TasksPage'
 import NotificationsPage from './pages/NotificationsPage'
-import UserProfilePage from './pages/UserProfilePage'
+import ProfilePage from './pages/ProfilePage'
 import LoginPage from './pages/LoginPage'
 
 function App() {
@@ -29,11 +28,7 @@ function App() {
         <Route path="/letters" element={<LettersPage />} />
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
-      </Route>
-
-      {/* Marketing / profile pages with the legacy header + footer layout */}
-      <Route element={<MainLayout />}>
-        <Route path="/profile" element={<UserProfilePage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Route>
 
       {/* Pages without layout */}
