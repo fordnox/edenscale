@@ -8,6 +8,7 @@ from app.routers import (
     capital_calls,
     commitments,
     dashboard,
+    distributions,
     fund_groups,
     fund_team_members,
     funds,
@@ -124,6 +125,18 @@ app.include_router(
     capital_calls.fund_capital_calls_router,
     prefix="/funds",
     tags=["capital-calls"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    distributions.router,
+    prefix="/distributions",
+    tags=["distributions"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    distributions.fund_distributions_router,
+    prefix="/funds",
+    tags=["distributions"],
     dependencies=[Depends(get_current_user)],
 )
 

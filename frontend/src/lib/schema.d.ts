@@ -535,6 +535,127 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/distributions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Distributions */
+        get: operations["list_distributions_distributions_get"];
+        put?: never;
+        /** Create Distribution */
+        post: operations["create_distribution_distributions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/distributions/{distribution_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Distribution */
+        get: operations["get_distribution_distributions__distribution_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Distribution */
+        patch: operations["update_distribution_distributions__distribution_id__patch"];
+        trace?: never;
+    };
+    "/distributions/{distribution_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Distribution Items */
+        post: operations["add_distribution_items_distributions__distribution_id__items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/distributions/{distribution_id}/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Distribution Item */
+        patch: operations["update_distribution_item_distributions__distribution_id__items__item_id__patch"];
+        trace?: never;
+    };
+    "/distributions/{distribution_id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Distribution */
+        post: operations["send_distribution_distributions__distribution_id__send_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/distributions/{distribution_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Distribution */
+        post: operations["cancel_distribution_distributions__distribution_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/funds/{fund_id}/distributions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Distributions For Fund */
+        get: operations["list_distributions_for_fund_funds__fund_id__distributions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -821,6 +942,130 @@ export interface components {
             recent_funds: components["schemas"]["FundSummary"][];
             /** Upcoming Capital Calls */
             upcoming_capital_calls: components["schemas"]["CapitalCallSummary"][];
+        };
+        /** DistributionCreate */
+        DistributionCreate: {
+            /** Fund Id */
+            fund_id: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Distribution Date
+             * Format: date
+             */
+            distribution_date: string;
+            /** Record Date */
+            record_date?: string | null;
+            /** Amount */
+            amount: number | string;
+        };
+        /** DistributionFundSummary */
+        DistributionFundSummary: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Currency Code */
+            currency_code: string;
+            status: components["schemas"]["FundStatus"];
+            /** Vintage Year */
+            vintage_year?: number | null;
+        };
+        /** DistributionItemBulkCreate */
+        DistributionItemBulkCreate: {
+            /** Items */
+            items?: components["schemas"]["DistributionItemCreate"][];
+        };
+        /** DistributionItemCreate */
+        DistributionItemCreate: {
+            /** Commitment Id */
+            commitment_id: number;
+            /** Amount Due */
+            amount_due: number | string;
+            /** Note */
+            note?: string | null;
+        };
+        /** DistributionItemRead */
+        DistributionItemRead: {
+            /** Id */
+            id: number;
+            /** Distribution Id */
+            distribution_id: number;
+            /** Commitment Id */
+            commitment_id: number;
+            /** Amount Due */
+            amount_due: string;
+            /** Amount Paid */
+            amount_paid: string;
+            /** Paid At */
+            paid_at: string | null;
+            /** Note */
+            note: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** DistributionItemUpdate */
+        DistributionItemUpdate: {
+            /** Amount Due */
+            amount_due?: number | string | null;
+            /** Amount Paid */
+            amount_paid?: number | string | null;
+            /** Paid At */
+            paid_at?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /** DistributionRead */
+        DistributionRead: {
+            /** Id */
+            id: number;
+            /** Fund Id */
+            fund_id: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Distribution Date
+             * Format: date
+             */
+            distribution_date: string;
+            /** Record Date */
+            record_date: string | null;
+            /** Amount */
+            amount: string;
+            status: components["schemas"]["DistributionStatus"];
+            /** Created By User Id */
+            created_by_user_id: number | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            /** Items */
+            items: components["schemas"]["DistributionItemRead"][];
+            fund: components["schemas"]["DistributionFundSummary"];
+        };
+        /**
+         * DistributionStatus
+         * @enum {string}
+         */
+        DistributionStatus: "draft" | "scheduled" | "sent" | "partially_paid" | "paid" | "cancelled";
+        /** DistributionUpdate */
+        DistributionUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Distribution Date */
+            distribution_date?: string | null;
+            /** Record Date */
+            record_date?: string | null;
+            /** Amount */
+            amount?: number | string | null;
         };
         /** FundCreate */
         FundCreate: {
@@ -2986,6 +3231,307 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CapitalCallRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_distributions_distributions_get: {
+        parameters: {
+            query?: {
+                fund_id?: number | null;
+                status_filter?: components["schemas"]["DistributionStatus"] | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_distribution_distributions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DistributionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_distribution_distributions__distribution_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                distribution_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_distribution_distributions__distribution_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                distribution_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DistributionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_distribution_items_distributions__distribution_id__items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                distribution_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DistributionItemBulkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionItemRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_distribution_item_distributions__distribution_id__items__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                distribution_id: number;
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DistributionItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionItemRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_distribution_distributions__distribution_id__send_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                distribution_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_distribution_distributions__distribution_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                distribution_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_distributions_for_fund_funds__fund_id__distributions_get: {
+        parameters: {
+            query?: {
+                status_filter?: components["schemas"]["DistributionStatus"] | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                fund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionRead"][];
                 };
             };
             /** @description Validation Error */

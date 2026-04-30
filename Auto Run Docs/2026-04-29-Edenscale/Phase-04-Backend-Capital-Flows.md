@@ -27,11 +27,18 @@ This phase builds the capital flow engine. Capital calls and distributions follo
     - Both `/capital-calls` and the nested `/funds/{fund_id}/capital-calls` routers are mounted in `app/main.py`.
     - `make openapi` regenerated `backend/openapi.json` and `frontend/src/lib/schema.d.ts` so the typed client picks up the new paths/schemas.
 
-- [ ] Implement Distributions (parallel to Capital Calls):
+- [x] Implement Distributions (parallel to Capital Calls):
   - Schemas, repository, router mirror the capital call pattern — `Distribution` parent + `DistributionItem` line items
   - Endpoints: `GET /distributions`, `GET /distributions/{id}`, `POST /distributions`, `PATCH /distributions/{id}`, `POST /distributions/{id}/items`, `PATCH /distributions/{id}/items/{item_id}`, `POST /distributions/{id}/send`, `POST /distributions/{id}/cancel`
   - Nested `GET /funds/{fund_id}/distributions` on the funds router
   - Mount under `/distributions`
+  - Implementation notes:
+    - Schemas (`backend/app/schemas/distribution.py`): `DistributionCreate/Update/Read`, `DistributionItemCreate/Update/Read`, `DistributionItemBulkCreate`, `DistributionFundSummary` — same non-negative validators on item amounts and positive validator on parent `amount` as the capital-call shape, but using `distribution_date` (NOT NULL) and `record_date` (nullable) per the model.
+    - Repository (`backend/app/repositories/distribution_repository.py`) wires `CommitmentRepository.recompute_totals` into `add_items`, `set_item_payment`, and `update_item`. `recompute_status` derives `partially_paid` / `paid` from item totals while preserving pre-send statuses; `transition_status` enforces `draft → scheduled → sent → partially_paid → paid` with `cancelled` reachable from any non-terminal state. `DistributionStatus` has no `overdue` value, so the lifecycle map omits it.
+    - `send` stamps `record_date = utcnow().date()` only when missing (mirroring the model nullability — capital calls stamp `call_date`).
+    - Router (`backend/app/routers/distributions.py`) reuses the same RBAC pattern: `get_current_user_record` for visibility, `require_roles(admin, fund_manager)` for mutations, `_ensure_manager_can_edit` 403s when a fund_manager touches a fund outside their org. `add_items` translates `ValueError` → 400 and `IntegrityError` → 409.
+    - Both `/distributions` and the nested `/funds/{fund_id}/distributions` routers are mounted in `app/main.py`.
+    - `make openapi` regenerated `backend/openapi.json` and `frontend/src/lib/schema.d.ts`. `make test` (45 tests) and `make lint` both pass.
 
 - [ ] Implement allocation helpers:
   - Add `backend/app/services/allocation.py` exporting `allocate_pro_rata(total_amount: Decimal, commitments: list[Commitment]) -> list[tuple[Commitment, Decimal]]` that splits an amount proportionally to `committed_amount`, with the rounding remainder applied to the largest commitment so the sum reconciles exactly
