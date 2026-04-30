@@ -414,6 +414,127 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/capital-calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Capital Calls */
+        get: operations["list_capital_calls_capital_calls_get"];
+        put?: never;
+        /** Create Capital Call */
+        post: operations["create_capital_call_capital_calls_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capital-calls/{call_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Capital Call */
+        get: operations["get_capital_call_capital_calls__call_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Capital Call */
+        patch: operations["update_capital_call_capital_calls__call_id__patch"];
+        trace?: never;
+    };
+    "/capital-calls/{call_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Capital Call Items */
+        post: operations["add_capital_call_items_capital_calls__call_id__items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capital-calls/{call_id}/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Capital Call Item */
+        patch: operations["update_capital_call_item_capital_calls__call_id__items__item_id__patch"];
+        trace?: never;
+    };
+    "/capital-calls/{call_id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Capital Call */
+        post: operations["send_capital_call_capital_calls__call_id__send_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capital-calls/{call_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Capital Call */
+        post: operations["cancel_capital_call_capital_calls__call_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/funds/{fund_id}/capital-calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Capital Calls For Fund */
+        get: operations["list_capital_calls_for_fund_funds__fund_id__capital_calls_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -435,6 +556,112 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CapitalCallCreate */
+        CapitalCallCreate: {
+            /** Fund Id */
+            fund_id: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /** Call Date */
+            call_date?: string | null;
+            /** Amount */
+            amount: number | string;
+        };
+        /** CapitalCallFundSummary */
+        CapitalCallFundSummary: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Currency Code */
+            currency_code: string;
+            status: components["schemas"]["FundStatus"];
+            /** Vintage Year */
+            vintage_year?: number | null;
+        };
+        /** CapitalCallItemBulkCreate */
+        CapitalCallItemBulkCreate: {
+            /** Items */
+            items?: components["schemas"]["CapitalCallItemCreate"][];
+        };
+        /** CapitalCallItemCreate */
+        CapitalCallItemCreate: {
+            /** Commitment Id */
+            commitment_id: number;
+            /** Amount Due */
+            amount_due: number | string;
+            /** Note */
+            note?: string | null;
+        };
+        /** CapitalCallItemRead */
+        CapitalCallItemRead: {
+            /** Id */
+            id: number;
+            /** Capital Call Id */
+            capital_call_id: number;
+            /** Commitment Id */
+            commitment_id: number;
+            /** Amount Due */
+            amount_due: string;
+            /** Amount Paid */
+            amount_paid: string;
+            /** Paid At */
+            paid_at: string | null;
+            /** Note */
+            note: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** CapitalCallItemUpdate */
+        CapitalCallItemUpdate: {
+            /** Amount Due */
+            amount_due?: number | string | null;
+            /** Amount Paid */
+            amount_paid?: number | string | null;
+            /** Paid At */
+            paid_at?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /** CapitalCallRead */
+        CapitalCallRead: {
+            /** Id */
+            id: number;
+            /** Fund Id */
+            fund_id: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /** Call Date */
+            call_date: string | null;
+            /** Amount */
+            amount: string;
+            status: components["schemas"]["CapitalCallStatus"];
+            /** Created By User Id */
+            created_by_user_id: number | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            /** Items */
+            items: components["schemas"]["CapitalCallItemRead"][];
+            fund: components["schemas"]["CapitalCallFundSummary"];
+        };
         /**
          * CapitalCallStatus
          * @enum {string}
@@ -458,6 +685,19 @@ export interface components {
              */
             due_date: string;
             status: components["schemas"]["CapitalCallStatus"];
+        };
+        /** CapitalCallUpdate */
+        CapitalCallUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Call Date */
+            call_date?: string | null;
+            /** Amount */
+            amount?: number | string | null;
         };
         /** CommitmentCreate */
         CommitmentCreate: {
@@ -2445,6 +2685,307 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommitmentRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_capital_calls_capital_calls_get: {
+        parameters: {
+            query?: {
+                fund_id?: number | null;
+                status_filter?: components["schemas"]["CapitalCallStatus"] | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapitalCallRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_capital_call_capital_calls_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CapitalCallCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapitalCallRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_capital_call_capital_calls__call_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapitalCallRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_capital_call_capital_calls__call_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CapitalCallUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapitalCallRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_capital_call_items_capital_calls__call_id__items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CapitalCallItemBulkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapitalCallItemRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_capital_call_item_capital_calls__call_id__items__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: number;
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CapitalCallItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapitalCallItemRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_capital_call_capital_calls__call_id__send_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapitalCallRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_capital_call_capital_calls__call_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapitalCallRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_capital_calls_for_fund_funds__fund_id__capital_calls_get: {
+        parameters: {
+            query?: {
+                status_filter?: components["schemas"]["CapitalCallStatus"] | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                fund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapitalCallRead"][];
                 };
             };
             /** @description Validation Error */

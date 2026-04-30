@@ -13,12 +13,19 @@ This phase builds the capital flow engine. Capital calls and distributions follo
     - `DistributionItem` (`backend/app/models/distribution_item.py`): unique constraint `uq_distribution_item_dist_commitment` on `(distribution_id, commitment_id)`; same `amount_due`/`amount_paid`/`paid_at` shape as `CapitalCallItem`.
     - `CommitmentRepository.list` already implements RBAC (admin all, fund_manager scoped to their org via `Fund.organization_id`, lp scoped via `InvestorContact`) — capital-call/distribution repositories should mirror that pattern, joining through the parent's fund or via `commitment` for LPs.
 
-- [ ] Implement Capital Calls:
+- [x] Implement Capital Calls:
   - `backend/app/schemas/capital_call.py` — `CapitalCallCreate` (fund_id, title, description, due_date, call_date, amount), `CapitalCallUpdate`, `CapitalCallRead` with nested `items: list[CapitalCallItemRead]` and `fund: FundSummary`, plus `CapitalCallItemCreate`/`Update`/`Read`
   - `backend/app/repositories/capital_call_repository.py` — `list_for_user(user, fund_id=None, status=None)` (RBAC: admin all; fund_manager org-scoped; lp only via their commitments → items), `get_with_items`, `create_draft`, `update`, `add_items` (bulk-insert allocations from a list of `(commitment_id, amount_due)` tuples; rejects when commitment.fund_id != call.fund_id), `set_item_payment(item_id, amount_paid, paid_at)`, `transition_status(call_id, new_status)` enforcing the lifecycle, `recompute_status(call_id)` that derives the parent status from item totals
   - `backend/app/routers/capital_calls.py` — `GET /capital-calls`, `GET /capital-calls/{id}`, `POST /capital-calls`, `PATCH /capital-calls/{id}`, `POST /capital-calls/{id}/items`, `PATCH /capital-calls/{id}/items/{item_id}` (records a payment; updates parent + commitment totals atomically), `POST /capital-calls/{id}/send` (transitions draft/scheduled → sent and stamps `call_date`), `POST /capital-calls/{id}/cancel`
   - Add nested route `GET /funds/{fund_id}/capital-calls` on the funds router for the FundDetail page
   - Mount under `/capital-calls`
+  - Implementation notes:
+    - Schemas: `CapitalCallCreate/Update/Read`, `CapitalCallItemCreate/Update/Read`, `CapitalCallItemBulkCreate`, and a small `CapitalCallFundSummary` for the embedded fund payload — non-negative validators on amounts, positive validator on parent `amount`.
+    - Repository wires `CommitmentRepository.recompute_totals` into `add_items`, `set_item_payment`, and `update_item` so the linked commitments stay in sync. `recompute_status` derives `partially_paid` / `paid` from item totals while preserving `overdue` / pre-send statuses; `transition_status` enforces a strict draft → scheduled → sent → partially_paid → paid lifecycle with `cancelled` reachable from any non-terminal state.
+    - Router uses `get_current_user_record` for visibility and `require_roles(admin, fund_manager)` for mutations; `_ensure_manager_can_edit` 403s when a fund_manager touches a fund outside their org. `add_items` translates `ValueError` (duplicates / cross-fund commitments) to 400, and `IntegrityError` (DB-level unique constraint) to 409.
+    - `send` stamps `call_date = utcnow().date()` only when missing, mirroring the model's nullability.
+    - Both `/capital-calls` and the nested `/funds/{fund_id}/capital-calls` routers are mounted in `app/main.py`.
+    - `make openapi` regenerated `backend/openapi.json` and `frontend/src/lib/schema.d.ts` so the typed client picks up the new paths/schemas.
 
 - [ ] Implement Distributions (parallel to Capital Calls):
   - Schemas, repository, router mirror the capital call pattern — `Distribution` parent + `DistributionItem` line items

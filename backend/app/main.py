@@ -5,6 +5,7 @@ from starlette.responses import Response
 from app.core.auth import get_current_user
 from app.core.config import settings
 from app.routers import (
+    capital_calls,
     commitments,
     dashboard,
     fund_groups,
@@ -111,6 +112,18 @@ app.include_router(
     commitments.investor_commitments_router,
     prefix="/investors",
     tags=["commitments"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    capital_calls.router,
+    prefix="/capital-calls",
+    tags=["capital-calls"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    capital_calls.fund_capital_calls_router,
+    prefix="/funds",
+    tags=["capital-calls"],
     dependencies=[Depends(get_current_user)],
 )
 
