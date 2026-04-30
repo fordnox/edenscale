@@ -44,7 +44,7 @@ This phase lays the data-model foundation for multi-org membership and global su
   - `bulk_seed_from_legacy_user_org_id()` walks every user with a non-null `organization_id`, calls `get(user_id, organization_id)` to skip rows that already exist, copies `User.role` onto the new membership, and only commits when at least one row was added (returning the insert count for callers/tests). This keeps repeated runs idempotent — required by the migration backfill and by the test the next task adds.
   - Wired the new class into `backend/app/repositories/__init__.py` alongside `UserRepository` so the aggregator stays consistent.
 
-- [ ] Author the alembic migration that adds the new schema:
+- [x] Author the alembic migration that adds the new schema:
   - Run `cd backend && uv run alembic revision -m "add user_organization_memberships and superadmin role" --autogenerate` (or hand-write if autogenerate misses the enum value addition — Postgres needs `ALTER TYPE user_role ADD VALUE 'superadmin'`)
   - The `upgrade()` must:
     1. Add `'superadmin'` to the existing `user_role` enum type (use `op.execute("ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'superadmin'")` for Postgres; SQLite uses CHECK so just recreate the table — guard with `op.get_bind().dialect.name`)
@@ -53,6 +53,12 @@ This phase lays the data-model foundation for multi-org membership and global su
     4. Backfill: insert one membership row for every existing `users.organization_id is not null`, with `role` copied from `users.role` and `created_at = now()`
   - The `downgrade()` must drop the table and the enum type (do NOT downgrade the user_role enum value — that's a one-way door in PG; document this in a one-line comment)
   - Run `make upgrade` against the local SQLite DB and confirm it applies cleanly
+
+  **Implementation notes:**
+  - Generated `backend/app/alembic/versions/20260430_2257_ee0cff22bcfc_add_user_organization_memberships_and_.py` via `alembic revision --autogenerate`, then hand-edited it to add the dialect branch, the `membership_role` enum implicitly via `sa.Enum`, the backfill `INSERT ... SELECT`, and an explicit `DROP TYPE IF EXISTS membership_role` on Postgres downgrade.
+  - For the `user_role` enum extension: `bind.dialect.name == "postgresql"` runs `ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'superadmin'`. The SQLite branch is a deliberate no-op — verified by reading `sqlite_master` for the existing `users` table; SQLAlchemy 2.x's `sa.Enum` rendered the column as plain `VARCHAR(12)` with no CHECK constraint, so SQLite already accepts any 12-char string (and `superadmin` is 10 chars).
+  - Backfill uses `INSERT INTO user_organization_memberships (user_id, organization_id, role, created_at, updated_at) SELECT id, organization_id, role, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP FROM users WHERE organization_id IS NOT NULL`. Verified end-to-end: `make upgrade` → 7 rows inserted on local SQLite (matching the seeded users with non-null org), `make downgrade` → table dropped cleanly, second `make upgrade` → re-applies cleanly with the same 7 rows.
+  - Down-revision chained off `d496f70bae71`. Downgrade documents the deliberate non-removal of the `user_role` 'superadmin' value with a one-line comment (PG enum value removal is a one-way door).
 
 - [ ] Add a CLI to manually promote a user to superadmin (since superadmin assignment is intentionally out-of-band):
   - Create `backend/app/scripts/__init__.py` and `backend/app/scripts/promote_superadmin.py` with a `main()` that takes `email` as a positional CLI arg, opens a session via `app.core.database.SessionLocal`, finds the user by email, sets `user.role = UserRole.superadmin` and `user.organization_id = None` (superadmins are global), commits, and prints a confirmation. Make it runnable as `python -m app.scripts.promote_superadmin <email>` from the `backend/` dir.
