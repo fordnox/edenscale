@@ -55,12 +55,19 @@ This final phase focuses on the seams: a UI for editing the current user's profi
   - Route mounted at `/settings/organization` inside the `AppShell` block in `App.tsx`. ProfilePage's "Manage organization settings" link now resolves correctly for admin/fund_manager.
   - Verified: `cd frontend && pnpm run lint` (tsc --noEmit) clean, `pnpm vite build` clean, `make lint` clean, `make test` 144 passed. `make openapi` produced only an env-only `info.title` diff (`localhost` vs canonical `example.com`) which was reverted; `frontend/src/lib/schema.d.ts` had no diff. No backend code changed in this task.
 
-- [ ] Make the sidebar role-aware:
+- [x] Make the sidebar role-aware:
   - Read role from `GET /users/me` once (cached via TanStack Query)
   - LPs: hide Tasks management, hide global Capital Calls / Distributions list; show only Funds, Investors (read-only of self), Documents (filtered to their own), Letters, Notifications, Profile
   - fund_manager: full sidebar
   - admin: full sidebar plus an "Audit Log" entry
   - Implement as a `useNavItems()` hook returning the filtered list
+
+  **Implementation notes (Iteration 00001, 2026-04-30):**
+  - New `frontend/src/hooks/useNavItems.ts` reads `GET /users/me` via `useApiQuery` with a 5-minute `staleTime` — same caching shape used by `Topbar`, `RequireRole`, `ProfilePage`, `OrganizationSettingsPage`, `TasksPage`. The hook exports `navItemsForRole(role)` (a pure function — easy to reason about and reuse) plus `useNavItems()` returning `{ items, role, isLoading }`.
+  - Role-to-items mapping: `lp` → Overview, Funds, Investors, Documents, Letters, Notifications (Tasks / Capital Calls / Distributions hidden, per the task brief which puts those behind manager workflows; Profile is reachable from the Topbar user menu, so it stays out of the sidebar). `fund_manager` → full nine-item set. `admin` → full set + "Audit Log" pinned at the end (icon: `History` from lucide). When role is unknown (loading or unauth) we default to the full manager set so first-paint never flashes a stripped sidebar — `RequireRole` still gates the actual `/audit-log` route once it lands in the next checkbox.
+  - `frontend/src/components/layout/Sidebar.tsx` now consumes `useNavItems()` instead of the hardcoded `items` array. The header sub-label and footer "Manager view" text are now role-driven (`Administrator view` / `Manager view` / `Limited partner view`).
+  - The Audit Log nav entry points to `/audit-log` — that route does not exist yet (lands in the next checkbox task), so an admin clicking it before the next phase will hit React Router's no-match. Acceptable per task ordering.
+  - Verified: `cd frontend && pnpm run lint` (tsc --noEmit) clean, `pnpm vite build` clean, `make lint` clean, `make test` 144 passed. No backend code changed; `make openapi` not required for this task.
 
 - [ ] Build the Audit Log viewer (admin only):
   - `frontend/src/pages/AuditLogPage.tsx` — paginated table over `GET /audit-logs` with filters for `entity_type`, `action`, `user_id`, `date_from`, `date_to`

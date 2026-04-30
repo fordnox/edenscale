@@ -1,0 +1,84 @@
+import { useMemo } from "react"
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Bell,
+  ClipboardCheck,
+  FileText,
+  History,
+  Layers,
+  LayoutDashboard,
+  Mail,
+  Users,
+} from "lucide-react"
+
+import { useApiQuery } from "@/hooks/useApiQuery"
+import type { components } from "@/lib/schema"
+
+type UserRole = components["schemas"]["UserRole"]
+
+export interface NavItem {
+  to: string
+  label: string
+  icon: typeof LayoutDashboard
+  end?: boolean
+}
+
+const OVERVIEW: NavItem = { to: "/", label: "Overview", icon: LayoutDashboard, end: true }
+const FUNDS: NavItem = { to: "/funds", label: "Funds", icon: Layers }
+const INVESTORS: NavItem = { to: "/investors", label: "Investors", icon: Users }
+const CALLS: NavItem = { to: "/calls", label: "Capital Calls", icon: ArrowDownToLine }
+const DISTRIBUTIONS: NavItem = {
+  to: "/distributions",
+  label: "Distributions",
+  icon: ArrowUpFromLine,
+}
+const DOCUMENTS: NavItem = { to: "/documents", label: "Documents", icon: FileText }
+const LETTERS: NavItem = { to: "/letters", label: "Letters", icon: Mail }
+const TASKS: NavItem = { to: "/tasks", label: "Tasks", icon: ClipboardCheck }
+const NOTIFICATIONS: NavItem = { to: "/notifications", label: "Notifications", icon: Bell }
+const AUDIT_LOG: NavItem = { to: "/audit-log", label: "Audit Log", icon: History }
+
+const FULL_ITEMS: NavItem[] = [
+  OVERVIEW,
+  FUNDS,
+  INVESTORS,
+  CALLS,
+  DISTRIBUTIONS,
+  DOCUMENTS,
+  LETTERS,
+  TASKS,
+  NOTIFICATIONS,
+]
+
+const LP_ITEMS: NavItem[] = [
+  OVERVIEW,
+  FUNDS,
+  INVESTORS,
+  DOCUMENTS,
+  LETTERS,
+  NOTIFICATIONS,
+]
+
+export function navItemsForRole(role: UserRole | null | undefined): NavItem[] {
+  if (role === "lp") return LP_ITEMS
+  if (role === "admin") return [...FULL_ITEMS, AUDIT_LOG]
+  return FULL_ITEMS
+}
+
+interface UseNavItemsResult {
+  items: NavItem[]
+  role: UserRole | null
+  isLoading: boolean
+}
+
+export function useNavItems(): UseNavItemsResult {
+  const meQuery = useApiQuery("/users/me", undefined, {
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const role = meQuery.data?.role ?? null
+  const items = useMemo(() => navItemsForRole(role), [role])
+
+  return { items, role, isLoading: meQuery.isLoading }
+}

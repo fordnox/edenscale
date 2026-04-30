@@ -1,29 +1,7 @@
-import {
-  LayoutDashboard,
-  Layers,
-  Users,
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  FileText,
-  Mail,
-  ClipboardCheck,
-  Bell,
-} from "lucide-react"
 import { NavLink } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/useAuth"
-
-const items: Array<{ to: string; label: string; icon: typeof LayoutDashboard; end?: boolean }> = [
-  { to: "/", label: "Overview", icon: LayoutDashboard, end: true },
-  { to: "/funds", label: "Funds", icon: Layers },
-  { to: "/investors", label: "Investors", icon: Users },
-  { to: "/calls", label: "Capital Calls", icon: ArrowDownToLine },
-  { to: "/distributions", label: "Distributions", icon: ArrowUpFromLine },
-  { to: "/documents", label: "Documents", icon: FileText },
-  { to: "/letters", label: "Letters", icon: Mail },
-  { to: "/tasks", label: "Tasks", icon: ClipboardCheck },
-  { to: "/notifications", label: "Notifications", icon: Bell },
-]
+import { useNavItems } from "@/hooks/useNavItems"
 
 function deriveInitials(email: string | null | undefined) {
   if (!email) return "ES"
@@ -35,9 +13,17 @@ function deriveInitials(email: string | null | undefined) {
   return (local.slice(0, 2) || "ES").toUpperCase()
 }
 
+const ROLE_TAGLINES: Record<string, string> = {
+  admin: "Administrator view",
+  fund_manager: "Manager view",
+  lp: "Limited partner view",
+}
+
 export function Sidebar() {
   const { user } = useAuth()
   const initials = deriveInitials(user?.email)
+  const { items, role } = useNavItems()
+  const tagline = (role && ROLE_TAGLINES[role]) ?? "Manager view"
 
   return (
     <aside className="sticky top-0 hidden h-svh w-[260px] shrink-0 flex-col border-r border-[color:var(--border-hairline)] bg-page md:flex">
@@ -57,7 +43,7 @@ export function Sidebar() {
             EdenScale
           </span>
           <span className="font-sans text-[11px] tracking-[0.04em] text-ink-500">
-            LP portal · Manager view
+            LP portal · {tagline}
           </span>
         </div>
       </div>
@@ -111,7 +97,7 @@ export function Sidebar() {
             {user?.email ?? "Signed out"}
           </span>
           <span className="truncate font-sans text-[11px] text-ink-500">
-            Manager view
+            {tagline}
           </span>
         </div>
       </div>
