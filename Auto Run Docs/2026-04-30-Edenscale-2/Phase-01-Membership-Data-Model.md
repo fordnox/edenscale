@@ -35,9 +35,14 @@ This phase lays the data-model foundation for multi-org membership and global su
   - Updated `UserRead` with `memberships: list[MembershipRead] = []` — kept `organization_id` as instructed. No circular import needed because `MembershipRead` imports from `organization` only, not `user`.
   - Wired the new schemas into `app/schemas/__init__.py` for parity with the rest of the aggregator. Verified `from app.schemas.user import UserRead` resolves and `model_json_schema()` renders both refs cleanly.
 
-- [ ] Build the membership repository:
+- [x] Build the membership repository:
   - Create `backend/app/repositories/user_organization_membership_repository.py` mirroring the style of `repositories/user_repository.py`
   - Methods: `list_for_user(user_id)`, `list_for_organization(organization_id)`, `get(user_id, organization_id)`, `create(user_id, organization_id, role)`, `update_role(membership_id, role)`, `delete(membership_id)`, `bulk_seed_from_legacy_user_org_id()` — the bulk method idempotently creates memberships for every `User.organization_id is not None` that doesn't already have a row
+
+  **Implementation notes:**
+  - Created `backend/app/repositories/user_organization_membership_repository.py` following the `UserRepository` style: `Session` injected via `__init__`, explicit list/get/create/update/delete methods, `commit()` + `refresh()` after writes.
+  - `bulk_seed_from_legacy_user_org_id()` walks every user with a non-null `organization_id`, calls `get(user_id, organization_id)` to skip rows that already exist, copies `User.role` onto the new membership, and only commits when at least one row was added (returning the insert count for callers/tests). This keeps repeated runs idempotent — required by the migration backfill and by the test the next task adds.
+  - Wired the new class into `backend/app/repositories/__init__.py` alongside `UserRepository` so the aggregator stays consistent.
 
 - [ ] Author the alembic migration that adds the new schema:
   - Run `cd backend && uv run alembic revision -m "add user_organization_memberships and superadmin role" --autogenerate` (or hand-write if autogenerate misses the enum value addition — Postgres needs `ALTER TYPE user_role ADD VALUE 'superadmin'`)
