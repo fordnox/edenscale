@@ -44,9 +44,15 @@ This phase ports the LP- and capital-flow-focused pages from the prototype: Inve
   - Send is enabled only for `draft`/`scheduled` (and gated on having items); Cancel is enabled for any non-final status. Per-row "Record payment" is an inline numeric input + Save button that PATCHes `/capital-calls/{call_id}/items/{item_id}` with `amount_paid` plus today's `paid_at`. After each successful mutation we invalidate `["/capital-calls"]`, the keyed call detail, the parent fund's `/funds/{fund_id}/capital-calls`, `/funds/{fund_id}`, `/funds/{fund_id}/overview`, and `["/dashboard"]` so KPI strips refresh.
   - Page-level KPI strip computes from a separate unfiltered `useApiQuery("/capital-calls")` so the overview totals stay stable as the user filters; the visible table reflects the filtered query result.
 
-- [ ] Port the Distributions page:
+- [x] Port the Distributions page:
   - Create `frontend/src/pages/DistributionsPage.tsx` mirroring the Capital Calls page exactly (list, filters, drawer detail, create dialog, send/cancel actions) but pointing at `/distributions` endpoints
   - Replace the placeholder `/distributions` route in `App.tsx`
+
+  Implementation notes:
+  - `DistributionCreateDialog` (`frontend/src/components/distributions/DistributionCreateDialog.tsx`) mirrors `CapitalCallCreateDialog` — fund picker, title, amount, `distribution_date` (required) and optional `record_date`, description. Auto-allocate checkbox fires `POST /distributions/{id}/items?mode=pro-rata` after the create POST. Allocation failure is surfaced as a `toast.warning` (e.g. fund has no approved commitments yet) so the create still succeeds. Invalidates `["/distributions"]`, the parent fund's `/funds/{fund_id}/distributions`, `/funds/{fund_id}`, `/funds/{fund_id}/overview`, and `["/dashboard"]`.
+  - `DistributionDetail` (`frontend/src/components/distributions/DistributionDetail.tsx`) is rendered inside the same Radix `Sheet` skeleton (`side="right"`, `sm:max-w-2xl`). Header shows "Distributed {distribution_date}" plus optional "Record {record_date}". KPI block shows amount / paid / allocated with a brand-tone progress bar (no `overdue` status on distributions). Send is gated to `draft|scheduled` and requires items > 0; Cancel is enabled for any non-final status. Per-row "Record payment" PATCHes `/distributions/{distribution_id}/items/{item_id}` with `amount_paid` + today's `paid_at` and invalidates the same query scopes.
+  - `DistributionsPage` reuses the CapitalCalls KPI/filter/table layout: 4-stat KPI strip (Open / Events / Lifetime distributed / Lifetime paid), Radix `Select` filters for `fund_id` and `status`, a separate unfiltered query feeds the KPI summary so totals stay stable as the user filters. Clicking a row opens the drawer; "New distribution" button opens the create dialog and auto-selects the freshly created row.
+  - `App.tsx` now routes `/distributions` to `DistributionsPage` (replacing the `ComingSoon` placeholder).
 
 - [ ] Surface relevant counts in the Topbar:
   - The Topbar's notifications bell shows `unread_notifications_count` from `GET /notifications` (or the dashboard overview), with a small brass badge when > 0
