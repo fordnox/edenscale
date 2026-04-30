@@ -22,7 +22,7 @@ The Topbar's search `<input>` is a dead placeholder today. This phase replaces i
   - Display: leading `lucide-react` icon, primary label, secondary muted text on the right (e.g., fund vintage / investor email / document type) using `<CommandShortcut>` or a plain trailing span
   - Handle loading: show skeleton lines or `CommandLoading` while queries are pending; show `CommandEmpty` ("No matches") when nothing matches the query
 
-- [ ] Wire global keyboard shortcut and Topbar trigger:
+- [x] Wire global keyboard shortcut and Topbar trigger:
   - Create `frontend/src/hooks/useCommandPalette.ts` (or co-locate inside `CommandPalette.tsx`) exposing `{ open, setOpen, toggle }` backed by `useState`; install a `useEffect` that registers a `keydown` listener for `(e.metaKey || e.ctrlKey) && e.key === "k"`, `e.preventDefault()`, then `toggle()`
   - Mount `<CommandPalette open={open} onOpenChange={setOpen} />` once at the layout level — preferred home is `frontend/src/layouts/AppShell.tsx` so it's available on every authenticated route
   - In `Topbar.tsx`, replace the placeholder ⌘K button from Phase 02 with a real trigger: clicking it calls `setOpen(true)` (lift state via context or pass through a prop / a small zustand-free pub-sub; simplest: have `AppShell` own the state and pass `onOpenSearch` down to Topbar, mirror to the hamburger pattern)

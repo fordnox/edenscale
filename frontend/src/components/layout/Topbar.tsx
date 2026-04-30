@@ -5,9 +5,10 @@ import { Kbd } from "@/components/ui/kbd"
 
 interface TopbarProps {
   onOpenSidebar: () => void
+  onOpenSearch: () => void
 }
 
-export function Topbar({ onOpenSidebar }: TopbarProps) {
+export function Topbar({ onOpenSidebar, onOpenSearch }: TopbarProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-[color:var(--border-hairline)] bg-page/85 backdrop-blur supports-[backdrop-filter]:bg-page/75">
       <div className="flex items-center justify-between gap-4 px-4 py-3 md:gap-6 md:px-8 md:py-4">
@@ -27,7 +28,7 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
 
         <button
           type="button"
-          onClick={() => console.log("cmdk")}
+          onClick={onOpenSearch}
           className={cn(
             "relative hidden h-9 w-[340px] items-center gap-2 rounded-xs border border-[color:var(--border-hairline)] bg-surface pl-9 pr-2 md:flex",
             "font-sans text-[13px] text-ink-500",
