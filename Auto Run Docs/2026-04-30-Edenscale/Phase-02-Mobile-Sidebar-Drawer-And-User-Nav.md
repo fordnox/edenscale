@@ -28,10 +28,17 @@ The sidebar (`frontend/src/components/layout/Sidebar.tsx`) is currently `hidden 
     - Compact mobile layout: `px-4 py-3` instead of `px-8 py-4`
   - Drop now-unused imports (`Bell`, `LogOut`, `UserIcon`, `DropdownMenu*`, `useApiQuery` for notifications)
 
-- [ ] Polish mobile interactions on the sidebar drawer:
+- [x] Polish mobile interactions on the sidebar drawer:
   - Add swipe-to-close: Radix's Sheet primitive (Vaul-style) supports drag to dismiss when used as a Drawer; if `Sheet` lacks gesture support, wrap the mobile variant in the existing `drawer.tsx` (Vaul) component and only swap-in for `<md`. Reuse-aware: check `frontend/src/components/ui/drawer.tsx` first to see if Vaul is already installed before adding it
   - Ensure all nav items have `min-h-11` (44px) padding on mobile via `py-3 md:py-2.5`
   - Confirm `useNavItems` already gates Notifications/Audit-log/Org-settings by role — no changes there
+
+  Notes (2026-04-30):
+  - Swapped the mobile `Sheet` in `Sidebar.tsx` for the existing Vaul-based `Drawer` (`@/components/ui/drawer`) with `direction="left"` — Vaul supplies native drag-to-dismiss. Desktop `<aside>` is unchanged. Vaul was already installed (no new dep).
+  - NavLink className now: `min-h-11 md:min-h-0 ... px-3 py-3 md:py-2.5` — 44px tap target on mobile, original spacing on desktop.
+  - Confirmed gating: `useNavItems` returns admin-only Audit Log; Notifications shows for all roles by design (FULL_ITEMS + LP_ITEMS); Organization settings is gated `role === "admin"` in the sidebar dropdown.
+  - Updated `drawer.tsx` overlay to `bg-[color:var(--bg-overlay)]` to match the Sheet overlay token (drawer.tsx is only consumed by Sidebar today).
+  - `pnpm run lint` (tsc --noEmit) passes.
 
 - [ ] Verify mobile + desktop chrome end-to-end:
   - With dev server running, on desktop confirm: sidebar visually identical, bottom-left profile is now a dropdown that opens upward with Profile / Sign out, Topbar has no bell and no profile dropdown

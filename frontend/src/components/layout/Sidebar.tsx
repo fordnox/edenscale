@@ -15,11 +15,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet"
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer"
 
 function deriveInitials(
   first?: string | null,
@@ -99,7 +99,7 @@ function SidebarBody() {
                 end={end}
                 className={({ isActive }) =>
                   cn(
-                    "group flex w-full items-center gap-3 rounded-xs px-3 py-2.5 text-left",
+                    "group flex w-full min-h-11 md:min-h-0 items-center gap-3 rounded-xs px-3 py-3 md:py-2.5 text-left",
                     "transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
                     "font-sans text-[14px]",
                     isActive
@@ -212,20 +212,21 @@ export function Sidebar({ open = false, onOpenChange }: SidebarProps) {
         <SidebarBody />
       </aside>
 
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="left"
-          className="w-[280px] gap-0 sm:max-w-none sm:w-[320px] md:hidden"
+      <Drawer open={open} onOpenChange={onOpenChange} direction="left">
+        <DrawerContent
+          className={cn(
+            "bg-page w-[280px] sm:w-[320px] sm:max-w-none border-l-0 border-r border-[color:var(--border-hairline)] shadow-xl pb-[env(safe-area-inset-bottom)] outline-none md:hidden",
+          )}
         >
-          <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <SheetDescription className="sr-only">
+          <DrawerTitle className="sr-only">Navigation</DrawerTitle>
+          <DrawerDescription className="sr-only">
             Primary navigation menu
-          </SheetDescription>
+          </DrawerDescription>
           <div className="flex h-full flex-col">
             <SidebarBody />
           </div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
     </>
   )
 }
