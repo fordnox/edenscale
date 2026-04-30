@@ -4,10 +4,17 @@ This phase finishes the page port from the prototype: Documents (with file uploa
 
 ## Tasks
 
-- [ ] Read the prototype pages and the Phase 05 backend contracts they depend on:
+- [x] Read the prototype pages and the Phase 05 backend contracts they depend on:
   - `edenscale/src/pages/DocumentsPage.tsx`, `edenscale/src/pages/LettersPage.tsx`, `edenscale/src/pages/TasksPage.tsx`, `edenscale/src/pages/NotificationsPage.tsx`
   - The `/documents/upload-init` flow and `LocalDevStorage` `POST /dev-storage/{key}` route from Phase 05
   - Existing `frontend/src/components/ui/StatusPill.tsx` and the `useApiMutation` hook for the consistent pattern
+
+  Notes after reading:
+  - **Documents prototype** uses filter chips (`all` + 6 `DocumentType`s), a `DataTable` with columns `Document` (title + file_name + confidential icon), `Linked to`, `Type`, `Size`, `Uploaded` (date + uploader), and a per-row Download button. "Upload document" CTA opens a dialog. Backend `DocumentRead` already returns `download_url` (presigned), `file_size`, `file_url`, `mime_type`, `is_confidential`, `uploaded_by_user_id`. Backend list filters: `organization_id`, `fund_id`, `investor_id`, `document_type`, `skip`, `limit`. Backend exposes `POST /documents/upload-init` returning `{upload_url, file_url, expires_at}` and `POST /documents` for the metadata record. The dev-storage PUT route requires header `x-dev-storage-token` (so the upload-init flow needs to include it for local backend; production presigned S3 URLs would not).
+  - **Letters prototype** is editorial/featured-letter centric; the actual phase task asks for a flatter list view with subject/type/fund/sent_at/recipients/read% and a compose dialog using `POST /communications` + `POST /communications/{id}/send`, plus a per-recipient timestamps drawer.
+  - **Tasks prototype** has 3 lanes (open/in_progress/done), but the phase task adds a 4th `cancelled` lane and per-card menu actions. Filter "My tasks vs All tasks" depends on caller role from `GET /users/me`.
+  - **Notifications prototype** groups by unread/earlier; phase task asks for date grouping (Today / Yesterday / This Week / Earlier), per-row read+archive actions, and a "Mark all read" → `POST /notifications/read-all`. Topbar bell badge count is wired from this query.
+  - **Existing pattern**: `StatusPill` already supports `kind="task"` and `kind="notification"`. `useApiQuery`/`useApiMutation` are typed via the generated OpenAPI client and integrate with `client.GET/POST/PATCH/...`. Mutations should `queryClient.invalidateQueries({ queryKey: [path] })` to refresh.
 
 - [ ] Port the Documents page:
   - Create `frontend/src/pages/DocumentsPage.tsx` — list view with filters for `document_type`, `fund_id`, `investor_id`. Columns: title, type pill, fund, investor, file_name, size, uploaded_by, created_at
