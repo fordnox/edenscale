@@ -54,9 +54,14 @@ This phase ports the LP- and capital-flow-focused pages from the prototype: Inve
   - `DistributionsPage` reuses the CapitalCalls KPI/filter/table layout: 4-stat KPI strip (Open / Events / Lifetime distributed / Lifetime paid), Radix `Select` filters for `fund_id` and `status`, a separate unfiltered query feeds the KPI summary so totals stay stable as the user filters. Clicking a row opens the drawer; "New distribution" button opens the create dialog and auto-selects the freshly created row.
   - `App.tsx` now routes `/distributions` to `DistributionsPage` (replacing the `ComingSoon` placeholder).
 
-- [ ] Surface relevant counts in the Topbar:
+- [x] Surface relevant counts in the Topbar:
   - The Topbar's notifications bell shows `unread_notifications_count` from `GET /notifications` (or the dashboard overview), with a small brass badge when > 0
   - Click navigates to `/notifications`
+
+  Implementation notes:
+  - `Topbar.tsx` now reads `unread_notifications_count` from `useApiQuery("/dashboard/overview")` (with `staleTime: 60_000`) instead of polling `/notifications` with `limit: 1`. The dashboard endpoint already returns a true integer count, so no client-side `.length` capped at the page size.
+  - The previous bare brass dot is replaced with a numeric badge: a `bg-brass-500` rounded pill at `-right-0.5 -top-0.5` showing the count (capped to "99+" for ≥ 100). The badge is only rendered when `unreadCount > 0`, preserving the "no decoration when zero" behaviour. `aria-label` on the bell link surfaces the count to screen readers (e.g. "Notifications (3 unread)").
+  - Click target is unchanged — `<Link to="/notifications">` already navigated to the notifications route (currently a `ComingSoon` placeholder; the page will be ported in a later phase).
 
 - [ ] Optimistic-invalidation pattern (use this same approach in all three pages):
   - On any successful mutation (create / patch / send / cancel / record-payment), call `queryClient.invalidateQueries({ queryKey: [primary] })` AND any nested keys (`["funds", fundId]`, `["dashboard"]`) so KPI strips refresh

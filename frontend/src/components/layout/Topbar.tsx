@@ -32,13 +32,13 @@ export function Topbar() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const { data: unreadNotifications } = useApiQuery(
-    "/notifications",
-    { params: { query: { status_filter: "unread", limit: 1 } } },
-    { staleTime: 60 * 1000 },
-  )
+  const { data: overview } = useApiQuery("/dashboard/overview", undefined, {
+    staleTime: 60 * 1000,
+  })
 
-  const hasUnread = (unreadNotifications?.length ?? 0) > 0
+  const unreadCount = overview?.unread_notifications_count ?? 0
+  const hasUnread = unreadCount > 0
+  const badgeLabel = unreadCount > 99 ? "99+" : String(unreadCount)
 
   const fullName = [me?.first_name, me?.last_name].filter(Boolean).join(" ").trim()
   const displayName = fullName || me?.email || "Signed in"
@@ -66,7 +66,11 @@ export function Topbar() {
         <div className="flex items-center gap-2">
           <Link
             to="/notifications"
-            aria-label="Notifications"
+            aria-label={
+              hasUnread
+                ? `Notifications (${unreadCount} unread)`
+                : "Notifications"
+            }
             className={cn(
               "relative inline-flex size-9 items-center justify-center rounded-xs",
               "text-ink-700 transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
@@ -76,7 +80,14 @@ export function Topbar() {
           >
             <Bell strokeWidth={1.5} className="size-[18px]" />
             {hasUnread && (
-              <span className="absolute right-2 top-2 inline-block size-1.5 rounded-full bg-brass-500" />
+              <span
+                className={cn(
+                  "absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full",
+                  "bg-brass-500 px-1 font-sans text-[10px] font-medium leading-none text-parchment-50",
+                )}
+              >
+                {badgeLabel}
+              </span>
             )}
           </Link>
 
