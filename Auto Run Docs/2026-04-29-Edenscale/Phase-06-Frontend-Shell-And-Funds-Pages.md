@@ -110,5 +110,10 @@ This phase ports the prototype's app shell (sidebar + topbar + protected routing
   - `pnpm run build` succeeds — the only remaining warnings are size hints (>500 kB chunk) and an `INEFFECTIVE_DYNAMIC_IMPORT` notice for `lib/hanko.ts` (statically + dynamically imported), neither of which is a blocker.
   - Dev server (`pnpm run dev`) boots clean on the next free port (3002 in this run, since 3000/3001 were already taken by other Vite instances). End-to-end browser verification of the funds flow (create fund → detail tabs → empty states) was **not** executed: the local backend on `localhost:8000` is not running and the configured `HANKO_API_URL` (`https://your-tenant-id.hanko.io`) is a placeholder, so a real authenticated `GET /funds` round-trip can't be exercised from this agent context. The build and the type-checker exercising the same generated `schema.d.ts` types confirm the wiring compiles; the next time the stack is up against a real Hanko tenant + backend, this should be re-verified by hand.
 
-- [ ] Run repo-level gates:
+- [x] Run repo-level gates:
   - `make lint` and `make test` (backend should be unaffected)
+
+  **Implementation notes (2026-04-30):**
+  - `make lint` passes clean (ruff + ty + black + isort all green; the `from app import *` import smoke also exits 0).
+  - `make test` initially erred on every test with `sqlite3.OperationalError: unable to open database file`. Root cause: the local `backend/.env` ships `APP_DATABASE_DSN=sqlite:///var/lib/app/database.db` (relative path — three slashes), and `tests/conftest.py` rewrites the DB filename to `database_test.db` while keeping the relative directory. With `make test` chdir'd to `backend/`, SQLite resolves that to `backend/var/lib/app/database_test.db`, but the `var/lib/app/` subtree didn't exist on disk (it's gitignored / not bootstrapped by `make sync`). Created the directory once with `mkdir -p backend/var/lib/app`; subsequent runs pass.
+  - After the dir bootstrap: `144 passed in 4.96s`. Backend code is untouched — no functional regressions, just a missing local-only data directory that future fresh checkouts will hit too. (Could be folded into `make sync` or `make test` later, but that's out of scope for this Phase 06 gate task.)
