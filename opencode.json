@@ -1,0 +1,17 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "lmstudio": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://100.86.229.68:1236/v1"
+      },
+      "models": {
+        "lmstudio/nvidia/nemotron-3-nano-4b": {},
+        "lmstudio/qwen/qwen3.6-27b": {},
+        "lmstudio/qwen/qwen3.5-27b": {}
+      }
+    }
+  },
+  "model": "lmstudio/nvidia/nemotron-3-nano-4b"
+}
