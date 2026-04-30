@@ -58,10 +58,15 @@ This phase builds the capital flow engine. Capital calls and distributions follo
     - `make test` (47 tests) and `make lint` clean. `make openapi` produced no diff since the change was internal.
     - Note: there is no `delete` operation on capital-call/distribution items in the repository or routers today, so the lifecycle hook only had to cover create + update. If a delete endpoint is added later it must call `recompute_totals` before commit on the same session.
 
-- [ ] Add integration tests:
+- [x] Add integration tests:
   - `backend/tests/test_capital_calls_api.py` — end-to-end: create call → add items → record partial payment → parent transitions to `partially_paid` → record remaining payment → parent flips to `paid` and commitment.called_amount equals total
   - `backend/tests/test_distributions_api.py` — analogous coverage including a pro-rata allocation case
   - `backend/tests/test_allocation_service.py` — pure-function tests for rounding and edge cases (single commitment, zero total, mismatched currencies are out of scope)
+  - Implementation notes:
+    - `test_capital_calls_api.py` (12 tests): full lifecycle (draft → items → send → partial pay → fully paid) asserting `commitment.called_amount` equals `sum(amount_paid)` at each step, plus a parallel-LP scenario where one of two LPs pays in full and the call stays `partially_paid`. Validation: zero amount → 422, unknown fund → 404, cross-fund commitment → 400, duplicate allocation → 400. Lifecycle: `cancel` from draft, `/send` rejected once `paid`. RBAC: lp cannot create (403), fund_manager cannot touch other-org fund (403), lp listing only surfaces calls with their own commitments. Plus the nested `GET /funds/{fund_id}/capital-calls` route.
+    - `test_distributions_api.py` (8 tests): mirror lifecycle assertion against `commitment.distributed_amount`. Pro-rata case posts to `/distributions/{id}/items?mode=pro-rata` with one approved 750/250 split + a pending commitment that must be excluded — asserts shares are 75.00/25.00 and pending LP is skipped. `mode=pro-rata` with no approved commitments → 400. Same RBAC + nested-fund coverage as capital calls.
+    - `test_allocation_service.py` (11 tests): empty list → `[]`, zero total → all-zero shares, negative total → `ValueError`, zero total committed → `ValueError`, single commitment → full amount, even split, uneven split, three-way split with rounding remainder swept onto the largest weight, sum reconciles exactly to two decimals.
+    - `make test` (78 tests passing) and `make lint` clean. `make openapi` produced no diff since these are tests only.
 
 - [ ] Update the Dashboard overview to power the FundDetail page:
   - Add `commitments_total_amount`, `capital_calls_outstanding` (count of calls with status in `scheduled, sent, partially_paid`), `distributions_ytd_amount` (sum of paid distribution items in the current calendar year), respecting RBAC
