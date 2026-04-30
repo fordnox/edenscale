@@ -3,7 +3,7 @@ import { Loader2, ArrowDownToLine } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { Helmet } from "react-helmet-async"
 
-import { Topbar } from "@/components/layout/Topbar"
+import { PageHero } from "@/components/layout/PageHero"
 import { Card, CardSection } from "@/components/ui/card"
 import { Stat } from "@/components/ui/stat"
 import { Eyebrow } from "@/components/ui/eyebrow"
@@ -49,7 +49,7 @@ export default function DashboardPage() {
       <Helmet>
         <title>{`Overview · ${config.VITE_APP_TITLE}`}</title>
       </Helmet>
-      <Topbar
+      <PageHero
         eyebrow={formatDate(TODAY, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         title="Welcome back."
         description="A snapshot of activity across your funds, limited partners, and capital movements."

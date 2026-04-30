@@ -28,10 +28,17 @@ This phase ports the prototype's app shell (sidebar + topbar + protected routing
   - `openapi-typescript-helpers` is only available transitively under pnpm's hoisting; helper types like `PathsWithMethod` are inlined as `HasMethod`/`MutationPaths` rather than imported, to avoid a brittle direct import.
   - Added `"ignoreDeprecations": "6.0"` to `frontend/tsconfig.json` to silence the pre-existing TS6.0 `baseUrl` deprecation so `pnpm run lint` actually executes the type-check. New files compile clean; unrelated pre-existing errors (carousel, button variants, useAuth Hanko privates, BrowserRouter `future` prop) are untouched and tracked under later cleanup tasks in this phase.
 
-- [ ] Improve the AppShell layout from Phase 01:
+- [x] Improve the AppShell layout from Phase 01:
   - Add `Topbar.tsx` (search input, notifications bell that links to `/notifications`, user menu pulled from `GET /users/me`)
   - Update `AppShell.tsx` to render `<Sidebar />` + a column with `<Topbar />` and `<main><Outlet /></main>`
   - Keep the EdenScale typography and parchment background classes from Phase 01
+
+  **Implementation notes (2026-04-30):**
+  - Split the legacy `Topbar.tsx` (which had been a per-page hero with eyebrow/title/description/actions) into two components: a new global `components/layout/Topbar.tsx` app bar (sticky, parchment/blur, search input + notifications bell + user menu) and a renamed `components/layout/PageHero.tsx` for the per-page hero block. This avoids the prototype's overloaded single component while keeping the same EdenScale typography classes (`es-display`, parchment background, brass accent, `--border-hairline`).
+  - `Topbar` user menu fetches `GET /users/me` via `useApiQuery` and renders an avatar with derived initials (first/last → email fallback), a Radix dropdown with profile + sign-out, and a name/title strip on `md+`. Notifications bell links to `/notifications` and shows a brass dot when `GET /notifications?status_filter=unread&limit=1` returns ≥1 unread.
+  - `AppShell` now wraps `<Sidebar />` + a flex column containing `<Topbar />` and `<main><Outlet /></main>`. The Topbar is sticky inside the column (`sticky top-0 z-20`); main fills remaining height. Background and ink color classes (`bg-page`, `text-ink-900`) are unchanged.
+  - Updated `pages/DashboardPage.tsx` and `pages/ComingSoon.tsx` to import the renamed `PageHero` (their per-page heroes still render eyebrow/title/description/actions exactly as before — no visual regression).
+  - `pnpm run lint` shows no new errors in the touched files (`Topbar`, `PageHero`, `AppShell`, `DashboardPage`, `ComingSoon`, `useApiQuery`); pre-existing TS errors (carousel/button variants, `useAuth` Hanko privates, `BrowserRouter` `future` prop, etc.) are untouched and remain tracked under the later cleanup task in this phase.
 
 - [ ] Port the Funds list page:
   - Create `frontend/src/pages/FundsPage.tsx` modeled on `edenscale/src/pages/FundsPage.tsx` but using `useApiQuery("/funds")` for data

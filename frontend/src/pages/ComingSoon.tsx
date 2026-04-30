@@ -1,11 +1,11 @@
-import { Topbar } from "@/components/layout/Topbar"
+import { PageHero } from "@/components/layout/PageHero"
 import { Card, CardSection } from "@/components/ui/card"
 import { Eyebrow } from "@/components/ui/eyebrow"
 
 export function ComingSoon({ page }: { page: string }) {
   return (
     <>
-      <Topbar
+      <PageHero
         eyebrow={page}
         title={`${page} is on its way.`}
         description="This area of EdenScale is being prepared. Check back soon — the data and workflows for this section are landing in a future release."
