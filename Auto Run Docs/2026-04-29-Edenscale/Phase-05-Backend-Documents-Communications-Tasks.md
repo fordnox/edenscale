@@ -4,7 +4,8 @@ This phase finishes the backend by implementing the supporting tables: documents
 
 ## Tasks
 
-- [ ] Read Phase 02-04's repositories and routers as the pattern reference; do not invent new layering
+- [x] Read Phase 02-04's repositories and routers as the pattern reference; do not invent new layering
+  - Confirmed layering: thin routers (auth via `Depends(get_current_user_record)` or `require_roles(...)` from `app/core/rbac.py`) → `Repository(db: Session)` classes that own all DB I/O and status-transition logic → Pydantic schemas with `ConfigDict(from_attributes=True)` and split `Create`/`Update`/`Read` models. Sub-routers (e.g. `fund_capital_calls_router`) are exported from the same module and mounted in `app/main.py` with their own prefix. RBAC pattern: admin sees all; fund_manager scoped by `organization_id`; LP scoped via `InvestorContact.user_id` joined through commitments. Phase 05 modules will follow these conventions exactly.
 
 - [ ] Implement Documents:
   - `backend/app/schemas/document.py` — `DocumentCreate` (organization_id, fund_id, investor_id, document_type, title, file_name, mime_type, file_size, is_confidential), `DocumentUpdate`, `DocumentRead`, plus `DocumentUploadInit` (`file_name`, `mime_type`, `file_size`) and `DocumentUploadInitResponse` (`upload_url`, `file_url`, `expires_at`)
