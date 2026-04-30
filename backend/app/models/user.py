@@ -37,6 +37,11 @@ class User(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     organization = relationship("Organization", back_populates="users")
+    memberships = relationship(
+        "UserOrganizationMembership",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
     created_fund_groups = relationship("FundGroup", back_populates="created_by_user")
     fund_team_memberships = relationship("FundTeamMember", back_populates="user")
     investor_contacts = relationship("InvestorContact", back_populates="user")

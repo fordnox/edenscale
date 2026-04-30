@@ -28,6 +28,7 @@ from app.models.notification import Notification
 from app.models.organization import Organization
 from app.models.task import Task
 from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 
 __all__ = [
     "AuditLog",
@@ -57,5 +58,6 @@ __all__ = [
     "Task",
     "TaskStatus",
     "User",
+    "UserOrganizationMembership",
     "UserRole",
 ]

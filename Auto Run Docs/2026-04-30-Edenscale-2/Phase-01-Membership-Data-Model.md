@@ -4,13 +4,22 @@ This phase lays the data-model foundation for multi-org membership and global su
 
 ## Tasks
 
-- [ ] Read the orientation files before touching anything else so the generated code blends with project conventions:
+- [x] Read the orientation files before touching anything else so the generated code blends with project conventions:
   - `CLAUDE.md`, `backend/app/main.py`, `backend/app/core/rbac.py`, `backend/app/core/auth.py`
   - `backend/app/models/user.py`, `backend/app/models/organization.py`, `backend/app/models/enums.py`
   - One existing model + repository + schema + router quartet (e.g. `fund_group.py`) to mirror the layering style
   - `backend/app/alembic/versions/20260429_2310_d496f70bae71_initial_schema_from_dbml.py` to copy the alembic style (server defaults, enum creation pattern)
 
-- [ ] Extend the `UserRole` enum and create the membership ORM model:
+  **Orientation notes (for subsequent tasks):**
+  - `UserRole` is `str, enum.Enum` with values `admin / fund_manager / lp` — adding `superadmin` as the FIRST member preserves existing ordinal/string values.
+  - Models follow the SQLAlchemy `Column(...)` declarative style with `server_default=func.now()` for `created_at`/`updated_at`, `index=True` on FKs, and bidirectional `relationship(..., back_populates=...)`. New models must be imported somewhere reachable from app startup so `Base.metadata` registers them — the existing approach is implicit imports via `app/main.py` -> `routers/` -> `repositories/` -> `models/`.
+  - Repositories take a `Session` in `__init__`, expose explicit `list_*/get/create/update/delete` methods, and `commit()` + `refresh()` after writes (see `UserRepository`, `FundGroupRepository`).
+  - Schemas use Pydantic v2 with `ConfigDict(from_attributes=True)`. `UserRead` currently exposes `organization_id` directly — keep it readable when adding `memberships`.
+  - The auth pipeline is: Hanko JWT → `get_current_user` (decoded payload dict) → `get_current_user_record` (resolves/creates local `User` row) → `require_roles(...)` factory. New `superadmin` role must be added to allow-lists where it should bypass org scoping.
+  - The initial migration uses native PG enum types created implicitly by `sa.Enum(..., name=...)` and uses `sa.text('(CURRENT_TIMESTAMP)')` for SQLite-friendly server defaults. Postgres enum value additions need `ALTER TYPE ... ADD VALUE`; SQLite uses CHECK constraints so the existing `user_role` CHECK must be recreated to include `superadmin` (or the dialect branch should no-op since SQLite stores it as a VARCHAR with a CHECK constraint via `sa.Enum`).
+  - Down-revision chain: latest is `d496f70bae71` (initial dbml schema).
+
+- [x] Extend the `UserRole` enum and create the membership ORM model:
   - In `backend/app/models/enums.py`, add `superadmin = "superadmin"` as the FIRST member of `UserRole` (keep order stable for existing values)
   - Create `backend/app/models/user_organization_membership.py` with a `UserOrganizationMembership(Base)` class: `__tablename__ = "user_organization_memberships"`; columns `id` (PK), `user_id` (FK `users.id`, indexed), `organization_id` (FK `organizations.id`, indexed), `role` (Enum `UserRole`, name `"membership_role"`, NOT NULL), `created_at` and `updated_at` mirroring `User`. Add a `UniqueConstraint("user_id", "organization_id", name="uq_user_org_membership")`.
   - Add SQLAlchemy `relationship` back-references on both sides: `User.memberships` and `Organization.memberships`, both `back_populates="user"` / `back_populates="organization"` respectively

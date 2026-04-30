@@ -9,6 +9,7 @@ import enum
 
 
 class UserRole(str, enum.Enum):
+    superadmin = "superadmin"
     admin = "admin"
     fund_manager = "fund_manager"
     lp = "lp"

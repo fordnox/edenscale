@@ -20,6 +20,11 @@ class Organization(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     users = relationship("User", back_populates="organization")
+    memberships = relationship(
+        "UserOrganizationMembership",
+        back_populates="organization",
+        cascade="all, delete-orphan",
+    )
     fund_groups = relationship("FundGroup", back_populates="organization")
     funds = relationship("Fund", back_populates="organization")
     investors = relationship("Investor", back_populates="organization")
