@@ -161,7 +161,14 @@ This final phase focuses on the seams: a UI for editing the current user's profi
   - lp (Northstar) · `carla.diaz@northstar.demo`, `david.kim@northstar.demo`
   - lp (Atlas) · `elena.park@atlas.demo`, `frank.lee@atlas.demo`
 
-- [ ] Final repo gates and lockdown:
+- [x] Final repo gates and lockdown:
   - Run `make openapi`, `make test`, `make lint` and resolve every finding
   - Run `frontend && pnpm run lint`
   - Confirm `git status` is clean apart from intended changes; the pre-commit checklist from `README.md` (test pass, lint pass, openapi sync) is satisfied
+
+  **Lockdown results (Iteration 00001, 2026-04-30):**
+  - `make openapi` — produced only the env-only `info.title` flip (`example.com` ↔ `localhost`) in `backend/openapi.json`; `frontend/src/lib/schema.d.ts` had **no diff**, confirming the contract is in sync. Reverted the env-only diff with `git checkout backend/openapi.json` to keep the canonical committed value, matching every prior task in this phase.
+  - `make test` — **147 passed** (no regressions from the prior 147 baseline established after the seed-claim fix in the smoke pass).
+  - `make lint` — clean: import smoke, `ruff check --fix` ("All checks passed!"), `ty check` ("All checks passed!"), `black` ("All done! ✨ 🍰 ✨"), `isort` ("88 files left unchanged. Skipped 3 files").
+  - `cd frontend && pnpm run lint` (`tsc --noEmit`) — clean.
+  - `git status` — working tree clean apart from the untracked `Auto Run Docs/Working/` folder, which is the Maestro agent's scratch directory (not source). The pre-commit checklist from `README.md` (test pass / lint pass / openapi sync) is satisfied. **Phase 09 is done.**
