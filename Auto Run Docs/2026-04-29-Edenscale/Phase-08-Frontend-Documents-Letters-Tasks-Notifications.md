@@ -34,11 +34,17 @@ This phase finishes the page port from the prototype: Documents (with file uploa
   - Row click opens a `Sheet` rendering `DocumentDetail.tsx`, which calls `GET /documents/{id}` for a fresh `download_url` and exposes a "Download" link that opens in a new tab. The dialog also lets the user link the doc to a fund/investor or upload as firm-wide, plus a Confidential checkbox (default true).
   - `App.tsx` swaps the `ComingSoon` placeholder for `<DocumentsPage />`. Lint (`pnpm run lint`) passes.
 
-- [ ] Port the Letters (Communications) page:
+- [x] Port the Letters (Communications) page:
   - Create `frontend/src/pages/LettersPage.tsx` — list of communications via `useApiQuery("/communications")`. Columns: subject, type pill, fund, sent_at, recipient count, read percentage
   - "New letter" button opens `LetterComposeDialog` with subject, body (textarea, plain text for now — no rich text editor yet), fund_id picker. Save creates a draft via `POST /communications`. "Send" button posts to `POST /communications/{id}/send`
   - Detail drawer: shows recipients with per-recipient `delivered_at` / `read_at` timestamps in a small table
   - Replace the placeholder `/letters` route in `App.tsx`
+
+  Notes:
+  - `LettersPage.tsx` lists communications with two filters (`type` enum, `fund_id`). The list query uses `useApiQuery("/communications", { params: { query: { type, fund_id } } })`; columns are subject (with envelope icon), type Badge (announcement/info, message/active, notification/warning), fund name (joined client-side from `/funds`, falling back to `Fund #N`), sent_at, recipient count, and a percentage + ProgressBar for read rate. Drafts show "—" for sent_at.
+  - `LetterComposeDialog.tsx` posts the draft via `POST /communications`, then optionally chains `POST /communications/{id}/send` when the user clicks "Send now". Both buttons share submit guards and surface their loading state independently.
+  - `LetterDetail.tsx` opens in a Sheet, hydrates with `GET /communications/{id}`, and joins `/users` to enrich `user_id` recipients with names + email; `investor_contact_id` rows fall back to `Contact #N`. Read receipts render with date+time via `formatDate(..., { hour, minute })`. The drawer also exposes a "Send now" CTA when the letter is still a draft.
+  - `App.tsx` swaps the `ComingSoon` placeholder for `<LettersPage />`. `pnpm run lint` (`tsc --noEmit`) passes.
 
 - [ ] Port the Tasks page:
   - Create `frontend/src/pages/TasksPage.tsx` — Kanban-style four columns (`open`, `in_progress`, `done`, `cancelled`). Each column lists task cards via `useApiQuery("/tasks", { params: { status } })`
