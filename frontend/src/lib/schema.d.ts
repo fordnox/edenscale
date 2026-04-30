@@ -839,6 +839,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tasks */
+        get: operations["list_tasks_tasks_get"];
+        put?: never;
+        /** Create Task */
+        post: operations["create_task_tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Task */
+        get: operations["get_task_tasks__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Task */
+        patch: operations["update_task_tasks__task_id__patch"];
+        trace?: never;
+    };
+    "/tasks/{task_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Task */
+        post: operations["complete_task_tasks__task_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/funds/{fund_id}/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tasks For Fund */
+        get: operations["list_tasks_for_fund_funds__fund_id__tasks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -1859,6 +1929,64 @@ export interface components {
             description?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /** TaskCreate */
+        TaskCreate: {
+            /** Fund Id */
+            fund_id?: number | null;
+            /** Assigned To User Id */
+            assigned_to_user_id?: number | null;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /** @default open */
+            status: components["schemas"]["TaskStatus"];
+            /** Due Date */
+            due_date?: string | null;
+        };
+        /** TaskRead */
+        TaskRead: {
+            /** Id */
+            id: number;
+            /** Fund Id */
+            fund_id: number | null;
+            /** Assigned To User Id */
+            assigned_to_user_id: number | null;
+            /** Created By User Id */
+            created_by_user_id: number | null;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            status: components["schemas"]["TaskStatus"];
+            /** Due Date */
+            due_date: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /**
+         * TaskStatus
+         * @enum {string}
+         */
+        TaskStatus: "open" | "in_progress" | "done" | "cancelled";
+        /** TaskUpdate */
+        TaskUpdate: {
+            /** Fund Id */
+            fund_id?: number | null;
+            /** Assigned To User Id */
+            assigned_to_user_id?: number | null;
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            status?: components["schemas"]["TaskStatus"] | null;
+            /** Due Date */
+            due_date?: string | null;
         };
         /** UserCreate */
         UserCreate: {
@@ -4475,6 +4603,207 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommunicationRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tasks_tasks_get: {
+        parameters: {
+            query?: {
+                fund_id?: number | null;
+                status_filter?: components["schemas"]["TaskStatus"] | null;
+                assignee?: number | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_task_tasks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_task_tasks__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_task_tasks__task_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_task_tasks__task_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tasks_for_fund_funds__fund_id__tasks_get: {
+        parameters: {
+            query?: {
+                status_filter?: components["schemas"]["TaskStatus"] | null;
+                assignee?: number | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                fund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRead"][];
                 };
             };
             /** @description Validation Error */

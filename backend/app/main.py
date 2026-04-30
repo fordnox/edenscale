@@ -17,6 +17,7 @@ from app.routers import (
     investor_contacts,
     investors,
     organizations,
+    tasks,
     users,
 )
 
@@ -161,6 +162,18 @@ app.include_router(
     communications.fund_communications_router,
     prefix="/funds",
     tags=["communications"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    tasks.router,
+    prefix="/tasks",
+    tags=["tasks"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    tasks.fund_tasks_router,
+    prefix="/funds",
+    tags=["tasks"],
     dependencies=[Depends(get_current_user)],
 )
 

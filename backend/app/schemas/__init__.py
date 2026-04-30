@@ -70,6 +70,11 @@ from app.schemas.organization import (
     OrganizationRead,
     OrganizationUpdate,
 )
+from app.schemas.task import (
+    TaskCreate,
+    TaskRead,
+    TaskUpdate,
+)
 from app.schemas.user import (
     UserCreate,
     UserRead,
@@ -129,6 +134,9 @@ __all__ = [
     "OrganizationCreate",
     "OrganizationRead",
     "OrganizationUpdate",
+    "TaskCreate",
+    "TaskRead",
+    "TaskUpdate",
     "UserCreate",
     "UserRead",
     "UserRoleUpdate",
