@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     APP_DOMAIN: str = "example.com"
     APP_DATA_PATH: str = "/tmp"
     APP_DATABASE_DSN: str = "sqlite:////tmp/database.db"
+    CORS_ALLOW_ORIGINS: list[str] = ["http://localhost:3000"]
     REDIS_URL: str = "redis://localhost:6379"
     OPENROUTER_API_KEY: str = ""
     HANKO_API_URL: str = ""

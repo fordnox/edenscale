@@ -53,7 +53,7 @@ async def options_handler(request: Request, call_next):
 
 app.add_middleware(
     CORSMiddleware,  # type: ignore[invalid-argument-type]
-    allow_origins=["http://localhost:3000", f"https://{settings.APP_DOMAIN}"],
+    allow_origins=settings.CORS_ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
