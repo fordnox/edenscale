@@ -2,9 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.rbac import get_current_user_record, require_roles
+from app.core.rbac import (
+    get_current_user_record,
+    require_membership_roles,
+    require_roles,
+)
 from app.models.enums import UserRole
 from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import (
     UserCreate,
@@ -48,13 +53,15 @@ async def list_users(
     limit: int = 100,
     include_inactive: bool = False,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
-    if current_user.organization_id is None:
-        return []
     repo = UserRepository(db)
     return repo.list_by_organization(
-        organization_id=current_user.organization_id,  # type: ignore[invalid-argument-type]
+        organization_id=membership.organization_id,  # type: ignore[invalid-argument-type]
         skip=skip,
         limit=limit,
         include_inactive=include_inactive,
@@ -65,16 +72,21 @@ async def list_users(
 async def invite_user(
     data: UserCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
+    if membership.role is UserRole.superadmin and membership.id is None:
+        # Synthesized superadmin membership — no real per-org row. Phase 04
+        # replaces this endpoint with POST /organizations/{id}/memberships.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Use POST /organizations/{id}/memberships to add users (Phase 04)",
+        )
     payload = data.model_dump()
-    if current_user.role is UserRole.fund_manager:
-        if current_user.organization_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Fund managers must belong to an organization to invite users",
-            )
-        payload["organization_id"] = current_user.organization_id
+    payload["organization_id"] = membership.organization_id
     repo = UserRepository(db)
     if repo.get_by_email(payload["email"]):
         raise HTTPException(
@@ -89,7 +101,11 @@ async def update_user(
     user_id: int,
     data: UserUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = UserRepository(db)
     target = repo.get_by_id(user_id)
@@ -98,8 +114,8 @@ async def update_user(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     if (
-        current_user.role is UserRole.fund_manager
-        and target.organization_id != current_user.organization_id
+        membership.role is not UserRole.superadmin
+        and target.organization_id != membership.organization_id
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -111,7 +127,7 @@ async def update_user(
 @router.patch(
     "/{user_id}/role",
     response_model=UserRead,
-    dependencies=[Depends(require_roles(UserRole.admin))],
+    dependencies=[Depends(require_roles(UserRole.admin, UserRole.superadmin))],
 )
 async def update_user_role(
     user_id: int,

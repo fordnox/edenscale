@@ -18,6 +18,7 @@ from app.models import (
     User,
     UserRole,
 )
+from app.models.user_organization_membership import UserOrganizationMembership
 
 
 @pytest.fixture(autouse=True)
@@ -72,6 +73,15 @@ def _seed_user(
             hanko_subject_id=subject_id,
         )
         db.add(user)
+        db.flush()
+        if organization_id is not None:
+            db.add(
+                UserOrganizationMembership(
+                    user_id=user.id,
+                    organization_id=organization_id,
+                    role=role,
+                )
+            )
         db.commit()
         return user.id
     finally:

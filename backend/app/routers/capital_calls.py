@@ -6,13 +6,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.rbac import get_current_user_record, require_roles
+from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.capital_call_item import CapitalCallItem
 from app.models.commitment import Commitment
 from app.models.enums import CapitalCallStatus, CommitmentStatus, UserRole
 from app.models.fund import Fund
 from app.models.investor_contact import InvestorContact
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.capital_call_repository import CapitalCallRepository
 from app.schemas.capital_call import (
     CapitalCallCreate,
@@ -32,11 +32,8 @@ def _load_fund(db: Session, fund_id: int) -> Fund | None:
     return db.query(Fund).filter(Fund.id == fund_id).first()
 
 
-def _ensure_manager_can_edit(current_user: User, fund: Fund) -> None:
-    if (
-        current_user.role is UserRole.fund_manager
-        and fund.organization_id != current_user.organization_id
-    ):
+def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> None:
+    if fund.organization_id != membership.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot manage capital calls for funds outside your organization",
@@ -50,11 +47,11 @@ async def list_capital_calls(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = CapitalCallRepository(db)
-    return repo.list_for_user(
-        current_user,
+    return repo.list_for_membership(
+        membership,
         fund_id=fund_id,
         status=status_filter,
         skip=skip,
@@ -66,7 +63,7 @@ async def list_capital_calls(
 async def get_capital_call(
     call_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = CapitalCallRepository(db)
     call = repo.get_with_items(call_id)
@@ -74,7 +71,7 @@ async def get_capital_call(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Capital call not found"
         )
-    if not repo.user_can_view(current_user, call):
+    if not repo.membership_can_view(membership, call):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view this capital call",
@@ -86,16 +83,20 @@ async def get_capital_call(
 async def create_capital_call(
     data: CapitalCallCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     fund = _load_fund(db, data.fund_id)
     if fund is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
-    _ensure_manager_can_edit(current_user, fund)
+    _ensure_org_scope(membership, fund)
     repo = CapitalCallRepository(db)
-    call = repo.create_draft(data, created_by_user_id=current_user.id)  # type: ignore[invalid-argument-type]
+    call = repo.create_draft(data, created_by_user_id=membership.user_id)  # type: ignore[invalid-argument-type]
     refreshed = repo.get_with_items(call.id)  # type: ignore[invalid-argument-type]
     assert refreshed is not None
     return refreshed
@@ -106,7 +107,11 @@ async def update_capital_call(
     call_id: int,
     data: CapitalCallUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = CapitalCallRepository(db)
     call = repo.get_with_items(call_id)
@@ -116,7 +121,7 @@ async def update_capital_call(
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
     assert fund is not None
-    _ensure_manager_can_edit(current_user, fund)
+    _ensure_org_scope(membership, fund)
     updated = repo.update(call_id, data)
     assert updated is not None
     return updated
@@ -132,7 +137,11 @@ async def add_capital_call_items(
     payload: CapitalCallItemBulkCreate,
     mode: Literal["manual", "pro-rata"] = Query("manual"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = CapitalCallRepository(db)
     call = repo.get_with_items(call_id)
@@ -142,7 +151,7 @@ async def add_capital_call_items(
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
     assert fund is not None
-    _ensure_manager_can_edit(current_user, fund)
+    _ensure_org_scope(membership, fund)
     allocations: list[tuple[int, Decimal]]
     if mode == "pro-rata":
         approved = (
@@ -192,7 +201,11 @@ async def update_capital_call_item(
     item_id: int,
     data: CapitalCallItemUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = CapitalCallRepository(db)
     call = repo.get_with_items(call_id)
@@ -202,7 +215,7 @@ async def update_capital_call_item(
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
     assert fund is not None
-    _ensure_manager_can_edit(current_user, fund)
+    _ensure_org_scope(membership, fund)
     item = next((i for i in call.items if i.id == item_id), None)
     if item is None:
         raise HTTPException(
@@ -227,7 +240,11 @@ async def update_capital_call_item(
 async def send_capital_call(
     call_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = CapitalCallRepository(db)
     call = repo.get_with_items(call_id)
@@ -237,7 +254,7 @@ async def send_capital_call(
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
     assert fund is not None
-    _ensure_manager_can_edit(current_user, fund)
+    _ensure_org_scope(membership, fund)
     try:
         sent = repo.send(call_id)
     except ValueError as exc:
@@ -273,7 +290,11 @@ async def send_capital_call(
 async def cancel_capital_call(
     call_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = CapitalCallRepository(db)
     call = repo.get_with_items(call_id)
@@ -283,7 +304,7 @@ async def cancel_capital_call(
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
     assert fund is not None
-    _ensure_manager_can_edit(current_user, fund)
+    _ensure_org_scope(membership, fund)
     try:
         cancelled = repo.cancel(call_id)
     except ValueError as exc:
@@ -306,7 +327,7 @@ async def list_capital_calls_for_fund(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     fund = _load_fund(db, fund_id)
     if fund is None:
@@ -314,8 +335,8 @@ async def list_capital_calls_for_fund(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
     repo = CapitalCallRepository(db)
-    return repo.list_for_user(
-        current_user,
+    return repo.list_for_membership(
+        membership,
         fund_id=fund_id,
         status=status_filter,
         skip=skip,

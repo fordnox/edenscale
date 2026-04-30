@@ -6,12 +6,17 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.rbac import get_current_user_record, require_roles
+from app.core.rbac import (
+    get_active_membership,
+    require_membership_roles,
+    require_roles,
+)
 from app.models.enums import DocumentType, UserRole
 from app.models.fund import Fund
 from app.models.investor import Investor
 from app.models.organization import Organization
 from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.document_repository import DocumentRepository
 from app.schemas.document import (
     DocumentCreate,
@@ -28,6 +33,8 @@ from app.services.storage import (
 
 router = APIRouter()
 
+_ORG_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+
 
 def _generate_storage_key(file_name: str) -> str:
     """Build a storage key with a random prefix to avoid collisions."""
@@ -36,16 +43,18 @@ def _generate_storage_key(file_name: str) -> str:
     return f"documents/{token}/{safe_name}"
 
 
-def _ensure_can_attach(current_user: User, db: Session, data: DocumentCreate) -> None:
+def _ensure_can_attach(
+    membership: UserOrganizationMembership,
+    db: Session,
+    data: DocumentCreate,
+) -> None:
     """Reject creates that point at orgs/funds/investors the caller can't manage."""
-    if current_user.role is UserRole.admin:
-        return
-    if current_user.role is not UserRole.fund_manager:
+    if membership.role not in _ORG_ROLES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins and fund managers can create documents",
         )
-    org_id = current_user.organization_id
+    org_id = membership.organization_id
     if data.organization_id is not None and data.organization_id != org_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -110,7 +119,9 @@ def _to_read(document) -> DocumentRead:
 async def init_document_upload(
     payload: DocumentUploadInit,
     current_user: User = Depends(
-        require_roles(UserRole.admin, UserRole.fund_manager, UserRole.lp)
+        require_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.lp, UserRole.superadmin
+        )
     ),
 ):
     storage = get_storage()
@@ -125,9 +136,9 @@ async def init_document_upload(
 async def create_document(
     data: DocumentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
-    _ensure_can_attach(current_user, db, data)
+    _ensure_can_attach(membership, db, data)
     if data.organization_id is not None:
         org = (
             db.query(Organization)
@@ -139,7 +150,7 @@ async def create_document(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found"
             )
     repo = DocumentRepository(db)
-    document = repo.create(data, uploaded_by_user_id=current_user.id)  # type: ignore[invalid-argument-type]
+    document = repo.create(data, uploaded_by_user_id=membership.user_id)  # type: ignore[invalid-argument-type]
     return _to_read(document)
 
 
@@ -152,11 +163,11 @@ async def list_documents(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = DocumentRepository(db)
-    documents = repo.list_for_user(
-        current_user,
+    documents = repo.list_for_membership(
+        membership,
         organization_id=organization_id,
         fund_id=fund_id,
         investor_id=investor_id,
@@ -171,7 +182,7 @@ async def list_documents(
 async def get_document(
     document_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = DocumentRepository(db)
     document = repo.get(document_id)
@@ -179,7 +190,7 @@ async def get_document(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
-    if not repo.user_can_view(current_user, document):
+    if not repo.membership_can_view(membership, document):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view this document",
@@ -192,7 +203,11 @@ async def update_document(
     document_id: int,
     data: DocumentUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = DocumentRepository(db)
     document = repo.get(document_id)
@@ -200,7 +215,7 @@ async def update_document(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
-    if not repo.user_can_manage(current_user, document):
+    if not repo.membership_can_manage(membership, document):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot edit this document",
@@ -214,7 +229,11 @@ async def update_document(
 async def delete_document(
     document_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = DocumentRepository(db)
     document = repo.get(document_id)
@@ -222,7 +241,7 @@ async def delete_document(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
-    if not repo.user_can_manage(current_user, document):
+    if not repo.membership_can_manage(membership, document):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot delete this document",

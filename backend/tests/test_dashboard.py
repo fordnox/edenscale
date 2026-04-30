@@ -16,6 +16,7 @@ from app.models import (CapitalCall, CapitalCallStatus, Commitment,
                         InvestorContact, Notification, NotificationStatus,
                         Organization, OrganizationType, Task, TaskStatus, User,
                         UserRole)
+from app.models.user_organization_membership import UserOrganizationMembership
 
 
 @pytest.fixture(autouse=True)
@@ -49,7 +50,7 @@ def _create_org_user(
     *,
     org_name: str = "Eden Capital",
 ) -> tuple[int, int]:
-    """Insert one Organization + linked User and return (org_id, user_id)."""
+    """Insert one Organization + linked User + matching membership."""
     db = SessionLocal()
     try:
         org = Organization(name=org_name, type=OrganizationType.fund_manager_firm)
@@ -64,17 +65,26 @@ def _create_org_user(
             hanko_subject_id=subject_id,
         )
         db.add(user)
+        db.flush()
+        db.add(
+            UserOrganizationMembership(
+                user_id=user.id,
+                organization_id=org.id,
+                role=role,
+            )
+        )
         db.commit()
         return org.id, user.id
     finally:
         db.close()
 
 
-def _create_admin_user(subject_id: str) -> int:
+def _create_admin_user(subject_id: str, *, organization_ids: list[int]) -> int:
+    """Create an admin user with one membership per org in ``organization_ids``."""
     db = SessionLocal()
     try:
         user = User(
-            organization_id=None,
+            organization_id=organization_ids[0] if organization_ids else None,
             role=UserRole.admin,
             first_name="Root",
             last_name="Admin",
@@ -82,17 +92,26 @@ def _create_admin_user(subject_id: str) -> int:
             hanko_subject_id=subject_id,
         )
         db.add(user)
+        db.flush()
+        for org_id in organization_ids:
+            db.add(
+                UserOrganizationMembership(
+                    user_id=user.id,
+                    organization_id=org_id,
+                    role=UserRole.admin,
+                )
+            )
         db.commit()
         return user.id
     finally:
         db.close()
 
 
-def _create_lp_user(subject_id: str) -> int:
+def _create_lp_user(subject_id: str, *, organization_id: int | None = None) -> int:
     db = SessionLocal()
     try:
         user = User(
-            organization_id=None,
+            organization_id=organization_id,
             role=UserRole.lp,
             first_name="Lp",
             last_name="Holder",
@@ -100,6 +119,15 @@ def _create_lp_user(subject_id: str) -> int:
             hanko_subject_id=subject_id,
         )
         db.add(user)
+        db.flush()
+        if organization_id is not None:
+            db.add(
+                UserOrganizationMembership(
+                    user_id=user.id,
+                    organization_id=organization_id,
+                    role=UserRole.lp,
+                )
+            )
         db.commit()
         return user.id
     finally:
@@ -299,12 +327,13 @@ class TestDashboardOverview:
         assert upcoming["fund_name"] == "Eden Growth I"
         assert upcoming["status"] == "scheduled"
 
-    def test_admin_sees_aggregates_across_all_organizations(
+    def test_admin_with_multi_org_memberships_scopes_per_active_org(
         self, client, override_user
     ):
+        """A multi-org admin sees only the org chosen via X-Organization-Id."""
         org_a, _ = _create_org_user("hanko-mgr-a", org_name="Org A")
         org_b, _ = _create_org_user("hanko-mgr-b", org_name="Org B")
-        _create_admin_user("hanko-admin")
+        _create_admin_user("hanko-admin", organization_ids=[org_a, org_b])
 
         db = SessionLocal()
         try:
@@ -351,18 +380,28 @@ class TestDashboardOverview:
             db.close()
 
         override_user("hanko-admin")
-        response = client.get("/dashboard/overview")
-        assert response.status_code == 200
-        data = response.json()
 
-        assert data["funds_active"] == 2
-        assert data["investors_total"] == 2
-        assert Decimal(data["commitments_total_amount"]) == Decimal("1000000.00")
-        assert {f["name"] for f in data["recent_funds"]} == {"Fund A", "Fund B"}
+        response_a = client.get(
+            "/dashboard/overview", headers={"X-Organization-Id": str(org_a)}
+        )
+        assert response_a.status_code == 200
+        data_a = response_a.json()
+        assert data_a["funds_active"] == 1
+        assert {f["name"] for f in data_a["recent_funds"]} == {"Fund A"}
+        assert Decimal(data_a["commitments_total_amount"]) == Decimal("400000.00")
+
+        response_b = client.get(
+            "/dashboard/overview", headers={"X-Organization-Id": str(org_b)}
+        )
+        assert response_b.status_code == 200
+        data_b = response_b.json()
+        assert data_b["funds_active"] == 1
+        assert {f["name"] for f in data_b["recent_funds"]} == {"Fund B"}
+        assert Decimal(data_b["commitments_total_amount"]) == Decimal("600000.00")
 
     def test_lp_sees_only_their_commitments_and_investors(self, client, override_user):
         org_id, _ = _create_org_user("hanko-mgr")
-        lp_user_id = _create_lp_user("hanko-lp")
+        lp_user_id = _create_lp_user("hanko-lp", organization_id=org_id)
 
         db = SessionLocal()
         try:
@@ -613,7 +652,7 @@ class TestDashboardActivityAggregates:
         self, client, override_user
     ):
         org_id, fm_user_id = _create_org_user("hanko-mgr")
-        lp_user_id = _create_lp_user("hanko-lp")
+        lp_user_id = _create_lp_user("hanko-lp", organization_id=org_id)
 
         db = SessionLocal()
         try:

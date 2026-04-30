@@ -10,9 +10,11 @@ from app.models.distribution_item import DistributionItem
 from app.models.enums import DistributionStatus, UserRole
 from app.models.fund import Fund
 from app.models.investor_contact import InvestorContact
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.commitment_repository import CommitmentRepository
 from app.schemas.distribution import DistributionCreate, DistributionUpdate
+
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
 
 _SENDABLE_STATUSES = {DistributionStatus.draft, DistributionStatus.scheduled}
 _TERMINAL_STATUSES = {DistributionStatus.cancelled}
@@ -51,9 +53,9 @@ class DistributionRepository:
             joinedload(Distribution.fund),
         )
 
-    def list_for_user(
+    def list_for_membership(
         self,
-        user: User,
+        membership: UserOrganizationMembership,
         *,
         fund_id: int | None = None,
         status: DistributionStatus | None = None,
@@ -61,17 +63,13 @@ class DistributionRepository:
         limit: int = 100,
     ) -> list[Distribution]:
         query = self._base_query()
-        if user.role is UserRole.admin:
-            pass
-        elif user.role is UserRole.fund_manager:
-            if user.organization_id is None:
-                return []
+        if membership.role in _ORG_VISIBLE_ROLES:
             query = query.join(Fund, Fund.id == Distribution.fund_id).filter(
-                Fund.organization_id == user.organization_id
+                Fund.organization_id == membership.organization_id
             )
         else:
             visible_investor_ids = select(InvestorContact.investor_id).where(
-                InvestorContact.user_id == user.id
+                InvestorContact.user_id == membership.user_id
             )
             visible_distribution_ids = (
                 select(DistributionItem.distribution_id)
@@ -91,14 +89,14 @@ class DistributionRepository:
     def get_with_items(self, distribution_id: int) -> Distribution | None:
         return self._base_query().filter(Distribution.id == distribution_id).first()
 
-    def user_can_view(self, user: User, distribution: Distribution) -> bool:
-        if user.role is UserRole.admin:
-            return True
-        if user.role is UserRole.fund_manager:
+    def membership_can_view(
+        self, membership: UserOrganizationMembership, distribution: Distribution
+    ) -> bool:
+        if membership.role in _ORG_VISIBLE_ROLES:
             fund = self.db.query(Fund).filter(Fund.id == distribution.fund_id).first()
             if fund is None:
                 return False
-            return bool(fund.organization_id == user.organization_id)
+            return bool(fund.organization_id == membership.organization_id)
         return (
             self.db.query(DistributionItem.id)
             .join(Commitment, Commitment.id == DistributionItem.commitment_id)
@@ -108,7 +106,7 @@ class DistributionRepository:
             )
             .filter(
                 DistributionItem.distribution_id == distribution.id,
-                InvestorContact.user_id == user.id,
+                InvestorContact.user_id == membership.user_id,
             )
             .first()
             is not None

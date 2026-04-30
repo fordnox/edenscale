@@ -6,8 +6,10 @@ from sqlalchemy.orm import Query, Session
 from app.models.enums import TaskStatus, UserRole
 from app.models.fund import Fund
 from app.models.task import Task
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.schemas.task import TaskCreate, TaskUpdate
+
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
 
 
 class TaskRepository:
@@ -17,9 +19,9 @@ class TaskRepository:
     def _base_query(self) -> Query:
         return self.db.query(Task)
 
-    def list_for_user(
+    def list_for_membership(
         self,
-        user: User,
+        membership: UserOrganizationMembership,
         *,
         fund_id: int | None = None,
         status: TaskStatus | None = None,
@@ -28,33 +30,22 @@ class TaskRepository:
         limit: int = 100,
     ) -> list[Task]:
         query = self._base_query()
-        if user.role is UserRole.admin:
-            if assignee is not None:
-                query = query.filter(Task.assigned_to_user_id == assignee)
-        elif user.role is UserRole.fund_manager:
-            org_id = user.organization_id
-            if org_id is None:
-                org_visible = query.filter(
-                    or_(
-                        Task.assigned_to_user_id == user.id,
-                        Task.created_by_user_id == user.id,
-                    )
+        if membership.role in _ORG_VISIBLE_ROLES:
+            org_fund_ids = select(Fund.id).where(
+                Fund.organization_id == membership.organization_id
+            )
+            query = query.filter(
+                or_(
+                    Task.fund_id.in_(org_fund_ids),
+                    Task.assigned_to_user_id == membership.user_id,
+                    Task.created_by_user_id == membership.user_id,
                 )
-                query = org_visible
-            else:
-                org_fund_ids = select(Fund.id).where(Fund.organization_id == org_id)
-                query = query.filter(
-                    or_(
-                        Task.fund_id.in_(org_fund_ids),
-                        Task.assigned_to_user_id == user.id,
-                        Task.created_by_user_id == user.id,
-                    )
-                )
+            )
             if assignee is not None:
                 query = query.filter(Task.assigned_to_user_id == assignee)
         else:
             # LP / non-privileged: only their own assignments are visible.
-            query = query.filter(Task.assigned_to_user_id == user.id)
+            query = query.filter(Task.assigned_to_user_id == membership.user_id)
         if fund_id is not None:
             query = query.filter(Task.fund_id == fund_id)
         if status is not None:
@@ -64,37 +55,44 @@ class TaskRepository:
     def get(self, task_id: int) -> Task | None:
         return self._base_query().filter(Task.id == task_id).first()
 
-    def user_can_view(self, user: User, task: Task) -> bool:
-        if user.role is UserRole.admin:
+    def membership_can_view(
+        self, membership: UserOrganizationMembership, task: Task
+    ) -> bool:
+        if (
+            task.assigned_to_user_id == membership.user_id
+            or task.created_by_user_id == membership.user_id
+        ):
             return True
-        if task.assigned_to_user_id == user.id or task.created_by_user_id == user.id:
-            return True
-        if user.role is UserRole.fund_manager:
+        if membership.role in _ORG_VISIBLE_ROLES:
             if task.fund_id is None:
                 return False
             fund = self.db.query(Fund).filter(Fund.id == task.fund_id).first()
             return bool(
-                fund is not None and fund.organization_id == user.organization_id
+                fund is not None and fund.organization_id == membership.organization_id
             )
         return False
 
-    def user_can_manage(self, user: User, task: Task) -> bool:
-        if user.role is UserRole.admin:
-            return True
-        if user.role is not UserRole.fund_manager:
+    def membership_can_manage(
+        self, membership: UserOrganizationMembership, task: Task
+    ) -> bool:
+        if membership.role not in _ORG_VISIBLE_ROLES:
             # LPs may complete a task assigned to them but not edit metadata.
             return False
-        if task.created_by_user_id == user.id:
+        if task.created_by_user_id == membership.user_id:
             return True
         if task.fund_id is None:
             return False
         fund = self.db.query(Fund).filter(Fund.id == task.fund_id).first()
-        return bool(fund is not None and fund.organization_id == user.organization_id)
+        return bool(
+            fund is not None and fund.organization_id == membership.organization_id
+        )
 
-    def user_can_complete(self, user: User, task: Task) -> bool:
-        if self.user_can_manage(user, task):
+    def membership_can_complete(
+        self, membership: UserOrganizationMembership, task: Task
+    ) -> bool:
+        if self.membership_can_manage(membership, task):
             return True
-        return bool(task.assigned_to_user_id == user.id)
+        return bool(task.assigned_to_user_id == membership.user_id)
 
     def create(
         self, data: TaskCreate, *, created_by_user_id: int | None = None

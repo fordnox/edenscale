@@ -2001,6 +2001,21 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /** MembershipRead */
+        MembershipRead: {
+            /** Id */
+            id: number;
+            /** User Id */
+            user_id: number;
+            /** Organization Id */
+            organization_id: number;
+            role: components["schemas"]["UserRole"];
+            organization: components["schemas"]["OrganizationRead"];
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
         /** NotificationRead */
         NotificationRead: {
             /** Id */
@@ -2196,12 +2211,17 @@ export interface components {
             created_at: string | null;
             /** Updated At */
             updated_at: string | null;
+            /**
+             * Memberships
+             * @default []
+             */
+            memberships: components["schemas"]["MembershipRead"][];
         };
         /**
          * UserRole
          * @enum {string}
          */
-        UserRole: "admin" | "fund_manager" | "lp";
+        UserRole: "superadmin" | "admin" | "fund_manager" | "lp";
         /** UserRoleUpdate */
         UserRoleUpdate: {
             role: components["schemas"]["UserRole"];
@@ -2255,7 +2275,9 @@ export interface operations {
     get_overview_dashboard_overview_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2268,6 +2290,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DashboardOverviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -2332,7 +2363,9 @@ export interface operations {
                 limit?: number;
                 include_inactive?: boolean;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2361,7 +2394,9 @@ export interface operations {
     invite_user_users_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2394,7 +2429,9 @@ export interface operations {
     update_user_users__user_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 user_id: number;
             };
@@ -2630,7 +2667,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2659,7 +2698,9 @@ export interface operations {
     create_fund_group_fund_groups_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2692,7 +2733,9 @@ export interface operations {
     get_fund_group_fund_groups__fund_group_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_group_id: number;
             };
@@ -2723,7 +2766,9 @@ export interface operations {
     delete_fund_group_fund_groups__fund_group_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_group_id: number;
             };
@@ -2754,7 +2799,9 @@ export interface operations {
     update_fund_group_fund_groups__fund_group_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_group_id: number;
             };
@@ -2792,7 +2839,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2821,7 +2870,9 @@ export interface operations {
     create_fund_funds_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2854,7 +2905,9 @@ export interface operations {
     get_fund_funds__fund_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
             };
@@ -2885,7 +2938,9 @@ export interface operations {
     update_fund_funds__fund_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
             };
@@ -2920,7 +2975,9 @@ export interface operations {
     get_fund_overview_funds__fund_id__overview_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
             };
@@ -2951,7 +3008,9 @@ export interface operations {
     archive_fund_funds__fund_id__archive_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
             };
@@ -2985,7 +3044,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
             };
@@ -3016,7 +3077,9 @@ export interface operations {
     add_team_member_funds__fund_id__team_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
             };
@@ -3051,7 +3114,9 @@ export interface operations {
     remove_team_member_funds__fund_id__team__member_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
                 member_id: number;
@@ -3083,7 +3148,9 @@ export interface operations {
     update_team_member_funds__fund_id__team__member_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
                 member_id: number;
@@ -3122,7 +3189,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -3151,7 +3220,9 @@ export interface operations {
     create_investor_investors_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -3184,7 +3255,9 @@ export interface operations {
     get_investor_investors__investor_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 investor_id: number;
             };
@@ -3215,7 +3288,9 @@ export interface operations {
     delete_investor_investors__investor_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 investor_id: number;
             };
@@ -3244,7 +3319,9 @@ export interface operations {
     update_investor_investors__investor_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 investor_id: number;
             };
@@ -3282,7 +3359,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 investor_id: number;
             };
@@ -3313,7 +3392,9 @@ export interface operations {
     create_investor_contact_investors__investor_id__contacts_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 investor_id: number;
             };
@@ -3348,7 +3429,9 @@ export interface operations {
     delete_investor_contact_investors__investor_id__contacts__contact_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 investor_id: number;
                 contact_id: number;
@@ -3380,7 +3463,9 @@ export interface operations {
     update_investor_contact_investors__investor_id__contacts__contact_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 investor_id: number;
                 contact_id: number;
@@ -3421,7 +3506,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -3450,7 +3537,9 @@ export interface operations {
     create_commitment_commitments_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -3483,7 +3572,9 @@ export interface operations {
     get_commitment_commitments__commitment_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 commitment_id: number;
             };
@@ -3514,7 +3605,9 @@ export interface operations {
     update_commitment_commitments__commitment_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 commitment_id: number;
             };
@@ -3549,7 +3642,9 @@ export interface operations {
     update_commitment_status_commitments__commitment_id__status_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 commitment_id: number;
             };
@@ -3587,7 +3682,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
             };
@@ -3621,7 +3718,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 investor_id: number;
             };
@@ -3657,7 +3756,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -3686,7 +3787,9 @@ export interface operations {
     create_capital_call_capital_calls_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -3719,7 +3822,9 @@ export interface operations {
     get_capital_call_capital_calls__call_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 call_id: number;
             };
@@ -3750,7 +3855,9 @@ export interface operations {
     update_capital_call_capital_calls__call_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 call_id: number;
             };
@@ -3787,7 +3894,9 @@ export interface operations {
             query?: {
                 mode?: "manual" | "pro-rata";
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 call_id: number;
             };
@@ -3822,7 +3931,9 @@ export interface operations {
     update_capital_call_item_capital_calls__call_id__items__item_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 call_id: number;
                 item_id: number;
@@ -3858,7 +3969,9 @@ export interface operations {
     send_capital_call_capital_calls__call_id__send_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 call_id: number;
             };
@@ -3889,7 +4002,9 @@ export interface operations {
     cancel_capital_call_capital_calls__call_id__cancel_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 call_id: number;
             };
@@ -3924,7 +4039,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
             };
@@ -3960,7 +4077,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -3989,7 +4108,9 @@ export interface operations {
     create_distribution_distributions_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4022,7 +4143,9 @@ export interface operations {
     get_distribution_distributions__distribution_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 distribution_id: number;
             };
@@ -4053,7 +4176,9 @@ export interface operations {
     update_distribution_distributions__distribution_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 distribution_id: number;
             };
@@ -4090,7 +4215,9 @@ export interface operations {
             query?: {
                 mode?: "manual" | "pro-rata";
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 distribution_id: number;
             };
@@ -4125,7 +4252,9 @@ export interface operations {
     update_distribution_item_distributions__distribution_id__items__item_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 distribution_id: number;
                 item_id: number;
@@ -4161,7 +4290,9 @@ export interface operations {
     send_distribution_distributions__distribution_id__send_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 distribution_id: number;
             };
@@ -4192,7 +4323,9 @@ export interface operations {
     cancel_distribution_distributions__distribution_id__cancel_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 distribution_id: number;
             };
@@ -4227,7 +4360,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
             };
@@ -4298,7 +4433,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4327,7 +4464,9 @@ export interface operations {
     create_document_documents_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4360,7 +4499,9 @@ export interface operations {
     get_document_documents__document_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 document_id: number;
             };
@@ -4391,7 +4532,9 @@ export interface operations {
     delete_document_documents__document_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 document_id: number;
             };
@@ -4420,7 +4563,9 @@ export interface operations {
     update_document_documents__document_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 document_id: number;
             };
@@ -4549,7 +4694,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4578,7 +4725,9 @@ export interface operations {
     create_communication_communications_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4611,7 +4760,9 @@ export interface operations {
     get_communication_communications__communication_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 communication_id: number;
             };
@@ -4642,7 +4793,9 @@ export interface operations {
     update_communication_communications__communication_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 communication_id: number;
             };
@@ -4677,7 +4830,9 @@ export interface operations {
     send_communication_communications__communication_id__send_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 communication_id: number;
             };
@@ -4712,7 +4867,9 @@ export interface operations {
     mark_recipient_read_communications__communication_id__recipients__recipient_id__read_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 communication_id: number;
                 recipient_id: number;
@@ -4748,7 +4905,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
             };
@@ -4785,7 +4944,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4814,7 +4975,9 @@ export interface operations {
     create_task_tasks_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4847,7 +5010,9 @@ export interface operations {
     get_task_tasks__task_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 task_id: number;
             };
@@ -4878,7 +5043,9 @@ export interface operations {
     update_task_tasks__task_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 task_id: number;
             };
@@ -4913,7 +5080,9 @@ export interface operations {
     complete_task_tasks__task_id__complete_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 task_id: number;
             };
@@ -4949,7 +5118,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 fund_id: number;
             };

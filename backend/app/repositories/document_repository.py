@@ -6,8 +6,10 @@ from app.models.document import Document
 from app.models.enums import DocumentType, UserRole
 from app.models.fund import Fund
 from app.models.investor_contact import InvestorContact
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.schemas.document import DocumentCreate, DocumentUpdate
+
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
 
 
 class DocumentRepository:
@@ -17,25 +19,23 @@ class DocumentRepository:
     def _base_query(self) -> Query:
         return self.db.query(Document)
 
-    def _visibility_filter(self, query: Query, user: User) -> Query:
-        if user.role is UserRole.admin:
-            return query
-        if user.role is UserRole.fund_manager:
-            org_id = user.organization_id
-            if org_id is None:
-                return query.filter(Document.id == -1)
+    def _visibility_filter(
+        self, query: Query, membership: UserOrganizationMembership
+    ) -> Query:
+        if membership.role in _ORG_VISIBLE_ROLES:
+            org_id = membership.organization_id
             visible_fund_ids = select(Fund.id).where(Fund.organization_id == org_id)
             return query.filter(
                 or_(
                     Document.organization_id == org_id,
                     Document.fund_id.in_(visible_fund_ids),
-                    Document.uploaded_by_user_id == user.id,
+                    Document.uploaded_by_user_id == membership.user_id,
                 )
             )
         # LP: only docs scoped to investors they're a contact for, plus
         # non-confidential docs on funds they hold a commitment in.
         visible_investor_ids = select(InvestorContact.investor_id).where(
-            InvestorContact.user_id == user.id
+            InvestorContact.user_id == membership.user_id
         )
         visible_fund_ids = (
             select(Commitment.fund_id)
@@ -43,19 +43,19 @@ class DocumentRepository:
                 InvestorContact,
                 InvestorContact.investor_id == Commitment.investor_id,
             )
-            .where(InvestorContact.user_id == user.id)
+            .where(InvestorContact.user_id == membership.user_id)
         )
         return query.filter(
             or_(
                 Document.investor_id.in_(visible_investor_ids),
-                Document.uploaded_by_user_id == user.id,
+                Document.uploaded_by_user_id == membership.user_id,
                 ~Document.is_confidential & Document.fund_id.in_(visible_fund_ids),
             )
         )
 
-    def list_for_user(
+    def list_for_membership(
         self,
-        user: User,
+        membership: UserOrganizationMembership,
         *,
         organization_id: int | None = None,
         fund_id: int | None = None,
@@ -64,7 +64,7 @@ class DocumentRepository:
         skip: int = 0,
         limit: int = 100,
     ) -> list[Document]:
-        query = self._visibility_filter(self._base_query(), user)
+        query = self._visibility_filter(self._base_query(), membership)
         if organization_id is not None:
             query = query.filter(Document.organization_id == organization_id)
         if fund_id is not None:
@@ -78,32 +78,33 @@ class DocumentRepository:
     def get(self, document_id: int) -> Document | None:
         return self._base_query().filter(Document.id == document_id).first()
 
-    def user_can_view(self, user: User, document: Document) -> bool:
-        if user.role is UserRole.admin:
-            return True
-        if user.role is UserRole.fund_manager:
-            if document.uploaded_by_user_id == user.id:
+    def membership_can_view(
+        self, membership: UserOrganizationMembership, document: Document
+    ) -> bool:
+        if membership.role in _ORG_VISIBLE_ROLES:
+            if document.uploaded_by_user_id == membership.user_id:
                 return True
             if (
                 document.organization_id is not None
-                and document.organization_id == user.organization_id
+                and document.organization_id == membership.organization_id
             ):
                 return True
             if document.fund_id is not None:
                 fund = self.db.query(Fund).filter(Fund.id == document.fund_id).first()
                 return bool(
-                    fund is not None and fund.organization_id == user.organization_id
+                    fund is not None
+                    and fund.organization_id == membership.organization_id
                 )
             return False
         # LP
-        if document.uploaded_by_user_id == user.id:
+        if document.uploaded_by_user_id == membership.user_id:
             return True
         if document.investor_id is not None:
             return (
                 self.db.query(InvestorContact.id)
                 .filter(
                     InvestorContact.investor_id == document.investor_id,
-                    InvestorContact.user_id == user.id,
+                    InvestorContact.user_id == membership.user_id,
                 )
                 .first()
                 is not None
@@ -117,30 +118,30 @@ class DocumentRepository:
                 )
                 .filter(
                     Commitment.fund_id == document.fund_id,
-                    InvestorContact.user_id == user.id,
+                    InvestorContact.user_id == membership.user_id,
                 )
                 .first()
                 is not None
             )
         return False
 
-    def user_can_manage(self, user: User, document: Document) -> bool:
-        if user.role is UserRole.admin:
-            return True
-        if user.role is UserRole.fund_manager:
-            if document.uploaded_by_user_id == user.id:
-                return True
-            if (
-                document.organization_id is not None
-                and document.organization_id == user.organization_id
-            ):
-                return True
-            if document.fund_id is not None:
-                fund = self.db.query(Fund).filter(Fund.id == document.fund_id).first()
-                return bool(
-                    fund is not None and fund.organization_id == user.organization_id
-                )
+    def membership_can_manage(
+        self, membership: UserOrganizationMembership, document: Document
+    ) -> bool:
+        if membership.role not in _ORG_VISIBLE_ROLES:
             return False
+        if document.uploaded_by_user_id == membership.user_id:
+            return True
+        if (
+            document.organization_id is not None
+            and document.organization_id == membership.organization_id
+        ):
+            return True
+        if document.fund_id is not None:
+            fund = self.db.query(Fund).filter(Fund.id == document.fund_id).first()
+            return bool(
+                fund is not None and fund.organization_id == membership.organization_id
+            )
         return False
 
     def create(

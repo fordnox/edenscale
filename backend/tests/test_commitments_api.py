@@ -21,6 +21,7 @@ from app.models import (
     User,
     UserRole,
 )
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.capital_call_repository import CapitalCallRepository
 from app.repositories.distribution_repository import DistributionRepository
 from app.schemas.capital_call import CapitalCallCreate
@@ -79,6 +80,15 @@ def _seed_user(
             hanko_subject_id=subject_id,
         )
         db.add(user)
+        db.flush()
+        if organization_id is not None:
+            db.add(
+                UserOrganizationMembership(
+                    user_id=user.id,
+                    organization_id=organization_id,
+                    role=role,
+                )
+            )
         db.commit()
         return user.id
     finally:

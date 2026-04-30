@@ -82,8 +82,14 @@ This phase lays the data-model foundation for multi-org membership and global su
   - `test_promote_superadmin.py` (3 tests): invokes `main(email)` directly (the test guidance from the previous task explicitly preserved this entry point) and asserts role/org-id mutation, idempotence on an already-promoted user, and the `SystemExit` path when the email isn't found. Captures stdout via `capsys` to confirm the confirmation line.
   - Full suite: `uv run pytest` → 161 passed (14 new + 147 pre-existing) in 5.70s, no regressions.
 
-- [ ] Wire openapi + lint + test gates:
+- [x] Wire openapi + lint + test gates:
   - Run `make openapi` so `backend/openapi.json` and `frontend/src/lib/schema.d.ts` pick up the new `MembershipRead` schema and the updated `UserRead.memberships` field
   - Run `make lint` and fix any issues
   - Run `make test` and fix any failures
   - Commit nothing — the user reviews and commits manually
+
+  **Implementation notes:**
+  - `make openapi` regenerated `backend/openapi.json` and `frontend/src/lib/schema.d.ts` cleanly. Diff: `MembershipRead` schema now exposed (id/user_id/organization_id/role/organization/created_at/updated_at) and `UserRead.memberships: MembershipRead[]` populated as expected (+22 lines in `schema.d.ts`).
+  - `make lint` first run failed with two `ty` `invalid-argument-type` errors at `user_organization_membership_repository.py:96` — `user.id` and `user.organization_id` infer as `Column[Unknown] | Unknown` when read off a SQLAlchemy ORM instance and passed into `int`-typed `get(...)`. Codebase precedent for this exact case is a line-scoped `# type: ignore[invalid-argument-type]` (see `routers/communications.py:99`, `routers/documents.py:142`, `routers/capital_calls.py:98`). Applied the same suppression on line 96; second `make lint` run is fully green (ruff, ty, black, isort all clean).
+  - `make test` → 161 passed in 5.96s. No regressions — the 14 new membership/superadmin tests from earlier tasks all pass alongside the 147 pre-existing tests.
+  - Per task instructions, did not commit. Working tree changes left for user review: `backend/app/repositories/user_organization_membership_repository.py` (1-line type-ignore), `backend/openapi.json`, `frontend/src/lib/schema.d.ts`.

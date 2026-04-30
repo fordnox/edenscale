@@ -9,8 +9,10 @@ from app.models.distribution_item import DistributionItem
 from app.models.enums import CommitmentStatus, UserRole
 from app.models.fund import Fund
 from app.models.investor_contact import InvestorContact
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.schemas.commitment import CommitmentCreate, CommitmentUpdate
+
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
 
 
 class CommitmentRepository:
@@ -20,9 +22,9 @@ class CommitmentRepository:
     def _base_query(self) -> Query:
         return self.db.query(Commitment)
 
-    def list(
+    def list_for_membership(
         self,
-        user: User,
+        membership: UserOrganizationMembership,
         *,
         fund_id: int | None = None,
         investor_id: int | None = None,
@@ -30,17 +32,13 @@ class CommitmentRepository:
         limit: int = 100,
     ) -> list[Commitment]:
         query = self._base_query()
-        if user.role is UserRole.admin:
-            pass
-        elif user.role is UserRole.fund_manager:
-            if user.organization_id is None:
-                return []
+        if membership.role in _ORG_VISIBLE_ROLES:
             query = query.join(Fund, Fund.id == Commitment.fund_id).filter(
-                Fund.organization_id == user.organization_id
+                Fund.organization_id == membership.organization_id
             )
         else:
             visible_investor_ids = select(InvestorContact.investor_id).where(
-                InvestorContact.user_id == user.id
+                InvestorContact.user_id == membership.user_id
             )
             query = query.filter(Commitment.investor_id.in_(visible_investor_ids))
         if fund_id is not None:
@@ -64,19 +62,19 @@ class CommitmentRepository:
             .first()
         )
 
-    def user_can_view(self, user: User, commitment: Commitment) -> bool:
-        if user.role is UserRole.admin:
-            return True
-        if user.role is UserRole.fund_manager:
+    def membership_can_view(
+        self, membership: UserOrganizationMembership, commitment: Commitment
+    ) -> bool:
+        if membership.role in _ORG_VISIBLE_ROLES:
             fund = self.db.query(Fund).filter(Fund.id == commitment.fund_id).first()
             if fund is None:
                 return False
-            return bool(fund.organization_id == user.organization_id)
+            return bool(fund.organization_id == membership.organization_id)
         return (
             self.db.query(InvestorContact.id)
             .filter(
                 InvestorContact.investor_id == commitment.investor_id,
-                InvestorContact.user_id == user.id,
+                InvestorContact.user_id == membership.user_id,
             )
             .first()
             is not None

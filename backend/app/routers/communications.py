@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.rbac import get_current_user_record, require_roles
+from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.communication import Communication
 from app.models.enums import CommunicationType, UserRole
 from app.models.fund import Fund
 from app.models.investor_contact import InvestorContact
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.communication_repository import CommunicationRepository
 from app.schemas.communication import (
     CommunicationCreate,
@@ -21,16 +21,15 @@ from app.services.notification_service import notify
 router = APIRouter()
 
 
-def _ensure_can_attach_fund(current_user: User, db: Session, fund_id: int) -> Fund:
+def _ensure_can_attach_fund(
+    membership: UserOrganizationMembership, db: Session, fund_id: int
+) -> Fund:
     fund = db.query(Fund).filter(Fund.id == fund_id).first()
     if fund is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
-    if (
-        current_user.role is UserRole.fund_manager
-        and fund.organization_id != current_user.organization_id
-    ):
+    if fund.organization_id != membership.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot attach communication to a fund outside your organization",
@@ -39,9 +38,11 @@ def _ensure_can_attach_fund(current_user: User, db: Session, fund_id: int) -> Fu
 
 
 def _ensure_can_manage(
-    repo: CommunicationRepository, current_user: User, communication: Communication
+    repo: CommunicationRepository,
+    membership: UserOrganizationMembership,
+    communication: Communication,
 ) -> None:
-    if not repo.user_can_manage(current_user, communication):
+    if not repo.membership_can_manage(membership, communication):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot manage this communication",
@@ -55,11 +56,11 @@ async def list_communications(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = CommunicationRepository(db)
-    return repo.list_for_user(
-        current_user,
+    return repo.list_for_membership(
+        membership,
         fund_id=fund_id,
         comm_type=type,
         skip=skip,
@@ -71,7 +72,7 @@ async def list_communications(
 async def get_communication(
     communication_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = CommunicationRepository(db)
     communication = repo.get(communication_id)
@@ -79,7 +80,7 @@ async def get_communication(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Communication not found"
         )
-    if not repo.user_can_view(current_user, communication):
+    if not repo.membership_can_view(membership, communication):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view this communication",
@@ -91,12 +92,16 @@ async def get_communication(
 async def create_communication(
     data: CommunicationCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     if data.fund_id is not None:
-        _ensure_can_attach_fund(current_user, db, data.fund_id)
+        _ensure_can_attach_fund(membership, db, data.fund_id)
     repo = CommunicationRepository(db)
-    communication = repo.create_draft(data, sender_user_id=current_user.id)  # type: ignore[invalid-argument-type]
+    communication = repo.create_draft(data, sender_user_id=membership.user_id)  # type: ignore[invalid-argument-type]
     return repo.get(communication.id)  # type: ignore[invalid-argument-type]
 
 
@@ -105,7 +110,11 @@ async def update_communication(
     communication_id: int,
     data: CommunicationUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = CommunicationRepository(db)
     communication = repo.get(communication_id)
@@ -113,9 +122,9 @@ async def update_communication(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Communication not found"
         )
-    _ensure_can_manage(repo, current_user, communication)
+    _ensure_can_manage(repo, membership, communication)
     if data.fund_id is not None and data.fund_id != communication.fund_id:
-        _ensure_can_attach_fund(current_user, db, data.fund_id)
+        _ensure_can_attach_fund(membership, db, data.fund_id)
     try:
         updated = repo.update(communication_id, data)
     except ValueError as exc:
@@ -131,7 +140,11 @@ async def send_communication(
     communication_id: int,
     payload: CommunicationSendRequest | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = CommunicationRepository(db)
     communication = repo.get(communication_id)
@@ -139,7 +152,7 @@ async def send_communication(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Communication not found"
         )
-    _ensure_can_manage(repo, current_user, communication)
+    _ensure_can_manage(repo, membership, communication)
     explicit = payload.recipients if payload is not None else []
     try:
         sent = repo.send(communication_id, explicit_recipients=explicit)
@@ -180,7 +193,7 @@ async def mark_recipient_read(
     communication_id: int,
     recipient_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = CommunicationRepository(db)
     communication = repo.get(communication_id)
@@ -195,15 +208,19 @@ async def mark_recipient_read(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Recipient not found"
         )
-    if current_user.role is not UserRole.admin:
-        is_owner = recipient.user_id == current_user.id
+    if membership.role not in (
+        UserRole.admin,
+        UserRole.fund_manager,
+        UserRole.superadmin,
+    ):
+        is_owner = recipient.user_id == membership.user_id
         is_contact_owner = False
         if not is_owner and recipient.investor_contact_id is not None:
             is_contact_owner = (
                 db.query(InvestorContact.id)
                 .filter(
                     InvestorContact.id == recipient.investor_contact_id,
-                    InvestorContact.user_id == current_user.id,
+                    InvestorContact.user_id == membership.user_id,
                 )
                 .first()
                 is not None
@@ -230,7 +247,7 @@ async def list_communications_for_fund(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     fund = db.query(Fund).filter(Fund.id == fund_id).first()
     if fund is None:
@@ -238,8 +255,8 @@ async def list_communications_for_fund(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
     repo = CommunicationRepository(db)
-    return repo.list_for_user(
-        current_user,
+    return repo.list_for_membership(
+        membership,
         fund_id=fund_id,
         comm_type=type,
         skip=skip,

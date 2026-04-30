@@ -9,12 +9,14 @@ from app.models.communication_recipient import CommunicationRecipient
 from app.models.enums import CommitmentStatus, CommunicationType, UserRole
 from app.models.fund import Fund
 from app.models.investor_contact import InvestorContact
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.schemas.communication import (
     CommunicationCreate,
     CommunicationRecipientRef,
     CommunicationUpdate,
 )
+
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
 
 
 class CommunicationRepository:
@@ -26,9 +28,9 @@ class CommunicationRepository:
             joinedload(Communication.recipients),
         )
 
-    def list_for_user(
+    def list_for_membership(
         self,
-        user: User,
+        membership: UserOrganizationMembership,
         *,
         fund_id: int | None = None,
         comm_type: CommunicationType | None = None,
@@ -36,17 +38,13 @@ class CommunicationRepository:
         limit: int = 100,
     ) -> list[Communication]:
         query = self._base_query()
-        if user.role is UserRole.admin:
-            pass
-        elif user.role is UserRole.fund_manager:
-            if user.organization_id is None:
-                return []
+        if membership.role in _ORG_VISIBLE_ROLES:
             org_fund_ids = select(Fund.id).where(
-                Fund.organization_id == user.organization_id
+                Fund.organization_id == membership.organization_id
             )
             query = query.filter(
                 or_(
-                    Communication.sender_user_id == user.id,
+                    Communication.sender_user_id == membership.user_id,
                     Communication.fund_id.in_(org_fund_ids),
                 )
             )
@@ -55,17 +53,17 @@ class CommunicationRepository:
                 CommunicationRecipient.communication_id
             ).where(
                 or_(
-                    CommunicationRecipient.user_id == user.id,
+                    CommunicationRecipient.user_id == membership.user_id,
                     CommunicationRecipient.investor_contact_id.in_(
                         select(InvestorContact.id).where(
-                            InvestorContact.user_id == user.id
+                            InvestorContact.user_id == membership.user_id
                         )
                     ),
                 )
             )
             query = query.filter(
                 or_(
-                    Communication.sender_user_id == user.id,
+                    Communication.sender_user_id == membership.user_id,
                     Communication.id.in_(visible_recipient_comm_ids),
                 )
             )
@@ -75,27 +73,23 @@ class CommunicationRepository:
             query = query.filter(Communication.type == comm_type)
         return query.order_by(Communication.id.desc()).offset(skip).limit(limit).all()
 
-    def list_recent_for_user(
-        self, user: User, *, limit: int = 5
+    def list_recent_for_membership(
+        self, membership: UserOrganizationMembership, *, limit: int = 5
     ) -> list[Communication]:
-        """Sent communications visible to the user, newest first.
+        """Sent communications visible to the active membership, newest first.
 
         Used by the dashboard overview — shares scoping with
-        :meth:`list_for_user` but filters to ``sent_at IS NOT NULL`` so drafts
-        don't leak into the activity feed.
+        :meth:`list_for_membership` but filters to ``sent_at IS NOT NULL`` so
+        drafts don't leak into the activity feed.
         """
         query = self.db.query(Communication)
-        if user.role is UserRole.admin:
-            pass
-        elif user.role is UserRole.fund_manager:
-            if user.organization_id is None:
-                return []
+        if membership.role in _ORG_VISIBLE_ROLES:
             org_fund_ids = select(Fund.id).where(
-                Fund.organization_id == user.organization_id
+                Fund.organization_id == membership.organization_id
             )
             query = query.filter(
                 or_(
-                    Communication.sender_user_id == user.id,
+                    Communication.sender_user_id == membership.user_id,
                     Communication.fund_id.in_(org_fund_ids),
                 )
             )
@@ -104,17 +98,17 @@ class CommunicationRepository:
                 CommunicationRecipient.communication_id
             ).where(
                 or_(
-                    CommunicationRecipient.user_id == user.id,
+                    CommunicationRecipient.user_id == membership.user_id,
                     CommunicationRecipient.investor_contact_id.in_(
                         select(InvestorContact.id).where(
-                            InvestorContact.user_id == user.id
+                            InvestorContact.user_id == membership.user_id
                         )
                     ),
                 )
             )
             query = query.filter(
                 or_(
-                    Communication.sender_user_id == user.id,
+                    Communication.sender_user_id == membership.user_id,
                     Communication.id.in_(visible_recipient_comm_ids),
                 )
             )
@@ -128,28 +122,28 @@ class CommunicationRepository:
     def get(self, communication_id: int) -> Communication | None:
         return self._base_query().filter(Communication.id == communication_id).first()
 
-    def user_can_view(self, user: User, communication: Communication) -> bool:
-        if user.role is UserRole.admin:
+    def membership_can_view(
+        self, membership: UserOrganizationMembership, communication: Communication
+    ) -> bool:
+        if communication.sender_user_id == membership.user_id:
             return True
-        if communication.sender_user_id == user.id:
-            return True
-        if user.role is UserRole.fund_manager:
+        if membership.role in _ORG_VISIBLE_ROLES:
             if communication.fund_id is None:
                 return False
             fund = self.db.query(Fund).filter(Fund.id == communication.fund_id).first()
             return bool(
-                fund is not None and fund.organization_id == user.organization_id
+                fund is not None and fund.organization_id == membership.organization_id
             )
         # LP: visible if they are a recipient (directly or via investor contact).
         own_contact_ids = select(InvestorContact.id).where(
-            InvestorContact.user_id == user.id
+            InvestorContact.user_id == membership.user_id
         )
         return (
             self.db.query(CommunicationRecipient.id)
             .filter(
                 CommunicationRecipient.communication_id == communication.id,
                 or_(
-                    CommunicationRecipient.user_id == user.id,
+                    CommunicationRecipient.user_id == membership.user_id,
                     CommunicationRecipient.investor_contact_id.in_(own_contact_ids),
                 ),
             )
@@ -157,17 +151,19 @@ class CommunicationRepository:
             is not None
         )
 
-    def user_can_manage(self, user: User, communication: Communication) -> bool:
-        if user.role is UserRole.admin:
-            return True
-        if user.role is not UserRole.fund_manager:
+    def membership_can_manage(
+        self, membership: UserOrganizationMembership, communication: Communication
+    ) -> bool:
+        if membership.role not in _ORG_VISIBLE_ROLES:
             return False
-        if communication.sender_user_id == user.id:
+        if communication.sender_user_id == membership.user_id:
             return True
         if communication.fund_id is None:
             return False
         fund = self.db.query(Fund).filter(Fund.id == communication.fund_id).first()
-        return bool(fund is not None and fund.organization_id == user.organization_id)
+        return bool(
+            fund is not None and fund.organization_id == membership.organization_id
+        )
 
     def create_draft(
         self, data: CommunicationCreate, *, sender_user_id: int | None = None

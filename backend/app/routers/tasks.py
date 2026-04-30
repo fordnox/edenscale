@@ -2,31 +2,32 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.rbac import get_current_user_record, require_roles
+from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import TaskStatus, UserRole
 from app.models.fund import Fund
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.task_repository import TaskRepository
 from app.schemas.task import TaskCreate, TaskRead, TaskUpdate
 from app.services.notification_service import notify
 
 router = APIRouter()
 
+_ORG_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+
 
 def _load_fund(db: Session, fund_id: int) -> Fund | None:
     return db.query(Fund).filter(Fund.id == fund_id).first()
 
 
-def _ensure_can_attach_fund(current_user: User, db: Session, fund_id: int) -> Fund:
+def _ensure_can_attach_fund(
+    membership: UserOrganizationMembership, db: Session, fund_id: int
+) -> Fund:
     fund = _load_fund(db, fund_id)
     if fund is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
-    if (
-        current_user.role is UserRole.fund_manager
-        and fund.organization_id != current_user.organization_id
-    ):
+    if fund.organization_id != membership.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot attach task to a fund outside your organization",
@@ -42,20 +43,20 @@ async def list_tasks(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = TaskRepository(db)
     effective_assignee = assignee
-    if current_user.role not in (UserRole.admin, UserRole.fund_manager):
+    if membership.role not in _ORG_ROLES:
         # LPs only ever see their own tasks regardless of `assignee`.
-        effective_assignee = current_user.id
+        effective_assignee = int(membership.user_id)  # type: ignore[invalid-argument-type]
     elif effective_assignee is None and fund_id is None and status_filter is None:
-        effective_assignee = current_user.id
-    return repo.list_for_user(
-        current_user,
+        effective_assignee = int(membership.user_id)  # type: ignore[invalid-argument-type]
+    return repo.list_for_membership(
+        membership,
         fund_id=fund_id,
         status=status_filter,
-        assignee=effective_assignee,  # type: ignore[invalid-argument-type]
+        assignee=effective_assignee,
         skip=skip,
         limit=limit,
     )
@@ -65,7 +66,7 @@ async def list_tasks(
 async def get_task(
     task_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = TaskRepository(db)
     task = repo.get(task_id)
@@ -73,7 +74,7 @@ async def get_task(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
-    if not repo.user_can_view(current_user, task):
+    if not repo.membership_can_view(membership, task):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Cannot view this task"
         )
@@ -84,15 +85,19 @@ async def get_task(
 async def create_task(
     data: TaskCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     if data.fund_id is not None:
-        _ensure_can_attach_fund(current_user, db, data.fund_id)
+        _ensure_can_attach_fund(membership, db, data.fund_id)
     repo = TaskRepository(db)
-    task = repo.create(data, created_by_user_id=current_user.id)  # type: ignore[invalid-argument-type]
+    task = repo.create(data, created_by_user_id=membership.user_id)  # type: ignore[invalid-argument-type]
     if (
         task.assigned_to_user_id is not None
-        and task.assigned_to_user_id != current_user.id
+        and task.assigned_to_user_id != membership.user_id
     ):
         notify(
             db,
@@ -110,7 +115,7 @@ async def update_task(
     task_id: int,
     data: TaskUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = TaskRepository(db)
     task = repo.get(task_id)
@@ -118,19 +123,19 @@ async def update_task(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
-    if not repo.user_can_manage(current_user, task):
+    if not repo.membership_can_manage(membership, task):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Cannot edit this task"
         )
     if data.fund_id is not None and data.fund_id != task.fund_id:
-        _ensure_can_attach_fund(current_user, db, data.fund_id)
+        _ensure_can_attach_fund(membership, db, data.fund_id)
     previous_assignee = task.assigned_to_user_id
     updated = repo.update(task_id, data)
     assert updated is not None
     if (
         updated.assigned_to_user_id is not None
         and updated.assigned_to_user_id != previous_assignee
-        and updated.assigned_to_user_id != current_user.id
+        and updated.assigned_to_user_id != membership.user_id
     ):
         notify(
             db,
@@ -147,7 +152,7 @@ async def update_task(
 async def complete_task(
     task_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = TaskRepository(db)
     task = repo.get(task_id)
@@ -155,7 +160,7 @@ async def complete_task(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
-    if not repo.user_can_complete(current_user, task):
+    if not repo.membership_can_complete(membership, task):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Cannot complete this task"
         )
@@ -180,7 +185,7 @@ async def list_tasks_for_fund(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     fund = _load_fund(db, fund_id)
     if fund is None:
@@ -189,13 +194,13 @@ async def list_tasks_for_fund(
         )
     repo = TaskRepository(db)
     effective_assignee = assignee
-    if current_user.role not in (UserRole.admin, UserRole.fund_manager):
-        effective_assignee = current_user.id
-    return repo.list_for_user(
-        current_user,
+    if membership.role not in _ORG_ROLES:
+        effective_assignee = int(membership.user_id)  # type: ignore[invalid-argument-type]
+    return repo.list_for_membership(
+        membership,
         fund_id=fund_id,
         status=status_filter,
-        assignee=effective_assignee,  # type: ignore[invalid-argument-type]
+        assignee=effective_assignee,
         skip=skip,
         limit=limit,
     )

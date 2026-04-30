@@ -6,13 +6,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.rbac import get_current_user_record, require_roles
+from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.commitment import Commitment
 from app.models.distribution_item import DistributionItem
 from app.models.enums import CommitmentStatus, DistributionStatus, UserRole
 from app.models.fund import Fund
 from app.models.investor_contact import InvestorContact
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.distribution_repository import DistributionRepository
 from app.schemas.distribution import (
     DistributionCreate,
@@ -32,11 +32,8 @@ def _load_fund(db: Session, fund_id: int) -> Fund | None:
     return db.query(Fund).filter(Fund.id == fund_id).first()
 
 
-def _ensure_manager_can_edit(current_user: User, fund: Fund) -> None:
-    if (
-        current_user.role is UserRole.fund_manager
-        and fund.organization_id != current_user.organization_id
-    ):
+def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> None:
+    if fund.organization_id != membership.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot manage distributions for funds outside your organization",
@@ -50,11 +47,11 @@ async def list_distributions(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = DistributionRepository(db)
-    return repo.list_for_user(
-        current_user,
+    return repo.list_for_membership(
+        membership,
         fund_id=fund_id,
         status=status_filter,
         skip=skip,
@@ -66,7 +63,7 @@ async def list_distributions(
 async def get_distribution(
     distribution_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = DistributionRepository(db)
     distribution = repo.get_with_items(distribution_id)
@@ -74,7 +71,7 @@ async def get_distribution(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Distribution not found"
         )
-    if not repo.user_can_view(current_user, distribution):
+    if not repo.membership_can_view(membership, distribution):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view this distribution",
@@ -86,16 +83,20 @@ async def get_distribution(
 async def create_distribution(
     data: DistributionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     fund = _load_fund(db, data.fund_id)
     if fund is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
-    _ensure_manager_can_edit(current_user, fund)
+    _ensure_org_scope(membership, fund)
     repo = DistributionRepository(db)
-    distribution = repo.create_draft(data, created_by_user_id=current_user.id)  # type: ignore[invalid-argument-type]
+    distribution = repo.create_draft(data, created_by_user_id=membership.user_id)  # type: ignore[invalid-argument-type]
     refreshed = repo.get_with_items(distribution.id)  # type: ignore[invalid-argument-type]
     assert refreshed is not None
     return refreshed
@@ -106,7 +107,11 @@ async def update_distribution(
     distribution_id: int,
     data: DistributionUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = DistributionRepository(db)
     distribution = repo.get_with_items(distribution_id)
@@ -116,7 +121,7 @@ async def update_distribution(
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
     assert fund is not None
-    _ensure_manager_can_edit(current_user, fund)
+    _ensure_org_scope(membership, fund)
     updated = repo.update(distribution_id, data)
     assert updated is not None
     return updated
@@ -132,7 +137,11 @@ async def add_distribution_items(
     payload: DistributionItemBulkCreate,
     mode: Literal["manual", "pro-rata"] = Query("manual"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = DistributionRepository(db)
     distribution = repo.get_with_items(distribution_id)
@@ -142,7 +151,7 @@ async def add_distribution_items(
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
     assert fund is not None
-    _ensure_manager_can_edit(current_user, fund)
+    _ensure_org_scope(membership, fund)
     allocations: list[tuple[int, Decimal]]
     if mode == "pro-rata":
         approved = (
@@ -192,7 +201,11 @@ async def update_distribution_item(
     item_id: int,
     data: DistributionItemUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = DistributionRepository(db)
     distribution = repo.get_with_items(distribution_id)
@@ -202,7 +215,7 @@ async def update_distribution_item(
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
     assert fund is not None
-    _ensure_manager_can_edit(current_user, fund)
+    _ensure_org_scope(membership, fund)
     item = next((i for i in distribution.items if i.id == item_id), None)
     if item is None:
         raise HTTPException(
@@ -227,7 +240,11 @@ async def update_distribution_item(
 async def send_distribution(
     distribution_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = DistributionRepository(db)
     distribution = repo.get_with_items(distribution_id)
@@ -237,7 +254,7 @@ async def send_distribution(
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
     assert fund is not None
-    _ensure_manager_can_edit(current_user, fund)
+    _ensure_org_scope(membership, fund)
     try:
         sent = repo.send(distribution_id)
     except ValueError as exc:
@@ -273,7 +290,11 @@ async def send_distribution(
 async def cancel_distribution(
     distribution_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = DistributionRepository(db)
     distribution = repo.get_with_items(distribution_id)
@@ -283,7 +304,7 @@ async def cancel_distribution(
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
     assert fund is not None
-    _ensure_manager_can_edit(current_user, fund)
+    _ensure_org_scope(membership, fund)
     try:
         cancelled = repo.cancel(distribution_id)
     except ValueError as exc:
@@ -306,7 +327,7 @@ async def list_distributions_for_fund(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     fund = _load_fund(db, fund_id)
     if fund is None:
@@ -314,8 +335,8 @@ async def list_distributions_for_fund(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
     repo = DistributionRepository(db)
-    return repo.list_for_user(
-        current_user,
+    return repo.list_for_membership(
+        membership,
         fund_id=fund_id,
         status=status_filter,
         skip=skip,

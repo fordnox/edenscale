@@ -10,9 +10,11 @@ from app.models.commitment import Commitment
 from app.models.enums import CapitalCallStatus, UserRole
 from app.models.fund import Fund
 from app.models.investor_contact import InvestorContact
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.commitment_repository import CommitmentRepository
 from app.schemas.capital_call import CapitalCallCreate, CapitalCallUpdate
+
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
 
 _SENDABLE_STATUSES = {CapitalCallStatus.draft, CapitalCallStatus.scheduled}
 _TERMINAL_STATUSES = {CapitalCallStatus.cancelled}
@@ -58,9 +60,9 @@ class CapitalCallRepository:
             joinedload(CapitalCall.fund),
         )
 
-    def list_for_user(
+    def list_for_membership(
         self,
-        user: User,
+        membership: UserOrganizationMembership,
         *,
         fund_id: int | None = None,
         status: CapitalCallStatus | None = None,
@@ -68,17 +70,13 @@ class CapitalCallRepository:
         limit: int = 100,
     ) -> list[CapitalCall]:
         query = self._base_query()
-        if user.role is UserRole.admin:
-            pass
-        elif user.role is UserRole.fund_manager:
-            if user.organization_id is None:
-                return []
+        if membership.role in _ORG_VISIBLE_ROLES:
             query = query.join(Fund, Fund.id == CapitalCall.fund_id).filter(
-                Fund.organization_id == user.organization_id
+                Fund.organization_id == membership.organization_id
             )
         else:
             visible_investor_ids = select(InvestorContact.investor_id).where(
-                InvestorContact.user_id == user.id
+                InvestorContact.user_id == membership.user_id
             )
             visible_call_ids = (
                 select(CapitalCallItem.capital_call_id)
@@ -98,14 +96,14 @@ class CapitalCallRepository:
     def get_with_items(self, call_id: int) -> CapitalCall | None:
         return self._base_query().filter(CapitalCall.id == call_id).first()
 
-    def user_can_view(self, user: User, call: CapitalCall) -> bool:
-        if user.role is UserRole.admin:
-            return True
-        if user.role is UserRole.fund_manager:
+    def membership_can_view(
+        self, membership: UserOrganizationMembership, call: CapitalCall
+    ) -> bool:
+        if membership.role in _ORG_VISIBLE_ROLES:
             fund = self.db.query(Fund).filter(Fund.id == call.fund_id).first()
             if fund is None:
                 return False
-            return bool(fund.organization_id == user.organization_id)
+            return bool(fund.organization_id == membership.organization_id)
         return (
             self.db.query(CapitalCallItem.id)
             .join(Commitment, Commitment.id == CapitalCallItem.commitment_id)
@@ -115,7 +113,7 @@ class CapitalCallRepository:
             )
             .filter(
                 CapitalCallItem.capital_call_id == call.id,
-                InvestorContact.user_id == user.id,
+                InvestorContact.user_id == membership.user_id,
             )
             .first()
             is not None

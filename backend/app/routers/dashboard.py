@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Query, Session
 
@@ -24,7 +24,11 @@ from app.models import (
     User,
     UserRole,
 )
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.communication_repository import CommunicationRepository
+from app.repositories.user_organization_membership_repository import (
+    UserOrganizationMembershipRepository,
+)
 from app.schemas import (
     CapitalCallSummary,
     CommunicationSummary,
@@ -39,6 +43,8 @@ OUTSTANDING_CAPITAL_CALL_STATUSES = (
     CapitalCallStatus.sent,
     CapitalCallStatus.partially_paid,
 )
+
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
 
 
 def _empty_response() -> DashboardOverviewResponse:
@@ -56,41 +62,76 @@ def _empty_response() -> DashboardOverviewResponse:
     )
 
 
-def _visible_fund_ids(user: User) -> Select | None:
-    """Subquery yielding fund ids the caller can see, or None for admin (no filter)."""
-    if user.role is UserRole.admin:
+def _resolve_active_membership(
+    db: Session, user: User, header_org_id: int | None
+) -> UserOrganizationMembership | None:
+    """Resolve the dashboard's active membership, tolerating no-membership users.
+
+    The dashboard is the one org-scoped surface that historically returned zeros
+    for users with no organization. We preserve that here by returning None
+    instead of raising 400 when the user has zero memberships and didn't pass
+    a header.
+    """
+    repo = UserOrganizationMembershipRepository(db)
+    if header_org_id is not None:
+        membership = repo.get(user.id, header_org_id)  # type: ignore[invalid-argument-type]
+        if membership is not None:
+            return membership
+        if user.role == UserRole.superadmin:
+            return UserOrganizationMembership(
+                user_id=user.id,
+                organization_id=header_org_id,
+                role=UserRole.superadmin,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not a member of this organization",
+        )
+    if user.role == UserRole.superadmin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-Organization-Id required",
+        )
+    memberships = repo.list_for_user(user.id)  # type: ignore[invalid-argument-type]
+    if len(memberships) == 1:
+        return memberships[0]
+    if not memberships:
         return None
-    if user.role is UserRole.fund_manager:
-        return select(Fund.id).where(Fund.organization_id == user.organization_id)
-    return (
-        select(Commitment.fund_id)
-        .join(InvestorContact, InvestorContact.investor_id == Commitment.investor_id)
-        .where(InvestorContact.user_id == user.id)
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="X-Organization-Id required",
     )
 
 
-def _visible_investor_ids(user: User) -> Select | None:
-    """Subquery yielding investor ids the caller can see, or None for admin (no filter)."""
-    if user.role is UserRole.admin:
-        return None
-    if user.role is UserRole.fund_manager:
+def _visible_fund_ids(membership: UserOrganizationMembership) -> Select:
+    """Subquery yielding fund ids the membership can see."""
+    if membership.role in _ORG_VISIBLE_ROLES:
+        return select(Fund.id).where(Fund.organization_id == membership.organization_id)
+    return (
+        select(Commitment.fund_id)
+        .join(InvestorContact, InvestorContact.investor_id == Commitment.investor_id)
+        .where(InvestorContact.user_id == membership.user_id)
+    )
+
+
+def _visible_investor_ids(membership: UserOrganizationMembership) -> Select:
+    """Subquery yielding investor ids the membership can see."""
+    if membership.role in _ORG_VISIBLE_ROLES:
         return select(Investor.id).where(
-            Investor.organization_id == user.organization_id
+            Investor.organization_id == membership.organization_id
         )
-    return select(InvestorContact.investor_id).where(InvestorContact.user_id == user.id)
+    return select(InvestorContact.investor_id).where(
+        InvestorContact.user_id == membership.user_id
+    )
 
 
-def _scope_by_fund(query: Query, fund_id_column, fund_filter: Select | None) -> Query:
-    if fund_filter is None:
-        return query
+def _scope_by_fund(query: Query, fund_id_column, fund_filter: Select) -> Query:
     return query.filter(fund_id_column.in_(fund_filter))
 
 
 def _scope_by_investor(
-    query: Query, investor_id_column, investor_filter: Select | None
+    query: Query, investor_id_column, investor_filter: Select
 ) -> Query:
-    if investor_filter is None:
-        return query
     return query.filter(investor_id_column.in_(investor_filter))
 
 
@@ -98,15 +139,14 @@ def _scope_by_investor(
 async def get_overview(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),
+    x_organization_id: int | None = Header(default=None, alias="X-Organization-Id"),
 ) -> DashboardOverviewResponse:
-    if (
-        current_user.role is UserRole.fund_manager
-        and current_user.organization_id is None
-    ):
+    membership = _resolve_active_membership(db, current_user, x_organization_id)
+    if membership is None:
         return _empty_response()
 
-    fund_filter = _visible_fund_ids(current_user)
-    investor_filter = _visible_investor_ids(current_user)
+    fund_filter = _visible_fund_ids(membership)
+    investor_filter = _visible_investor_ids(membership)
 
     funds_active_q = db.query(func.count(Fund.id)).filter(
         Fund.status == FundStatus.active
@@ -120,7 +160,7 @@ async def get_overview(
     )
 
     commitments_q = db.query(func.coalesce(func.sum(Commitment.committed_amount), 0))
-    if current_user.role is UserRole.fund_manager:
+    if membership.role in _ORG_VISIBLE_ROLES:
         commitments_q = _scope_by_fund(commitments_q, Commitment.fund_id, fund_filter)
     else:
         commitments_q = _scope_by_investor(
@@ -213,7 +253,7 @@ async def get_overview(
     unread_notifications_count = (
         db.query(func.count(Notification.id))
         .filter(
-            Notification.user_id == current_user.id,
+            Notification.user_id == membership.user_id,
             Notification.status == NotificationStatus.unread,
         )
         .scalar()
@@ -223,15 +263,15 @@ async def get_overview(
     open_tasks_count = (
         db.query(func.count(Task.id))
         .filter(
-            Task.assigned_to_user_id == current_user.id,
+            Task.assigned_to_user_id == membership.user_id,
             Task.status.in_((TaskStatus.open, TaskStatus.in_progress)),
         )
         .scalar()
         or 0
     )
 
-    communications = CommunicationRepository(db).list_recent_for_user(
-        current_user, limit=5
+    communications = CommunicationRepository(db).list_recent_for_membership(
+        membership, limit=5
     )
     recent_communications = [
         CommunicationSummary.model_validate(comm) for comm in communications

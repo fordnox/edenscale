@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.rbac import get_current_user_record, require_roles
+from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import UserRole
 from app.models.investor import Investor as InvestorModel
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.investor_repository import InvestorRepository
 from app.schemas.investor import (
     InvestorCreate,
@@ -57,10 +57,10 @@ async def list_investors(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = InvestorRepository(db)
-    rows = repo.list_for_user(current_user, skip=skip, limit=limit)
+    rows = repo.list_for_membership(membership, skip=skip, limit=limit)
     return [
         _to_list_item(investor, total_committed, fund_count)
         for investor, total_committed, fund_count in rows
@@ -71,7 +71,7 @@ async def list_investors(
 async def get_investor(
     investor_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = InvestorRepository(db)
     row = repo.get(investor_id)
@@ -80,7 +80,7 @@ async def get_investor(
             status_code=status.HTTP_404_NOT_FOUND, detail="Investor not found"
         )
     investor, total_committed, fund_count = row
-    if not repo.user_can_view(current_user, investor):
+    if not repo.membership_can_view(membership, investor):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view this investor",
@@ -92,21 +92,14 @@ async def get_investor(
 async def create_investor(
     data: InvestorCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     payload = data.model_dump()
-    if current_user.role is UserRole.fund_manager:
-        if current_user.organization_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Fund managers must belong to an organization to create investors",
-            )
-        payload["organization_id"] = current_user.organization_id
-    elif payload.get("organization_id") is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="organization_id is required",
-        )
+    payload["organization_id"] = membership.organization_id
     repo = InvestorRepository(db)
     investor, total_committed, fund_count = repo.create(InvestorCreate(**payload))
     return _to_read_dict(investor, total_committed, fund_count)
@@ -117,7 +110,11 @@ async def update_investor(
     investor_id: int,
     data: InvestorUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = InvestorRepository(db)
     row = repo.get(investor_id)
@@ -126,10 +123,7 @@ async def update_investor(
             status_code=status.HTTP_404_NOT_FOUND, detail="Investor not found"
         )
     investor, _, _ = row
-    if (
-        current_user.role is UserRole.fund_manager
-        and investor.organization_id != current_user.organization_id
-    ):
+    if investor.organization_id != membership.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot edit investors outside your organization",
@@ -147,7 +141,11 @@ async def update_investor(
 async def delete_investor(
     investor_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = InvestorRepository(db)
     row = repo.get(investor_id)
@@ -156,10 +154,7 @@ async def delete_investor(
             status_code=status.HTTP_404_NOT_FOUND, detail="Investor not found"
         )
     investor, _, _ = row
-    if (
-        current_user.role is UserRole.fund_manager
-        and investor.organization_id != current_user.organization_id
-    ):
+    if investor.organization_id != membership.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot delete investors outside your organization",

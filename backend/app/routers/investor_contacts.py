@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.rbac import get_current_user_record, require_roles
+from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import UserRole
 from app.models.investor import Investor
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.investor_contact_repository import InvestorContactRepository
 from app.repositories.investor_repository import InvestorRepository
 from app.schemas.investor_contact import (
@@ -15,6 +15,8 @@ from app.schemas.investor_contact import (
 )
 
 router = APIRouter()
+
+_ORG_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
 
 
 def _load_investor_or_404(db: Session, investor_id: int) -> Investor:
@@ -27,11 +29,10 @@ def _load_investor_or_404(db: Session, investor_id: int) -> Investor:
     return row[0]
 
 
-def _ensure_manager_scope(current_user: User, investor: Investor) -> None:
-    if (
-        current_user.role is UserRole.fund_manager
-        and investor.organization_id != current_user.organization_id
-    ):
+def _ensure_org_scope(
+    membership: UserOrganizationMembership, investor: Investor
+) -> None:
+    if investor.organization_id != membership.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot manage contacts for investors outside your organization",
@@ -44,20 +45,18 @@ async def list_investor_contacts(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     investor = _load_investor_or_404(db, investor_id)
     repo = InvestorContactRepository(db)
-    if current_user.role is UserRole.admin:
-        return repo.list_for_investor(investor_id, skip=skip, limit=limit)
-    if current_user.role is UserRole.fund_manager:
-        if investor.organization_id != current_user.organization_id:
+    if membership.role in _ORG_ROLES:
+        if investor.organization_id != membership.organization_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Cannot view contacts for investors outside your organization",
             )
         return repo.list_for_investor(investor_id, skip=skip, limit=limit)
-    own_contacts = repo.list_for_user_and_investor(investor_id, current_user.id)  # type: ignore[invalid-argument-type]
+    own_contacts = repo.list_for_user_and_investor(investor_id, membership.user_id)  # type: ignore[invalid-argument-type]
     if not own_contacts:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -75,10 +74,14 @@ async def create_investor_contact(
     investor_id: int,
     data: InvestorContactCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     investor = _load_investor_or_404(db, investor_id)
-    _ensure_manager_scope(current_user, investor)
+    _ensure_org_scope(membership, investor)
     repo = InvestorContactRepository(db)
     return repo.create(investor_id, data)
 
@@ -92,10 +95,14 @@ async def update_investor_contact(
     contact_id: int,
     data: InvestorContactUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     investor = _load_investor_or_404(db, investor_id)
-    _ensure_manager_scope(current_user, investor)
+    _ensure_org_scope(membership, investor)
     repo = InvestorContactRepository(db)
     contact = repo.get(contact_id)
     if contact is None or contact.investor_id != investor_id:
@@ -115,10 +122,14 @@ async def delete_investor_contact(
     investor_id: int,
     contact_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     investor = _load_investor_or_404(db, investor_id)
-    _ensure_manager_scope(current_user, investor)
+    _ensure_org_scope(membership, investor)
     repo = InvestorContactRepository(db)
     contact = repo.get(contact_id)
     if contact is None or contact.investor_id != investor_id:

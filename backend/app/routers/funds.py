@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.rbac import get_current_user_record, require_roles
+from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import UserRole
 from app.models.fund import Fund as FundModel
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.fund_repository import FundRepository
 from app.schemas.fund import (
     FundCreate,
@@ -61,10 +61,10 @@ async def list_funds(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = FundRepository(db)
-    rows = repo.list_for_user(current_user, skip=skip, limit=limit)
+    rows = repo.list_for_membership(membership, skip=skip, limit=limit)
     return [_to_list_item(fund, current_size) for fund, current_size in rows]
 
 
@@ -72,7 +72,7 @@ async def list_funds(
 async def get_fund(
     fund_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = FundRepository(db)
     row = repo.get(fund_id)
@@ -81,7 +81,7 @@ async def get_fund(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
     fund, current_size = row
-    if not repo.user_can_view(current_user, fund):
+    if not repo.membership_can_view(membership, fund):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view this fund",
@@ -93,7 +93,7 @@ async def get_fund(
 async def get_fund_overview(
     fund_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = FundRepository(db)
     row = repo.get(fund_id)
@@ -102,7 +102,7 @@ async def get_fund_overview(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
     fund, _ = row
-    if not repo.user_can_view(current_user, fund):
+    if not repo.membership_can_view(membership, fund):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view this fund",
@@ -123,21 +123,14 @@ async def get_fund_overview(
 async def create_fund(
     data: FundCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     payload = data.model_dump()
-    if current_user.role is UserRole.fund_manager:
-        if current_user.organization_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Fund managers must belong to an organization to create funds",
-            )
-        payload["organization_id"] = current_user.organization_id
-    elif payload.get("organization_id") is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="organization_id is required",
-        )
+    payload["organization_id"] = membership.organization_id
     repo = FundRepository(db)
     fund, current_size = repo.create(FundCreate(**payload))
     return _to_read_dict(fund, current_size)
@@ -148,7 +141,11 @@ async def update_fund(
     fund_id: int,
     data: FundUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = FundRepository(db)
     row = repo.get(fund_id)
@@ -157,10 +154,7 @@ async def update_fund(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
     fund, _ = row
-    if (
-        current_user.role is UserRole.fund_manager
-        and fund.organization_id != current_user.organization_id
-    ):
+    if fund.organization_id != membership.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot edit funds outside your organization",
@@ -178,7 +172,11 @@ async def update_fund(
 async def archive_fund(
     fund_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     repo = FundRepository(db)
     row = repo.get(fund_id)
@@ -187,10 +185,7 @@ async def archive_fund(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
     fund, _ = row
-    if (
-        current_user.role is UserRole.fund_manager
-        and fund.organization_id != current_user.organization_id
-    ):
+    if fund.organization_id != membership.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot archive funds outside your organization",

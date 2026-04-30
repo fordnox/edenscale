@@ -3,10 +3,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.rbac import get_current_user_record, require_roles
+from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import UserRole
 from app.models.fund import Fund
-from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.fund_repository import FundRepository
 from app.repositories.fund_team_member_repository import FundTeamMemberRepository
 from app.schemas.fund_team_member import (
@@ -28,11 +28,8 @@ def _load_fund_or_404(db: Session, fund_id: int) -> Fund:
     return row[0]
 
 
-def _ensure_manager_scope(current_user: User, fund: Fund) -> None:
-    if (
-        current_user.role is UserRole.fund_manager
-        and fund.organization_id != current_user.organization_id
-    ):
+def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> None:
+    if fund.organization_id != membership.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot manage team members for funds outside your organization",
@@ -45,10 +42,10 @@ async def list_team_members(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_record),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     fund = _load_fund_or_404(db, fund_id)
-    if not FundRepository(db).user_can_view(current_user, fund):
+    if not FundRepository(db).membership_can_view(membership, fund):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view team members for this fund",
@@ -65,10 +62,14 @@ async def add_team_member(
     fund_id: int,
     data: FundTeamMemberCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     fund = _load_fund_or_404(db, fund_id)
-    _ensure_manager_scope(current_user, fund)
+    _ensure_org_scope(membership, fund)
     repo = FundTeamMemberRepository(db)
     if repo.get_by_fund_and_user(fund_id, data.user_id) is not None:
         raise HTTPException(
@@ -94,10 +95,14 @@ async def update_team_member(
     member_id: int,
     data: FundTeamMemberUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     fund = _load_fund_or_404(db, fund_id)
-    _ensure_manager_scope(current_user, fund)
+    _ensure_org_scope(membership, fund)
     repo = FundTeamMemberRepository(db)
     member = repo.get(member_id)
     if member is None or member.fund_id != fund_id:
@@ -117,10 +122,14 @@ async def remove_team_member(
     fund_id: int,
     member_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
+    ),
 ):
     fund = _load_fund_or_404(db, fund_id)
-    _ensure_manager_scope(current_user, fund)
+    _ensure_org_scope(membership, fund)
     repo = FundTeamMemberRepository(db)
     member = repo.get(member_id)
     if member is None or member.fund_id != fund_id:

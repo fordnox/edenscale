@@ -93,7 +93,7 @@ class UserOrganizationMembershipRepository:
         )
         inserted = 0
         for user in legacy_users:
-            existing = self.get(user.id, user.organization_id)
+            existing = self.get(user.id, user.organization_id)  # type: ignore[invalid-argument-type]
             if existing is not None:
                 continue
             self.db.add(

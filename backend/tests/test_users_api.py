@@ -7,6 +7,7 @@ from app.core.auth import get_current_user
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
 from app.models import Organization, OrganizationType, User, UserRole
+from app.models.user_organization_membership import UserOrganizationMembership
 
 
 @pytest.fixture(autouse=True)
@@ -54,6 +55,15 @@ def _seed_user(
             hanko_subject_id=subject_id,
         )
         db.add(user)
+        db.flush()
+        if organization_id is not None:
+            db.add(
+                UserOrganizationMembership(
+                    user_id=user.id,
+                    organization_id=organization_id,
+                    role=role,
+                )
+            )
         db.commit()
         return user.id
     finally:
