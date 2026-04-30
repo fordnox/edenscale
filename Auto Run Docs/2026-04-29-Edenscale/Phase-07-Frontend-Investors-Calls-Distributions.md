@@ -4,10 +4,17 @@ This phase ports the LP- and capital-flow-focused pages from the prototype: Inve
 
 ## Tasks
 
-- [ ] Read the prototype pages we're porting before writing new code:
+- [x] Read the prototype pages we're porting before writing new code:
   - `edenscale/src/pages/InvestorsPage.tsx`, `edenscale/src/pages/CapitalCallsPage.tsx`, `edenscale/src/pages/DistributionsPage.tsx`
   - The shared `frontend/src/components/ui/StatusPill.tsx` from Phase 06 — reuse it instead of re-implementing color logic
   - The shared `useApiQuery` / `useApiMutation` hooks from Phase 06
+
+  Notes from this read-pass:
+  - **InvestorsPage prototype** is a flat list with KPI strip (investors-on-register, aggregate commitments, average position) and a `DataTable` of investor / type / primary contact / region / active funds / total committed. The new port turns this into a master/detail layout backed by `useApiQuery("/investors")` with Contacts and Commitments tabs in the right pane.
+  - **CapitalCallsPage prototype** uses `Topbar` + `Card`/`CardSection` KPI strip (open / overdue / lifetime called / avg paid in) + a `DataTable` with `ProgressBar` for `paid_pct` and `StatusBadge` for status. The port should keep the KPI layout, replace `StatusBadge` with the shared `StatusPill` (`kind="capital_call"`), and add Radix `Select` filters for `fund_id` / `status` plus a side `Drawer` (Radix `Sheet`) for drill-in.
+  - **DistributionsPage prototype** mirrors CapitalCalls structure exactly (KPI strip + table + status badges) — port should reuse the same drawer/dialog skeleton, only swapping endpoints to `/distributions` and the StatusPill `kind` to `"distribution"`.
+  - **`StatusPill`** (`frontend/src/components/ui/StatusPill.tsx`) already maps every backend status enum (fund / commitment / capital_call / distribution / task / notification) to the right tone with a humanized label — no per-page color logic should be added.
+  - **`useApiQuery`** keys queries as `[path, init]` and throws on `error`; **`useApiMutation`** wraps `client.{POST,PATCH,PUT,DELETE}` and re-throws on `error`. Both are typed by the OpenAPI `paths` map, so the path string drives request/response inference. Optimistic invalidation should target the same `[path, init]` tuples used by the list queries plus any nested keys (`["/funds/{fund_id}", { params: { path: { fund_id } } }]`, `["/dashboard"]`).
 
 - [ ] Port the Investors page:
   - Create `frontend/src/pages/InvestorsPage.tsx`. Master/detail layout: list on the left with `useApiQuery("/investors")`, detail panel on the right showing the selected investor's contacts, commitments, and recent activity
