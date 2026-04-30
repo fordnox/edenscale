@@ -40,9 +40,13 @@ This phase builds the capital flow engine. Capital calls and distributions follo
     - Both `/distributions` and the nested `/funds/{fund_id}/distributions` routers are mounted in `app/main.py`.
     - `make openapi` regenerated `backend/openapi.json` and `frontend/src/lib/schema.d.ts`. `make test` (45 tests) and `make lint` both pass.
 
-- [ ] Implement allocation helpers:
+- [x] Implement allocation helpers:
   - Add `backend/app/services/allocation.py` exporting `allocate_pro_rata(total_amount: Decimal, commitments: list[Commitment]) -> list[tuple[Commitment, Decimal]]` that splits an amount proportionally to `committed_amount`, with the rounding remainder applied to the largest commitment so the sum reconciles exactly
   - Use this from `POST /capital-calls/{id}/items?mode=pro-rata` and `POST /distributions/{id}/items?mode=pro-rata` to auto-populate items for all approved commitments on the fund. Manual mode (default) accepts an explicit list
+  - Implementation notes:
+    - `app/services/allocation.py` quantizes each share to two decimals with `ROUND_HALF_UP` (matching the `Numeric(18, 2)` columns) and sweeps the rounding remainder onto the commitment with the largest `committed_amount` so the per-share sum reconciles exactly with the input total. Edge cases: empty commitment list returns `[]`, zero total returns `0.00` shares, total committed of zero raises `ValueError` so the caller can surface a 400.
+    - Routers added a `mode: Literal["manual", "pro-rata"] = Query("manual")` query param. `pro-rata` loads `Commitment.status == approved` rows on the parent's fund, calls `allocate_pro_rata(parent.amount, ...)`, and routes the resulting `(commitment_id, amount)` tuples through the existing `repo.add_items` path so duplicate-allocation and cross-fund safeguards still apply. Manual mode is unchanged. No approved commitments → 400.
+    - `make openapi`, `make test` (45 passing), and `make lint` all clean. Frontend `schema.d.ts` regenerated to include the `mode` query parameter on both endpoints.
 
 - [ ] Hook commitment totals into the line-item lifecycle:
   - On every create/update/delete of `capital_call_items` or `distribution_items`, call `commitment_repository.recompute_totals(commitment_id)` inside the same SQLAlchemy session before commit

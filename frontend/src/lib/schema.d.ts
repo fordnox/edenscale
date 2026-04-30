@@ -3078,7 +3078,9 @@ export interface operations {
     };
     add_capital_call_items_capital_calls__call_id__items_post: {
         parameters: {
-            query?: never;
+            query?: {
+                mode?: "manual" | "pro-rata";
+            };
             header?: never;
             path: {
                 call_id: number;
@@ -3379,7 +3381,9 @@ export interface operations {
     };
     add_distribution_items_distributions__distribution_id__items_post: {
         parameters: {
-            query?: never;
+            query?: {
+                mode?: "manual" | "pro-rata";
+            };
             header?: never;
             path: {
                 distribution_id: number;

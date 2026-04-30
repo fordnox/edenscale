@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from decimal import Decimal
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.rbac import get_current_user_record, require_roles
-from app.models.enums import CapitalCallStatus, UserRole
+from app.models.commitment import Commitment
+from app.models.enums import CapitalCallStatus, CommitmentStatus, UserRole
 from app.models.fund import Fund
 from app.models.user import User
 from app.repositories.capital_call_repository import CapitalCallRepository
@@ -16,6 +20,7 @@ from app.schemas.capital_call import (
     CapitalCallRead,
     CapitalCallUpdate,
 )
+from app.services.allocation import allocate_pro_rata
 
 router = APIRouter()
 
@@ -122,6 +127,7 @@ async def update_capital_call(
 async def add_capital_call_items(
     call_id: int,
     payload: CapitalCallItemBulkCreate,
+    mode: Literal["manual", "pro-rata"] = Query("manual"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(UserRole.admin, UserRole.fund_manager)),
 ):
@@ -134,7 +140,31 @@ async def add_capital_call_items(
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
     assert fund is not None
     _ensure_manager_can_edit(current_user, fund)
-    allocations = [(item.commitment_id, item.amount_due) for item in payload.items]
+    allocations: list[tuple[int, Decimal]]
+    if mode == "pro-rata":
+        approved = (
+            db.query(Commitment)
+            .filter(
+                Commitment.fund_id == call.fund_id,
+                Commitment.status == CommitmentStatus.approved,
+            )
+            .order_by(Commitment.id)
+            .all()
+        )
+        if not approved:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No approved commitments on this fund to allocate",
+            )
+        try:
+            shares = allocate_pro_rata(call.amount, approved)  # type: ignore[invalid-argument-type]
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+            ) from exc
+        allocations = [(int(c.id), amount) for c, amount in shares]  # type: ignore[invalid-argument-type]
+    else:
+        allocations = [(item.commitment_id, item.amount_due) for item in payload.items]
     try:
         return repo.add_items(call_id, allocations)
     except ValueError as exc:
