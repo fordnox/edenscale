@@ -102,6 +102,76 @@ def test_existing_user_is_returned_unchanged(db):
     assert user.first_name == "Margot"
 
 
+def test_seed_row_is_claimed_by_email_on_first_signin(db):
+    """Pre-provisioned user (e.g. from `make seed`) has hanko_subject_id=None.
+    First Hanko sign-in with the matching email claim should bind the row by
+    setting `hanko_subject_id`, not create a duplicate `lp` user.
+    """
+    org = Organization(name="Eden Capital", type=OrganizationType.fund_manager_firm)
+    db.add(org)
+    db.flush()
+    seeded = User(
+        organization_id=org.id,
+        role=UserRole.fund_manager,
+        first_name="Ava",
+        last_name="Morgan",
+        email="ava.morgan@edenscale.demo",
+        hanko_subject_id=None,
+    )
+    db.add(seeded)
+    db.commit()
+    seeded_id = seeded.id
+
+    payload = {
+        "sub": "hanko-claim-1",
+        "email": "ava.morgan@edenscale.demo",
+    }
+    user = get_current_user_record(payload=payload, db=db)
+
+    assert user.id == seeded_id
+    assert user.hanko_subject_id == "hanko-claim-1"
+    assert user.role == UserRole.fund_manager
+    assert (
+        db.query(User).filter(User.email == "ava.morgan@edenscale.demo").count() == 1
+    )
+
+
+def test_seed_claim_refuses_when_email_already_linked(db):
+    """If the email is already linked to a different `hanko_subject_id`, the
+    second sign-in must NOT rebind the row (would be account takeover) and
+    must NOT 500 on the unique-email constraint when auto-provisioning a
+    duplicate. Returns 401 with a clear message instead.
+    """
+    org = Organization(name="Eden Capital", type=OrganizationType.fund_manager_firm)
+    db.add(org)
+    db.flush()
+    existing = User(
+        organization_id=org.id,
+        role=UserRole.fund_manager,
+        first_name="Ava",
+        last_name="Morgan",
+        email="ava.morgan@edenscale.demo",
+        hanko_subject_id="hanko-original",
+    )
+    db.add(existing)
+    db.commit()
+    existing_id = existing.id
+
+    payload = {
+        "sub": "hanko-impostor",
+        "email": "ava.morgan@edenscale.demo",
+    }
+    with pytest.raises(HTTPException) as excinfo:
+        get_current_user_record(payload=payload, db=db)
+    assert excinfo.value.status_code == 401
+
+    rebound = db.query(User).filter(User.id == existing_id).one()
+    assert rebound.hanko_subject_id == "hanko-original"
+    assert (
+        db.query(User).filter(User.email == "ava.morgan@edenscale.demo").count() == 1
+    )
+
+
 def test_missing_subject_raises_401(db):
     with pytest.raises(HTTPException) as excinfo:
         get_current_user_record(payload={}, db=db)

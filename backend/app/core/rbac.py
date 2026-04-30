@@ -30,8 +30,18 @@ def get_current_user_record(
 ) -> User:
     """Return the local `User` row for the authenticated JWT subject.
 
-    Auto-provisions a row on first sight, defaulting `role=UserRole.lp` and
-    pulling email / first / last name from the JWT claims when present.
+    Resolution order:
+
+    1. Existing row with matching `hanko_subject_id` — return it.
+    2. Existing row with matching `email` and a NULL `hanko_subject_id` —
+       bind the row by setting its subject to the JWT `sub` and return it.
+       This is how seed / pre-provisioned users (admin, fund_manager) get
+       claimed on first sign-in: the seed leaves `hanko_subject_id=None`,
+       and Hanko's email claim is verified by Hanko before the JWT is
+       issued, so binding by email here is safe.
+    3. Otherwise auto-provision a fresh row, defaulting to `role=UserRole.lp`
+       and pulling email / first / last name from the JWT claims.
+
     `first_name` / `last_name` / `email` columns are NOT NULL, so missing
     claims fall back to empty strings — the user can complete their profile
     later via `PATCH /users/me`.
@@ -53,6 +63,22 @@ def get_current_user_record(
         email_value = email_claim.get("address") or ""
     else:
         email_value = email_claim or ""
+
+    if email_value:
+        existing_by_email = db.query(User).filter(User.email == email_value).first()
+        if existing_by_email is not None:
+            if existing_by_email.hanko_subject_id is None:
+                existing_by_email.hanko_subject_id = subject_id
+                db.commit()
+                db.refresh(existing_by_email)
+                set_audit_user(existing_by_email.id)  # type: ignore[invalid-argument-type]
+                return existing_by_email
+            # Email already linked to a different Hanko subject. Refuse rather
+            # than 500 on the unique-email constraint when we try to insert.
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email already linked to a different account",
+            )
 
     user = User(
         hanko_subject_id=subject_id,
