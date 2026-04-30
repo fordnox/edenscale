@@ -16,13 +16,21 @@ This phase ports the LP- and capital-flow-focused pages from the prototype: Inve
   - **`StatusPill`** (`frontend/src/components/ui/StatusPill.tsx`) already maps every backend status enum (fund / commitment / capital_call / distribution / task / notification) to the right tone with a humanized label — no per-page color logic should be added.
   - **`useApiQuery`** keys queries as `[path, init]` and throws on `error`; **`useApiMutation`** wraps `client.{POST,PATCH,PUT,DELETE}` and re-throws on `error`. Both are typed by the OpenAPI `paths` map, so the path string drives request/response inference. Optimistic invalidation should target the same `[path, init]` tuples used by the list queries plus any nested keys (`["/funds/{fund_id}", { params: { path: { fund_id } } }]`, `["/dashboard"]`).
 
-- [ ] Port the Investors page:
+- [x] Port the Investors page:
   - Create `frontend/src/pages/InvestorsPage.tsx`. Master/detail layout: list on the left with `useApiQuery("/investors")`, detail panel on the right showing the selected investor's contacts, commitments, and recent activity
   - Master list columns: name, investor_type, accredited badge, total_committed (numeric tabular), fund_count
   - Detail panel tabs: Contacts, Commitments. Contacts tab shows a table with primary star icon and an "Add contact" form. Commitments tab shows the investor's commitment table with links to each fund
   - "New investor" button → `InvestorCreateDialog` posting to `POST /investors`
   - Inline edit primary contact via `PATCH /investors/{id}/contacts/{contactId}` and toggle is_primary
   - Replace the placeholder `/investors` route in `App.tsx`
+
+  Implementation notes:
+  - `InvestorCreateDialog` (`frontend/src/components/investors/InvestorCreateDialog.tsx`) follows the `FundCreateDialog` shape: name (required), investor_code, investor_type, accredited checkbox, notes. On success it invalidates `["/investors"]` and `["/dashboard"]`, fires a `sonner` toast, and lets the page auto-select the freshly created row via the `onCreated(id)` callback.
+  - `InvestorsPage` uses a 2-column layout (`lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]`); the master list is always visible and rows are click-to-select with a `bg-parchment-100` highlight on the active row.
+  - `InvestorDetailPanel` is keyed by investor id so its local form state resets when switching investors. It runs three queries: `/investors/{investor_id}` (header), `/investors/{investor_id}/contacts`, `/investors/{investor_id}/commitments`. Mutations target nested `[path, init]` query keys so only the affected investor's contact list refetches.
+  - Primary toggle uses a Lucide `Star` button — filled brass when `is_primary` is true. Backend allows multiple primaries, so the UI just toggles the flag rather than enforcing exclusivity client-side.
+  - `Add contact` form: when the investor has no contacts yet, the new contact is auto-marked `is_primary: true`; otherwise the new contact is added without disturbing the existing primary. Form fields reset only on success.
+  - Commitments tab links each row to `/funds/{fund.id}` and uses `StatusPill kind="commitment"` so colour logic stays in the shared component.
 
 - [ ] Port the Capital Calls page:
   - Create `frontend/src/pages/CapitalCallsPage.tsx` listing all calls via `useApiQuery("/capital-calls")` with filters `?fund_id`, `?status` exposed as Radix Select dropdowns. Table columns: fund, title, due_date, amount, status pill, paid % progress bar
