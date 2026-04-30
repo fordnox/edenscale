@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
     OPENROUTER_API_KEY: str = ""
     HANKO_API_URL: str = ""
+    HANKO_AUDIENCE: str = "localhost"
     STORAGE_BACKEND: str = "local"
     DEV_STORAGE_TOKEN: str = "dev-storage"
 

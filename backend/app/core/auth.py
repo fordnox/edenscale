@@ -24,7 +24,7 @@ async def get_current_user(
             token,
             signing_key.key,
             algorithms=["RS256"],
-            audience=settings.HANKO_API_URL,
+            audience=settings.HANKO_AUDIENCE,
         )
     except jwt.ExpiredSignatureError:
         raise HTTPException(
