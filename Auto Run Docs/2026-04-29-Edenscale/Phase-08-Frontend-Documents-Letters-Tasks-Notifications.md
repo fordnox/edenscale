@@ -16,7 +16,7 @@ This phase finishes the page port from the prototype: Documents (with file uploa
   - **Notifications prototype** groups by unread/earlier; phase task asks for date grouping (Today / Yesterday / This Week / Earlier), per-row read+archive actions, and a "Mark all read" → `POST /notifications/read-all`. Topbar bell badge count is wired from this query.
   - **Existing pattern**: `StatusPill` already supports `kind="task"` and `kind="notification"`. `useApiQuery`/`useApiMutation` are typed via the generated OpenAPI client and integrate with `client.GET/POST/PATCH/...`. Mutations should `queryClient.invalidateQueries({ queryKey: [path] })` to refresh.
 
-- [ ] Port the Documents page:
+- [x] Port the Documents page:
   - Create `frontend/src/pages/DocumentsPage.tsx` — list view with filters for `document_type`, `fund_id`, `investor_id`. Columns: title, type pill, fund, investor, file_name, size, uploaded_by, created_at
   - "Upload document" button opens `DocumentUploadDialog`:
     1. Pick file via `<input type="file">` and read `name`, `type`, `size`
@@ -26,6 +26,13 @@ This phase finishes the page port from the prototype: Documents (with file uploa
     5. Invalidate `["documents"]`
   - Row click opens a viewer drawer with a fresh download URL from `GET /documents/{id}`
   - Replace the placeholder `/documents` route in `App.tsx`
+
+  Notes:
+  - `DocumentsPage.tsx` ports the prototype filter chips for `document_type` and adds two `Select` filters for `fund_id` / `investor_id`. The list query is `useApiQuery("/documents", { params: { query: { document_type, fund_id, investor_id } } })` so backend filtering does the work.
+  - `DocumentRead` doesn't include fund/investor names, so the page joins client-side via separate `useApiQuery("/funds")` and `useApiQuery("/investors")` lookups, falling back to `Fund #N` if the user lacks visibility.
+  - `DocumentUploadDialog.tsx` runs the four-step presigned-URL flow. For local dev (`/dev-storage/` URLs) it attaches the `x-dev-storage-token` header from a new `VITE_DEV_STORAGE_TOKEN` (default `dev-storage`). Production presigned S3 URLs skip the header.
+  - Row click opens a `Sheet` rendering `DocumentDetail.tsx`, which calls `GET /documents/{id}` for a fresh `download_url` and exposes a "Download" link that opens in a new tab. The dialog also lets the user link the doc to a fund/investor or upload as firm-wide, plus a Confidential checkbox (default true).
+  - `App.tsx` swaps the `ComingSoon` placeholder for `<DocumentsPage />`. Lint (`pnpm run lint`) passes.
 
 - [ ] Port the Letters (Communications) page:
   - Create `frontend/src/pages/LettersPage.tsx` — list of communications via `useApiQuery("/communications")`. Columns: subject, type pill, fund, sent_at, recipient count, read percentage

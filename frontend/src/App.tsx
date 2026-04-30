@@ -8,6 +8,7 @@ import FundDetailPage from './pages/FundDetailPage'
 import InvestorsPage from './pages/InvestorsPage'
 import CapitalCallsPage from './pages/CapitalCallsPage'
 import DistributionsPage from './pages/DistributionsPage'
+import DocumentsPage from './pages/DocumentsPage'
 import UserProfilePage from './pages/UserProfilePage'
 import LoginPage from './pages/LoginPage'
 
@@ -22,7 +23,7 @@ function App() {
         <Route path="/investors" element={<InvestorsPage />} />
         <Route path="/calls" element={<CapitalCallsPage />} />
         <Route path="/distributions" element={<DistributionsPage />} />
-        <Route path="/documents" element={<ComingSoon page="Documents" />} />
+        <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/letters" element={<ComingSoon page="Letters" />} />
         <Route path="/tasks" element={<ComingSoon page="Tasks" />} />
         <Route path="/notifications" element={<ComingSoon page="Notifications" />} />
