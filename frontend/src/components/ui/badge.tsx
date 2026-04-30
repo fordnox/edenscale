@@ -63,39 +63,3 @@ export function Badge({
   )
 }
 
-const statusToTone: Record<string, Tone> = {
-  // fund
-  active: "active",
-  draft: "draft",
-  closed: "muted",
-  liquidating: "warning",
-  archived: "muted",
-  // commitment
-  pending: "warning",
-  approved: "active",
-  declined: "negative",
-  cancelled: "muted",
-  // capital call
-  scheduled: "info",
-  sent: "info",
-  partially_paid: "warning",
-  paid: "positive",
-  overdue: "negative",
-  // task
-  open: "info",
-  in_progress: "warning",
-  done: "positive",
-}
-
-export function StatusBadge({
-  status,
-  ...props
-}: React.HTMLAttributes<HTMLSpanElement> & { status: string }) {
-  const tone = statusToTone[status] ?? "neutral"
-  const label = status.split("_").join(" ")
-  return (
-    <Badge tone={tone} {...props}>
-      {label.charAt(0).toUpperCase() + label.slice(1)}
-    </Badge>
-  )
-}

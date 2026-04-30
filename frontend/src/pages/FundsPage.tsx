@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardSection } from "@/components/ui/card"
 import { Eyebrow } from "@/components/ui/eyebrow"
 import { ProgressBar } from "@/components/ui/progress"
-import { StatusBadge } from "@/components/ui/badge"
+import { StatusPill } from "@/components/ui/StatusPill"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { config } from "@/lib/config"
@@ -178,7 +178,7 @@ export default function FundsPage() {
                               </div>
                             </TD>
                             <TD align="right">
-                              <StatusBadge status={fund.status} />
+                              <StatusPill kind="fund" value={fund.status} />
                             </TD>
                           </TR>
                         )

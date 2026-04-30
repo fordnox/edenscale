@@ -8,7 +8,7 @@ import { Card, CardSection } from "@/components/ui/card"
 import { Stat } from "@/components/ui/stat"
 import { Eyebrow } from "@/components/ui/eyebrow"
 import { Button } from "@/components/ui/button"
-import { StatusBadge } from "@/components/ui/badge"
+import { StatusPill } from "@/components/ui/StatusPill"
 import { ProgressBar } from "@/components/ui/progress"
 import { DataTable, TH, TR, TD } from "@/components/ui/table"
 import api from "@/lib/api"
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                               </div>
                             </TD>
                             <TD align="right">
-                              <StatusBadge status={call.status} />
+                              <StatusPill kind="capital_call" value={call.status} />
                             </TD>
                           </TR>
                         ))}
@@ -233,7 +233,7 @@ export default function DashboardPage() {
                                 {fund.name}
                               </h3>
                             </div>
-                            <StatusBadge status={fund.status} />
+                            <StatusPill kind="fund" value={fund.status} />
                           </div>
                           {fund.strategy && (
                             <p className="font-sans text-[13px] leading-[1.55] text-ink-500">

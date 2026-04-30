@@ -10,7 +10,7 @@ import { Card, CardSection } from "@/components/ui/card"
 import { Eyebrow } from "@/components/ui/eyebrow"
 import { ProgressBar } from "@/components/ui/progress"
 import { Stat } from "@/components/ui/stat"
-import { StatusBadge } from "@/components/ui/badge"
+import { StatusPill } from "@/components/ui/StatusPill"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useApiQuery } from "@/hooks/useApiQuery"
@@ -126,7 +126,7 @@ function FundDetailPageContent({ fundId }: { fundId: number }) {
 
       <div className="px-8 pb-16">
         <div className="mb-2 flex flex-wrap items-center gap-3">
-          <StatusBadge status={fund.status} />
+          <StatusPill kind="fund" value={fund.status} />
           {fund.legal_name && (
             <span className="font-sans text-[13px] text-ink-500">
               {fund.legal_name}
@@ -299,7 +299,7 @@ function FundDetailPageContent({ fundId }: { fundId: number }) {
                               })}
                             </TD>
                             <TD align="right">
-                              <StatusBadge status={c.status} />
+                              <StatusPill kind="commitment" value={c.status} />
                             </TD>
                           </TR>
                         ))}
@@ -345,7 +345,7 @@ function FundDetailPageContent({ fundId }: { fundId: number }) {
                               </span>
                             </div>
                           </div>
-                          <StatusBadge status={c.status} />
+                          <StatusPill kind="capital_call" value={c.status} />
                         </li>
                       ))}
                     </ul>
@@ -389,7 +389,7 @@ function FundDetailPageContent({ fundId }: { fundId: number }) {
                               </span>
                             </div>
                           </div>
-                          <StatusBadge status={d.status} />
+                          <StatusPill kind="distribution" value={d.status} />
                         </li>
                       ))}
                     </ul>
