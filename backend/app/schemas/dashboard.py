@@ -1,9 +1,9 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
-from app.models.enums import CapitalCallStatus, FundStatus
+from app.models.enums import CapitalCallStatus, CommunicationType, FundStatus
 
 
 class FundSummary(BaseModel):
@@ -33,13 +33,28 @@ class CapitalCallSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class CommunicationSummary(BaseModel):
+    id: int
+    fund_id: int | None
+    sender_user_id: int | None
+    type: CommunicationType
+    subject: str
+    sent_at: datetime | None
+    created_at: datetime | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class DashboardOverviewResponse(BaseModel):
     funds_active: int
     investors_total: int
     commitments_total_amount: Decimal
     capital_calls_outstanding: int
     distributions_ytd_amount: Decimal
+    unread_notifications_count: int
+    open_tasks_count: int
     recent_funds: list[FundSummary]
     upcoming_capital_calls: list[CapitalCallSummary]
+    recent_communications: list[CommunicationSummary]
 
     model_config = ConfigDict(from_attributes=True)

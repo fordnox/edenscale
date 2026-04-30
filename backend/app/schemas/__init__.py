@@ -27,6 +27,7 @@ from app.schemas.communication import (
 )
 from app.schemas.dashboard import (
     CapitalCallSummary,
+    CommunicationSummary,
     DashboardOverviewResponse,
     FundSummary,
 )
@@ -110,6 +111,7 @@ __all__ = [
     "CommunicationRecipientRead",
     "CommunicationRecipientRef",
     "CommunicationSendRequest",
+    "CommunicationSummary",
     "CommunicationUpdate",
     "DashboardOverviewResponse",
     "DocumentCreate",

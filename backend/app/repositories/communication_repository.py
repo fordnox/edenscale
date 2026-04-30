@@ -75,6 +75,56 @@ class CommunicationRepository:
             query = query.filter(Communication.type == comm_type)
         return query.order_by(Communication.id.desc()).offset(skip).limit(limit).all()
 
+    def list_recent_for_user(
+        self, user: User, *, limit: int = 5
+    ) -> list[Communication]:
+        """Sent communications visible to the user, newest first.
+
+        Used by the dashboard overview — shares scoping with
+        :meth:`list_for_user` but filters to ``sent_at IS NOT NULL`` so drafts
+        don't leak into the activity feed.
+        """
+        query = self.db.query(Communication)
+        if user.role is UserRole.admin:
+            pass
+        elif user.role is UserRole.fund_manager:
+            if user.organization_id is None:
+                return []
+            org_fund_ids = select(Fund.id).where(
+                Fund.organization_id == user.organization_id
+            )
+            query = query.filter(
+                or_(
+                    Communication.sender_user_id == user.id,
+                    Communication.fund_id.in_(org_fund_ids),
+                )
+            )
+        else:
+            visible_recipient_comm_ids = select(
+                CommunicationRecipient.communication_id
+            ).where(
+                or_(
+                    CommunicationRecipient.user_id == user.id,
+                    CommunicationRecipient.investor_contact_id.in_(
+                        select(InvestorContact.id).where(
+                            InvestorContact.user_id == user.id
+                        )
+                    ),
+                )
+            )
+            query = query.filter(
+                or_(
+                    Communication.sender_user_id == user.id,
+                    Communication.id.in_(visible_recipient_comm_ids),
+                )
+            )
+        return (
+            query.filter(Communication.sent_at.is_not(None))
+            .order_by(Communication.sent_at.desc(), Communication.id.desc())
+            .limit(limit)
+            .all()
+        )
+
     def get(self, communication_id: int) -> Communication | None:
         return self._base_query().filter(Communication.id == communication_id).first()
 

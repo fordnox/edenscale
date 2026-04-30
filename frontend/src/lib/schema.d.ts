@@ -1354,6 +1354,22 @@ export interface components {
             /** Recipients */
             recipients?: components["schemas"]["CommunicationRecipientRef"][];
         };
+        /** CommunicationSummary */
+        CommunicationSummary: {
+            /** Id */
+            id: number;
+            /** Fund Id */
+            fund_id: number | null;
+            /** Sender User Id */
+            sender_user_id: number | null;
+            type: components["schemas"]["CommunicationType"];
+            /** Subject */
+            subject: string;
+            /** Sent At */
+            sent_at: string | null;
+            /** Created At */
+            created_at: string | null;
+        };
         /**
          * CommunicationType
          * @enum {string}
@@ -1381,10 +1397,16 @@ export interface components {
             capital_calls_outstanding: number;
             /** Distributions Ytd Amount */
             distributions_ytd_amount: string;
+            /** Unread Notifications Count */
+            unread_notifications_count: number;
+            /** Open Tasks Count */
+            open_tasks_count: number;
             /** Recent Funds */
             recent_funds: components["schemas"]["FundSummary"][];
             /** Upcoming Capital Calls */
             upcoming_capital_calls: components["schemas"]["CapitalCallSummary"][];
+            /** Recent Communications */
+            recent_communications: components["schemas"]["CommunicationSummary"][];
         };
         /** DistributionCreate */
         DistributionCreate: {

@@ -1,6 +1,6 @@
 """Tests for the /dashboard/overview endpoint."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -10,9 +10,11 @@ from app.core.auth import get_current_user
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
 from app.models import (CapitalCall, CapitalCallStatus, Commitment,
-                        CommitmentStatus, Distribution, DistributionItem,
+                        CommitmentStatus, Communication, CommunicationRecipient,
+                        CommunicationType, Distribution, DistributionItem,
                         DistributionStatus, Fund, FundStatus, Investor,
-                        InvestorContact, Organization, OrganizationType, User,
+                        InvestorContact, Notification, NotificationStatus,
+                        Organization, OrganizationType, Task, TaskStatus, User,
                         UserRole)
 
 
@@ -115,8 +117,11 @@ class TestDashboardOverview:
         assert Decimal(data["commitments_total_amount"]) == Decimal("0")
         assert data["capital_calls_outstanding"] == 0
         assert Decimal(data["distributions_ytd_amount"]) == Decimal("0")
+        assert data["unread_notifications_count"] == 0
+        assert data["open_tasks_count"] == 0
         assert data["recent_funds"] == []
         assert data["upcoming_capital_calls"] == []
+        assert data["recent_communications"] == []
 
     def test_user_without_organization_returns_zeros(self, client, override_user):
         db = SessionLocal()
@@ -446,3 +451,226 @@ class TestDashboardOverview:
 
         upcoming_titles = {c["title"] for c in data["upcoming_capital_calls"]}
         assert upcoming_titles == {"Visible call"}
+
+
+class TestDashboardActivityAggregates:
+    def test_unread_notifications_count_only_for_current_user(
+        self, client, override_user
+    ):
+        _, user_id = _create_org_user("hanko-1")
+        _, other_user_id = _create_org_user("hanko-2", org_name="Other Org")
+
+        db = SessionLocal()
+        try:
+            db.add_all(
+                [
+                    Notification(
+                        user_id=user_id,
+                        title="Hello",
+                        message="Welcome",
+                        status=NotificationStatus.unread,
+                    ),
+                    Notification(
+                        user_id=user_id,
+                        title="More",
+                        message="Another",
+                        status=NotificationStatus.unread,
+                    ),
+                    Notification(
+                        user_id=user_id,
+                        title="Stale",
+                        message="Read already",
+                        status=NotificationStatus.read,
+                    ),
+                    Notification(
+                        user_id=user_id,
+                        title="Filed",
+                        message="Archived",
+                        status=NotificationStatus.archived,
+                    ),
+                    # Another user — must not affect the count
+                    Notification(
+                        user_id=other_user_id,
+                        title="Foreign",
+                        message="Not mine",
+                        status=NotificationStatus.unread,
+                    ),
+                ]
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        override_user("hanko-1")
+        response = client.get("/dashboard/overview")
+        assert response.status_code == 200
+        assert response.json()["unread_notifications_count"] == 2
+
+    def test_open_tasks_count_only_counts_current_user_assignments(
+        self, client, override_user
+    ):
+        org_id, user_id = _create_org_user("hanko-1")
+        _, other_user_id = _create_org_user("hanko-2", org_name="Other Org")
+
+        db = SessionLocal()
+        try:
+            fund = Fund(
+                organization_id=org_id,
+                name="Eden Fund",
+                currency_code="USD",
+                status=FundStatus.active,
+            )
+            db.add(fund)
+            db.flush()
+            db.add_all(
+                [
+                    Task(
+                        fund_id=fund.id,
+                        assigned_to_user_id=user_id,
+                        title="Open task",
+                        status=TaskStatus.open,
+                    ),
+                    Task(
+                        fund_id=fund.id,
+                        assigned_to_user_id=user_id,
+                        title="In progress",
+                        status=TaskStatus.in_progress,
+                    ),
+                    Task(
+                        fund_id=fund.id,
+                        assigned_to_user_id=user_id,
+                        title="Done",
+                        status=TaskStatus.done,
+                    ),
+                    Task(
+                        fund_id=fund.id,
+                        assigned_to_user_id=user_id,
+                        title="Cancelled",
+                        status=TaskStatus.cancelled,
+                    ),
+                    # Foreign assignee — must not contribute
+                    Task(
+                        fund_id=fund.id,
+                        assigned_to_user_id=other_user_id,
+                        title="Foreign",
+                        status=TaskStatus.open,
+                    ),
+                ]
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        override_user("hanko-1")
+        response = client.get("/dashboard/overview")
+        assert response.status_code == 200
+        assert response.json()["open_tasks_count"] == 2
+
+    def test_recent_communications_only_sent_and_capped_to_five(
+        self, client, override_user
+    ):
+        org_id, user_id = _create_org_user("hanko-1")
+
+        db = SessionLocal()
+        try:
+            base = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+            for index in range(6):
+                db.add(
+                    Communication(
+                        fund_id=None,
+                        sender_user_id=user_id,
+                        type=CommunicationType.announcement,
+                        subject=f"Sent #{index}",
+                        body="...",
+                        sent_at=base + timedelta(days=index),
+                    )
+                )
+            # Draft — must NOT appear in recent_communications
+            db.add(
+                Communication(
+                    fund_id=None,
+                    sender_user_id=user_id,
+                    type=CommunicationType.announcement,
+                    subject="Draft",
+                    body="...",
+                    sent_at=None,
+                )
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        override_user("hanko-1")
+        response = client.get("/dashboard/overview")
+        assert response.status_code == 200
+        items = response.json()["recent_communications"]
+        assert len(items) == 5
+        subjects = [c["subject"] for c in items]
+        assert subjects == ["Sent #5", "Sent #4", "Sent #3", "Sent #2", "Sent #1"]
+        assert "Draft" not in subjects
+
+    def test_recent_communications_filtered_by_lp_visibility(
+        self, client, override_user
+    ):
+        org_id, fm_user_id = _create_org_user("hanko-mgr")
+        lp_user_id = _create_lp_user("hanko-lp")
+
+        db = SessionLocal()
+        try:
+            fund = Fund(
+                organization_id=org_id,
+                name="Visible Fund",
+                currency_code="USD",
+                status=FundStatus.active,
+            )
+            db.add(fund)
+            db.flush()
+
+            investor = Investor(organization_id=org_id, name="LP")
+            db.add(investor)
+            db.flush()
+
+            contact = InvestorContact(
+                investor_id=investor.id,
+                user_id=lp_user_id,
+                first_name="Lp",
+                last_name="Contact",
+            )
+            db.add(contact)
+            db.flush()
+
+            visible = Communication(
+                fund_id=fund.id,
+                sender_user_id=fm_user_id,
+                type=CommunicationType.announcement,
+                subject="Visible to LP",
+                body="...",
+                sent_at=datetime(2026, 4, 1, 12, 0, 0, tzinfo=timezone.utc),
+            )
+            hidden = Communication(
+                fund_id=fund.id,
+                sender_user_id=fm_user_id,
+                type=CommunicationType.announcement,
+                subject="Hidden from LP",
+                body="...",
+                sent_at=datetime(2026, 4, 2, 12, 0, 0, tzinfo=timezone.utc),
+            )
+            db.add_all([visible, hidden])
+            db.flush()
+
+            db.add(
+                CommunicationRecipient(
+                    communication_id=visible.id,
+                    user_id=lp_user_id,
+                    investor_contact_id=contact.id,
+                )
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        override_user("hanko-lp")
+        response = client.get("/dashboard/overview")
+        assert response.status_code == 200
+        subjects = [c["subject"] for c in response.json()["recent_communications"]]
+        assert subjects == ["Visible to LP"]

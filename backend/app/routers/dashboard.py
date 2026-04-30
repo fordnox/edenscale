@@ -17,10 +17,20 @@ from app.models import (
     FundStatus,
     Investor,
     InvestorContact,
+    Notification,
+    NotificationStatus,
+    Task,
+    TaskStatus,
     User,
     UserRole,
 )
-from app.schemas import CapitalCallSummary, DashboardOverviewResponse, FundSummary
+from app.repositories.communication_repository import CommunicationRepository
+from app.schemas import (
+    CapitalCallSummary,
+    CommunicationSummary,
+    DashboardOverviewResponse,
+    FundSummary,
+)
 
 router = APIRouter()
 
@@ -38,8 +48,11 @@ def _empty_response() -> DashboardOverviewResponse:
         commitments_total_amount=Decimal("0"),
         capital_calls_outstanding=0,
         distributions_ytd_amount=Decimal("0"),
+        unread_notifications_count=0,
+        open_tasks_count=0,
         recent_funds=[],
         upcoming_capital_calls=[],
+        recent_communications=[],
     )
 
 
@@ -197,12 +210,42 @@ async def get_overview(
         for call, fund_name in upcoming_rows
     ]
 
+    unread_notifications_count = (
+        db.query(func.count(Notification.id))
+        .filter(
+            Notification.user_id == current_user.id,
+            Notification.status == NotificationStatus.unread,
+        )
+        .scalar()
+        or 0
+    )
+
+    open_tasks_count = (
+        db.query(func.count(Task.id))
+        .filter(
+            Task.assigned_to_user_id == current_user.id,
+            Task.status.in_((TaskStatus.open, TaskStatus.in_progress)),
+        )
+        .scalar()
+        or 0
+    )
+
+    communications = CommunicationRepository(db).list_recent_for_user(
+        current_user, limit=5
+    )
+    recent_communications = [
+        CommunicationSummary.model_validate(comm) for comm in communications
+    ]
+
     return DashboardOverviewResponse(
         funds_active=funds_active,
         investors_total=investors_total,
         commitments_total_amount=Decimal(str(commitments_total_amount)),
         capital_calls_outstanding=capital_calls_outstanding,
         distributions_ytd_amount=Decimal(str(distributions_ytd_amount)),
+        unread_notifications_count=unread_notifications_count,
+        open_tasks_count=open_tasks_count,
         recent_funds=recent_funds,
         upcoming_capital_calls=upcoming_capital_calls,
+        recent_communications=recent_communications,
     )
