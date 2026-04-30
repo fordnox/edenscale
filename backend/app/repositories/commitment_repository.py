@@ -115,17 +115,16 @@ class CommitmentRepository:
         if commitment is None:
             return None
         called = (
-            self.db.query(func.coalesce(func.sum(CapitalCallItem.amount_due), 0))
+            self.db.query(func.coalesce(func.sum(CapitalCallItem.amount_paid), 0))
             .filter(CapitalCallItem.commitment_id == commitment_id)
             .scalar()
         )
         distributed = (
-            self.db.query(func.coalesce(func.sum(DistributionItem.amount_due), 0))
+            self.db.query(func.coalesce(func.sum(DistributionItem.amount_paid), 0))
             .filter(DistributionItem.commitment_id == commitment_id)
             .scalar()
         )
         commitment.called_amount = Decimal(called or 0)
         commitment.distributed_amount = Decimal(distributed or 0)
-        self.db.commit()
-        self.db.refresh(commitment)
+        self.db.flush()
         return commitment

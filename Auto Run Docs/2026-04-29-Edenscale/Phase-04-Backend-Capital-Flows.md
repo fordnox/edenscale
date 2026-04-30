@@ -48,9 +48,15 @@ This phase builds the capital flow engine. Capital calls and distributions follo
     - Routers added a `mode: Literal["manual", "pro-rata"] = Query("manual")` query param. `pro-rata` loads `Commitment.status == approved` rows on the parent's fund, calls `allocate_pro_rata(parent.amount, ...)`, and routes the resulting `(commitment_id, amount)` tuples through the existing `repo.add_items` path so duplicate-allocation and cross-fund safeguards still apply. Manual mode is unchanged. No approved commitments → 400.
     - `make openapi`, `make test` (45 passing), and `make lint` all clean. Frontend `schema.d.ts` regenerated to include the `mode` query parameter on both endpoints.
 
-- [ ] Hook commitment totals into the line-item lifecycle:
+- [x] Hook commitment totals into the line-item lifecycle:
   - On every create/update/delete of `capital_call_items` or `distribution_items`, call `commitment_repository.recompute_totals(commitment_id)` inside the same SQLAlchemy session before commit
   - Verify by writing a test that issues a payment and asserts the linked commitment's `called_amount` matches the sum of `amount_paid` across its items
+  - Implementation notes:
+    - `CommitmentRepository.recompute_totals` now aggregates `CapitalCallItem.amount_paid` into `called_amount` and `DistributionItem.amount_paid` into `distributed_amount` (was `amount_due`). This is the right ledger semantic — `called` = cash received, not cash owed — and it's what the next test asserts.
+    - Switched `recompute_totals` from `commit()`+`refresh()` to `flush()` only. Both call sites (`CapitalCallRepository.add_items` / `set_item_payment` / `update_item` and the parallel distribution methods) already commit afterward, so the recompute now lands in the same transaction as the line-item write. No other callers exist.
+    - Tests live in `backend/tests/test_commitments_api.py::TestRecomputeTotalsLifecycle`: one for capital calls (partial → full payment, plus a sibling commitment that must stay at zero) and one for distributions. Both assert `commitment.called_amount` (resp. `distributed_amount`) equals `sum(amount_paid)` across the commitment's items.
+    - `make test` (47 tests) and `make lint` clean. `make openapi` produced no diff since the change was internal.
+    - Note: there is no `delete` operation on capital-call/distribution items in the repository or routers today, so the lifecycle hook only had to cover create + update. If a delete endpoint is added later it must call `recompute_totals` before commit on the same session.
 
 - [ ] Add integration tests:
   - `backend/tests/test_capital_calls_api.py` — end-to-end: create call → add items → record partial payment → parent transitions to `partially_paid` → record remaining payment → parent flips to `paid` and commitment.called_amount equals total

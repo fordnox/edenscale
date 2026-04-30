@@ -21,6 +21,10 @@ from app.models import (
     User,
     UserRole,
 )
+from app.repositories.capital_call_repository import CapitalCallRepository
+from app.repositories.distribution_repository import DistributionRepository
+from app.schemas.capital_call import CapitalCallCreate
+from app.schemas.distribution import DistributionCreate
 
 
 @pytest.fixture(autouse=True)
@@ -382,3 +386,117 @@ class TestNestedFundRoute:
         assert response.status_code == 200
         ids = sorted(row["id"] for row in response.json())
         assert ids == sorted([c_one, c_two])
+
+
+class TestRecomputeTotalsLifecycle:
+    """Line-item create/update must keep commitment.called_amount and
+    distributed_amount in lockstep with the sum of amount_paid across items."""
+
+    def test_capital_call_payment_updates_commitment_called_amount(self):
+        org_id = _seed_org()
+        fund_id = _seed_fund(org_id)
+        investor_a = _seed_investor(org_id, name="LP A")
+        investor_b = _seed_investor(org_id, name="LP B")
+        commitment_a = _seed_commitment(
+            fund_id,
+            investor_a,
+            committed_amount=Decimal("1000.00"),
+            status=CommitmentStatus.approved,
+        )
+        commitment_b = _seed_commitment(
+            fund_id,
+            investor_b,
+            committed_amount=Decimal("500.00"),
+            status=CommitmentStatus.approved,
+        )
+
+        db = SessionLocal()
+        try:
+            repo = CapitalCallRepository(db)
+            call = repo.create_draft(
+                CapitalCallCreate(
+                    fund_id=fund_id,
+                    title="Q1 Call",
+                    due_date=date(2026, 6, 1),
+                    amount=Decimal("1500.00"),
+                )
+            )
+            items = repo.add_items(
+                call.id,
+                [
+                    (commitment_a, Decimal("1000.00")),
+                    (commitment_b, Decimal("500.00")),
+                ],
+            )
+            item_a = next(i for i in items if i.commitment_id == commitment_a)
+
+            commitment = db.get(Commitment, commitment_a)
+            assert commitment.called_amount == Decimal("0.00")
+
+            repo.set_item_payment(item_a.id, Decimal("400.00"))
+            db.refresh(commitment)
+            paid_sum = sum(
+                (i.amount_paid for i in commitment.capital_call_items),
+                start=Decimal("0"),
+            )
+            assert commitment.called_amount == Decimal("400.00")
+            assert commitment.called_amount == paid_sum
+
+            repo.set_item_payment(item_a.id, Decimal("1000.00"))
+            db.refresh(commitment)
+            paid_sum = sum(
+                (i.amount_paid for i in commitment.capital_call_items),
+                start=Decimal("0"),
+            )
+            assert commitment.called_amount == Decimal("1000.00")
+            assert commitment.called_amount == paid_sum
+
+            other = db.get(Commitment, commitment_b)
+            assert other.called_amount == Decimal("0.00")
+        finally:
+            db.close()
+
+    def test_distribution_payment_updates_commitment_distributed_amount(self):
+        org_id = _seed_org()
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id)
+        commitment_id = _seed_commitment(
+            fund_id,
+            investor_id,
+            committed_amount=Decimal("1000.00"),
+            status=CommitmentStatus.approved,
+        )
+
+        db = SessionLocal()
+        try:
+            repo = DistributionRepository(db)
+            distribution = repo.create_draft(
+                DistributionCreate(
+                    fund_id=fund_id,
+                    title="Q1 Distribution",
+                    distribution_date=date(2026, 6, 1),
+                    amount=Decimal("500.00"),
+                )
+            )
+            items = repo.add_items(
+                distribution.id, [(commitment_id, Decimal("500.00"))]
+            )
+            item = items[0]
+
+            commitment = db.get(Commitment, commitment_id)
+            assert commitment.distributed_amount == Decimal("0.00")
+
+            repo.set_item_payment(item.id, Decimal("250.00"))
+            db.refresh(commitment)
+            assert commitment.distributed_amount == Decimal("250.00")
+
+            repo.set_item_payment(item.id, Decimal("500.00"))
+            db.refresh(commitment)
+            paid_sum = sum(
+                (i.amount_paid for i in commitment.distribution_items),
+                start=Decimal("0"),
+            )
+            assert commitment.distributed_amount == Decimal("500.00")
+            assert commitment.distributed_amount == paid_sum
+        finally:
+            db.close()
