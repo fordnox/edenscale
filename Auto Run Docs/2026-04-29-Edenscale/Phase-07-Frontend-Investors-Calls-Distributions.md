@@ -32,11 +32,17 @@ This phase ports the LP- and capital-flow-focused pages from the prototype: Inve
   - `Add contact` form: when the investor has no contacts yet, the new contact is auto-marked `is_primary: true`; otherwise the new contact is added without disturbing the existing primary. Form fields reset only on success.
   - Commitments tab links each row to `/funds/{fund.id}` and uses `StatusPill kind="commitment"` so colour logic stays in the shared component.
 
-- [ ] Port the Capital Calls page:
+- [x] Port the Capital Calls page:
   - Create `frontend/src/pages/CapitalCallsPage.tsx` listing all calls via `useApiQuery("/capital-calls")` with filters `?fund_id`, `?status` exposed as Radix Select dropdowns. Table columns: fund, title, due_date, amount, status pill, paid % progress bar
   - Drill-in: clicking a row opens a side drawer (Radix Dialog with side="right") rendering `CapitalCallDetail.tsx` — fetches `/capital-calls/{id}`, lists items with per-investor amount_due / amount_paid, "Record payment" inline edit, and "Send" / "Cancel" status buttons gated by current status
   - "New capital call" button → `CapitalCallCreateDialog` collects fund_id, title, description, due_date, amount, and on submit posts to `POST /capital-calls` then `POST /capital-calls/{id}/items?mode=pro-rata` to auto-allocate
   - Replace the placeholder `/calls` route in `App.tsx`
+
+  Implementation notes:
+  - `CapitalCallCreateDialog` (`frontend/src/components/capital-calls/CapitalCallCreateDialog.tsx`) uses Radix `Select` for fund picker, posts to `POST /capital-calls`, then optionally fires `POST /capital-calls/{id}/items?mode=pro-rata` (auto-allocate is on by default with a checkbox to opt out — handy when there are no approved commitments yet so we don't 400 the user). Allocation failure is surfaced as a `toast.warning` rather than blocking the create flow.
+  - `CapitalCallDetail` (`frontend/src/components/capital-calls/CapitalCallDetail.tsx`) is rendered inside a Radix `Sheet` (side="right", `sm:max-w-2xl`). It fetches `/capital-calls/{id}` plus the parent fund's `/funds/{fund_id}/commitments` to map `commitment_id → investor name` for the allocation table. KPI block shows amount / paid / allocated, with a `ProgressBar` keyed off `paidTotal / amount` and `tone="brass"` when overdue.
+  - Send is enabled only for `draft`/`scheduled` (and gated on having items); Cancel is enabled for any non-final status. Per-row "Record payment" is an inline numeric input + Save button that PATCHes `/capital-calls/{call_id}/items/{item_id}` with `amount_paid` plus today's `paid_at`. After each successful mutation we invalidate `["/capital-calls"]`, the keyed call detail, the parent fund's `/funds/{fund_id}/capital-calls`, `/funds/{fund_id}`, `/funds/{fund_id}/overview`, and `["/dashboard"]` so KPI strips refresh.
+  - Page-level KPI strip computes from a separate unfiltered `useApiQuery("/capital-calls")` so the overview totals stay stable as the user filters; the visible table reflects the filtered query result.
 
 - [ ] Port the Distributions page:
   - Create `frontend/src/pages/DistributionsPage.tsx` mirroring the Capital Calls page exactly (list, filters, drawer detail, create dialog, send/cancel actions) but pointing at `/distributions` endpoints

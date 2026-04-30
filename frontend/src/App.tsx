@@ -6,6 +6,7 @@ import { ComingSoon } from './pages/ComingSoon'
 import FundsPage from './pages/FundsPage'
 import FundDetailPage from './pages/FundDetailPage'
 import InvestorsPage from './pages/InvestorsPage'
+import CapitalCallsPage from './pages/CapitalCallsPage'
 import UserProfilePage from './pages/UserProfilePage'
 import LoginPage from './pages/LoginPage'
 
@@ -18,7 +19,7 @@ function App() {
         <Route path="/funds" element={<FundsPage />} />
         <Route path="/funds/:fundId" element={<FundDetailPage />} />
         <Route path="/investors" element={<InvestorsPage />} />
-        <Route path="/calls" element={<ComingSoon page="Capital Calls" />} />
+        <Route path="/calls" element={<CapitalCallsPage />} />
         <Route path="/distributions" element={<ComingSoon page="Distributions" />} />
         <Route path="/documents" element={<ComingSoon page="Documents" />} />
         <Route path="/letters" element={<ComingSoon page="Letters" />} />
