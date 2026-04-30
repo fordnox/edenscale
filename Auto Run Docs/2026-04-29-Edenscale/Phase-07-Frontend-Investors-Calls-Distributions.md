@@ -84,4 +84,9 @@ This phase ports the LP- and capital-flow-focused pages from the prototype: Inve
   - The "parent call flips to `partially_paid` after a partial payment" assertion is locked in by backend tests `test_capital_calls_api.py:211` and `:299`, so the server-side state transition is regression-safe even without the manual click-through.
   - The interactive browser walkthrough itself was not executed by this agent run: auth uses real Hanko-issued JWTs (`backend/app/core/auth.py`) with no dev bypass, so an automated browser session can't get past the `/login` screen. Recommend the human run the walkthrough locally before shipping the phase.
 
-- [ ] Run repo gates: `make lint`, `make test`
+- [x] Run repo gates: `make lint`, `make test`
+
+  Implementation notes:
+  - `make lint` passes cleanly: import smoke test, `ruff check --fix`, `ty check`, `black`, and `isort` all report no issues (86 files unchanged, 3 skipped — alembic/tests/.venv).
+  - `make test` passes: **144 passed in 5.28s**. No existing test was disturbed by Phase 07 (frontend-only changes).
+  - `make openapi` was not re-run because no backend routes / schemas were modified in this phase; `backend/openapi.json` and `frontend/src/lib/schema.d.ts` are still in sync from the prior phase.
