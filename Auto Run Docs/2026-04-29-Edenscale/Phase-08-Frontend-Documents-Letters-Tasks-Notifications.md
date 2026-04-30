@@ -62,11 +62,18 @@ This phase finishes the page port from the prototype: Documents (with file uploa
   - `TaskCreateDialog.tsx` matches the Documents/Letters dialog patterns (Dialog + form + Loader2 spinner + sonner toasts). It posts a `TaskCreate` body — title, optional description, fund, assignee, due date, and explicit `status: "open"` to satisfy the OpenAPI default. The "New task" button is hidden for LPs since the backend gates `POST /tasks` to admin/fund_manager.
   - `App.tsx` swaps the `ComingSoon` placeholder for `<TasksPage />`. `pnpm run lint` (`tsc --noEmit`) passes.
 
-- [ ] Port the Notifications page:
+- [x] Port the Notifications page:
   - Create `frontend/src/pages/NotificationsPage.tsx` — chronological feed via `useApiQuery("/notifications")`. Group by date (Today / Yesterday / This Week / Earlier)
   - Each row: title, message, related entity link (e.g., "View capital call" → `/calls?focus={related_id}`), read/archive actions
   - Header actions: "Mark all read" → `POST /notifications/read-all`
   - Replace the placeholder `/notifications` route in `App.tsx`. Wire the Topbar bell badge count from this query result
+
+  Notes:
+  - `NotificationsPage.tsx` fetches `/notifications` once with `limit: 200` and partitions client-side into the four date buckets (Today / Yesterday / This week / Earlier). Archived notifications are hidden from the inbox; only `unread` and `read` rows show. Day-bucketing uses the local-time start of each day so a notification created late at night still shows under "Today" until midnight.
+  - Each row shows a brass-500 dot when unread (ink-300 once read, plus 80% opacity), the title (semibold when unread, medium otherwise), the message body, and a metadata strip with `titleCase(related_type)`, `formatDate(created_at)`, and a context-specific link when both `related_type` and `related_id` are set. The `relatedLink(...)` helper maps the backend's free-form `related_type` strings (`capital_call`, `distribution`, `investor`, `document`, `communication`/`letter`, `task`, `fund`) to in-app routes — most use `/{section}?focus={id}` per the phase example, while `fund` jumps to the existing `/funds/{id}` detail. Unrecognized types render with no link rather than a broken URL.
+  - Per-row actions are ghost buttons: a `CheckCheck` icon to mark read (only rendered when status is `unread`) calls `POST /notifications/{id}/read`, and an `Archive` icon calls `POST /notifications/{id}/archive`. The header CTA is "Mark all as read" → `POST /notifications/read-all`, disabled when `unreadCount === 0` or the mutation is pending. Each mutation invalidates `["/notifications"]` and `["/dashboard/overview"]` so the dashboard counter and bell badge stay in sync. `useApiMutation` already shows a sonner toast on error.
+  - Topbar bell badge: `Topbar.tsx` no longer reads `overview.unread_notifications_count`; instead it shares the same `useApiQuery("/notifications", { params: { query: { limit: 200 } } })` and counts `n.status === "unread"` client-side. After a mark-read mutation invalidates `["/notifications"]`, the badge decrements automatically without a separate dashboard refetch. Using a 60s `staleTime` keeps the request cheap.
+  - `App.tsx` swaps the `ComingSoon` placeholder for `<NotificationsPage />` and drops the now-unused `ComingSoon` import. `pnpm run lint` (`tsc --noEmit`) passes.
 
 - [ ] Add a shared `EmptyState.tsx` component used across all four pages:
   - Props: `icon`, `title`, `body`, optional `action` button

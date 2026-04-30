@@ -2,7 +2,6 @@ import { Routes, Route } from 'react-router-dom'
 import MainLayout from './layouts/MainLayout'
 import AppShell from './layouts/AppShell'
 import DashboardPage from './pages/DashboardPage'
-import { ComingSoon } from './pages/ComingSoon'
 import FundsPage from './pages/FundsPage'
 import FundDetailPage from './pages/FundDetailPage'
 import InvestorsPage from './pages/InvestorsPage'
@@ -11,6 +10,7 @@ import DistributionsPage from './pages/DistributionsPage'
 import DocumentsPage from './pages/DocumentsPage'
 import LettersPage from './pages/LettersPage'
 import TasksPage from './pages/TasksPage'
+import NotificationsPage from './pages/NotificationsPage'
 import UserProfilePage from './pages/UserProfilePage'
 import LoginPage from './pages/LoginPage'
 
@@ -28,7 +28,7 @@ function App() {
         <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/letters" element={<LettersPage />} />
         <Route path="/tasks" element={<TasksPage />} />
-        <Route path="/notifications" element={<ComingSoon page="Notifications" />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
       </Route>
 
       {/* Marketing / profile pages with the legacy header + footer layout */}

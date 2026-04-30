@@ -32,11 +32,15 @@ export function Topbar() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const { data: overview } = useApiQuery("/dashboard/overview", undefined, {
-    staleTime: 60 * 1000,
-  })
+  const { data: notifications } = useApiQuery(
+    "/notifications",
+    { params: { query: { limit: 200 } } },
+    { staleTime: 60 * 1000 },
+  )
 
-  const unreadCount = overview?.unread_notifications_count ?? 0
+  const unreadCount = (notifications ?? []).filter(
+    (n) => n.status === "unread",
+  ).length
   const hasUnread = unreadCount > 0
   const badgeLabel = unreadCount > 99 ? "99+" : String(unreadCount)
 
