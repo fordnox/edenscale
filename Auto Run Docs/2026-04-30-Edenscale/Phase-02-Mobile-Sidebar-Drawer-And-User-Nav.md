@@ -4,7 +4,7 @@ The sidebar (`frontend/src/components/layout/Sidebar.tsx`) is currently `hidden 
 
 ## Tasks
 
-- [ ] Refactor `Sidebar.tsx` to be controllable and reusable across desktop and mobile:
+- [x] Refactor `Sidebar.tsx` to be controllable and reusable across desktop and mobile:
   - Extract the inner contents (logo header, nav list, footer profile) into a `SidebarBody` sub-component inside `frontend/src/components/layout/Sidebar.tsx` so it can be rendered both inline (desktop) and inside a `Sheet` (mobile)
   - Desktop wrapper stays `aside ... sticky top-0 hidden h-svh w-[260px] ... md:flex`
   - Mobile wrapper uses `Sheet` from `@/components/ui/sheet` with `side="left"`, controlled `open`/`onOpenChange` via a new prop, `w-[280px] sm:w-[320px]` content, no padding overrides — relies on Phase 01 token fixes

@@ -1,7 +1,14 @@
-import { NavLink } from "react-router-dom"
+import { useEffect } from "react"
+import { NavLink, useLocation } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/useAuth"
 import { useNavItems } from "@/hooks/useNavItems"
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet"
 
 function deriveInitials(email: string | null | undefined) {
   if (!email) return "ES"
@@ -19,14 +26,14 @@ const ROLE_TAGLINES: Record<string, string> = {
   lp: "Limited partner view",
 }
 
-export function Sidebar() {
+function SidebarBody() {
   const { user } = useAuth()
   const initials = deriveInitials(user?.email)
   const { items, role } = useNavItems()
   const tagline = (role && ROLE_TAGLINES[role]) ?? "Manager view"
 
   return (
-    <aside className="sticky top-0 hidden h-svh w-[260px] shrink-0 flex-col border-r border-[color:var(--border-hairline)] bg-page md:flex">
+    <>
       <div className="flex items-center gap-3 px-6 pt-7 pb-6">
         <span className="inline-flex size-7 items-center justify-center text-conifer-700">
           <svg viewBox="0 0 64 64" className="size-7" aria-hidden="true">
@@ -101,6 +108,42 @@ export function Sidebar() {
           </span>
         </div>
       </div>
-    </aside>
+    </>
+  )
+}
+
+interface SidebarProps {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export function Sidebar({ open = false, onOpenChange }: SidebarProps) {
+  const location = useLocation()
+
+  useEffect(() => {
+    onOpenChange?.(false)
+  }, [location.pathname, onOpenChange])
+
+  return (
+    <>
+      <aside className="sticky top-0 hidden h-svh w-[260px] shrink-0 flex-col border-r border-[color:var(--border-hairline)] bg-page md:flex">
+        <SidebarBody />
+      </aside>
+
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="left"
+          className="w-[280px] gap-0 sm:max-w-none sm:w-[320px] md:hidden"
+        >
+          <SheetTitle className="sr-only">Navigation</SheetTitle>
+          <SheetDescription className="sr-only">
+            Primary navigation menu
+          </SheetDescription>
+          <div className="flex h-full flex-col">
+            <SidebarBody />
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   )
 }
