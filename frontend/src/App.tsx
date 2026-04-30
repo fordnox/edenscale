@@ -10,6 +10,7 @@ import CapitalCallsPage from './pages/CapitalCallsPage'
 import DistributionsPage from './pages/DistributionsPage'
 import DocumentsPage from './pages/DocumentsPage'
 import LettersPage from './pages/LettersPage'
+import TasksPage from './pages/TasksPage'
 import UserProfilePage from './pages/UserProfilePage'
 import LoginPage from './pages/LoginPage'
 
@@ -26,7 +27,7 @@ function App() {
         <Route path="/distributions" element={<DistributionsPage />} />
         <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/letters" element={<LettersPage />} />
-        <Route path="/tasks" element={<ComingSoon page="Tasks" />} />
+        <Route path="/tasks" element={<TasksPage />} />
         <Route path="/notifications" element={<ComingSoon page="Notifications" />} />
       </Route>
 

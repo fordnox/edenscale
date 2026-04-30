@@ -46,13 +46,21 @@ This phase finishes the page port from the prototype: Documents (with file uploa
   - `LetterDetail.tsx` opens in a Sheet, hydrates with `GET /communications/{id}`, and joins `/users` to enrich `user_id` recipients with names + email; `investor_contact_id` rows fall back to `Contact #N`. Read receipts render with date+time via `formatDate(..., { hour, minute })`. The drawer also exposes a "Send now" CTA when the letter is still a draft.
   - `App.tsx` swaps the `ComingSoon` placeholder for `<LettersPage />`. `pnpm run lint` (`tsc --noEmit`) passes.
 
-- [ ] Port the Tasks page:
+- [x] Port the Tasks page:
   - Create `frontend/src/pages/TasksPage.tsx` — Kanban-style four columns (`open`, `in_progress`, `done`, `cancelled`). Each column lists task cards via `useApiQuery("/tasks", { params: { status } })`
   - Card shows title, fund (if set), assignee avatar, due_date with red highlight when overdue
   - "New task" button opens `TaskCreateDialog` posting to `POST /tasks`
   - Card menu: mark in_progress / complete / cancel via `PATCH /tasks/{id}` and `POST /tasks/{id}/complete`
   - Filter: My tasks vs All tasks (visible only to fund_manager+admin via the role from `GET /users/me`)
   - Replace the placeholder `/tasks` route in `App.tsx`
+
+  Notes:
+  - `TasksPage.tsx` fetches `/tasks` once with `limit: 200` and partitions client-side into the four lanes (`open`, `in_progress`, `done`, `cancelled`); going one-shot avoids four parallel queries that would each duplicate the role-based assignee filter on the backend. Loading state renders a single spinner above the grid.
+  - The "My tasks vs All tasks" segmented toggle is rendered only when `useApiQuery("/users/me").data.role` is `admin` or `fund_manager`; for LPs the page silently hard-codes the `mine` view (and the backend already enforces this). When `mine` is active the query passes `assignee={me.id}`; switching to `all` drops the param so admins/fund managers see every task they can manage.
+  - Card cluster: title + per-card `DropdownMenu` with the status transitions called for in the spec — `Mark in progress`, `Move to open`, `Mark complete`, `Cancel task`, plus a `Reopen` shortcut for completed/cancelled rows. `Mark complete` posts to `/tasks/{id}/complete` (no body — the schema declares `requestBody?: never`, so the call omits `body` rather than passing `null` like the letters send endpoint does); the other transitions go through `PATCH /tasks/{id}`. Each mutation invalidates `["/tasks"]` and `["/dashboard"]`.
+  - Fund names are joined client-side from `/funds` (falling back to `Fund #N`); assignee chips use shared `deriveInitials(...)` logic and the conifer-700 swatch from the topbar, with the fallback "Unassigned". The users lookup pulls `/users` only when `canManage` is true, otherwise it falls back to the current user record so LPs still see their own initials. Due dates show a `CalendarDays` icon and turn `--status-negative` (the existing red-clay token) when the date is in the past _and_ the task is not yet `done`/`cancelled`.
+  - `TaskCreateDialog.tsx` matches the Documents/Letters dialog patterns (Dialog + form + Loader2 spinner + sonner toasts). It posts a `TaskCreate` body — title, optional description, fund, assignee, due date, and explicit `status: "open"` to satisfy the OpenAPI default. The "New task" button is hidden for LPs since the backend gates `POST /tasks` to admin/fund_manager.
+  - `App.tsx` swaps the `ComingSoon` placeholder for `<TasksPage />`. `pnpm run lint` (`tsc --noEmit`) passes.
 
 - [ ] Port the Notifications page:
   - Create `frontend/src/pages/NotificationsPage.tsx` — chronological feed via `useApiQuery("/notifications")`. Group by date (Today / Yesterday / This Week / Earlier)
