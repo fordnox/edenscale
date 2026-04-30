@@ -63,9 +63,15 @@ This phase ports the LP- and capital-flow-focused pages from the prototype: Inve
   - The previous bare brass dot is replaced with a numeric badge: a `bg-brass-500` rounded pill at `-right-0.5 -top-0.5` showing the count (capped to "99+" for ≥ 100). The badge is only rendered when `unreadCount > 0`, preserving the "no decoration when zero" behaviour. `aria-label` on the bell link surfaces the count to screen readers (e.g. "Notifications (3 unread)").
   - Click target is unchanged — `<Link to="/notifications">` already navigated to the notifications route (currently a `ComingSoon` placeholder; the page will be ported in a later phase).
 
-- [ ] Optimistic-invalidation pattern (use this same approach in all three pages):
+- [x] Optimistic-invalidation pattern (use this same approach in all three pages):
   - On any successful mutation (create / patch / send / cancel / record-payment), call `queryClient.invalidateQueries({ queryKey: [primary] })` AND any nested keys (`["funds", fundId]`, `["dashboard"]`) so KPI strips refresh
   - Show a `sonner` toast confirming the action
+
+  Implementation notes:
+  - Audited all mutations across the three pages. The shared shape is: a small `invalidate*Scopes()` helper that hits the primary list query (`["/investors"]` / `["/capital-calls"]` / `["/distributions"]`), the keyed detail query when relevant, the parent fund's nested keys (`/funds/{fund_id}`, `/funds/{fund_id}/overview`, plus the matching `/funds/{fund_id}/capital-calls` or `/funds/{fund_id}/distributions`), and `["/dashboard"]`. `onSuccess` callbacks fire a `sonner` toast first and then call the helper.
+  - `CapitalCallDetail.invalidateCallScopes()` and `DistributionDetail.invalidateDistributionScopes()` already covered send / cancel / record-payment. `CapitalCallCreateDialog` and `DistributionCreateDialog` already invalidated the same set after the create + pro-rata flow. `InvestorCreateDialog` already invalidated `["/investors"]` + `["/dashboard"]`.
+  - The only inconsistency was in `InvestorDetailPanel`: `updateContact` (toggle primary) and `createContact` invalidated only the contacts subquery and skipped the parent investor + dashboard. Refactored both to share a new `invalidateInvestorScopes()` helper that hits the contacts list, the keyed `[/investors/{investor_id}]` query, the master `["/investors"]` list, and `["/dashboard"]` so the pattern is uniform across all five mutating components. Toast call moved to fire before invalidation (matches the order used in CapitalCallDetail / DistributionDetail).
+  - `pnpm run lint` (tsc --noEmit) passes after the change.
 
 - [ ] Type-check + visual smoke test:
   - `pnpm run lint` from `frontend/`

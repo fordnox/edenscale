@@ -40,18 +40,30 @@ function InvestorDetailPanel({ investorId }: { investorId: number }) {
     params: { path: { investor_id: investorId } },
   })
 
+  function invalidateInvestorScopes() {
+    queryClient.invalidateQueries({
+      queryKey: [
+        "/investors/{investor_id}/contacts",
+        { params: { path: { investor_id: investorId } } },
+      ],
+    })
+    queryClient.invalidateQueries({
+      queryKey: [
+        "/investors/{investor_id}",
+        { params: { path: { investor_id: investorId } } },
+      ],
+    })
+    queryClient.invalidateQueries({ queryKey: ["/investors"] })
+    queryClient.invalidateQueries({ queryKey: ["/dashboard"] })
+  }
+
   const updateContact = useApiMutation(
     "patch",
     "/investors/{investor_id}/contacts/{contact_id}",
     {
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: [
-            "/investors/{investor_id}/contacts",
-            { params: { path: { investor_id: investorId } } },
-          ],
-        })
         toast.success("Primary contact updated")
+        invalidateInvestorScopes()
       },
     },
   )
@@ -61,13 +73,8 @@ function InvestorDetailPanel({ investorId }: { investorId: number }) {
     "/investors/{investor_id}/contacts",
     {
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: [
-            "/investors/{investor_id}/contacts",
-            { params: { path: { investor_id: investorId } } },
-          ],
-        })
         toast.success("Contact added")
+        invalidateInvestorScopes()
       },
     },
   )
