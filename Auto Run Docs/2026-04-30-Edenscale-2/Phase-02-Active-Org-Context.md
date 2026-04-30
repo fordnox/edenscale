@@ -16,7 +16,7 @@ This phase introduces the `X-Organization-Id` request header and a new `get_acti
   - Out-of-scope hits documented in the audit doc: `user_organization_membership_repository.py` lines 84/96/102 (seeder is supposed to read the legacy column), `core/audit.py:147` (audit log writer — flagged for a follow-up decision: switch to active-membership org or leave on legacy column for audit-row provenance; not explicitly in Phase 02 task list).
   - `users.organization_id` (the SQL column name) appears only inside the membership repo's docstring — no production callsite reads the raw column name.
 
-- [ ] Build the `get_active_membership` dependency in `backend/app/core/rbac.py`:
+- [x] Build the `get_active_membership` dependency in `backend/app/core/rbac.py`:
   - Add `def get_active_membership(...)` that depends on `get_current_user_record` and the `X-Organization-Id` header (`Header(alias="X-Organization-Id")`, optional)
   - Resolution rules:
     - If header missing AND user has exactly one membership, use it
@@ -25,6 +25,19 @@ This phase introduces the `X-Organization-Id` request header and a new `get_acti
     - If header references an org the user has no membership in and they are NOT superadmin, raise 403 `"Not a member of this organization"`
   - Add `require_membership_roles(*allowed: UserRole)` factory analogous to `require_roles` but operating on the active membership's `role` (so a user who is `lp` globally but `admin` of Org B is treated as admin within Org B)
   - Keep the legacy `require_roles` working for now so superadmin-only / global-scoped routes (like superadmin org management) can still gate on `User.role`
+
+  **Implementation notes:**
+  - Added `get_active_membership(...)` and `require_membership_roles(*allowed: UserRole)` in `backend/app/core/rbac.py` (alongside the existing `get_current_user_record` / `require_roles`).
+  - `get_active_membership` reads the `X-Organization-Id` header via `Header(default=None, alias="X-Organization-Id")` typed as `int | None`. Resolution branches:
+    1. Header present + matching `(user_id, org_id)` membership → return that row.
+    2. Header present + no match + user is `superadmin` → synthesize a transient `UserOrganizationMembership` (constructor only — never `db.add`'d, never committed) with `role=superadmin`. Lets superadmins act on any org without a per-org row.
+    3. Header present + no match + non-superadmin → 403 `"Not a member of this organization"`.
+    4. Header missing + user is `superadmin` → 400 `"X-Organization-Id required"` (forces explicit org choice for global-override callers).
+    5. Header missing + exactly one membership → use it.
+    6. Header missing + zero or multiple memberships → 400 `"X-Organization-Id required"`.
+  - `require_membership_roles(*allowed: UserRole)` is a thin factory that depends on `get_active_membership` and 403s when `membership.role not in allowed` — semantically identical to `require_roles` but operating on the active membership's per-org role rather than the user's global `User.role`. So an `lp`-by-default user who is `admin` of Org B will pass `require_membership_roles(UserRole.admin)` when acting through Org B.
+  - `require_roles` (the global-role gate) is left untouched — superadmin-only / global routes (e.g. `/organizations` superadmin management) continue to use it. This phase only adds the new dependency surface; router migration is the next task.
+  - Lint clean (`make lint` → all green), tests green (`uv run pytest` → 161 passed including the existing `test_rbac.py` suite). Test coverage for the new dep itself comes in the later Phase 02 task `test_active_membership_dep.py` (per task list ordering).
 
 - [ ] Migrate every org-scoped router off `current_user.organization_id`:
   - For each file from the audit (`funds`, `fund_groups`, `fund_team_members`, `investors`, `investor_contacts`, `commitments`, `capital_calls`, `distributions`, `documents`, `communications`, `tasks`, `notifications`, `dashboard`, `audit_logs`, `users`):
