@@ -4,10 +4,17 @@ This phase ports the prototype's app shell (sidebar + topbar + protected routing
 
 ## Tasks
 
-- [ ] Read the existing frontend before adding new code:
+- [x] Read the existing frontend before adding new code:
   - Re-read `frontend/src/App.tsx`, `frontend/src/layouts/AppShell.tsx`, `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/components/layout/Topbar.tsx`, `frontend/src/components/ui/*`, `frontend/src/lib/api.ts`, `frontend/src/lib/format.ts` from Phase 01
   - Read the prototype source files we're porting: `edenscale/src/pages/FundsPage.tsx`, `edenscale/src/pages/FundDetailPage.tsx`, `edenscale/src/data/mock.ts`, `edenscale/src/lib/router.ts`
   - List the methods on `frontend/src/lib/api.ts` and confirm `useQuery` is available via `@tanstack/react-query` (check `frontend/package.json`; if missing, add it and the `QueryClientProvider` wrapper in `main.tsx`)
+
+  **Orientation notes (2026-04-30):**
+  - `frontend/src/lib/api.ts` exports a default `openapi-fetch` `client` typed against generated `paths` from `@/lib/schema`. Available methods on the client: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`, `TRACE`, plus `use()` / `eject()` for middleware. Auth header + sonner-toast error surfacing already wired via middleware.
+  - `@tanstack/react-query` `^5.99.0` is already in `frontend/package.json:40`. `QueryClientProvider` already wraps `<App />` in `frontend/src/main.tsx:15-20` (with an inline `new QueryClient()` — to be replaced by the configured client in the next task).
+  - Existing `AppShell.tsx` renders `<Sidebar />` + `<main><Outlet /></main>`; `Topbar.tsx` is currently a per-page hero (eyebrow/title/description/actions + search input) rather than a global app bar — it is imported by individual pages, not the shell. The next task's "Topbar" refactor will need to either repurpose this hero into a header strip with notifications/user menu or split global topbar from page hero.
+  - `components/ui/badge.tsx` already ships a `StatusBadge` with a `statusToTone` map covering fund/commitment/capital-call/task statuses; the planned `StatusPill` component should consolidate or extend this map (covering distribution + notification kinds) rather than duplicate.
+  - Prototype `FundsPage` is filterable (all/active/liquidating/closed) with a DataTable of fund rows; `FundDetailPage` shows status pill, KPI strip, commitments table, capital-calls + distributions lists, and documents — all sourced from `edenscale/src/data/mock.ts`. `edenscale/src/lib/router.ts` is just a string-literal route enum; the real frontend uses react-router-dom v7 already.
 
 - [ ] Establish data-fetching primitives the rest of the frontend phases will reuse:
   - Add `frontend/src/lib/queryClient.ts` exporting a configured `QueryClient` (5-minute staleTime, retry once)
