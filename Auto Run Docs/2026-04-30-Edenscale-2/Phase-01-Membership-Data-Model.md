@@ -69,11 +69,18 @@ This phase lays the data-model foundation for multi-org membership and global su
   - `main(email)` opens its own `SessionLocal()` (mirrors `seed_demo.main`), looks up the user via `UserRepository.get_by_email`, raises `SystemExit("User not found: …")` with a non-zero exit when missing, otherwise sets `role = UserRole.superadmin` and `organization_id = None`, commits + refreshes, and prints a confirmation line including the user's email and id. Re-promoting an already-superadmin user is a no-op idempotently (sets the same values).
   - The `if __name__ == "__main__":` guard validates `len(sys.argv) == 2` and emits a `Usage:` message via `SystemExit` otherwise. Verified `python -m scripts.promote_superadmin` (usage error), `python -m scripts.promote_superadmin nonexistent@example.com` (user-not-found error), and `from scripts.promote_superadmin import main` (clean import).
 
-- [ ] Add unit tests covering the new code:
+- [x] Add unit tests covering the new code:
   - `backend/tests/test_membership_model.py`: create user + org, create membership, assert relationships round-trip, assert unique constraint blocks duplicate (user, org) pairs
   - `backend/tests/test_membership_repository.py`: covers `list_for_user`, `list_for_organization`, `update_role`, `delete`, and `bulk_seed_from_legacy_user_org_id` (build legacy state, run, assert idempotent on second call)
   - `backend/tests/test_promote_superadmin.py`: invoke the CLI's `main(email)` against a seeded user and assert the role flips and `organization_id` is cleared
   - Re-use existing test fixtures (look in `backend/tests/conftest.py` for `db_session`, `user_factory`, `organization_factory` patterns) before inventing new ones
+
+  **Implementation notes:**
+  - `backend/tests/conftest.py` only rewrites the test DSN — there are no shared `db_session` / `user_factory` / `organization_factory` fixtures. Existing test files (e.g. `test_users_api.py`, `test_organizations_api.py`) inline a `setup_database` autouse fixture that creates/drops `Base.metadata`, plus local `_seed_user` / `_seed_org` helpers. Mirrored that exact pattern in all three new files for consistency.
+  - `test_membership_model.py` (3 tests): asserts the `User.memberships` and `Organization.memberships` back-populates round-trip, exercises a single user holding memberships in two orgs, and confirms the `uq_user_org_membership` constraint raises `IntegrityError` on duplicate `(user_id, organization_id)` pairs.
+  - `test_membership_repository.py` (8 tests): covers `list_for_user`, `list_for_organization`, `update_role` (success + missing-id), `delete` (success + missing-id), and the bulk seeder — including idempotence on a second call (returns 0, leaves row count unchanged) and skipping users with `organization_id IS NULL`.
+  - `test_promote_superadmin.py` (3 tests): invokes `main(email)` directly (the test guidance from the previous task explicitly preserved this entry point) and asserts role/org-id mutation, idempotence on an already-promoted user, and the `SystemExit` path when the email isn't found. Captures stdout via `capsys` to confirm the confirmation line.
+  - Full suite: `uv run pytest` → 161 passed (14 new + 147 pre-existing) in 5.70s, no regressions.
 
 - [ ] Wire openapi + lint + test gates:
   - Run `make openapi` so `backend/openapi.json` and `frontend/src/lib/schema.d.ts` pick up the new `MembershipRead` schema and the updated `UserRead.memberships` field
