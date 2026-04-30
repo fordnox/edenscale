@@ -248,6 +248,46 @@ class TestAuditLogRoute:
             assert row["entity_type"] == "fund"
             assert row["entity_id"] == fund_id
 
+    def test_filter_by_date_range(self, client, override_user):
+        from datetime import datetime, timedelta, timezone
+
+        _seed_user("hanko-admin", UserRole.admin)
+        # Two audited writes; backdate the first one so the date filter excludes it.
+        org_id = _seed_org("Old Org")
+        _seed_org("New Org")
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        db = SessionLocal()
+        try:
+            old_row = (
+                db.query(AuditLog)
+                .filter(AuditLog.entity_type == "organization")
+                .filter(AuditLog.entity_id == org_id)
+                .order_by(AuditLog.id)
+                .first()
+            )
+            assert old_row is not None
+            old_row.created_at = now - timedelta(days=10)
+            db.add(old_row)
+            db.commit()
+            old_row_id = old_row.id
+        finally:
+            db.close()
+
+        cutoff = (now - timedelta(days=1)).isoformat()
+        override_user("hanko-admin")
+        resp = client.get(f"/audit-logs?date_from={cutoff}")
+        assert resp.status_code == 200
+        rows = resp.json()
+        assert rows
+        assert all(row["id"] != old_row_id for row in rows)
+
+        # date_to set to the past should return only the older row(s).
+        upper = (now - timedelta(days=2)).isoformat()
+        resp = client.get(f"/audit-logs?date_to={upper}")
+        assert resp.status_code == 200
+        rows = resp.json()
+        assert any(row["id"] == old_row_id for row in rows)
+
     def test_non_admin_forbidden(self, client, override_user):
         _seed_user("hanko-fm", UserRole.fund_manager)
         override_user("hanko-fm")

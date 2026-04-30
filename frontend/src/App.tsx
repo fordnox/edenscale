@@ -12,6 +12,7 @@ import TasksPage from './pages/TasksPage'
 import NotificationsPage from './pages/NotificationsPage'
 import ProfilePage from './pages/ProfilePage'
 import OrganizationSettingsPage from './pages/OrganizationSettingsPage'
+import AuditLogPage from './pages/AuditLogPage'
 import LoginPage from './pages/LoginPage'
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
           path="/settings/organization"
           element={<OrganizationSettingsPage />}
         />
+        <Route path="/audit-log" element={<AuditLogPage />} />
       </Route>
 
       {/* Pages without layout */}

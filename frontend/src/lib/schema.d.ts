@@ -5099,6 +5099,8 @@ export interface operations {
                 entity_id?: number | null;
                 user_id?: number | null;
                 action?: string | null;
+                date_from?: string | null;
+                date_to?: string | null;
                 skip?: number;
                 limit?: number;
             };

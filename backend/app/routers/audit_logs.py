@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -17,6 +19,8 @@ async def list_audit_logs(
     entity_id: int | None = None,
     user_id: int | None = None,
     action: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -28,6 +32,8 @@ async def list_audit_logs(
         entity_id=entity_id,
         user_id=user_id,
         action=action,
+        date_from=date_from,
+        date_to=date_to,
         skip=skip,
         limit=limit,
     )

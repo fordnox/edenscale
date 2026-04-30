@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Query, Session
 
 from app.models.audit_log import AuditLog
@@ -17,6 +19,8 @@ class AuditLogRepository:
         entity_id: int | None = None,
         user_id: int | None = None,
         action: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> list[AuditLog]:
@@ -29,4 +33,8 @@ class AuditLogRepository:
             query = query.filter(AuditLog.user_id == user_id)
         if action is not None:
             query = query.filter(AuditLog.action == action)
+        if date_from is not None:
+            query = query.filter(AuditLog.created_at >= date_from)
+        if date_to is not None:
+            query = query.filter(AuditLog.created_at <= date_to)
         return query.order_by(AuditLog.id.desc()).offset(skip).limit(limit).all()
