@@ -7,9 +7,11 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.rbac import get_current_user_record, require_roles
+from app.models.capital_call_item import CapitalCallItem
 from app.models.commitment import Commitment
 from app.models.enums import CapitalCallStatus, CommitmentStatus, UserRole
 from app.models.fund import Fund
+from app.models.investor_contact import InvestorContact
 from app.models.user import User
 from app.repositories.capital_call_repository import CapitalCallRepository
 from app.schemas.capital_call import (
@@ -21,6 +23,7 @@ from app.schemas.capital_call import (
     CapitalCallUpdate,
 )
 from app.services.allocation import allocate_pro_rata
+from app.services.notification_service import notify
 
 router = APIRouter()
 
@@ -242,6 +245,27 @@ async def send_capital_call(
             status_code=status.HTTP_409_CONFLICT, detail=str(exc)
         ) from exc
     assert sent is not None
+    user_ids = (
+        db.query(InvestorContact.user_id)
+        .join(Commitment, Commitment.investor_id == InvestorContact.investor_id)
+        .join(CapitalCallItem, CapitalCallItem.commitment_id == Commitment.id)
+        .filter(
+            CapitalCallItem.capital_call_id == sent.id,
+            InvestorContact.is_primary.is_(True),
+            InvestorContact.user_id.is_not(None),
+        )
+        .distinct()
+        .all()
+    )
+    for (user_id,) in user_ids:
+        notify(
+            db,
+            user_id=user_id,
+            title=f"Capital call: {sent.title}",
+            message=f"A capital call for {sent.title} has been issued.",
+            related_type="capital_call",
+            related_id=sent.id,  # type: ignore[invalid-argument-type]
+        )
     return sent
 
 

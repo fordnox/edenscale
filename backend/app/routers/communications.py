@@ -16,6 +16,7 @@ from app.schemas.communication import (
     CommunicationSendRequest,
     CommunicationUpdate,
 )
+from app.services.notification_service import notify
 
 router = APIRouter()
 
@@ -147,6 +148,27 @@ async def send_communication(
             status_code=status.HTTP_409_CONFLICT, detail=str(exc)
         ) from exc
     assert sent is not None
+    notified: set[int] = set()
+    for recipient in sent.recipients:
+        target_user_id: int | None = recipient.user_id
+        if target_user_id is None and recipient.investor_contact_id is not None:
+            contact = (
+                db.query(InvestorContact)
+                .filter(InvestorContact.id == recipient.investor_contact_id)
+                .first()
+            )
+            target_user_id = contact.user_id if contact is not None else None  # type: ignore[invalid-assignment]
+        if target_user_id is None or target_user_id in notified:
+            continue
+        notified.add(target_user_id)
+        notify(
+            db,
+            user_id=target_user_id,
+            title=f"New {sent.type.value}: {sent.subject}",
+            message=str(sent.subject),
+            related_type="communication",
+            related_id=sent.id,  # type: ignore[invalid-argument-type]
+        )
     return sent
 
 

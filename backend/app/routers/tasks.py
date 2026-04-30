@@ -8,6 +8,7 @@ from app.models.fund import Fund
 from app.models.user import User
 from app.repositories.task_repository import TaskRepository
 from app.schemas.task import TaskCreate, TaskRead, TaskUpdate
+from app.services.notification_service import notify
 
 router = APIRouter()
 
@@ -89,6 +90,18 @@ async def create_task(
         _ensure_can_attach_fund(current_user, db, data.fund_id)
     repo = TaskRepository(db)
     task = repo.create(data, created_by_user_id=current_user.id)  # type: ignore[invalid-argument-type]
+    if (
+        task.assigned_to_user_id is not None
+        and task.assigned_to_user_id != current_user.id
+    ):
+        notify(
+            db,
+            user_id=task.assigned_to_user_id,  # type: ignore[invalid-argument-type]
+            title=f"New task: {task.title}",
+            message=str(task.title),
+            related_type="task",
+            related_id=task.id,  # type: ignore[invalid-argument-type]
+        )
     return task
 
 
@@ -111,8 +124,22 @@ async def update_task(
         )
     if data.fund_id is not None and data.fund_id != task.fund_id:
         _ensure_can_attach_fund(current_user, db, data.fund_id)
+    previous_assignee = task.assigned_to_user_id
     updated = repo.update(task_id, data)
     assert updated is not None
+    if (
+        updated.assigned_to_user_id is not None
+        and updated.assigned_to_user_id != previous_assignee
+        and updated.assigned_to_user_id != current_user.id
+    ):
+        notify(
+            db,
+            user_id=updated.assigned_to_user_id,  # type: ignore[invalid-argument-type]
+            title=f"Task assigned: {updated.title}",
+            message=str(updated.title),
+            related_type="task",
+            related_id=updated.id,  # type: ignore[invalid-argument-type]
+        )
     return updated
 
 

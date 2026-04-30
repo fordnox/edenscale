@@ -65,6 +65,10 @@ from app.schemas.investor_contact import (
     InvestorContactUpdate,
 )
 from app.schemas.message import Message
+from app.schemas.notification import (
+    NotificationRead,
+    NotificationsReadAllResponse,
+)
 from app.schemas.organization import (
     OrganizationCreate,
     OrganizationRead,
@@ -131,6 +135,8 @@ __all__ = [
     "InvestorRead",
     "InvestorUpdate",
     "Message",
+    "NotificationRead",
+    "NotificationsReadAllResponse",
     "OrganizationCreate",
     "OrganizationRead",
     "OrganizationUpdate",

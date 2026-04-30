@@ -8,8 +8,10 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.rbac import get_current_user_record, require_roles
 from app.models.commitment import Commitment
+from app.models.distribution_item import DistributionItem
 from app.models.enums import CommitmentStatus, DistributionStatus, UserRole
 from app.models.fund import Fund
+from app.models.investor_contact import InvestorContact
 from app.models.user import User
 from app.repositories.distribution_repository import DistributionRepository
 from app.schemas.distribution import (
@@ -21,6 +23,7 @@ from app.schemas.distribution import (
     DistributionUpdate,
 )
 from app.services.allocation import allocate_pro_rata
+from app.services.notification_service import notify
 
 router = APIRouter()
 
@@ -242,6 +245,27 @@ async def send_distribution(
             status_code=status.HTTP_409_CONFLICT, detail=str(exc)
         ) from exc
     assert sent is not None
+    user_ids = (
+        db.query(InvestorContact.user_id)
+        .join(Commitment, Commitment.investor_id == InvestorContact.investor_id)
+        .join(DistributionItem, DistributionItem.commitment_id == Commitment.id)
+        .filter(
+            DistributionItem.distribution_id == sent.id,
+            InvestorContact.is_primary.is_(True),
+            InvestorContact.user_id.is_not(None),
+        )
+        .distinct()
+        .all()
+    )
+    for (user_id,) in user_ids:
+        notify(
+            db,
+            user_id=user_id,
+            title=f"Distribution: {sent.title}",
+            message=f"A distribution for {sent.title} has been issued.",
+            related_type="distribution",
+            related_id=sent.id,  # type: ignore[invalid-argument-type]
+        )
     return sent
 
 
