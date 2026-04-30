@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
-import { LogOut, Settings, User as UserIcon } from "lucide-react"
+import { LogOut, Search, Settings, User as UserIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useApiQuery } from "@/hooks/useApiQuery"
@@ -20,6 +20,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer"
+import { Kbd } from "@/components/ui/kbd"
 
 function deriveInitials(
   first?: string | null,
@@ -42,11 +43,21 @@ const ROLE_TAGLINES: Record<string, string> = {
   lp: "Limited partner view",
 }
 
-function SidebarBody() {
+interface SidebarBodyProps {
+  onOpenSearch?: () => void
+  onCloseSheet?: () => void
+}
+
+function SidebarBody({ onOpenSearch, onCloseSheet }: SidebarBodyProps) {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const { items, role } = useNavItems()
   const tagline = (role && ROLE_TAGLINES[role]) ?? "Manager view"
+
+  const handleSearchClick = () => {
+    onCloseSheet?.()
+    onOpenSearch?.()
+  }
 
   const { data: me } = useApiQuery("/users/me", undefined, {
     staleTime: 5 * 60 * 1000,
@@ -92,6 +103,26 @@ function SidebarBody() {
 
       <nav className="flex-1 px-3 py-5">
         <ul className="flex flex-col gap-0.5">
+          <li>
+            <button
+              type="button"
+              onClick={handleSearchClick}
+              className={cn(
+                "group flex w-full min-h-11 md:min-h-0 items-center gap-3 rounded-xs px-3 py-3 md:py-2.5 text-left",
+                "transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+                "font-sans text-[14px] text-ink-700 hover:bg-parchment-100 hover:text-ink-900",
+                "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
+              )}
+              aria-label="Open search"
+            >
+              <Search
+                className="size-[18px] shrink-0 text-ink-500"
+                strokeWidth={1.5}
+              />
+              <span className="flex-1">Search</span>
+              <Kbd className="bg-parchment-200 text-ink-700">⌘K</Kbd>
+            </button>
+          </li>
           {items.map(({ to, label, icon: Icon, end }) => (
             <li key={to}>
               <NavLink
@@ -197,19 +228,26 @@ function SidebarBody() {
 interface SidebarProps {
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  onOpenSearch?: () => void
 }
 
-export function Sidebar({ open = false, onOpenChange }: SidebarProps) {
+export function Sidebar({
+  open = false,
+  onOpenChange,
+  onOpenSearch,
+}: SidebarProps) {
   const location = useLocation()
 
   useEffect(() => {
     onOpenChange?.(false)
   }, [location.pathname, onOpenChange])
 
+  const closeSheet = () => onOpenChange?.(false)
+
   return (
     <>
       <aside className="sticky top-0 hidden h-svh w-[260px] shrink-0 flex-col border-r border-[color:var(--border-hairline)] bg-page md:flex">
-        <SidebarBody />
+        <SidebarBody onOpenSearch={onOpenSearch} onCloseSheet={closeSheet} />
       </aside>
 
       <Drawer open={open} onOpenChange={onOpenChange} direction="left">
@@ -223,7 +261,10 @@ export function Sidebar({ open = false, onOpenChange }: SidebarProps) {
             Primary navigation menu
           </DrawerDescription>
           <div className="flex h-full flex-col">
-            <SidebarBody />
+            <SidebarBody
+              onOpenSearch={onOpenSearch}
+              onCloseSheet={closeSheet}
+            />
           </div>
         </DrawerContent>
       </Drawer>

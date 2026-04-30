@@ -11,7 +11,11 @@ export default function AppShell() {
 
   return (
     <div className="flex min-h-svh bg-page text-ink-900">
-      <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
+      <Sidebar
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+        onOpenSearch={() => setPaletteOpen(true)}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
           onOpenSidebar={() => setSidebarOpen(true)}

@@ -28,9 +28,10 @@ The Topbar's search `<input>` is a dead placeholder today. This phase replaces i
   - In `Topbar.tsx`, replace the placeholder ⌘K button from Phase 02 with a real trigger: clicking it calls `setOpen(true)` (lift state via context or pass through a prop / a small zustand-free pub-sub; simplest: have `AppShell` own the state and pass `onOpenSearch` down to Topbar, mirror to the hamburger pattern)
   - Topbar button styling: same look as the original search input — pill or rectangle with `Search` icon, placeholder text "Search funds, investors, documents…", trailing `<Kbd>⌘K</Kbd>` (use `frontend/src/components/ui/kbd.tsx` if present, else compose with Tailwind), `hidden md:flex` so it only shows on desktop. On mobile, the search affordance is the ⌘K palette opened via... see next task
 
-- [ ] Add a mobile entry point for search:
+- [x] Add a mobile entry point for search:
   - In `Sidebar.tsx`'s `SidebarBody`, add a "Search" item at the top of the nav list (above the dynamic items from `useNavItems`) — `Search` icon, label "Search", `onClick` opens the palette and closes the mobile sheet
   - This avoids wiring search into the bottom of the screen; matches the user's chrome scope
+  - Notes: `Sidebar` now accepts an `onOpenSearch` prop wired from `AppShell` (which owns the palette state). `SidebarBody` renders a leading button that closes the mobile drawer (via `onOpenChange?.(false)`) before opening the palette, so the sheet slides shut as the palette mounts. The trailing `<Kbd>⌘K</Kbd>` is hidden-friendly: it works on both the desktop sticky sidebar (informational) and the mobile drawer (still useful for users on tablets with attached keyboards). Frontend `pnpm run lint` (tsc) passes.
 
 - [ ] Test the palette end-to-end:
   - Run dev server, log in as a seeded user (admin role to see all entities)
