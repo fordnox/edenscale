@@ -4,9 +4,17 @@ This phase introduces the `X-Organization-Id` request header and a new `get_acti
 
 ## Tasks
 
-- [ ] Re-read the supporting files and inventory every call site that needs an audit:
+- [x] Re-read the supporting files and inventory every call site that needs an audit:
   - `backend/app/core/rbac.py`, `backend/app/main.py`
   - Search for every reference to `current_user.organization_id`, `user.organization_id`, and `users.organization_id` under `backend/app/routers/` and `backend/app/repositories/` and write the file:line list to `Auto Run Docs/2026-04-30-Edenscale-2/Working/active-org-audit.md` (markdown bullet list) so nothing is missed during the migration
+
+  **Implementation notes:**
+  - Re-read `backend/app/core/rbac.py` (current contents: `get_current_user_record` and `require_roles`; no `organization_id` reads — Phase 02 will add `get_active_membership` here as a sibling dep) and `backend/app/main.py` (15 routers mounted under `/dashboard`, `/users`, `/organizations`, `/fund-groups`, `/funds`, `/investors`, `/commitments`, `/capital-calls`, `/distributions`, `/documents`, `/communications`, `/tasks`, `/notifications`, `/audit-logs` — each currently gated only by `Depends(get_current_user)` at the include-router level).
+  - Searched routers + repositories for `current_user.organization_id`, `user.organization_id`, `users.organization_id`. Wrote the full file:line inventory to `Auto Run Docs/2026-04-30-Edenscale-2/Working/active-org-audit.md`: **32 router hits across 14 files**, **29 repository hits across 9 files**.
+  - Routers needing migration: `funds`, `fund_groups`, `fund_team_members`, `investors`, `investor_contacts`, `commitments`, `capital_calls`, `distributions`, `documents`, `communications`, `tasks`, `dashboard`, `users`. Routers with no direct hits but flagged for manual review during migration: `notifications`, `audit_logs` (their org-scoping may live downstream in repositories).
+  - Repositories needing scope-source change: `fund_repository`, `capital_call_repository`, `investor_repository`, `commitment_repository`, `distribution_repository`, `document_repository`, `communication_repository`, `task_repository`. Each currently accepts a `User` and reads `user.organization_id`; cleanest migration is to change these signatures to take `organization_id` directly so the active-membership decision stays in the router/dep layer.
+  - Out-of-scope hits documented in the audit doc: `user_organization_membership_repository.py` lines 84/96/102 (seeder is supposed to read the legacy column), `core/audit.py:147` (audit log writer — flagged for a follow-up decision: switch to active-membership org or leave on legacy column for audit-row provenance; not explicitly in Phase 02 task list).
+  - `users.organization_id` (the SQL column name) appears only inside the membership repo's docstring — no production callsite reads the raw column name.
 
 - [ ] Build the `get_active_membership` dependency in `backend/app/core/rbac.py`:
   - Add `def get_active_membership(...)` that depends on `get_current_user_record` and the `X-Organization-Id` header (`Header(alias="X-Organization-Id")`, optional)
