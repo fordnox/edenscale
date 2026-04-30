@@ -104,3 +104,16 @@ class FundRepository:
         self.db.commit()
         self.db.refresh(fund)
         return self.get(fund_id)
+
+    def overview_totals(self, fund_id: int) -> tuple[Decimal, Decimal, Decimal]:
+        """Return `(committed, called, distributed)` summed across the fund's commitments."""
+        row = (
+            self.db.query(
+                func.coalesce(func.sum(Commitment.committed_amount), 0),
+                func.coalesce(func.sum(Commitment.called_amount), 0),
+                func.coalesce(func.sum(Commitment.distributed_amount), 0),
+            )
+            .filter(Commitment.fund_id == fund_id)
+            .one()
+        )
+        return Decimal(row[0] or 0), Decimal(row[1] or 0), Decimal(row[2] or 0)

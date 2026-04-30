@@ -1,6 +1,6 @@
 """Tests for the /dashboard/overview endpoint."""
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 import pytest
@@ -10,9 +10,10 @@ from app.core.auth import get_current_user
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
 from app.models import (CapitalCall, CapitalCallStatus, Commitment,
-                        CommitmentStatus, Distribution, DistributionStatus,
-                        Fund, FundStatus, Investor, InvestorContact,
-                        Organization, OrganizationType, User, UserRole)
+                        CommitmentStatus, Distribution, DistributionItem,
+                        DistributionStatus, Fund, FundStatus, Investor,
+                        InvestorContact, Organization, OrganizationType, User,
+                        UserRole)
 
 
 @pytest.fixture(autouse=True)
@@ -204,6 +205,15 @@ class TestDashboardOverview:
                         amount=Decimal("50000.00"),
                         status=CapitalCallStatus.paid,
                     ),
+                    # `overdue` must NOT count toward outstanding (only scheduled,
+                    # sent, and partially_paid do).
+                    CapitalCall(
+                        fund_id=active_fund.id,
+                        title="Call 3 (overdue)",
+                        due_date=date(2025, 6, 1),
+                        amount=Decimal("25000.00"),
+                        status=CapitalCallStatus.overdue,
+                    ),
                     CapitalCall(
                         fund_id=other_fund.id,
                         title="Foreign call",
@@ -215,21 +225,40 @@ class TestDashboardOverview:
             )
 
             this_year = date.today().year
+            ytd_dist = Distribution(
+                fund_id=active_fund.id,
+                title="YTD distribution",
+                distribution_date=date(this_year, 3, 15),
+                amount=Decimal("75000.00"),
+                status=DistributionStatus.paid,
+            )
+            last_year_dist = Distribution(
+                fund_id=active_fund.id,
+                title="Last year distribution",
+                distribution_date=date(this_year - 1, 12, 1),
+                amount=Decimal("999999.00"),
+                status=DistributionStatus.paid,
+            )
+            db.add_all([ytd_dist, last_year_dist])
+            db.flush()
+
             db.add_all(
                 [
-                    Distribution(
-                        fund_id=active_fund.id,
-                        title="YTD distribution",
-                        distribution_date=date(this_year, 3, 15),
-                        amount=Decimal("75000.00"),
-                        status=DistributionStatus.paid,
+                    # Paid this year — must contribute to YTD total.
+                    DistributionItem(
+                        distribution_id=ytd_dist.id,
+                        commitment_id=commitment.id,
+                        amount_due=Decimal("75000.00"),
+                        amount_paid=Decimal("75000.00"),
+                        paid_at=datetime(this_year, 3, 20, 12, 0, 0),
                     ),
-                    Distribution(
-                        fund_id=active_fund.id,
-                        title="Last year distribution",
-                        distribution_date=date(this_year - 1, 12, 1),
-                        amount=Decimal("999999.00"),
-                        status=DistributionStatus.paid,
+                    # Paid last year — must NOT contribute.
+                    DistributionItem(
+                        distribution_id=last_year_dist.id,
+                        commitment_id=commitment.id,
+                        amount_due=Decimal("999999.00"),
+                        amount_paid=Decimal("999999.00"),
+                        paid_at=datetime(this_year - 1, 12, 5, 12, 0, 0),
                     ),
                 ]
             )

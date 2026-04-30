@@ -24,6 +24,7 @@ from app.schemas.dashboard import (
 from app.schemas.fund import (
     FundCreate,
     FundListItem,
+    FundOverview,
     FundRead,
     FundUpdate,
 )
@@ -84,6 +85,7 @@ __all__ = [
     "FundGroupRead",
     "FundGroupUpdate",
     "FundListItem",
+    "FundOverview",
     "FundRead",
     "FundSummary",
     "FundTeamMemberCreate",

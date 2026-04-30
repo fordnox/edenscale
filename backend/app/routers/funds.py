@@ -9,7 +9,13 @@ from app.models.enums import UserRole
 from app.models.fund import Fund as FundModel
 from app.models.user import User
 from app.repositories.fund_repository import FundRepository
-from app.schemas.fund import FundCreate, FundListItem, FundRead, FundUpdate
+from app.schemas.fund import (
+    FundCreate,
+    FundListItem,
+    FundOverview,
+    FundRead,
+    FundUpdate,
+)
 
 router = APIRouter()
 
@@ -81,6 +87,36 @@ async def get_fund(
             detail="Cannot view this fund",
         )
     return _to_read_dict(fund, current_size)
+
+
+@router.get("/{fund_id}/overview", response_model=FundOverview)
+async def get_fund_overview(
+    fund_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_record),
+):
+    repo = FundRepository(db)
+    row = repo.get(fund_id)
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
+    fund, _ = row
+    if not repo.user_can_view(current_user, fund):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot view this fund",
+        )
+    committed, called, distributed = repo.overview_totals(fund_id)
+    return FundOverview(
+        fund_id=fund.id,  # type: ignore[invalid-argument-type]
+        currency_code=fund.currency_code,  # type: ignore[invalid-argument-type]
+        committed=committed,
+        called=called,
+        distributed=distributed,
+        remaining_commitment=committed - called,
+        irr=None,
+    )
 
 
 @router.post("", response_model=FundRead, status_code=status.HTTP_201_CREATED)

@@ -201,6 +201,23 @@ export interface paths {
         patch: operations["update_fund_funds__fund_id__patch"];
         trace?: never;
     };
+    "/funds/{fund_id}/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Fund Overview */
+        get: operations["get_fund_overview_funds__fund_id__overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/funds/{fund_id}/archive": {
         parameters: {
             query?: never;
@@ -1151,6 +1168,23 @@ export interface components {
             status: components["schemas"]["FundStatus"];
             /** Vintage Year */
             vintage_year: number | null;
+        };
+        /** FundOverview */
+        FundOverview: {
+            /** Fund Id */
+            fund_id: number;
+            /** Currency Code */
+            currency_code: string;
+            /** Committed */
+            committed: string;
+            /** Called */
+            called: string;
+            /** Distributed */
+            distributed: string;
+            /** Remaining Commitment */
+            remaining_commitment: string;
+            /** Irr */
+            irr?: string | null;
         };
         /** FundRead */
         FundRead: {
@@ -2229,6 +2263,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FundRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_fund_overview_funds__fund_id__overview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fund_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundOverview"];
                 };
             };
             /** @description Validation Error */

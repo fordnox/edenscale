@@ -71,3 +71,15 @@ class FundListItem(BaseModel):
     vintage_year: int | None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class FundOverview(BaseModel):
+    fund_id: int
+    currency_code: str
+    committed: Decimal
+    called: Decimal
+    distributed: Decimal
+    remaining_commitment: Decimal
+    irr: Decimal | None = None
+
+    model_config = ConfigDict(from_attributes=True)

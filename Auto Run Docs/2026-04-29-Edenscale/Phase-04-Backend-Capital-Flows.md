@@ -68,9 +68,18 @@ This phase builds the capital flow engine. Capital calls and distributions follo
     - `test_allocation_service.py` (11 tests): empty list → `[]`, zero total → all-zero shares, negative total → `ValueError`, zero total committed → `ValueError`, single commitment → full amount, even split, uneven split, three-way split with rounding remainder swept onto the largest weight, sum reconciles exactly to two decimals.
     - `make test` (78 tests passing) and `make lint` clean. `make openapi` produced no diff since these are tests only.
 
-- [ ] Update the Dashboard overview to power the FundDetail page:
+- [x] Update the Dashboard overview to power the FundDetail page:
   - Add `commitments_total_amount`, `capital_calls_outstanding` (count of calls with status in `scheduled, sent, partially_paid`), `distributions_ytd_amount` (sum of paid distribution items in the current calendar year), respecting RBAC
   - Add `GET /funds/{fund_id}/overview` returning fund-level KPIs (committed, called, distributed, remaining commitment, IRR placeholder of `null` for now)
+  - Implementation notes:
+    - `commitments_total_amount` was already wired in `app/routers/dashboard.py` (sums `Commitment.committed_amount` with the same RBAC scope used for the rest of the response — fund-scoped for fund_managers, investor-scoped for LPs).
+    - Tightened `OUTSTANDING_CAPITAL_CALL_STATUSES` to drop `overdue`; the count now matches the spec (`scheduled, sent, partially_paid` only). The same tuple drives the `upcoming_capital_calls` list, so overdue calls also no longer surface there.
+    - Switched `distributions_ytd_amount` from `sum(Distribution.amount) where distribution_date >= year_start` to `sum(DistributionItem.amount_paid) where paid_at >= year_start`, joined to `Distribution` so the existing `_scope_by_fund` filter still applies. This is the right ledger semantic — the dashboard reports cash actually paid out this calendar year, not amounts declared.
+    - Added `FundOverview` schema (`backend/app/schemas/fund.py`) with `committed`, `called`, `distributed`, `remaining_commitment`, `irr` (always `None` for now), plus `fund_id` and `currency_code` so the FundDetail page can format figures without a separate fetch.
+    - Added `FundRepository.overview_totals(fund_id)` returning `(committed, called, distributed)` summed across the fund's commitments. Numbers come straight from the cached `Commitment` columns that `recompute_totals` already maintains, so no extra joins are needed.
+    - New `GET /funds/{fund_id}/overview` route on the funds router reuses the repo's `get` + `user_can_view` to enforce 404 / 403 in the same shape as `GET /funds/{fund_id}`. LPs with a commitment on the fund can read fund-wide totals, mirroring the existing `current_size` behaviour on the read endpoint.
+    - Tests: extended `test_dashboard.py::test_aggregates_filtered_to_user_organization` to seed `DistributionItem` rows (one paid this year, one paid last year) and an `overdue` capital call so the new YTD semantics and the dropped `overdue` status are both exercised. Added `test_funds_api.py::TestFundOverview` (5 cases): KPI totals across two commitments, zero-commitment baseline, 404 on unknown fund, 403 for fund_manager hitting another org, and LP visibility for funds they have a commitment on.
+    - `make openapi`, `make test` (83 passing), and `make lint` all clean.
 
 - [ ] Sync OpenAPI client and run gates:
   - Run `make openapi`, `make test`, `make lint` and fix any findings

@@ -12,6 +12,7 @@ from app.models import (
     CapitalCallStatus,
     Commitment,
     Distribution,
+    DistributionItem,
     Fund,
     FundStatus,
     Investor,
@@ -27,7 +28,6 @@ OUTSTANDING_CAPITAL_CALL_STATUSES = (
     CapitalCallStatus.scheduled,
     CapitalCallStatus.sent,
     CapitalCallStatus.partially_paid,
-    CapitalCallStatus.overdue,
 )
 
 
@@ -123,8 +123,10 @@ async def get_overview(
     )
 
     year_start = date(date.today().year, 1, 1)
-    distributions_q = db.query(func.coalesce(func.sum(Distribution.amount), 0)).filter(
-        Distribution.distribution_date >= year_start
+    distributions_q = (
+        db.query(func.coalesce(func.sum(DistributionItem.amount_paid), 0))
+        .join(Distribution, Distribution.id == DistributionItem.distribution_id)
+        .filter(DistributionItem.paid_at >= year_start)
     )
     distributions_ytd_amount = _scope_by_fund(
         distributions_q, Distribution.fund_id, fund_filter
