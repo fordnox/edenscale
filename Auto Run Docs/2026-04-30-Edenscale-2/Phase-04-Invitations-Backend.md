@@ -45,7 +45,9 @@ This phase builds the invitation system. Admins of an org (or superadmins acting
   - Uses `settings.APP_DOMAIN_URL` to build `accept_url` (recorded in the Hanko log line per the service contract — Hanko cannot embed it in the auth-passcode email).
   - Verified: `make lint` passes (a few SQLAlchemy `Column[T]` vs typed-arg friction needed `# type: ignore[invalid-argument-type]` per the codebase pattern); the existing 221 backend tests still pass — pure additive change, no mounting yet (next checkbox).
 
-- [ ] Mount the router in `backend/app/main.py` under `/invitations` with `Depends(get_current_user)`. Per-route deps handle membership/superadmin checks.
+- [x] Mount the router in `backend/app/main.py` under `/invitations` with `Depends(get_current_user)`. Per-route deps handle membership/superadmin checks.
+  - Added `invitations` to the `app.routers` import block (alphabetical between `investors` and `notifications`) and registered `app.include_router(invitations.router, prefix="/invitations", tags=["invitations"], dependencies=[Depends(get_current_user)])` immediately after `superadmin` so the org/user-management routers cluster together.
+  - Verified: `make openapi` regenerated and all five distinct invitation paths show up (`POST/GET /invitations`, `/invitations/pending-for-me`, `/invitations/accept`, `/invitations/{invitation_id}/revoke`, `/invitations/{invitation_id}/resend`); `frontend/src/lib/schema.d.ts` picked them up. `make lint` clean and the full pytest suite (221 tests) still passes.
 
 - [ ] Migration:
   - `cd backend && uv run alembic revision -m "add organization invitations" --autogenerate`

@@ -19,6 +19,7 @@ from app.routers import (
     funds,
     investor_contacts,
     investors,
+    invitations,
     notifications,
     organizations,
     superadmin,
@@ -81,6 +82,12 @@ app.include_router(
     superadmin.router,
     prefix="/superadmin",
     tags=["superadmin"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    invitations.router,
+    prefix="/invitations",
+    tags=["invitations"],
     dependencies=[Depends(get_current_user)],
 )
 app.include_router(
