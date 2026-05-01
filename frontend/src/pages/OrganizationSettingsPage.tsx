@@ -80,6 +80,7 @@ function OrganizationSettingsContent() {
   const activeRole = activeMembership?.role
   const isAdmin = activeRole === "admin"
   const isFundManager = activeRole === "fund_manager"
+  const isSuperadmin = me?.role === "superadmin"
 
   const orgQuery = useApiQuery(
     "/organizations/{organization_id}",
@@ -418,128 +419,117 @@ function OrganizationSettingsContent() {
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         defaultOrganizationId={orgId}
-        canChooseOrganization={isAdmin}
+        isSuperadmin={isSuperadmin}
       />
     </>
   )
 }
 
+type InvitableRole = Exclude<UserRole, "superadmin">
+
+const INVITABLE_ROLES: readonly InvitableRole[] = [
+  "admin",
+  "fund_manager",
+  "lp",
+] as const
+
 interface InviteUserDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   defaultOrganizationId: number | null
-  canChooseOrganization: boolean
+  isSuperadmin: boolean
 }
 
 function InviteUserDialog({
   open,
   onOpenChange,
   defaultOrganizationId,
-  canChooseOrganization,
+  isSuperadmin,
 }: InviteUserDialogProps) {
   const queryClient = useQueryClient()
 
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
-  const [title, setTitle] = useState("")
-  const [role, setRole] = useState<UserRole>("fund_manager")
+  const [role, setRole] = useState<InvitableRole>("fund_manager")
   const [organizationId, setOrganizationId] = useState<string>(
-    defaultOrganizationId !== null ? String(defaultOrganizationId) : "none",
+    defaultOrganizationId !== null ? String(defaultOrganizationId) : "",
   )
 
+  useEffect(() => {
+    setOrganizationId(
+      defaultOrganizationId !== null ? String(defaultOrganizationId) : "",
+    )
+  }, [defaultOrganizationId])
+
   const orgsQuery = useApiQuery("/organizations", undefined, {
-    enabled: open && canChooseOrganization,
+    enabled: open && isSuperadmin,
   })
 
-  const inviteUser = useApiMutation("post", "/users", {
-    onSuccess: () => {
-      toast.success("User invited")
-      queryClient.invalidateQueries({ queryKey: ["/users"] })
+  const createInvitation = useApiMutation("post", "/invitations", {
+    onSuccess: (data) => {
+      toast.success(
+        `Invitation sent. ${data.email} will receive an email to join.`,
+      )
+      queryClient.invalidateQueries({ queryKey: ["/invitations"] })
       reset()
       onOpenChange(false)
     },
   })
 
   function reset() {
-    setFirstName("")
-    setLastName("")
     setEmail("")
-    setPhone("")
-    setTitle("")
     setRole("fund_manager")
     setOrganizationId(
-      defaultOrganizationId !== null ? String(defaultOrganizationId) : "none",
+      defaultOrganizationId !== null ? String(defaultOrganizationId) : "",
     )
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next && inviteUser.isPending) return
+    if (!next && createInvitation.isPending) return
     if (!next) reset()
     onOpenChange(next)
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (inviteUser.isPending) return
-    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
-      toast.error("First name, last name, and email are required")
+    if (createInvitation.isPending) return
+    if (!email.trim()) {
+      toast.error("Email is required")
       return
     }
 
-    const orgIdValue =
-      canChooseOrganization && organizationId !== "none"
+    const orgIdValue = isSuperadmin
+      ? organizationId
         ? Number(organizationId)
-        : defaultOrganizationId
+        : null
+      : defaultOrganizationId
 
-    inviteUser.mutate({
+    if (orgIdValue === null) {
+      toast.error("Choose an organization for this invitation")
+      return
+    }
+
+    createInvitation.mutate({
       body: {
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
         email: email.trim(),
-        phone: phone.trim() ? phone.trim() : null,
-        title: title.trim() ? title.trim() : null,
         role,
-        organization_id: orgIdValue ?? null,
+        organization_id: orgIdValue,
       },
     })
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="es-display text-[24px]">
             Invite user
           </DialogTitle>
           <DialogDescription>
-            The invited user will be able to claim the account by signing in
-            with this email through the configured identity provider.
+            We&rsquo;ll email a one-time invitation link. The recipient signs
+            in, accepts, and completes their profile from there.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-first-name">First name</Label>
-              <Input
-                id="invite-first-name"
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                autoFocus
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-last-name">Last name</Label>
-              <Input
-                id="invite-last-name"
-                value={lastName}
-                onChange={(event) => setLastName(event.target.value)}
-                required
-              />
-            </div>
-          </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="invite-email">Email</Label>
             <Input
@@ -548,80 +538,58 @@ function InviteUserDialog({
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               autoComplete="email"
+              autoFocus
               required
             />
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-phone">Phone (optional)</Label>
-              <Input
-                id="invite-phone"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                autoComplete="tel"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-title">Title (optional)</Label>
-              <Input
-                id="invite-title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="Head of Investor Relations"
-              />
-            </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="invite-role">Role</Label>
+            <Select
+              value={role}
+              onValueChange={(value) => setRole(value as InvitableRole)}
+            >
+              <SelectTrigger id="invite-role" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {INVITABLE_ROLES.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {ROLE_LABELS[value]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {isSuperadmin && (
             <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-role">Role</Label>
+              <Label htmlFor="invite-org">Organization</Label>
               <Select
-                value={role}
-                onValueChange={(value) => setRole(value as UserRole)}
+                value={organizationId}
+                onValueChange={setOrganizationId}
               >
-                <SelectTrigger id="invite-role" className="w-full">
-                  <SelectValue />
+                <SelectTrigger id="invite-org" className="w-full">
+                  <SelectValue placeholder="Choose an organization" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(["admin", "fund_manager", "lp"] as const).map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {ROLE_LABELS[value]}
+                  {(orgsQuery.data ?? []).map((organization) => (
+                    <SelectItem
+                      key={organization.id}
+                      value={String(organization.id)}
+                    >
+                      {organization.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            {canChooseOrganization && (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="invite-org">Organization</Label>
-                <Select
-                  value={organizationId}
-                  onValueChange={setOrganizationId}
-                >
-                  <SelectTrigger id="invite-org" className="w-full">
-                    <SelectValue placeholder="No organization" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No organization</SelectItem>
-                    {(orgsQuery.data ?? []).map((organization) => (
-                      <SelectItem
-                        key={organization.id}
-                        value={String(organization.id)}
-                      >
-                        {organization.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
+          )}
           <DialogFooter>
             <Button
               type="button"
               variant="secondary"
               size="sm"
               onClick={() => handleOpenChange(false)}
-              disabled={inviteUser.isPending}
+              disabled={createInvitation.isPending}
             >
               Cancel
             </Button>
@@ -629,17 +597,12 @@ function InviteUserDialog({
               type="submit"
               variant="primary"
               size="sm"
-              disabled={
-                inviteUser.isPending ||
-                !firstName.trim() ||
-                !lastName.trim() ||
-                !email.trim()
-              }
+              disabled={createInvitation.isPending || !email.trim()}
             >
-              {inviteUser.isPending && (
+              {createInvitation.isPending && (
                 <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
               )}
-              Send invite
+              Send invitation
             </Button>
           </DialogFooter>
         </form>

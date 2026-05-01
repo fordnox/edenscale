@@ -22,12 +22,20 @@ This phase replaces the old synchronous "create user" invite flow with the new t
     - **No preview endpoint** — accept page should render generic copy per task #4.
   - `useApiMutation.ts` — wraps `openapi-fetch` client with TanStack Query; usage idiom: `useApiMutation("post", "/invitations", { onSuccess: ... }).mutate({ body, params, headers })`. Errors auto-surface via the api client middleware.
 
-- [ ] Update the `InviteUserDialog` in `OrganizationSettingsPage.tsx`:
+- [x] Update the `InviteUserDialog` in `OrganizationSettingsPage.tsx`:
   - Drop the first/last name/phone/title fields — the new flow only collects `email` and `role` (the user fills out their profile after accepting)
   - Switch the mutation from `POST /users` to `POST /invitations` with `{ email, role, organization_id: <active org from useActiveMembership> }`
   - On success: toast "Invitation sent. {email} will receive an email to join."
   - For superadmins: keep the org-picker in the dialog (so a superadmin in the OrganizationSettingsPage can still invite to other orgs — though the more common path is the superadmin console)
   - Block selecting `superadmin` as a role in the dialog (the option must not appear; superadmin is CLI-only)
+
+  **Notes from implementation (2026-05-01):**
+  - Replaced `canChooseOrganization` prop (was misnamed — gated on `isAdmin`) with `isSuperadmin`, sourced from `me?.role === "superadmin"` in `OrganizationSettingsContent`. Active-org users (admins/fund managers) no longer see the picker — invites always target their active org.
+  - Dialog now collects only `email` + `role`; submits to `POST /invitations` with `{ email, role, organization_id }`. The api client middleware already attaches `X-Organization-Id` automatically, so no explicit header was added.
+  - Introduced `type InvitableRole = Exclude<UserRole, "superadmin">` and a `INVITABLE_ROLES` const (`admin | fund_manager | lp`) to make the "no superadmin" rule a type-level guarantee, not just a runtime omission.
+  - Success toast pulls the email from the response (`data.email`) so it reflects what the backend persisted (e.g. lowercased), rather than the form input.
+  - Invalidates `["/invitations"]` so the upcoming "Pending invitations" section (next task) will see fresh data once added.
+  - `pnpm run lint` (tsc --noEmit) passes.
 
 - [ ] Add a "Pending invitations" section to OrganizationSettingsPage:
   - Below the existing "Team" card, add a "Pending invitations" Card listing rows from `GET /invitations`
