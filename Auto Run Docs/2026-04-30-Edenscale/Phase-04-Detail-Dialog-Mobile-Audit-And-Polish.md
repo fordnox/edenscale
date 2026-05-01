@@ -4,7 +4,7 @@ Phase 01 fixed dialog primitives (background, tokens, bottom-sheet on mobile) so
 
 ## Tasks
 
-- [ ] Inventory every dialog/detail call site and confirm each one already opens correctly post-Phase-01:
+- [x] Inventory every dialog/detail call site and confirm each one already opens correctly post-Phase-01:
   - List of files to audit:
     - `frontend/src/components/capital-calls/CapitalCallCreateDialog.tsx`
     - `frontend/src/components/capital-calls/CapitalCallDetail.tsx`
