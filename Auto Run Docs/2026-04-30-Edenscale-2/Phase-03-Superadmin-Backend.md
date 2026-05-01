@@ -75,9 +75,18 @@ This phase exposes the superadmin control surface: a new `/superadmin` router fa
   - Existing tests in `tests/test_organizations_api.py` updated to match the tightened auth: renamed/added `test_superadmin_can_create_and_read`, `test_admin_cannot_create`, `test_admin_cannot_delete`, `test_superadmin_can_delete_soft`. Kept the existing 403-style tests (`test_lp_cannot_create`, `test_fund_manager_cannot_delete`) since they remain valid.
   - Verified `make lint` (94 files clean), `make test` (186 passed — same suite, plus the renamed cases), and `make openapi` (regenerated `openapi.json` + `frontend/src/lib/schema.d.ts` so the X-Organization-Id header on PATCH and the unchanged DELETE/POST shapes propagate to the typed client). Did not add fresh PATCH-specific tests — those belong with the broader test pass in the next checkbox.
 
-- [ ] Tests for the superadmin surface:
+- [x] Tests for the superadmin surface:
   - `backend/tests/test_superadmin_routes.py`: non-superadmin gets 403 on every `/superadmin/*` route; superadmin can create org + admin membership in one POST; member count is correct; disable/enable round-trip works; `/admins` is idempotent
   - Update `backend/tests/test_organizations_router.py` (or whatever already exists) to reflect the tightened auth
+
+  **Implementation notes:**
+  - Created `backend/tests/test_superadmin_routes.py` (29 tests across 6 classes). Followed the seed-helpers + `override_user` pattern already established by `test_organizations_api.py` / `test_users_memberships_route.py` rather than introducing a new fixture model — keeps the test suite homogeneous.
+  - `TestNonSuperadminForbidden` parametrizes admin/fund_manager/lp across the GET-list and POST-create endpoints, plus single 403 cases for `/admins`, `/disable`, `/enable`, `/members`. This is the "no back door" guarantee the doc calls for.
+  - `TestCreateOrganizationWithAdmin` covers all four happy paths (existing user_id, stub-user creation by email, reuse of existing user via email match, 422/404 sad paths) and verifies the stub user has `hanko_subject_id=None` so the existing email-bind flow in `get_current_user_record` will claim it on first sign-in.
+  - `TestAssignOrganizationAdmin` proves idempotency two ways: re-targeting an already-admin user returns the original membership row id (no duplicate insert — a SELECT count assertion against `user_organization_memberships` backs this up), and re-targeting a non-admin membership upgrades the role in place.
+  - `TestDisableEnableOrganization` confirms the round-trip preserves memberships — the same membership row exists after enable, distinguishing PATCH /disable semantics from DELETE /organizations/{id} which deletes them.
+  - The `/organizations` audit tests already live in `test_organizations_api.py` and were updated in the prior checkbox; the doc's pointer to a `test_organizations_router.py` file was a paper reference — no separate file exists, and `test_organizations_api.py` already has the `test_admin_cannot_create`, `test_admin_cannot_delete`, `test_superadmin_can_delete_soft` cases covering the tightened auth.
+  - Final `make test`: 215 passed (up from 186); `make lint` clean. `make openapi` not needed (test-only change).
 
 - [ ] Final gate trio:
   - `make openapi` (the new routes show up in `schema.d.ts` for use in Phase 06)
