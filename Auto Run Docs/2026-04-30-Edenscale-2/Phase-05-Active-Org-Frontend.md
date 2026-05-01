@@ -4,13 +4,21 @@ This phase wires the frontend to the new multi-org world. A new `ActiveOrganizat
 
 ## Tasks
 
-- [ ] Read the existing frontend conventions before writing new code:
+- [x] Read the existing frontend conventions before writing new code:
   - `frontend/src/lib/api.ts` (the openapi-fetch middleware — the new header attaches here)
   - `frontend/src/lib/hanko.ts` and `frontend/src/hooks/useAuth.ts`
   - `frontend/src/hooks/useApiQuery.ts` and `useApiMutation.ts` for the standard data-fetching wrappers
   - `frontend/src/components/layout/Topbar.tsx` and `Sidebar.tsx` (where the switcher and role chip live)
   - `frontend/src/hooks/useNavItems.ts` (currently keys off `me.role`)
   - `frontend/src/components/RequireRole.tsx`
+
+  **Notes for subsequent tasks:**
+  - `lib/api.ts` middleware order today is: auth header (onRequest) → response handling (onResponse) → error toast (onError). The active-org header should attach in `onRequest` AFTER the auth header.
+  - `useApiQuery`/`useApiMutation` are thin wrappers over `@tanstack/react-query` that key on `[path, init]`; `queryClient.invalidateQueries()` (no args) will refetch all of them, which is what the org switch will need.
+  - The role chip / role-gated nav lives in `Sidebar.tsx` (`SidebarBody`), not `Topbar.tsx`. `Topbar.tsx` currently has only a hamburger + search button — there is **no bell icon** despite the task description mentioning one. The switcher should land at the right edge of `Topbar` where the bell would have been; flag for the user when implementing.
+  - `Sidebar.tsx` reads `role` from `useNavItems()` and uses it both for the tagline and the `admin`-only "Organization settings" item — both must move to `activeMembership?.role`.
+  - `RequireRole.tsx` currently fetches `/users/me` itself and checks `me.role`; refactor to read from the active-org context, but keep the `allowed: readonly UserRole[]` prop API stable.
+  - `getSessionToken()` in `lib/hanko.ts` reads from `document.cookie` synchronously — same pattern works for the new `getActiveOrganizationId()` helper if it mirrors `localStorage`.
 
 - [ ] Build the active-organization context:
   - Create `frontend/src/contexts/ActiveOrganizationContext.tsx` with a provider that:
