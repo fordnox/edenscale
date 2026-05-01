@@ -2819,7 +2819,9 @@ export interface operations {
     update_organization_organizations__organization_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: number | null;
+            };
             path: {
                 organization_id: number;
             };

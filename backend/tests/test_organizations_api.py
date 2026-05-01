@@ -68,9 +68,9 @@ def _seed_org(name: str = "Eden Capital") -> int:
 
 
 class TestCreateOrganization:
-    def test_admin_can_create_and_read(self, client, override_user):
-        _seed_user("hanko-admin", UserRole.admin, email="admin@example.com")
-        override_user("hanko-admin")
+    def test_superadmin_can_create_and_read(self, client, override_user):
+        _seed_user("hanko-super", UserRole.superadmin, email="super@example.com")
+        override_user("hanko-super")
 
         create_response = client.post(
             "/organizations",
@@ -89,6 +89,16 @@ class TestCreateOrganization:
         get_response = client.get(f"/organizations/{created['id']}")
         assert get_response.status_code == 200
         assert get_response.json()["id"] == created["id"]
+
+    def test_admin_cannot_create(self, client, override_user):
+        _seed_user("hanko-admin", UserRole.admin, email="admin@example.com")
+        override_user("hanko-admin")
+
+        response = client.post(
+            "/organizations",
+            json={"type": "fund_manager_firm", "name": "Adminco"},
+        )
+        assert response.status_code == 403
 
     def test_lp_cannot_create(self, client, override_user):
         _seed_user("hanko-lp", UserRole.lp, email="lp@example.com")
@@ -136,10 +146,18 @@ class TestDeleteOrganization:
         response = client.delete(f"/organizations/{org_id}")
         assert response.status_code == 403
 
-    def test_admin_can_delete_soft(self, client, override_user):
+    def test_admin_cannot_delete(self, client, override_user):
         org_id = _seed_org()
         _seed_user("hanko-admin", UserRole.admin, email="admin@example.com")
         override_user("hanko-admin")
+
+        response = client.delete(f"/organizations/{org_id}")
+        assert response.status_code == 403
+
+    def test_superadmin_can_delete_soft(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user("hanko-super", UserRole.superadmin, email="super@example.com")
+        override_user("hanko-super")
 
         response = client.delete(f"/organizations/{org_id}")
         assert response.status_code == 200
