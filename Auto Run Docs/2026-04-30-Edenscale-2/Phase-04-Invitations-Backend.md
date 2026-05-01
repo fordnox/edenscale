@@ -4,7 +4,11 @@ This phase builds the invitation system. Admins of an org (or superadmins acting
 
 ## Tasks
 
-- [ ] Read the existing invite UX in `backend/app/routers/users.py` (`invite_user`) and the frontend's existing invite dialog in `frontend/src/pages/OrganizationSettingsPage.tsx`. The new system replaces the synchronous "create user row" approach with a token-based pending invitation. Plan to deprecate (but not delete) `POST /users` — Phase 07 swaps the frontend dialog over.
+- [x] Read the existing invite UX in `backend/app/routers/users.py` (`invite_user`) and the frontend's existing invite dialog in `frontend/src/pages/OrganizationSettingsPage.tsx`. The new system replaces the synchronous "create user row" approach with a token-based pending invitation. Plan to deprecate (but not delete) `POST /users` — Phase 07 swaps the frontend dialog over.
+  - Audited `backend/app/routers/users.py:84-109` and `frontend/src/pages/OrganizationSettingsPage.tsx:422-644`; full call-path notes in `Auto Run Docs/2026-04-30-Edenscale-2/Working/phase-04-invite-deprecation-plan.md`.
+  - Marked `POST /users` with FastAPI `deprecated=True` and added a docstring pointing at `POST /invitations` (Phase 04) and the Phase 07 frontend swap. The deprecation flag now flows through `backend/openapi.json` and `frontend/src/lib/schema.d.ts` (`@deprecated` on the `post` operation under `"/users"`).
+  - Updated the existing `400` detail string for the synthesized-superadmin guard from `POST /organizations/{id}/memberships` to the actual successor `POST /invitations`.
+  - Verified: `make openapi` regenerated cleanly, `make lint` passed, and the 11 user-scoped pytest cases still pass — no behavior change, just OpenAPI metadata.
 
 - [ ] Add the `OrganizationInvitation` model:
   - Create `backend/app/models/organization_invitation.py` with columns: `id` (PK), `organization_id` (FK + index), `email` (str, indexed), `role` (`UserRole` enum, NOT NULL — but reject `superadmin` at the schema layer; superadmin assignment is CLI-only), `token` (str, unique, indexed; generate via `secrets.token_urlsafe(32)`), `status` (new enum `InvitationStatus` with `pending`, `accepted`, `revoked`, `expired`), `expires_at` (DateTime, default `now() + 14 days`), `invited_by_user_id` (FK `users.id`, nullable for superadmin auto-invites), `created_at`, `updated_at`, `accepted_at` (nullable)

@@ -66,7 +66,16 @@ export interface paths {
         /** List Users */
         get: operations["list_users_users_get"];
         put?: never;
-        /** Invite User */
+        /**
+         * Invite User
+         * @deprecated
+         * @description Deprecated: synchronously creates a `User` row in the inviter's org.
+         *
+         *     Replaced by token-based pending invitations under `POST /invitations`
+         *     (Phase 04). The frontend invite dialog at
+         *     `frontend/src/pages/OrganizationSettingsPage.tsx` is migrated in Phase 07,
+         *     after which this route will be removed.
+         */
         post: operations["invite_user_users_post"];
         delete?: never;
         options?: never;
