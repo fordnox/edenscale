@@ -88,7 +88,13 @@ This phase exposes the superadmin control surface: a new `/superadmin` router fa
   - The `/organizations` audit tests already live in `test_organizations_api.py` and were updated in the prior checkbox; the doc's pointer to a `test_organizations_router.py` file was a paper reference — no separate file exists, and `test_organizations_api.py` already has the `test_admin_cannot_create`, `test_admin_cannot_delete`, `test_superadmin_can_delete_soft` cases covering the tightened auth.
   - Final `make test`: 215 passed (up from 186); `make lint` clean. `make openapi` not needed (test-only change).
 
-- [ ] Final gate trio:
+- [x] Final gate trio:
   - `make openapi` (the new routes show up in `schema.d.ts` for use in Phase 06)
   - `make lint`
   - `make test`
+
+  **Implementation notes:**
+  - `make openapi`: regenerated `backend/openapi.json` and `frontend/src/lib/schema.d.ts` cleanly. Git diff was empty — the prior checkbox (organizations audit) had already run it, so the schema/client are fully in sync with the mounted `/superadmin` router and the tightened `/organizations` auth.
+  - `make lint`: 94 files clean across the import smoke test, ruff, ty, black, isort.
+  - `make test`: 215 passed in 7.55s — full suite green, including the new `test_superadmin_routes.py` (29 cases), the updated `test_organizations_api.py` (`test_superadmin_can_create_and_read`, `test_admin_cannot_create`, `test_admin_cannot_delete`, `test_superadmin_can_delete_soft`), and the `require_superadmin` parametrized cases in `test_rbac.py`.
+  - No code or schema diff produced by this iteration; the gate trio was a verification-only step. Phase 03 backend is closed out — Phase 06 UI work can now consume the typed `/superadmin/*` paths from `schema.d.ts`.
