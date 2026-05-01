@@ -20,7 +20,7 @@ This phase wires the frontend to the new multi-org world. A new `ActiveOrganizat
   - `RequireRole.tsx` currently fetches `/users/me` itself and checks `me.role`; refactor to read from the active-org context, but keep the `allowed: readonly UserRole[]` prop API stable.
   - `getSessionToken()` in `lib/hanko.ts` reads from `document.cookie` synchronously — same pattern works for the new `getActiveOrganizationId()` helper if it mirrors `localStorage`.
 
-- [ ] Build the active-organization context:
+- [x] Build the active-organization context:
   - Create `frontend/src/contexts/ActiveOrganizationContext.tsx` with a provider that:
     - Reads `/users/me/memberships` via `useApiQuery`
     - Stores the active `organization_id` in state, hydrated from `localStorage["edenscale.active_org_id"]`
@@ -29,6 +29,14 @@ This phase wires the frontend to the new multi-org world. A new `ActiveOrganizat
     - Exposes `{ memberships, activeMembership, activeOrganizationId, setActiveOrganizationId, isSuperadmin }` via context
   - Create `frontend/src/hooks/useActiveOrganization.ts` and `useActiveMembership.ts` that read from the context and throw clear errors if used outside the provider
   - Wrap `App.tsx` (inside the existing query client + auth providers, outside the routes) with `<ActiveOrganizationProvider>`
+
+  **Notes from implementation:**
+  - LocalStorage helpers extracted to a sibling `frontend/src/lib/activeOrg.ts` (`getActiveOrganizationId`, `setStoredActiveOrganizationId`) so the upcoming `lib/api.ts` middleware can read the active org id without importing React. The middleware task should import `getActiveOrganizationId` from `@/lib/activeOrg`.
+  - `isSuperadmin` is derived by also fetching `/users/me` (alongside `/users/me/memberships`) and checking `meQuery.data?.role === "superadmin"`, since the user-level role lives on `UserRead`, not on memberships. Both queries use a 5-min `staleTime`, matching `useNavItems`.
+  - Provider also exposes `isLoading` (true while either of the two queries is loading) — useful for the upcoming empty-state and switcher UI.
+  - Reconcile effect runs after memberships load: drops a stored org id that no longer matches; falls back to the first membership; clears storage when memberships are empty.
+  - Per the test-task note: added `// TODO: tests pending frontend test harness setup` to `ActiveOrganizationContext.tsx` (frontend has no vitest configured today).
+  - `<ActiveOrganizationProvider>` wraps `<Routes>` inside `App.tsx`. Login page is also inside it; its memberships query returns 401 (silently — middleware already skips toasts on 401) until the user authenticates.
 
 - [ ] Update the API client middleware to attach `X-Organization-Id`:
   - In `frontend/src/lib/api.ts`, extend `myMiddleware.onRequest` to read the active org id from a small `getActiveOrganizationId()` helper (export this from `contexts/ActiveOrganizationContext.tsx` or a sibling `lib/activeOrg.ts` that mirrors `localStorage`). The header must be set BEFORE the body is sent and must NOT be set if no active org is selected
