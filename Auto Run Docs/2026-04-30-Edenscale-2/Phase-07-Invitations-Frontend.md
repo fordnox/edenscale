@@ -4,10 +4,23 @@ This phase replaces the old synchronous "create user" invite flow with the new t
 
 ## Tasks
 
-- [ ] Read the existing invite UX so the rewrite preserves working pieces:
+- [x] Read the existing invite UX so the rewrite preserves working pieces:
   - `frontend/src/pages/OrganizationSettingsPage.tsx` (the `InviteUserDialog` component)
   - The new generated types: open `frontend/src/lib/schema.d.ts` and grep for `InvitationCreate`, `InvitationRead`, `InvitationStatus` to confirm Phase 04 published the schema
   - `frontend/src/hooks/useApiMutation.ts` for the mutation idiom
+
+  **Notes from review (2026-05-01):**
+  - `OrganizationSettingsPage.tsx` (650 lines) currently houses an `InviteUserDialog` that posts to `POST /users` with `{ first_name, last_name, email, phone, title, role, organization_id }`. The dialog supports a superadmin org-picker via the `canChooseOrganization` prop (currently passed when `isAdmin` is true — note: the prop is misnamed, it gates on admin not superadmin; rewrite should switch to a real `isSuperadmin` check). Role select offers `admin | fund_manager | lp` (no superadmin option already — keep that constraint).
+  - `frontend/src/lib/schema.d.ts` confirms Phase 04 published the schema:
+    - `InvitationCreate { organization_id, email, role }` — POST `/invitations` returns `InvitationRead` (201). Header `X-Organization-Id` accepted.
+    - `InvitationListItem` — used by `GET /invitations` (supports `status_filter` query, `X-Organization-Id` header).
+    - `InvitationRead` — full record incl. `token`, `status`, `expires_at`, `invited_by_user_id`, `accepted_at`, `organization` (embedded `OrganizationRead`).
+    - `InvitationStatus = "pending" | "accepted" | "revoked" | "expired"`.
+    - `InvitationAccept { token }` — POST `/invitations/accept` returns `MembershipRead`.
+    - `GET /invitations/pending-for-me` returns `InvitationRead[]` (no params).
+    - `POST /invitations/{invitation_id}/{revoke,resend}` returns `InvitationRead`.
+    - **No preview endpoint** — accept page should render generic copy per task #4.
+  - `useApiMutation.ts` — wraps `openapi-fetch` client with TanStack Query; usage idiom: `useApiMutation("post", "/invitations", { onSuccess: ... }).mutate({ body, params, headers })`. Errors auto-surface via the api client middleware.
 
 - [ ] Update the `InviteUserDialog` in `OrganizationSettingsPage.tsx`:
   - Drop the first/last name/phone/title fields — the new flow only collects `email` and `role` (the user fills out their profile after accepting)
