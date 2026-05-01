@@ -89,8 +89,13 @@ This phase replaces the old synchronous "create user" invite flow with the new t
   - Accept success mirrors the `InvitationAcceptPage` flow: invalidates `/users/me/memberships`, `/users/me`, and `/invitations/pending-for-me`; calls `setActiveOrganizationId(data.organization_id)` to switch to the new org optimistically; toasts "Welcome to {org}". The dialog stays open if there are more pending invitations, so the user can accept multiple in one session. When the last invitation is dealt with (accepted or declined), the banner unmounts with the dialog inside it — small UX papercut (abrupt close); fixing it would require hoisting the dialog out of the banner component, which felt premature.
   - `cd frontend && pnpm run lint` (tsc --noEmit) passes; `pnpm run build` produces a clean prod bundle. **Did NOT browser-test the live UX** — this Maestro run had no browser harness available; the next task (#5: wire `/invitations/accept` route + smoke test) is the natural place to do an end-to-end flow including this banner.
 
-- [ ] Add the route in `App.tsx`:
+- [x] Add the route in `App.tsx`:
   - `<Route path="/invitations/accept" element={<InvitationAcceptPage />} />` — outside the `AppShell` route group so it's standalone, but the page itself should render its own minimal frame
+
+  **Notes from implementation (2026-05-01):**
+  - Added the `InvitationAcceptPage` import and a `<Route path="/invitations/accept" />` entry in `App.tsx`, placed alongside `/login` outside the `AppShell` route group so it renders chrome-free. The page already renders its own minimal centered-card frame (per task #4 notes).
+  - The route still sits inside `<ActiveOrganizationProvider>` and `<PendingInvitationsBannerProvider>`, which is necessary — the page calls `setActiveOrganizationId` from `ActiveOrganizationContext` on accept-success.
+  - `cd frontend && pnpm run lint` (tsc --noEmit) passes.
 
 - [ ] Type checks and browser smoke test:
   - `cd frontend && pnpm run lint`

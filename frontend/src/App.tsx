@@ -17,6 +17,7 @@ import OrganizationSettingsPage from './pages/OrganizationSettingsPage'
 import AuditLogPage from './pages/AuditLogPage'
 import SuperadminOrganizationsPage from './pages/superadmin/SuperadminOrganizationsPage'
 import SuperadminOrganizationDetailPage from './pages/superadmin/SuperadminOrganizationDetailPage'
+import InvitationAcceptPage from './pages/InvitationAcceptPage'
 import LoginPage from './pages/LoginPage'
 
 function App() {
@@ -54,6 +55,10 @@ function App() {
 
           {/* Pages without layout */}
           <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/invitations/accept"
+            element={<InvitationAcceptPage />}
+          />
         </Routes>
       </PendingInvitationsBannerProvider>
     </ActiveOrganizationProvider>
