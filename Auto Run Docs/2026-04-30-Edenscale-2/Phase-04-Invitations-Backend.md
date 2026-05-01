@@ -17,9 +17,15 @@ This phase builds the invitation system. Admins of an org (or superadmins acting
   - Registered the new model + enum in `backend/app/models/__init__.py` so `make lint`'s import smoke test sees them and Alembic autogenerate (next migration checkbox) picks up the table.
   - Verified: `make lint` clean and the full pytest suite (215 tests) still passes — pure additive change.
 
-- [ ] Schemas + repository:
+- [x] Schemas + repository:
   - `backend/app/schemas/organization_invitation.py` with `InvitationCreate` (email, role, organization_id), `InvitationRead` (full record + nested `organization: OrganizationRead`), `InvitationAccept` (just `token`), and `InvitationListItem` for table views
   - `backend/app/repositories/organization_invitation_repository.py` with: `create`, `get_by_token`, `list_for_organization`, `list_pending_for_email`, `mark_accepted`, `mark_revoked`, `expire_stale` (helper for a future cron — write the function but don't schedule it yet)
+  - The schema layer enforces the "no `superadmin` role via invite" rule via a `field_validator` on `InvitationCreate.role` (matches the model-doc note); `InvitationAccept` caps token length at 128 to mirror the column.
+  - Repo also gained `get(invitation_id)` and `rotate_token(invitation_id)` because the upcoming router checkboxes (revoke / resend) need them — kept them right next to the rest of the contract so the router stays a thin shim.
+  - `expire_stale` accepts an optional `now` arg so future cron tests can pass a frozen clock without monkey-patching `datetime`. Bulk update uses `synchronize_session=False` per the same pattern in `NotificationRepository.mark_all_read`.
+  - Token generator: `secrets.token_urlsafe(48)` (~64 chars) reusing the pattern from `routers/documents.py:42`; well under the `String(128)` column.
+  - Wired the four schemas into `app/schemas/__init__.py` and the repository into `app/repositories/__init__.py` so the import smoke test in `make lint` covers them.
+  - Verified: `make lint` passed (`ruff` reformatted one method signature onto a single line — kept), and the full pytest suite (215 tests) still green. No router or migration touched yet — those are the next two checkboxes.
 
 - [ ] Hanko email integration:
   - Search `backend/app/` for existing Hanko HTTP calls (the `auth.py` only validates JWTs — the platform may not yet call Hanko's admin API). Read the Hanko admin API docs if context7 has them: query `mcp__plugin_context7_context7__resolve-library-id` for `hanko` and then `query-docs` for the email/passcode/invitation endpoint
