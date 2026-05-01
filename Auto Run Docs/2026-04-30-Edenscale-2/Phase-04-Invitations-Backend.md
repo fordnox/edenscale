@@ -10,10 +10,12 @@ This phase builds the invitation system. Admins of an org (or superadmins acting
   - Updated the existing `400` detail string for the synthesized-superadmin guard from `POST /organizations/{id}/memberships` to the actual successor `POST /invitations`.
   - Verified: `make openapi` regenerated cleanly, `make lint` passed, and the 11 user-scoped pytest cases still pass — no behavior change, just OpenAPI metadata.
 
-- [ ] Add the `OrganizationInvitation` model:
-  - Create `backend/app/models/organization_invitation.py` with columns: `id` (PK), `organization_id` (FK + index), `email` (str, indexed), `role` (`UserRole` enum, NOT NULL — but reject `superadmin` at the schema layer; superadmin assignment is CLI-only), `token` (str, unique, indexed; generate via `secrets.token_urlsafe(32)`), `status` (new enum `InvitationStatus` with `pending`, `accepted`, `revoked`, `expired`), `expires_at` (DateTime, default `now() + 14 days`), `invited_by_user_id` (FK `users.id`, nullable for superadmin auto-invites), `created_at`, `updated_at`, `accepted_at` (nullable)
-  - Add `InvitationStatus` enum to `backend/app/models/enums.py`
-  - Wire `Organization.invitations` relationship back-ref
+- [x] Add the `OrganizationInvitation` model:
+  - Created `backend/app/models/organization_invitation.py` with all required columns. `expires_at` uses a Python-side `default=_default_invitation_expiry` callable (`now(UTC) + 14 days`) so it stays portable across SQLite (dev) and Postgres (prod). `invited_by_user_id` is nullable for superadmin auto-invites; `invited_by` relationship is one-way (no `User.sent_invitations` back-ref needed yet — Phase 04 routers + tests can add it if surface area calls for it).
+  - Added `InvitationStatus(str, enum.Enum)` to `backend/app/models/enums.py` with `pending`/`accepted`/`revoked`/`expired`. The `superadmin` role rejection lives at the schema layer (next checkbox).
+  - Wired `Organization.invitations` back-ref with `cascade="all, delete-orphan"` to mirror `memberships`.
+  - Registered the new model + enum in `backend/app/models/__init__.py` so `make lint`'s import smoke test sees them and Alembic autogenerate (next migration checkbox) picks up the table.
+  - Verified: `make lint` clean and the full pytest suite (215 tests) still passes — pure additive change.
 
 - [ ] Schemas + repository:
   - `backend/app/schemas/organization_invitation.py` with `InvitationCreate` (email, role, organization_id), `InvitationRead` (full record + nested `organization: OrganizationRead`), `InvitationAccept` (just `token`), and `InvitationListItem` for table views

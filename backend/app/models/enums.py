@@ -81,3 +81,10 @@ class TaskStatus(str, enum.Enum):
     in_progress = "in_progress"
     done = "done"
     cancelled = "cancelled"
+
+
+class InvitationStatus(str, enum.Enum):
+    pending = "pending"
+    accepted = "accepted"
+    revoked = "revoked"
+    expired = "expired"

@@ -14,6 +14,7 @@ from app.models.enums import (
     DistributionStatus,
     DocumentType,
     FundStatus,
+    InvitationStatus,
     NotificationStatus,
     OrganizationType,
     TaskStatus,
@@ -26,6 +27,7 @@ from app.models.investor import Investor
 from app.models.investor_contact import InvestorContact
 from app.models.notification import Notification
 from app.models.organization import Organization
+from app.models.organization_invitation import OrganizationInvitation
 from app.models.task import Task
 from app.models.user import User
 from app.models.user_organization_membership import UserOrganizationMembership
@@ -49,11 +51,13 @@ __all__ = [
     "FundGroup",
     "FundStatus",
     "FundTeamMember",
+    "InvitationStatus",
     "Investor",
     "InvestorContact",
     "Notification",
     "NotificationStatus",
     "Organization",
+    "OrganizationInvitation",
     "OrganizationType",
     "Task",
     "TaskStatus",

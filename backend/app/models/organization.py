@@ -30,3 +30,8 @@ class Organization(Base):
     investors = relationship("Investor", back_populates="organization")
     documents = relationship("Document", back_populates="organization")
     audit_logs = relationship("AuditLog", back_populates="organization")
+    invitations = relationship(
+        "OrganizationInvitation",
+        back_populates="organization",
+        cascade="all, delete-orphan",
+    )
