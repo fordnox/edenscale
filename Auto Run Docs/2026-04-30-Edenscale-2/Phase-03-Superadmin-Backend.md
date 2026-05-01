@@ -4,11 +4,18 @@ This phase exposes the superadmin control surface: a new `/superadmin` router fa
 
 ## Tasks
 
-- [ ] Read the existing patterns so the new router slots in cleanly:
+- [x] Read the existing patterns so the new router slots in cleanly:
   - `backend/app/routers/organizations.py` and the `OrganizationRepository`
   - `backend/app/routers/users.py` for invite/role-update style
   - `backend/app/core/rbac.py` for the dep-factory style
   - Look for any existing `superadmin` references (there shouldn't be any from earlier phases) so you don't duplicate
+
+  **Findings (orientation only — no code changes this iteration):**
+  - `backend/app/routers/organizations.py` is thin: routes delegate to `OrganizationRepository(db)`, which exposes `list(skip, limit, include_inactive)`, `get`, `create(OrganizationCreate)`, `update(id, OrganizationUpdate)`, `soft_delete(id)`. Current POST/PATCH/DELETE all use `require_roles(UserRole.admin, UserRole.fund_manager)` (DELETE is admin-only). The Phase 02 task description says PATCH was moved to `require_membership_roles(UserRole.admin)` but the file on disk still uses the global `require_roles` — Phase 03's audit step will need to handle that as part of tightening auth.
+  - `backend/app/routers/users.py` shows the established mix: org-scoped routes take `membership: UserOrganizationMembership = Depends(require_membership_roles(...))` and use `membership.organization_id`; global role gates use `dependencies=[Depends(require_roles(...))]` at decorator level. Repository pattern: `UserRepository(db)` with `get_by_email`, `get_by_id`, `create(UserCreate)`, `update`, `update_role`, `list_by_organization`. The invite endpoint already has a stub raising 400 for synthesized superadmin memberships pointing toward "Phase 04 POST /organizations/{id}/memberships".
+  - `backend/app/core/rbac.py` is the factory home: `require_roles(*allowed: UserRole)` returns a dep that depends on `get_current_user_record` and 403s when `current_user.role not in allowed`. **`require_superadmin` should mirror this exactly** — same shape, single allowed role `UserRole.superadmin`, depending on `get_current_user_record` (NOT `get_active_membership`, since superadmin is global and needs no `X-Organization-Id` header).
+  - No existing `superadmin.py` router file. `superadmin` references across the backend are all `UserRole.superadmin` allow-list entries in role checks plus the `get_active_membership` synthesized-membership branch — none of them collide with the new `/superadmin/*` namespace.
+  - Router mounting in `backend/app/main.py` uses the `app.include_router(<router>, prefix="...", tags=["..."], dependencies=[Depends(get_current_user)])` pattern; the new router slots in alongside `users` / `organizations` with the same JWT-only outer gate, then per-route `require_superadmin` for authorization.
 
 - [ ] Add a `require_superadmin` dependency to `backend/app/core/rbac.py`:
   - Returns the `User` if `user.role == UserRole.superadmin`, else 403
