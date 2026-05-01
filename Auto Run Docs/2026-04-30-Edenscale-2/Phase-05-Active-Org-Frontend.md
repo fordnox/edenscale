@@ -101,9 +101,24 @@ This phase wires the frontend to the new multi-org world. A new `ActiveOrganizat
   - Per spec, skipping test creation. The required `// TODO: tests pending frontend test harness setup` comment already exists at `frontend/src/contexts/ActiveOrganizationContext.tsx:17` (added during the provider task).
   - No code changes for this task — verification only.
 
-- [ ] Run `cd frontend && pnpm run lint` (which is `tsc --noEmit`) and fix typing issues. Then start `make start-backend` and `make start-frontend` and:
+- [x] Run `cd frontend && pnpm run lint` (which is `tsc --noEmit`) and fix typing issues. Then start `make start-backend` and `make start-frontend` and:
   - Sign in
   - Verify the org switcher renders
   - Verify network requests now include the `X-Organization-Id` header (DevTools)
   - Verify switching org refetches data
   - Report any UI gaps to the user explicitly — claim of success requires actual browser verification, not just type checks
+
+  **Notes from verification:**
+  - `cd frontend && pnpm run lint` passes with zero errors (no typing issues to fix; the prior task already cleaned up the `Record<UserRole, string>` gaps).
+  - Backend was already running on `:8000`, frontend already running on `:3000` — both services confirmed responsive (`/users/me`, `/dashboard/overview`, `/users/me/memberships` all reachable; backend root returns `{"status":"running","version":"0.2.0"}`).
+  - **Browser-verified via headless Playwright** (no manual Hanko sign-in available to this agent):
+    - App loads at `http://localhost:3000/` — title is "Overview · Fordnox"; sidebar renders with `LP portal · Manager view` tagline (default for null active membership); main `<Outlet />` falls through to the dashboard skeleton. **Interpretation:** unauthenticated users still pass through `<ActiveOrganizationProvider>` because login is inside it; the memberships query 401s and the empty-state branch is gated on `!isLoading && memberships.length === 0 && !isSuperadmin`, so during the loading flash you see the regular shell briefly. After auth fails the toast surfaces via the existing `onError` middleware.
+    - **`X-Organization-Id` header attaches correctly** — verified by pre-seeding `localStorage["edenscale.active_org_id"] = "42"` and observing every captured request to `localhost:8000` (incl. `/users/me`, `/dashboard/overview`, `/users/me/memberships`) carries `X-Organization-Id: 42`.
+    - **`X-Organization-Id` header correctly omitted** when localStorage is empty — verified in the no-seed run (header value `None` on every captured request). This confirms the `getActiveOrganizationId() !== null` guard in `lib/api.ts:14-17`.
+  - **What this verification does NOT cover** (no Hanko credentials available to this agent — flagging explicitly per the task spec):
+    - Org switcher dropdown UI with 2+ real memberships (the multi-membership branch in `Topbar.tsx`).
+    - The static-text branch for users with exactly 1 membership.
+    - The "View all organizations →" entry for superadmins.
+    - That `setActiveOrganizationId(id)` triggers `queryClient.invalidateQueries()` and refetches the dashboard data under the new scope.
+    - The post-login empty state for users with 0 memberships.
+    - **User: please run a manual sign-in pass to validate these branches before considering Phase 05 fully shipped.**
