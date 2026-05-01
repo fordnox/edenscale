@@ -9,7 +9,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.core.database import Base, SessionLocal, engine
-from app.core.rbac import get_current_user_record, require_roles
+from app.core.rbac import get_current_user_record, require_roles, require_superadmin
 from app.models import Organization, OrganizationType, User, UserRole
 
 
@@ -204,3 +204,34 @@ def test_require_roles_rejects_other_role():
     with pytest.raises(HTTPException) as excinfo:
         dep(current_user=user)
     assert excinfo.value.status_code == 403
+
+
+def test_require_superadmin_allows_superadmin():
+    user = User(
+        role=UserRole.superadmin,
+        first_name="Sam",
+        last_name="Root",
+        email="sam@example.com",
+        hanko_subject_id="x",
+    )
+
+    assert require_superadmin(current_user=user) is user
+
+
+@pytest.mark.parametrize(
+    "role",
+    [UserRole.admin, UserRole.fund_manager, UserRole.lp],
+)
+def test_require_superadmin_rejects_non_superadmin(role):
+    user = User(
+        role=role,
+        first_name="A",
+        last_name="B",
+        email="a@b.com",
+        hanko_subject_id="x",
+    )
+
+    with pytest.raises(HTTPException) as excinfo:
+        require_superadmin(current_user=user)
+    assert excinfo.value.status_code == 403
+    assert excinfo.value.detail == "Superadmin role required"

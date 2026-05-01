@@ -17,9 +17,15 @@ This phase exposes the superadmin control surface: a new `/superadmin` router fa
   - No existing `superadmin.py` router file. `superadmin` references across the backend are all `UserRole.superadmin` allow-list entries in role checks plus the `get_active_membership` synthesized-membership branch — none of them collide with the new `/superadmin/*` namespace.
   - Router mounting in `backend/app/main.py` uses the `app.include_router(<router>, prefix="...", tags=["..."], dependencies=[Depends(get_current_user)])` pattern; the new router slots in alongside `users` / `organizations` with the same JWT-only outer gate, then per-route `require_superadmin` for authorization.
 
-- [ ] Add a `require_superadmin` dependency to `backend/app/core/rbac.py`:
+- [x] Add a `require_superadmin` dependency to `backend/app/core/rbac.py`:
   - Returns the `User` if `user.role == UserRole.superadmin`, else 403
   - Reuse `get_current_user_record`; do NOT depend on `get_active_membership` (superadmin is global)
+
+  **Implementation notes:**
+  - Added as a direct dep (not a factory like `require_roles`) since there's only ever one allowed role — callers use `Depends(require_superadmin)` rather than `Depends(require_superadmin())`. Keeps the call site shorter and matches FastAPI idiom for fixed-role gates.
+  - 403 detail string is `"Superadmin role required"` (more specific than `require_roles`' `"Insufficient role"`) so `/superadmin/*` 403s are easy to identify in logs / tests.
+  - Added module-docstring entry plus three new unit tests in `tests/test_rbac.py`: superadmin passes, and admin/fund_manager/lp each get 403 (parametrized).
+  - Verified `make lint` and `make test` (184 passed) before commit. `make openapi` not run — no route changes in this iteration; the next task (`/superadmin` router) will trigger it.
 
 - [ ] Build `backend/app/routers/superadmin.py` with these routes:
   - `GET /superadmin/organizations` — list ALL organizations (active + inactive) with member counts (use a subquery or join through `user_organization_memberships`); response `list[SuperadminOrganizationRead]` (a new schema with `id`, `name`, `type`, `is_active`, `member_count`, `created_at`)

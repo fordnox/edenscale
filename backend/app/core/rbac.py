@@ -11,6 +11,10 @@ the decoded payload. The platform also needs a local `User` row keyed by
 * `require_roles` — dependency factory that 403s when the resolved user's
   global role is not in the allow-list. Used for superadmin-only / global
   routes.
+* `require_superadmin` — direct dependency that 403s unless the resolved
+  user has the global `superadmin` role. Used for `/superadmin/*` routes
+  that operate across organizations and so do not require an
+  `X-Organization-Id` header.
 * `get_active_membership` — resolves the `UserOrganizationMembership` the
   caller is acting through, based on the `X-Organization-Id` header. Used
   for org-scoped routes where the user may belong to multiple orgs.
@@ -116,6 +120,24 @@ def require_roles(*allowed: UserRole) -> Callable[[User], User]:
         return current_user
 
     return _dep
+
+
+def require_superadmin(
+    current_user: User = Depends(get_current_user_record),
+) -> User:
+    """Allow the request only when the resolved user is a superadmin.
+
+    Unlike `require_membership_roles`, this does NOT depend on
+    `get_active_membership` and so does not require an `X-Organization-Id`
+    header — superadmin is a global role used by the `/superadmin/*` control
+    surface to act across all organizations.
+    """
+    if current_user.role != UserRole.superadmin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Superadmin role required",
+        )
+    return current_user
 
 
 def get_active_membership(
