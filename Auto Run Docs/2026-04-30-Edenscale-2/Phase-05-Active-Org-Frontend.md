@@ -38,9 +38,14 @@ This phase wires the frontend to the new multi-org world. A new `ActiveOrganizat
   - Per the test-task note: added `// TODO: tests pending frontend test harness setup` to `ActiveOrganizationContext.tsx` (frontend has no vitest configured today).
   - `<ActiveOrganizationProvider>` wraps `<Routes>` inside `App.tsx`. Login page is also inside it; its memberships query returns 401 (silently — middleware already skips toasts on 401) until the user authenticates.
 
-- [ ] Update the API client middleware to attach `X-Organization-Id`:
+- [x] Update the API client middleware to attach `X-Organization-Id`:
   - In `frontend/src/lib/api.ts`, extend `myMiddleware.onRequest` to read the active org id from a small `getActiveOrganizationId()` helper (export this from `contexts/ActiveOrganizationContext.tsx` or a sibling `lib/activeOrg.ts` that mirrors `localStorage`). The header must be set BEFORE the body is sent and must NOT be set if no active org is selected
   - Make sure middleware order is: auth header → active org header → response handling
+
+  **Notes from implementation:**
+  - Imported `getActiveOrganizationId` from `@/lib/activeOrg` (the helper extracted in the prior task) and called it inside the existing `onRequest` after the auth-header logic. The header is only set when the helper returns a non-null id, so requests pre-login (or from a user with zero memberships) skip it cleanly.
+  - Header value is `String(activeOrgId)` — the backend dependency parses the integer.
+  - Pre-existing `tsc` errors in `OrganizationSettingsPage.tsx` and `ProfilePage.tsx` (the `superadmin` role missing from some `Record<UserRole, string>` maps) are unrelated to this change and are scoped for the next task ("Update role-aware UI to use the active membership's role").
 
 - [ ] Add the org switcher to the Topbar:
   - Insert a `DropdownMenu` to the LEFT of the bell icon in `frontend/src/components/layout/Topbar.tsx`

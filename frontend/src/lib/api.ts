@@ -1,6 +1,7 @@
 import createClient, { Middleware } from "openapi-fetch"
 import type { paths } from "@/lib/schema"
 import { config } from "@/lib/config"
+import { getActiveOrganizationId } from "@/lib/activeOrg"
 import { toast } from "sonner"
 
 const myMiddleware: Middleware = {
@@ -9,6 +10,10 @@ const myMiddleware: Middleware = {
     const token = getSessionToken()
     if (token) {
       request.headers.set("Authorization", `Bearer ${token}`)
+    }
+    const activeOrgId = getActiveOrganizationId()
+    if (activeOrgId !== null) {
+      request.headers.set("X-Organization-Id", String(activeOrgId))
     }
     return request
   },
