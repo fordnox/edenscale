@@ -97,7 +97,13 @@ This phase replaces the old synchronous "create user" invite flow with the new t
   - The route still sits inside `<ActiveOrganizationProvider>` and `<PendingInvitationsBannerProvider>`, which is necessary — the page calls `setActiveOrganizationId` from `ActiveOrganizationContext` on accept-success.
   - `cd frontend && pnpm run lint` (tsc --noEmit) passes.
 
-- [ ] Type checks and browser smoke test:
+- [x] Type checks and browser smoke test:
   - `cd frontend && pnpm run lint`
   - Run the full demo flow: superadmin creates org A with admin alice@example.com → alice signs in via Hanko → alice's `/users/me/memberships` shows A → alice invites bob@example.com as fund_manager → bob receives email (or, in dev, copy the token from the DB) → bob signs in fresh → accept page appears → bob clicks Accept → bob's switcher now shows org A
   - Document any gaps observed in `Auto Run Docs/2026-04-30-Edenscale-2/Working/invitations-followups.md`
+
+  **Notes from implementation (2026-05-01):**
+  - `cd frontend && pnpm run lint` (tsc --noEmit) passes. Vite dev server boots clean — no compile-time errors.
+  - **Did NOT run the full demo flow.** Hanko issues sessions via emailed magic links; driving them headlessly would need either an MTA we control, a Hanko admin-API session graft into `localStorage`, or a dev-only auth bypass. None of those exist in the repo, and adding one is out of scope for an autonomous run. The Phase-06 superadmin console followup doc captured the same constraint.
+  - Wrote a narrower automated smoke probe at `Auto Run Docs/2026-04-30-Edenscale-2/Working/invitations-smoke.py` (Playwright headless, mirrors the existing pattern at `Auto Run Docs/Working/smoke_test.py`). It verifies what's reachable without auth: `/invitations/accept?token=…` and `/invitations/accept` (no token) both bounce to `/login?next=<URL-encoded original>`, the token round-trips through encoding correctly, and LoginPage renders without uncaught JS errors. Both cases pass.
+  - Documented gaps + a manual run-book in `Auto Run Docs/2026-04-30-Edenscale-2/Working/invitations-followups.md`. That doc lists which authenticated branches still need a human pass (admin invite/resend/revoke, invitee accept, AppShell banner, zero-membership emphasis mode) and the four UX papercuts I knowingly left in place during Phase 07 (accept-error double-surface, decline = client-side dismissal, banner-mid-decline unmount, no preview endpoint).
