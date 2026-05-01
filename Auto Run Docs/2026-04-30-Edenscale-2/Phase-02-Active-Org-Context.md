@@ -81,7 +81,13 @@ This phase introduces the `X-Organization-Id` request header and a new `get_acti
   - **`backend/tests/test_users_memberships_route.py`** (new file, 4 tests). Verifies the `GET /users/me/memberships` response shape end-to-end via `TestClient`: lists every membership with the nested `OrganizationRead` payload (id + name asserted), per-org role can diverge from global `User.role` (global lp + per-org admin → response shows `"admin"`), zero memberships → empty list, multiple memberships with no `X-Organization-Id` header → 200 (not 400 — this endpoint is intentionally non-org-scoped, since it's the discovery lookup the org switcher uses *before* picking an org).
   - Local run on the new files: 30 passed (11 new + 4 new + 15 existing funds tests including 4 new cross-org).
 
-- [ ] Run the gate trio and fix any breakage:
+- [x] Run the gate trio and fix any breakage:
   - `make openapi` (the new header param + memberships route change the schema)
   - `make lint`
   - `make test`
+
+  **Implementation notes:**
+  - `make openapi` — regenerated `backend/openapi.json` and `frontend/src/lib/schema.d.ts`. No diff vs. committed state (the previous task already kept them in sync), so no follow-up commit was needed.
+  - `make lint` — clean: ruff, ty, black, isort all green; 92 files unchanged.
+  - `make test` — 180 passed in 6.63s. No fixes required. Test count grew from 161 (Phase 02 task 4) to 180, accounting for: 11 new in `test_active_membership_dep.py`, 4 new in `test_users_memberships_route.py`, 4 new in `test_funds_api.py::TestCrossOrgScopingViaHeader` — matches the work landed in the prior tasks.
+  - Working tree clean post-run — Phase 02 is fully gate-green and ready to merge / hand off to Phase 03.
