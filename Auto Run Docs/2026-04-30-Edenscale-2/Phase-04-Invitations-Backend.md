@@ -35,13 +35,15 @@ This phase builds the invitation system. Admins of an org (or superadmins acting
   - Tests: `backend/tests/test_hanko_service.py` (6 cases) covers unconfigured short-circuit, existing-user happy path, missing-user create+passcode, 409 race fallback, HTTP error suppression, and `httpx.RequestError` suppression. `httpx.AsyncClient` is patched at the service-module boundary per the Phase-04 testing rule. All 221 backend tests still pass; `make lint` clean (ruff trimmed one method signature onto a single line — kept).
   - Note for the next checkbox (router): import the entry point as `from app.services.hanko import send_invitation_email` and treat `False` as "leave invitation pending; admin can resend".
 
-- [ ] Build the invitation router `backend/app/routers/invitations.py`:
-  - `POST /invitations` — body `InvitationCreate`. Authorization: requires admin membership of the target org OR `require_superadmin`. Creates the row, calls Hanko send, returns `InvitationRead`
-  - `GET /invitations` — list pending invitations for the active org (admin membership required)
-  - `POST /invitations/accept` — body `{ token }`. Authenticated via `get_current_user_record` (the user must be signed in via Hanko). Validates token + status + expiry, creates the `user_organization_memberships` row (or updates role if one already exists), marks invitation accepted, returns the new `MembershipRead`
-  - `POST /invitations/{invitation_id}/revoke` — admin/superadmin only; flips status to revoked
-  - `POST /invitations/{invitation_id}/resend` — admin/superadmin only; re-issues a new token (invalidating the old one) and re-sends the email
-  - `GET /invitations/pending-for-me` — uses the authenticated user's email to surface pending invitations (frontend banner in Phase 07)
+- [x] Build the invitation router `backend/app/routers/invitations.py`:
+  - All six endpoints landed in `backend/app/routers/invitations.py`. Admin/superadmin-gated routes use `require_membership_roles(UserRole.admin, UserRole.superadmin)` — superadmins acting through a synthesized membership pass the role check; a `_ensure_can_act_on_org` helper then 403s non-superadmins acting on a different org. `data.organization_id` is matched against the active membership's org so admins cannot quietly invite into someone else's tenant when they hold multiple memberships.
+  - `POST /invitations` resolves the target org, lower-cases the email before storing (Pydantic `EmailStr` does not normalize), persists via the repo, and `await`s `send_invitation_email`. The Hanko service already swallows failures internally, so the row stays `pending` and the admin can resend.
+  - `POST /invitations/accept` requires the JWT email to match the invitation row (case-insensitive). Status checks: `accepted`/`revoked`/`expired` → 410. Inline expiry check on `expires_at` flips status to `expired` and 410s — keeps the row consistent without waiting for the (unscheduled) cron. Idempotency for re-accepts is covered by the 410 on `accepted`. If the user already has a membership in the org we update the role rather than inserting a duplicate — needed because seeded `lp` users could re-accept into a higher role.
+  - `POST /{id}/revoke` and `POST /{id}/resend` 409 (not 400) when the invitation isn't `pending` — different invariant from "bad request"; the admin should refresh the list. `resend` calls `repo.rotate_token` so the old email link stops working before re-sending.
+  - `GET /pending-for-me` uses `get_current_user_record` and matches `current_user.email` (lower-cased) against the repo helper. Empty email returns `[]` rather than erroring — fresh `get_current_user_record` provisioning may yield empty when the JWT lacks an `email` claim.
+  - Route ordering: `/pending-for-me` and `/accept` are declared before the `/{invitation_id}/...` routes so FastAPI's path matching picks the static paths first.
+  - Uses `settings.APP_DOMAIN_URL` to build `accept_url` (recorded in the Hanko log line per the service contract — Hanko cannot embed it in the auth-passcode email).
+  - Verified: `make lint` passes (a few SQLAlchemy `Column[T]` vs typed-arg friction needed `# type: ignore[invalid-argument-type]` per the codebase pattern); the existing 221 backend tests still pass — pure additive change, no mounting yet (next checkbox).
 
 - [ ] Mount the router in `backend/app/main.py` under `/invitations` with `Depends(get_current_user)`. Per-route deps handle membership/superadmin checks.
 
