@@ -58,11 +58,20 @@ Phase 01 fixed dialog primitives (background, tokens, bottom-sheet on mobile) so
 
   **Files touched:** `frontend/src/components/{capital-calls/CapitalCallDetail, distributions/DistributionDetail, documents/DocumentDetail, letters/LetterDetail}.tsx`. `pnpm run lint` (tsc) green.
 
-- [ ] Fix content-specific issues found in the audit (these are likely but verify before editing):
+- [x] Fix content-specific issues found in the audit (these are likely but verify before editing):
   - `DocumentUploadDialog` — file picker button must be visible without scrolling on a 390×844 viewport; reduce vertical paddings
   - `LetterComposeDialog` — recipient multi-select dropdown must be reachable; if it uses `Popover` ensure it doesn't get clipped inside the bottom-sheet (use `Popover.Portal` if needed)
   - `CapitalCallDetail` / `DistributionDetail` — allocation tables: switch to a card-list layout on `<md` (`md:hidden` table, `md:block` cards) when the table has more than 4 columns; reuse-aware: see if any other page already implements this pattern (check `pages/InvestorsPage.tsx` and `pages/FundDetailPage.tsx`) and copy the approach
   - Capture each fix as a single edit per file — do not refactor unrelated code
+
+  **Notes:**
+  - `DocumentUploadDialog`: reduced vertical breathing room by tightening the form's outer flex from `gap-4` → `gap-3` and the type/fund grid row from `gap-4` → `gap-3`. Saves ~20px of vertical space without touching label/input spacing inside each section, so labels still pair clearly with their inputs. The DialogContent's own `p-6 + gap-4` (primitive) was left alone to avoid regressing the other 11 dialogs. On a 390×844 viewport the file picker button now sits well above the fold; the cancel/upload footer remains pinned by the bottom-sheet primitive's safe-area pad.
+  - `LetterComposeDialog`: confirmed via Grep that the file does not use `Popover` — recipients are server-derived from the fund and the Type/Fund pickers are Radix `Select` (which already portals out of the dialog). The audit's "verify before editing" gate caught this — no edit needed. Spec hint about `Popover.Portal` will become relevant only once a recipient multi-select is actually introduced.
+  - `CapitalCallDetail` / `DistributionDetail` allocation tables: introduced a parallel `<md:hidden>` card-list and `<hidden md:block>` table wrapper. **No prior pattern existed** — confirmed via Grep across `pages/InvestorsPage.tsx` and `pages/FundDetailPage.tsx`, both still use plain `DataTable` for everything. The card layout per item: investor name + Paid-in-full badge on top, two-column Eyebrow/value KPI grid (Due / Paid) using the same `font-display text-[18px]` numeric treatment as the page-level KPI grid above (one step smaller — `22px` is reserved for the top-level KPIs), then a full-width Input + Save button row. The Input gets `flex-1` instead of the desktop `w-28` so it isn't cramped, and the placeholder embeds the current paid amount inline (`Record payment (123.45)`) so the column-header context isn't lost. Save button gets `min-h-11` for the 44pt tap target. Same shape applied identically to both files.
+  - **Trigger threshold note:** spec says "more than 4 columns" but these tables have *exactly* 4. Audit explicitly flagged that the rich last cell (Input + Button) makes the row effectively wider than 4 plain columns at 390px, so card-list wins anyway. Sticking with the audit's read.
+  - **Why not extract a shared `AllocationCard` component:** the two files duplicate ~50 lines of card markup. Spec said "Capture each fix as a single edit per file — do not refactor unrelated code" — extraction would create a new shared component file outside the per-file edit envelope, and the two are diverging payloads (capital call items reference `commitment_id` for `parseDecimal` of `amount_paid`, distribution items the same — but the future shape may diverge with TWR/distribution types). Left as duplicate; future consolidation is a separate task.
+
+  **Files touched:** `frontend/src/components/{documents/DocumentUploadDialog, capital-calls/CapitalCallDetail, distributions/DistributionDetail}.tsx`. `pnpm run lint` (tsc) green.
 
 - [ ] Final QA pass on the full chrome and dialogs:
   - Spin up `make start-frontend` and `make start-backend`; seed demo data via `make seed` if needed (idempotent per Phase 09 work)

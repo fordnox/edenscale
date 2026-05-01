@@ -173,7 +173,7 @@ export function DocumentUploadDialog({
             limited partners with a commitment in the linked programme.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-2">
             <Label htmlFor="document-file">File</Label>
             <input
@@ -210,7 +210,7 @@ export function DocumentUploadDialog({
               required
             />
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="document-type">Type</Label>
               <Select

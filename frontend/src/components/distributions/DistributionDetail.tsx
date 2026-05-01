@@ -226,51 +226,46 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
               </p>
             </div>
           ) : (
-            <DataTable className="mt-3">
-            <thead>
-              <tr>
-                <TH>Investor</TH>
-                <TH align="right">Due</TH>
-                <TH align="right">Paid</TH>
-                <TH align="right">Record payment</TH>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => {
-                const investor = investorByCommitment.get(item.commitment_id)
-                const due = parseDecimal(item.amount_due)
-                const paid = parseDecimal(item.amount_paid)
-                const fullyPaid = paid >= due && due > 0
-                const draft = paymentDrafts[item.id] ?? ""
-                return (
-                  <TR key={item.id}>
-                    <TD primary>
-                      <div className="flex flex-col gap-1">
-                        <span>
-                          {investor?.name ??
-                            `Commitment #${item.commitment_id}`}
+            <>
+              <div className="md:hidden mt-3 flex flex-col gap-3">
+                {items.map((item) => {
+                  const investor = investorByCommitment.get(item.commitment_id)
+                  const due = parseDecimal(item.amount_due)
+                  const paid = parseDecimal(item.amount_paid)
+                  const fullyPaid = paid >= due && due > 0
+                  const draft = paymentDrafts[item.id] ?? ""
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex flex-col gap-3 border border-[color:var(--border-hairline)] p-4"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-ink-900 text-[15px] font-semibold tracking-[-0.01em]">
+                          {investor?.name ?? `Commitment #${item.commitment_id}`}
                         </span>
-                        {fullyPaid && (
-                          <Badge tone="positive" className="self-start">
-                            Paid in full
-                          </Badge>
-                        )}
+                        {fullyPaid && <Badge tone="positive">Paid in full</Badge>}
                       </div>
-                    </TD>
-                    <TD align="right" primary>
-                      {formatCurrency(due, currency, { compact: true })}
-                    </TD>
-                    <TD align="right">
-                      {formatCurrency(paid, currency, { compact: true })}
-                    </TD>
-                    <TD align="right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex flex-col gap-1">
+                          <Eyebrow>Due</Eyebrow>
+                          <span className="es-numeric font-display text-ink-900 text-[18px]">
+                            {formatCurrency(due, currency, { compact: true })}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Eyebrow>Paid</Eyebrow>
+                          <span className="es-numeric font-display text-ink-900 text-[18px]">
+                            {formatCurrency(paid, currency, { compact: true })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
                         <Input
                           type="number"
                           inputMode="decimal"
                           min={0}
                           step="0.01"
-                          placeholder={String(paid)}
+                          placeholder={`Record payment (${String(paid)})`}
                           value={draft}
                           onChange={(event) =>
                             setPaymentDrafts((prev) => ({
@@ -278,12 +273,13 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
                               [item.id]: event.target.value,
                             }))
                           }
-                          className="h-8 w-28 text-right"
+                          className="flex-1"
                         />
                         <Button
                           type="button"
                           variant="secondary"
                           size="sm"
+                          className="min-h-11"
                           disabled={
                             updateItem.isPending ||
                             draft.trim() === "" ||
@@ -294,12 +290,87 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
                           Save
                         </Button>
                       </div>
-                    </TD>
-                  </TR>
-                )
-              })}
-            </tbody>
-          </DataTable>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="hidden md:block">
+                <DataTable className="mt-3">
+                  <thead>
+                    <tr>
+                      <TH>Investor</TH>
+                      <TH align="right">Due</TH>
+                      <TH align="right">Paid</TH>
+                      <TH align="right">Record payment</TH>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => {
+                      const investor = investorByCommitment.get(item.commitment_id)
+                      const due = parseDecimal(item.amount_due)
+                      const paid = parseDecimal(item.amount_paid)
+                      const fullyPaid = paid >= due && due > 0
+                      const draft = paymentDrafts[item.id] ?? ""
+                      return (
+                        <TR key={item.id}>
+                          <TD primary>
+                            <div className="flex flex-col gap-1">
+                              <span>
+                                {investor?.name ??
+                                  `Commitment #${item.commitment_id}`}
+                              </span>
+                              {fullyPaid && (
+                                <Badge tone="positive" className="self-start">
+                                  Paid in full
+                                </Badge>
+                              )}
+                            </div>
+                          </TD>
+                          <TD align="right" primary>
+                            {formatCurrency(due, currency, { compact: true })}
+                          </TD>
+                          <TD align="right">
+                            {formatCurrency(paid, currency, { compact: true })}
+                          </TD>
+                          <TD align="right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Input
+                                type="number"
+                                inputMode="decimal"
+                                min={0}
+                                step="0.01"
+                                placeholder={String(paid)}
+                                value={draft}
+                                onChange={(event) =>
+                                  setPaymentDrafts((prev) => ({
+                                    ...prev,
+                                    [item.id]: event.target.value,
+                                  }))
+                                }
+                                className="h-8 w-28 text-right"
+                              />
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                disabled={
+                                  updateItem.isPending ||
+                                  draft.trim() === "" ||
+                                  !Number.isFinite(Number(draft))
+                                }
+                                onClick={() => handleRecordPayment(item.id)}
+                              >
+                                Save
+                              </Button>
+                            </div>
+                          </TD>
+                        </TR>
+                      )
+                    })}
+                  </tbody>
+                </DataTable>
+              </div>
+            </>
           )}
         </div>
       </div>
