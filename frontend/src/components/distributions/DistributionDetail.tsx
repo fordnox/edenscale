@@ -167,97 +167,66 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
-      <div className="border-b border-[color:var(--border-hairline)] px-6 py-5">
+    <div className="flex h-full flex-col">
+      <div className="sticky top-0 z-10 border-b border-[color:var(--border-hairline)] bg-surface px-6 py-3">
         <Eyebrow>{distribution.fund.name}</Eyebrow>
-        <h2 className="es-display mt-2 text-[28px] leading-tight">
+        <h2 className="es-display mt-2 text-[22px] leading-tight md:text-[28px]">
           {distribution.title}
         </h2>
-        <div className="mt-3 flex flex-wrap items-center gap-3 font-sans text-[12px] text-ink-500">
+        <div className="mt-2 flex flex-wrap items-center gap-3 font-sans text-[12px] text-ink-500">
           <StatusPill kind="distribution" value={distribution.status} />
           <span>Distributed {formatDate(distribution.distribution_date)}</span>
           {distribution.record_date && (
             <span>· Record {formatDate(distribution.record_date)}</span>
           )}
         </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
         {distribution.description && (
-          <p className="mt-3 font-sans text-[13px] leading-[1.55] text-ink-700">
-            {distribution.description}
-          </p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 border-b border-[color:var(--border-hairline)] px-6 py-5 md:grid-cols-3">
-        <div className="flex flex-col gap-1">
-          <Eyebrow>Amount</Eyebrow>
-          <span className="es-numeric font-display text-[22px] text-ink-900">
-            {formatCurrency(amountTotal, currency, { compact: true })}
-          </span>
-        </div>
-        <div className="flex flex-col gap-1">
-          <Eyebrow>Paid</Eyebrow>
-          <span className="es-numeric font-display text-[22px] text-ink-900">
-            {formatCurrency(paidTotal, currency, { compact: true })}
-          </span>
-          <ProgressBar value={paidPct} tone="brand" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <Eyebrow>Allocated</Eyebrow>
-          <span className="es-numeric font-display text-[22px] text-ink-900">
-            {formatCurrency(dueTotal, currency, { compact: true })}
-          </span>
-          <span className="font-sans text-[11px] text-ink-500">
-            {items.length} limited partners
-          </span>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 px-6 py-4">
-        <Button
-          variant="primary"
-          size="sm"
-          disabled={
-            !canSend || sendDistribution.isPending || items.length === 0
-          }
-          onClick={() =>
-            sendDistribution.mutate({
-              params: { path: { distribution_id: distributionId } },
-            })
-          }
-        >
-          {sendDistribution.isPending && (
-            <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
-          )}
-          Send
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={!canCancel || cancelDistribution.isPending}
-          onClick={() =>
-            cancelDistribution.mutate({
-              params: { path: { distribution_id: distributionId } },
-            })
-          }
-        >
-          {cancelDistribution.isPending && (
-            <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
-          )}
-          Cancel
-        </Button>
-      </div>
-
-      <div className="px-6 pb-8">
-        <Eyebrow>Allocations</Eyebrow>
-        {items.length === 0 ? (
-          <div className="mt-4 flex flex-col items-start gap-2 border border-dashed border-[color:var(--border-hairline)] p-6">
-            <p className="font-sans text-[13px] text-ink-700">
-              No items allocated yet. Items can be added pro-rata when the
-              distribution is created, or manually via the API.
+          <div className="border-b border-[color:var(--border-hairline)] px-6 py-4">
+            <p className="max-w-full break-words font-sans text-[13px] leading-[1.55] text-ink-700">
+              {distribution.description}
             </p>
           </div>
-        ) : (
-          <DataTable className="mt-3">
+        )}
+
+        <div className="grid grid-cols-2 gap-4 border-b border-[color:var(--border-hairline)] px-6 py-5 md:grid-cols-3">
+          <div className="flex flex-col gap-1">
+            <Eyebrow>Amount</Eyebrow>
+            <span className="es-numeric font-display text-[22px] text-ink-900">
+              {formatCurrency(amountTotal, currency, { compact: true })}
+            </span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <Eyebrow>Paid</Eyebrow>
+            <span className="es-numeric font-display text-[22px] text-ink-900">
+              {formatCurrency(paidTotal, currency, { compact: true })}
+            </span>
+            <ProgressBar value={paidPct} tone="brand" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Eyebrow>Allocated</Eyebrow>
+            <span className="es-numeric font-display text-[22px] text-ink-900">
+              {formatCurrency(dueTotal, currency, { compact: true })}
+            </span>
+            <span className="font-sans text-[11px] text-ink-500">
+              {items.length} limited partners
+            </span>
+          </div>
+        </div>
+
+        <div className="px-6 pb-6 pt-5">
+          <Eyebrow>Allocations</Eyebrow>
+          {items.length === 0 ? (
+            <div className="mt-4 flex flex-col items-start gap-2 border border-dashed border-[color:var(--border-hairline)] p-6">
+              <p className="font-sans text-[13px] text-ink-700">
+                No items allocated yet. Items can be added pro-rata when the
+                distribution is created, or manually via the API.
+              </p>
+            </div>
+          ) : (
+            <DataTable className="mt-3">
             <thead>
               <tr>
                 <TH>Investor</TH>
@@ -331,7 +300,47 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
               })}
             </tbody>
           </DataTable>
-        )}
+          )}
+        </div>
+      </div>
+
+      <div className="sticky bottom-0 z-10 border-t border-[color:var(--border-hairline)] bg-surface px-6 py-3">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="min-h-11 w-full md:min-h-9 md:w-auto"
+            disabled={!canCancel || cancelDistribution.isPending}
+            onClick={() =>
+              cancelDistribution.mutate({
+                params: { path: { distribution_id: distributionId } },
+              })
+            }
+          >
+            {cancelDistribution.isPending && (
+              <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+            )}
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            className="min-h-11 w-full md:min-h-9 md:w-auto"
+            disabled={
+              !canSend || sendDistribution.isPending || items.length === 0
+            }
+            onClick={() =>
+              sendDistribution.mutate({
+                params: { path: { distribution_id: distributionId } },
+              })
+            }
+          >
+            {sendDistribution.isPending && (
+              <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+            )}
+            Send
+          </Button>
+        </div>
       </div>
     </div>
   )

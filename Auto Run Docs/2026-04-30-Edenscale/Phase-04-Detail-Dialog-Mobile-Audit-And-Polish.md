@@ -38,12 +38,25 @@ Phase 01 fixed dialog primitives (background, tokens, bottom-sheet on mobile) so
 
   **Files touched:** `frontend/src/components/{capital-calls/CapitalCallCreateDialog, distributions/DistributionCreateDialog, documents/DocumentUploadDialog, letters/LetterComposeDialog, funds/FundCreateDialog, funds/FundEditDialog, investors/InvestorCreateDialog, tasks/TaskCreateDialog}.tsx`. `pnpm run lint` (tsc) green.
 
-- [ ] Apply standard mobile fixes to all detail/review dialogs (CapitalCallDetail, DistributionDetail, DocumentDetail, LetterDetail):
+- [x] Apply standard mobile fixes to all detail/review dialogs (CapitalCallDetail, DistributionDetail, DocumentDetail, LetterDetail):
   - The dialog body should be the only scroll container: wrap content in a `flex-1 overflow-y-auto` region, with sticky `DialogHeader` (`sticky top-0 bg-surface z-10 border-b border-[color:var(--border-hairline)] py-3`) and sticky `DialogFooter` (`sticky bottom-0 bg-surface z-10 border-t border-[color:var(--border-hairline)] py-3 pb-[env(safe-area-inset-bottom)]`) so action buttons are always reachable on mobile bottom-sheet
   - Tables inside detail dialogs (allocations / line items / transactions) should be wrapped in `overflow-x-auto` and use compact column padding on `<md`
   - Status pills, dates, amounts, and labels should use the existing `StatusPill`, `Stat`, and `eyebrow` components — search `frontend/src/components/ui` first before introducing new patterns
   - Long text (letter body, document description) should respect `prose` width: `max-w-full` on mobile, no horizontal scroll
   - Tabs inside `LetterDetail` / `DocumentDetail` (if present) should be horizontally scrollable on `<md` — use `overflow-x-auto whitespace-nowrap` on the `TabsList`
+
+  **Notes:**
+  - Refactored all four detail components from a single `flex h-full flex-col overflow-y-auto` outer scroll container to the **chrome + scrollable body** pattern: outer `flex h-full flex-col`, sticky header (`sticky top-0 z-10 bg-surface border-b ... px-6 py-3`), middle `flex-1 overflow-y-auto`, sticky footer (`sticky bottom-0 z-10 bg-surface border-t ... px-6 py-3`). Action buttons (Send/Cancel/Download/Send-now) now live in the sticky footer so they remain reachable when the body scrolls.
+  - **Safe-area note:** the sticky footer intentionally **does not** add `pb-[env(safe-area-inset-bottom)]`. Detail components mount in `Sheet`, and `SheetContent` already applies `pb-[env(safe-area-inset-bottom)]` to its outer box, so the sticky footer's `bottom: 0` already sits *above* the inset. Doubling would create a visible gap on notch devices. The spec snippet was written for `Dialog`-based call sites; the `Sheet` mechanics differ.
+  - Sticky header uses **just** the title section (Eyebrow + h2 + status row). The h2 is `text-[22px] md:text-[28px]` (smaller on mobile so the sticky header doesn't dominate the screen). Long descriptions (CapitalCall/Distribution `description` field) moved out of the header into the scrollable body wrapped with `max-w-full break-words` so an unbroken paste can't blow the layout.
+  - Footer uses `flex flex-col-reverse gap-2 sm:flex-row sm:justify-end` (matching the `DialogFooter` primitive). Both Cancel and primary actions get `min-h-11 w-full md:min-h-9 md:w-auto` so tap targets are 44pt on mobile and revert to compact `sm` size on desktop.
+  - **Tables:** `DataTable` primitive **already** wraps in `<div className="w-full overflow-x-auto">` (`components/ui/table.tsx:9`). The audit's "no overflow-x-auto wrapper" claim turned out to be incorrect — no change needed. Compact mobile column padding deferred: TD/TH primitive padding (`px-4 py-5`) is shared with ~10 other pages and Phase-04 task 4 will introduce a `<md:hidden` card-list for the Capital Call/Distribution allocations tables anyway, so the noisy padding tweak isn't worth landing.
+  - **Long text:** `LetterDetail` body now `max-w-full whitespace-pre-wrap break-words`. `CapitalCall`/`Distribution` description rows wrapped with `max-w-full break-words`. `DocumentDetail.file_name` got `break-all` (file names can be slug-long without spaces).
+  - **Components reused:** `Eyebrow`, `StatusPill`, `Badge`, `ProgressBar`, `DataTable`. Not used: `Stat` (its 44px display number is too large for the 22px secondary KPI grid these details use). No new patterns introduced.
+  - **Tabs:** confirmed via Grep that none of the four detail components use Tabs — the spec hint is moot.
+  - **DocumentDetail `mt-auto` note:** the original used `mt-auto` to pin the LP-info note to the bottom of the sheet. With the new layout the LP info is just a body section (no `mt-auto`); the Download CTA moved to the sticky footer instead. The LP info now sits just below the metadata grid, which is still in scrolling view.
+
+  **Files touched:** `frontend/src/components/{capital-calls/CapitalCallDetail, distributions/DistributionDetail, documents/DocumentDetail, letters/LetterDetail}.tsx`. `pnpm run lint` (tsc) green.
 
 - [ ] Fix content-specific issues found in the audit (these are likely but verify before editing):
   - `DocumentUploadDialog` — file picker button must be visible without scrolling on a 390×844 viewport; reduce vertical paddings
