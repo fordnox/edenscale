@@ -123,37 +123,59 @@ function SidebarBody({ onOpenSearch, onCloseSheet }: SidebarBodyProps) {
               <Kbd className="bg-parchment-200 text-ink-700">⌘K</Kbd>
             </button>
           </li>
-          {items.map(({ to, label, icon: Icon, end }) => (
-            <li key={to}>
-              <NavLink
-                to={to}
-                end={end}
-                className={({ isActive }) =>
-                  cn(
-                    "group flex w-full min-h-11 md:min-h-0 items-center gap-3 rounded-xs px-3 py-3 md:py-2.5 text-left",
-                    "transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
-                    "font-sans text-[14px]",
-                    isActive
-                      ? "bg-parchment-200 text-ink-900 font-medium"
-                      : "text-ink-700 hover:bg-parchment-100 hover:text-ink-900",
-                  )
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <Icon
-                      className={cn(
-                        "size-[18px] shrink-0",
-                        isActive ? "text-conifer-700" : "text-ink-500",
-                      )}
-                      strokeWidth={1.5}
-                    />
-                    <span>{label}</span>
-                  </>
-                )}
-              </NavLink>
-            </li>
-          ))}
+          {items.map((entry, index) => {
+            if (entry.kind === "section") {
+              return (
+                <li
+                  key={`section-${entry.label}-${index}`}
+                  className="px-3 pt-3 pb-1.5"
+                >
+                  <span className="font-sans text-[10px] font-semibold tracking-[0.08em] uppercase text-ink-500">
+                    {entry.label}
+                  </span>
+                </li>
+              )
+            }
+            if (entry.kind === "divider") {
+              return (
+                <li key={`divider-${index}`} className="py-2">
+                  <hr className="es-rule mx-3" />
+                </li>
+              )
+            }
+            const { to, label, icon: Icon, end } = entry
+            return (
+              <li key={to}>
+                <NavLink
+                  to={to}
+                  end={end}
+                  className={({ isActive }) =>
+                    cn(
+                      "group flex w-full min-h-11 md:min-h-0 items-center gap-3 rounded-xs px-3 py-3 md:py-2.5 text-left",
+                      "transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+                      "font-sans text-[14px]",
+                      isActive
+                        ? "bg-parchment-200 text-ink-900 font-medium"
+                        : "text-ink-700 hover:bg-parchment-100 hover:text-ink-900",
+                    )
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <Icon
+                        className={cn(
+                          "size-[18px] shrink-0",
+                          isActive ? "text-conifer-700" : "text-ink-500",
+                        )}
+                        strokeWidth={1.5}
+                      />
+                      <span>{label}</span>
+                    </>
+                  )}
+                </NavLink>
+              </li>
+            )
+          })}
         </ul>
       </nav>
 

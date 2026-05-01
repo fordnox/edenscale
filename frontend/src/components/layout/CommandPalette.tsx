@@ -87,16 +87,21 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         <CommandEmpty>No matches</CommandEmpty>
 
         <CommandGroup heading="Quick actions">
-          {navItems.map(({ to, label, icon: Icon }) => (
-            <CommandItem
-              key={`nav-${to}`}
-              value={`go ${label} ${to}`}
-              onSelect={run(() => navigate(to))}
-            >
-              <Icon strokeWidth={1.5} />
-              <span>Go to {label}</span>
-            </CommandItem>
-          ))}
+          {navItems
+            .filter(
+              (entry): entry is Extract<typeof entry, { to: string }> =>
+                entry.kind !== "section" && entry.kind !== "divider",
+            )
+            .map(({ to, label, icon: Icon }) => (
+              <CommandItem
+                key={`nav-${to}`}
+                value={`go ${label} ${to}`}
+                onSelect={run(() => navigate(to))}
+              >
+                <Icon strokeWidth={1.5} />
+                <span>Go to {label}</span>
+              </CommandItem>
+            ))}
           <CommandItem
             value="profile account"
             onSelect={run(() => navigate("/profile"))}

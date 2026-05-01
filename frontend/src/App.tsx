@@ -14,6 +14,8 @@ import NotificationsPage from './pages/NotificationsPage'
 import ProfilePage from './pages/ProfilePage'
 import OrganizationSettingsPage from './pages/OrganizationSettingsPage'
 import AuditLogPage from './pages/AuditLogPage'
+import SuperadminOrganizationsPage from './pages/superadmin/SuperadminOrganizationsPage'
+import SuperadminOrganizationDetailPage from './pages/superadmin/SuperadminOrganizationDetailPage'
 import LoginPage from './pages/LoginPage'
 
 function App() {
@@ -38,6 +40,14 @@ function App() {
             element={<OrganizationSettingsPage />}
           />
           <Route path="/audit-log" element={<AuditLogPage />} />
+          <Route
+            path="/superadmin/organizations"
+            element={<SuperadminOrganizationsPage />}
+          />
+          <Route
+            path="/superadmin/organizations/:organizationId"
+            element={<SuperadminOrganizationDetailPage />}
+          />
         </Route>
 
         {/* Pages without layout */}

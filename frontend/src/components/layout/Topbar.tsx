@@ -172,7 +172,7 @@ function OrganizationSwitcher() {
               onSelect={handleViewAll}
               className="min-h-11 md:min-h-0 font-sans text-[13px] text-ink-900"
             >
-              <span>View all organizations →</span>
+              <span>Manage all organizations →</span>
             </DropdownMenuItem>
           </>
         )}
