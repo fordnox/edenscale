@@ -90,11 +90,16 @@ This phase wires the frontend to the new multi-org world. A new `ActiveOrganizat
   - Sidebar + Topbar remain visible — they sit outside the `<main>` swap. This means a no-org user still sees the sign-out menu in the sidebar, which is desirable. The sidebar's role-aware nav items still render (since `navItemsForRole(null)` returns the default set), but clicking them just bounces back to the empty state, which is acceptable for this edge case.
   - `pnpm run lint` (`tsc --noEmit`) passes.
 
-- [ ] Tests:
+- [x] Tests:
   - If the project has frontend tests configured (check `frontend/package.json` and `frontend/vitest.config.*`), add at least:
     - `ActiveOrganizationContext.test.tsx`: localStorage hydrate, default-to-first-membership, setActiveOrganizationId persists
     - A snapshot or render test for the Topbar showing single-org vs multi-org states
   - If frontend tests are not configured, skip but note this in a brief comment in the provider file: `// TODO: tests pending frontend test harness setup` — and definitely do not invent a new harness
+
+  **Notes from implementation:**
+  - Confirmed no frontend test harness: `frontend/package.json` has no `test` script, no `vitest`/`jest`/`@testing-library/*` dependencies, and no `vitest.config.*` files exist. The only test/lint command is `pnpm run lint` (`tsc --noEmit`).
+  - Per spec, skipping test creation. The required `// TODO: tests pending frontend test harness setup` comment already exists at `frontend/src/contexts/ActiveOrganizationContext.tsx:17` (added during the provider task).
+  - No code changes for this task — verification only.
 
 - [ ] Run `cd frontend && pnpm run lint` (which is `tsc --noEmit`) and fix typing issues. Then start `make start-backend` and `make start-frontend` and:
   - Sign in
