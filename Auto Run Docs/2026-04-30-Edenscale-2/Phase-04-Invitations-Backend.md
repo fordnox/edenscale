@@ -75,4 +75,8 @@ This phase builds the invitation system. Admins of an org (or superadmins acting
   - Cross-checked every file containing the substring `invit` (case-insensitive) — backend touchpoints are the new Phase-04 surface (`models/`, `schemas/`, `repositories/`, `routers/invitations.py`, `services/hanko.py`, alembic migration, tests, and the deprecated `POST /users` shim in `routers/users.py`). The only "old" invite call site left is `frontend/src/pages/OrganizationSettingsPage.tsx`'s `InviteUserDialog`, which is the explicit Phase-07 swap target documented in `Working/phase-04-invite-deprecation-plan.md` — not a stray TODO.
   - No leftover invite-related TODO/HACK markers; nothing to clean up.
 
-- [ ] Final gate trio: `make openapi`, `make lint`, `make test`. The frontend `schema.d.ts` will gain `InvitationRead`, `InvitationCreate`, `InvitationStatus` etc., which Phase 07 consumes.
+- [x] Final gate trio: `make openapi`, `make lint`, `make test`. The frontend `schema.d.ts` will gain `InvitationRead`, `InvitationCreate`, `InvitationStatus` etc., which Phase 07 consumes.
+  - `make openapi` regenerated `backend/openapi.json` and `frontend/src/lib/schema.d.ts` cleanly with no diff (prior checkboxes had already run it after each landing). The Phase-07-relevant types — `InvitationCreate`, `InvitationRead`, `InvitationListItem`, `InvitationAccept`, `InvitationStatus`, plus the six `/invitations*` operations — are all present in the generated client.
+  - `make lint` clean (ruff + ty + black + isort + the import smoke test all pass; 99 files unchanged, 3 skipped per the existing ignores).
+  - `make test` green: **261 passed** in 9.64s — matches the headcount the previous checkbox reported, confirming no regressions slipped in between the cleanup sweep and the gate trio.
+  - Working tree is clean after the run (no diff produced), so Phase 04 ships exactly the artifacts already committed in `0d8e998..fb2d93a`.
