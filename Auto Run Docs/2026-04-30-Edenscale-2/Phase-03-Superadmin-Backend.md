@@ -54,9 +54,15 @@ This phase exposes the superadmin control surface: a new `/superadmin` router fa
   - `MembershipWithUserRead` mirrors `MembershipRead` but swaps the nested `OrganizationRead` for `UserRead`; it's the roster payload for `GET /organizations/{id}/members`. Uses `from_attributes=True` so SQLAlchemy `UserOrganizationMembership` rows validate directly via the existing `user` relationship.
   - Verified `make lint` (94 files clean) and `make test` (184 passed). `make openapi` deliberately deferred — the new router isn't mounted yet (separate checkbox), so it would not yet appear in `openapi.json`. The mount step + the final gate trio at the bottom of this phase will regenerate the client.
 
-- [ ] Mount the new router in `backend/app/main.py`:
+- [x] Mount the new router in `backend/app/main.py`:
   - `app.include_router(superadmin.router, prefix="/superadmin", tags=["superadmin"], dependencies=[Depends(get_current_user)])`
   - Per-route `require_superadmin` dependencies still gate authorization
+
+  **Implementation notes:**
+  - Added `superadmin` to the `app.routers` import block (alphabetical: between `organizations` and `tasks`) and slotted the `include_router` call directly after the `organizations` mount so the `/superadmin/*` namespace lives next to the regular `/organizations/*` one in route order.
+  - Outer JWT gate via `Depends(get_current_user)` matches every other authed router; the per-route `require_superadmin` deps in the router file remain the actual authorization boundary.
+  - Ran `make openapi` — five new paths now show in `backend/openapi.json` (`/superadmin/organizations`, `/superadmin/organizations/{organization_id}/admins`, `/disable`, `/enable`, `/members`) and `frontend/src/lib/schema.d.ts` regenerated to expose them to the Phase 06 UI work.
+  - `make lint` clean (94 files), `make test` green (184 passed). No new tests in this iteration — the dedicated superadmin route test suite is its own checkbox below.
 
 - [ ] Audit the existing `/organizations` POST/PATCH/DELETE routes:
   - Currently they allow `admin` and `fund_manager`; make them require `require_superadmin` for `POST` (only superadmin creates orgs) but keep `PATCH` open to `admin` membership of the target org (Phase 02 already moved this to `require_membership_roles(UserRole.admin)`)

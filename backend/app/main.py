@@ -21,6 +21,7 @@ from app.routers import (
     investors,
     notifications,
     organizations,
+    superadmin,
     tasks,
     users,
 )
@@ -74,6 +75,12 @@ app.include_router(
     organizations.router,
     prefix="/organizations",
     tags=["organizations"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    superadmin.router,
+    prefix="/superadmin",
+    tags=["superadmin"],
     dependencies=[Depends(get_current_user)],
 )
 app.include_router(

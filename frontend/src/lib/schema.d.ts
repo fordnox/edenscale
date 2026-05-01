@@ -145,6 +145,92 @@ export interface paths {
         patch: operations["update_organization_organizations__organization_id__patch"];
         trace?: never;
     };
+    "/superadmin/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List All Organizations */
+        get: operations["list_all_organizations_superadmin_organizations_get"];
+        put?: never;
+        /** Create Organization With Admin */
+        post: operations["create_organization_with_admin_superadmin_organizations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/superadmin/organizations/{organization_id}/admins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assign Organization Admin */
+        post: operations["assign_organization_admin_superadmin_organizations__organization_id__admins_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/superadmin/organizations/{organization_id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Disable Organization */
+        patch: operations["disable_organization_superadmin_organizations__organization_id__disable_patch"];
+        trace?: never;
+    };
+    "/superadmin/organizations/{organization_id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Enable Organization */
+        patch: operations["enable_organization_superadmin_organizations__organization_id__enable_patch"];
+        trace?: never;
+    };
+    "/superadmin/organizations/{organization_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Organization Members */
+        get: operations["list_organization_members_superadmin_organizations__organization_id__members_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/fund-groups": {
         parameters: {
             query?: never;
@@ -2033,6 +2119,21 @@ export interface components {
             /** Updated At */
             updated_at: string | null;
         };
+        /** MembershipWithUserRead */
+        MembershipWithUserRead: {
+            /** Id */
+            id: number;
+            /** User Id */
+            user_id: number;
+            /** Organization Id */
+            organization_id: number;
+            role: components["schemas"]["UserRole"];
+            user: components["schemas"]["UserRead"];
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
         /** NotificationRead */
         NotificationRead: {
             /** Id */
@@ -2121,6 +2222,58 @@ export interface components {
             description?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /** SuperadminAdminAssignment */
+        SuperadminAdminAssignment: {
+            /** User Id */
+            user_id?: number | null;
+            /** Email */
+            email?: string | null;
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+        };
+        /** SuperadminOrganizationCreate */
+        SuperadminOrganizationCreate: {
+            type: components["schemas"]["OrganizationType"];
+            /** Name */
+            name: string;
+            /** Legal Name */
+            legal_name?: string | null;
+            /** Tax Id */
+            tax_id?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Admin User Id */
+            admin_user_id?: number | null;
+            /** Admin Email */
+            admin_email?: string | null;
+            /** Admin First Name */
+            admin_first_name?: string | null;
+            /** Admin Last Name */
+            admin_last_name?: string | null;
+        };
+        /** SuperadminOrganizationCreateResponse */
+        SuperadminOrganizationCreateResponse: {
+            organization: components["schemas"]["OrganizationRead"];
+            admin_membership: components["schemas"]["MembershipRead"];
+        };
+        /** SuperadminOrganizationRead */
+        SuperadminOrganizationRead: {
+            /** Id */
+            id: number;
+            type: components["schemas"]["OrganizationType"];
+            /** Name */
+            name: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Member Count */
+            member_count: number;
+            /** Created At */
+            created_at: string | null;
         };
         /** TaskCreate */
         TaskCreate: {
@@ -2685,6 +2838,187 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrganizationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_all_organizations_superadmin_organizations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuperadminOrganizationRead"][];
+                };
+            };
+        };
+    };
+    create_organization_with_admin_superadmin_organizations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuperadminOrganizationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuperadminOrganizationCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_organization_admin_superadmin_organizations__organization_id__admins_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuperadminAdminAssignment"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disable_organization_superadmin_organizations__organization_id__disable_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enable_organization_superadmin_organizations__organization_id__enable_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_organization_members_superadmin_organizations__organization_id__members_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipWithUserRead"][];
                 };
             };
             /** @description Validation Error */
