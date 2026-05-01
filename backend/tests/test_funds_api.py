@@ -241,6 +241,99 @@ class TestListFunds:
         assert ids == [own_fund]
 
 
+class TestCrossOrgScopingViaHeader:
+    """A multi-org admin must use ``X-Organization-Id`` to pick which org to
+    act through, and must only see / act on funds from that org. Asserts the
+    Phase 02 contract that admin role is per-org, not global."""
+
+    def _seed_multi_org_admin(self, subject_id: str, *, org_ids: list[int]) -> int:
+        db = SessionLocal()
+        try:
+            user = User(
+                organization_id=org_ids[0],
+                role=UserRole.admin,
+                first_name="Multi",
+                last_name="Admin",
+                email=f"{subject_id}@example.com",
+                hanko_subject_id=subject_id,
+            )
+            db.add(user)
+            db.flush()
+            for org_id in org_ids:
+                db.add(
+                    UserOrganizationMembership(
+                        user_id=user.id,
+                        organization_id=org_id,
+                        role=UserRole.admin,
+                    )
+                )
+            db.commit()
+            return user.id
+        finally:
+            db.close()
+
+    def test_multi_org_admin_must_pass_header(self, client, override_user):
+        """No header + multi-org membership → 400 with the contract message."""
+        org_a = _seed_org("Org A")
+        org_b = _seed_org("Org B")
+        self._seed_multi_org_admin("hanko-multi", org_ids=[org_a, org_b])
+        override_user("hanko-multi")
+
+        response = client.get("/funds")
+        assert response.status_code == 400
+        assert "X-Organization-Id" in response.json()["detail"]
+
+    def test_list_scopes_to_active_org_via_header(self, client, override_user):
+        org_a = _seed_org("Org A")
+        org_b = _seed_org("Org B")
+        fund_a = _seed_fund(org_a, name="Fund A")
+        fund_b = _seed_fund(org_b, name="Fund B")
+        self._seed_multi_org_admin("hanko-multi", org_ids=[org_a, org_b])
+        override_user("hanko-multi")
+
+        response_a = client.get("/funds", headers={"X-Organization-Id": str(org_a)})
+        assert response_a.status_code == 200
+        assert [r["id"] for r in response_a.json()] == [fund_a]
+
+        response_b = client.get("/funds", headers={"X-Organization-Id": str(org_b)})
+        assert response_b.status_code == 200
+        assert [r["id"] for r in response_b.json()] == [fund_b]
+
+    def test_get_fund_blocks_cross_org_leakage(self, client, override_user):
+        """Fund detail must 403 when the active membership is for a
+        different org than the fund (no fall-through to other-org rows)."""
+        org_a = _seed_org("Org A")
+        org_b = _seed_org("Org B")
+        fund_b = _seed_fund(org_b, name="Fund B")
+        self._seed_multi_org_admin("hanko-multi", org_ids=[org_a, org_b])
+        override_user("hanko-multi")
+
+        response = client.get(
+            f"/funds/{fund_b}", headers={"X-Organization-Id": str(org_a)}
+        )
+        assert response.status_code == 403
+
+    def test_header_for_org_user_is_not_a_member_of_returns_403(
+        self, client, override_user
+    ):
+        """Single-org admin spoofing a different org via the header gets
+        403 from the dep — never reaches the router body."""
+        own_org = _seed_org("Own")
+        other_org = _seed_org("Other")
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=own_org,
+        )
+        override_user("hanko-fm")
+
+        response = client.get(
+            "/funds", headers={"X-Organization-Id": str(other_org)}
+        )
+        assert response.status_code == 403
+
+
 class TestArchiveFund:
     def test_archive_flips_status(self, client, override_user):
         org_id = _seed_org()
