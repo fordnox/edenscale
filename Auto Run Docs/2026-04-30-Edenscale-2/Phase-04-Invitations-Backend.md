@@ -70,6 +70,9 @@ This phase builds the invitation system. Admins of an org (or superadmins acting
     - Hanko mocked at `app.routers.invitations.send_invitation_email` (the module-local binding the router actually awaits) using `unittest.mock.patch` with `AsyncMock`. The override-user fixture was extended to optionally inject an `email` claim so the accept flow can resolve `current_user.email` through the existing `get_current_user_record` provisioning path.
     - All 40 new cases pass; full backend suite is now 261 tests green; `make lint` clean.
 
-- [ ] Search the codebase for any TODO/HACK markers left over from older invite logic and clean them up if related.
+- [x] Search the codebase for any TODO/HACK markers left over from older invite logic and clean them up if related.
+  - Ran `Grep` for `TODO|HACK|FIXME|XXX` across `backend/` and `frontend/src/` — only one match: `backend/app/routers/fund_groups.py:39` (`# TODO: scope to LP commitments — for now restrict reads to fund_manager+admin.`). That marker is about LP visibility on fund-groups reads, not invitations, so it stays where Phase 02 left it.
+  - Cross-checked every file containing the substring `invit` (case-insensitive) — backend touchpoints are the new Phase-04 surface (`models/`, `schemas/`, `repositories/`, `routers/invitations.py`, `services/hanko.py`, alembic migration, tests, and the deprecated `POST /users` shim in `routers/users.py`). The only "old" invite call site left is `frontend/src/pages/OrganizationSettingsPage.tsx`'s `InviteUserDialog`, which is the explicit Phase-07 swap target documented in `Working/phase-04-invite-deprecation-plan.md` — not a stray TODO.
+  - No leftover invite-related TODO/HACK markers; nothing to clean up.
 
 - [ ] Final gate trio: `make openapi`, `make lint`, `make test`. The frontend `schema.d.ts` will gain `InvitationRead`, `InvitationCreate`, `InvitationStatus` etc., which Phase 07 consumes.
