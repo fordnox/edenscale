@@ -20,13 +20,23 @@ Phase 01 fixed dialog primitives (background, tokens, bottom-sheet on mobile) so
     - `frontend/src/components/tasks/TaskCreateDialog.tsx`
   - For each: open at 390×844 (iPhone 14) and 768×1024 (iPad) widths and capture issues in a scratch list at `Auto Run Docs/2026-04-30-Edenscale/Working/phase-04-audit.md` with one section per file (front matter optional — this is internal scratch, not a published doc)
 
-- [ ] Apply standard mobile fixes to all create/compose dialogs (Capital Call, Distribution, Document Upload, Letter Compose, Fund Create, Fund Edit, Investor Create, Task Create):
+- [x] Apply standard mobile fixes to all create/compose dialogs (Capital Call, Distribution, Document Upload, Letter Compose, Fund Create, Fund Edit, Investor Create, Task Create):
   - Form rows that use `grid grid-cols-2` for label/input pairs should switch to `grid-cols-1 md:grid-cols-2`
   - Inputs/selects/textareas should have `text-base md:text-sm` so iOS does not zoom on focus (16px floor)
   - Footers (`DialogFooter`) should be `flex-col-reverse gap-2 md:flex-row md:justify-end` (the primitive default is already close to this — verify each call site doesn't override)
   - Primary action buttons get `min-h-11 md:min-h-9` for tap targets; full-width on mobile (`w-full md:w-auto`)
   - Add `pb-[env(safe-area-inset-bottom)]` to the dialog content's inner footer wrapper so iOS home-indicator does not overlap the action button
   - File dropzones (DocumentUploadDialog) should expose a large button-style "Choose file" trigger as well as the dropzone surface — the dropzone itself becomes a hint on mobile (`hidden md:block`) since drag-and-drop doesn't apply
+
+  **Notes:**
+  - Grid pair rows already used `grid-cols-1 md:grid-cols-2` everywhere; nothing to change.
+  - Input/Textarea primitives already include the `text-base md:text-sm` 16px floor. The two **native `<select>`** holdouts in `FundCreateDialog`/`FundEditDialog` were swapped to the Radix `Select` (`SelectTrigger`/`SelectContent`/`SelectItem`) — same pattern every other dialog already uses. This eliminates iOS focus zoom and gives keyboard/portal behavior consistent with the rest of the app.
+  - `DialogFooter` primitive uses `sm:flex-row sm:justify-end` (640px breakpoint) instead of the spec's `md:` (768px). The audit explicitly accepted this delta — no call site overrides the primitive, so left as-is.
+  - Added `min-h-11 md:min-h-9` to **both** Cancel and primary action buttons in all 8 dialogs (Cancel for tap-target consistency since it lives in the stacked-reverse mobile column). Primary additionally gets `w-full md:w-auto` per spec. `LetterComposeDialog` has 3 buttons (Cancel / Save draft / Send now) — Send now is the primary; the other two get tap target only.
+  - Added `className="pb-[env(safe-area-inset-bottom)]"` to every `DialogFooter`. Redundant with the bottom-sheet primitive's `max-md:pb-[calc(env(safe-area-inset-bottom)+1.5rem)]` but per spec for explicit declaration.
+  - `DocumentUploadDialog` file picker: replaced the bare `<Input type="file">` with a hidden `<input type="file" className="sr-only">` driven by a `useRef<HTMLInputElement>` + button `onClick={() => fileInputRef.current?.click()}`. Button is `min-h-11 w-full md:min-h-9 md:w-auto`, shows the chosen file name with truncation and an MB readout below. Audit explicitly noted no dropzone exists today, so the spec's "hide the dropzone on mobile" half is a no-op — left alone.
+
+  **Files touched:** `frontend/src/components/{capital-calls/CapitalCallCreateDialog, distributions/DistributionCreateDialog, documents/DocumentUploadDialog, letters/LetterComposeDialog, funds/FundCreateDialog, funds/FundEditDialog, investors/InvestorCreateDialog, tasks/TaskCreateDialog}.tsx`. `pnpm run lint` (tsc) green.
 
 - [ ] Apply standard mobile fixes to all detail/review dialogs (CapitalCallDetail, DistributionDetail, DocumentDetail, LetterDetail):
   - The dialog body should be the only scroll container: wrap content in a `flex-1 overflow-y-auto` region, with sticky `DialogHeader` (`sticky top-0 bg-surface z-10 border-b border-[color:var(--border-hairline)] py-3`) and sticky `DialogFooter` (`sticky bottom-0 bg-surface z-10 border-t border-[color:var(--border-hairline)] py-3 pb-[env(safe-area-inset-bottom)]`) so action buttons are always reachable on mobile bottom-sheet

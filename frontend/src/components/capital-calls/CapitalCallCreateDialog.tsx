@@ -240,11 +240,12 @@ export function CapitalCallCreateDialog({
               Auto-allocate pro-rata across approved commitments
             </Label>
           </div>
-          <DialogFooter>
+          <DialogFooter className="pb-[env(safe-area-inset-bottom)]">
             <Button
               type="button"
               variant="secondary"
               size="sm"
+              className="min-h-11 md:min-h-9"
               onClick={() => handleOpenChange(false)}
               disabled={submitting}
             >
@@ -254,6 +255,7 @@ export function CapitalCallCreateDialog({
               type="submit"
               variant="primary"
               size="sm"
+              className="min-h-11 w-full md:min-h-9 md:w-auto"
               disabled={
                 submitting ||
                 !title.trim() ||

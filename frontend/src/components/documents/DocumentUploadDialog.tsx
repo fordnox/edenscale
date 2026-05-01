@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { Loader2 } from "lucide-react"
+import { Loader2, Upload } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -64,6 +64,7 @@ export function DocumentUploadDialog({
   const [isConfidential, setIsConfidential] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
   const fundsQuery = useApiQuery("/funds", undefined, { enabled: open })
   const investorsQuery = useApiQuery("/investors", undefined, { enabled: open })
@@ -82,6 +83,7 @@ export function DocumentUploadDialog({
     setInvestorId(defaultInvestorId ? String(defaultInvestorId) : "none")
     setIsConfidential(true)
     setIsUploading(false)
+    if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
   function handleOpenChange(next: boolean) {
@@ -174,12 +176,29 @@ export function DocumentUploadDialog({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="document-file">File</Label>
-            <Input
+            <input
+              ref={fileInputRef}
               id="document-file"
               type="file"
               onChange={handleFileChange}
+              className="sr-only"
               required
             />
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              className="min-h-11 w-full justify-start font-normal md:min-h-9 md:w-auto md:text-sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload strokeWidth={1.5} className="size-4" />
+              <span className="truncate">{file ? file.name : "Choose file"}</span>
+            </Button>
+            {file && (
+              <p className="text-ink-500 font-sans text-xs">
+                {(file.size / 1024 / 1024).toFixed(2)} MB
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="document-title">Title</Label>
@@ -257,11 +276,12 @@ export function DocumentUploadDialog({
               Confidential — log access on the audit ledger
             </Label>
           </div>
-          <DialogFooter>
+          <DialogFooter className="pb-[env(safe-area-inset-bottom)]">
             <Button
               type="button"
               variant="secondary"
               size="sm"
+              className="min-h-11 md:min-h-9"
               onClick={() => handleOpenChange(false)}
               disabled={submitting}
             >
@@ -271,6 +291,7 @@ export function DocumentUploadDialog({
               type="submit"
               variant="primary"
               size="sm"
+              className="min-h-11 w-full md:min-h-9 md:w-auto"
               disabled={submitting || !file || !title.trim()}
             >
               {submitting && (

@@ -140,11 +140,12 @@ export function InvestorCreateDialog({
               placeholder="Source of capital, KYC packet status, mandate notes"
             />
           </div>
-          <DialogFooter>
+          <DialogFooter className="pb-[env(safe-area-inset-bottom)]">
             <Button
               type="button"
               variant="secondary"
               size="sm"
+              className="min-h-11 md:min-h-9"
               onClick={() => handleOpenChange(false)}
               disabled={createInvestor.isPending}
             >
@@ -154,6 +155,7 @@ export function InvestorCreateDialog({
               type="submit"
               variant="primary"
               size="sm"
+              className="min-h-11 w-full md:min-h-9 md:w-auto"
               disabled={createInvestor.isPending || !name.trim()}
             >
               {createInvestor.isPending && (

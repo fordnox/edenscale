@@ -225,11 +225,12 @@ export function LetterComposeDialog({
               required
             />
           </div>
-          <DialogFooter>
+          <DialogFooter className="pb-[env(safe-area-inset-bottom)]">
             <Button
               type="button"
               variant="secondary"
               size="sm"
+              className="min-h-11 md:min-h-9"
               onClick={() => handleOpenChange(false)}
               disabled={submitting}
             >
@@ -239,6 +240,7 @@ export function LetterComposeDialog({
               type="submit"
               variant="secondary"
               size="sm"
+              className="min-h-11 md:min-h-9"
               disabled={submitting || !subject.trim() || !body.trim()}
             >
               {createLetter.isPending && !sendLetter.isPending && (
@@ -250,6 +252,7 @@ export function LetterComposeDialog({
               type="button"
               variant="primary"
               size="sm"
+              className="min-h-11 w-full md:min-h-9 md:w-auto"
               onClick={handleSend}
               disabled={submitting || !subject.trim() || !body.trim()}
             >

@@ -13,6 +13,13 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import type { components } from "@/lib/schema"
@@ -171,18 +178,21 @@ export function FundCreateDialog({ open, onOpenChange }: FundCreateDialogProps) 
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="fund-status">Status</Label>
-            <select
-              id="fund-status"
+            <Select
               value={status}
-              onChange={(event) => setStatus(event.target.value as FundStatus)}
-              className="h-9 rounded-md border border-input bg-transparent px-3 py-1 font-sans text-sm text-ink-900 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              onValueChange={(value) => setStatus(value as FundStatus)}
             >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="fund-status" className="w-full">
+                <SelectValue placeholder="Select a status" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="fund-description">Description</Label>
@@ -194,11 +204,12 @@ export function FundCreateDialog({ open, onOpenChange }: FundCreateDialogProps) 
               placeholder="Investment thesis, key partners, mandate"
             />
           </div>
-          <DialogFooter>
+          <DialogFooter className="pb-[env(safe-area-inset-bottom)]">
             <Button
               type="button"
               variant="secondary"
               size="sm"
+              className="min-h-11 md:min-h-9"
               onClick={() => handleOpenChange(false)}
               disabled={createFund.isPending}
             >
@@ -208,6 +219,7 @@ export function FundCreateDialog({ open, onOpenChange }: FundCreateDialogProps) 
               type="submit"
               variant="primary"
               size="sm"
+              className="min-h-11 w-full md:min-h-9 md:w-auto"
               disabled={createFund.isPending || !name.trim()}
             >
               {createFund.isPending && <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />}
