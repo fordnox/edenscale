@@ -47,13 +47,23 @@ This phase wires the frontend to the new multi-org world. A new `ActiveOrganizat
   - Header value is `String(activeOrgId)` — the backend dependency parses the integer.
   - Pre-existing `tsc` errors in `OrganizationSettingsPage.tsx` and `ProfilePage.tsx` (the `superadmin` role missing from some `Record<UserRole, string>` maps) are unrelated to this change and are scoped for the next task ("Update role-aware UI to use the active membership's role").
 
-- [ ] Add the org switcher to the Topbar:
+- [x] Add the org switcher to the Topbar:
   - Insert a `DropdownMenu` to the LEFT of the bell icon in `frontend/src/components/layout/Topbar.tsx`
   - Trigger shows the active org's name (truncated) and a small chevron; if the user has only one membership, render the org name as static text (no dropdown)
   - Dropdown items list every membership with `org.name` and a small role badge (`Admin`, `Fund manager`, `LP`, `Superadmin`)
   - For superadmins, append a "View all organizations →" item that routes to `/superadmin/organizations` (built in Phase 06)
   - Selecting a different org calls `setActiveOrganizationId(id)`, then `queryClient.invalidateQueries()` to refetch all data under the new scope
   - Reuse `Topbar.tsx`'s existing visual idiom — no new design tokens
+
+  **Notes from implementation:**
+  - As flagged in the prior task's notes, there is no bell icon in `Topbar.tsx`. The switcher landed at the right edge of the header (where a bell would have lived), pushed there with `ml-auto`. The flex container's previous `justify-between` was replaced — with `ml-auto` on the switcher group, the existing children (hamburger on mobile, search on desktop) remain at their original positions. **User: confirm this placement matches the intended design before adding a bell icon later.**
+  - Trigger styling mirrors the existing search button: same `h-9`, `rounded-xs`, hairline border, `hover:border-conifer-600` treatment. No new design tokens introduced.
+  - Static-text branch (`memberships.length === 1 && !isSuperadmin`) renders the name without a border or chevron so it reads as a label, not an interactive control.
+  - Superadmins always get the dropdown (even with 0 or 1 memberships) so the "View all organizations →" entry remains reachable. When a superadmin has zero memberships, the trigger label falls back to "All organizations".
+  - Empty/non-superadmin case (zero memberships) renders nothing — the empty-state task that follows will handle that case in `AppShell`.
+  - Active membership is highlighted with `bg-parchment-200` (matches the active nav item style in `Sidebar.tsx`); selecting the already-active org is a no-op so we don't trigger a needless `invalidateQueries()`.
+  - Role badge uses inline `text-[10px] tracking-[0.06em] uppercase text-ink-500` rather than the `Badge` component, since `Badge` ships with a status dot and rounded-full pill that would have been too heavy inside a menu row.
+  - `tsc --noEmit` passes for this change. The 3 pre-existing errors in `OrganizationSettingsPage.tsx` and `ProfilePage.tsx` (superadmin missing from `Record<UserRole, string>` maps) are unchanged and remain scoped for the "Update role-aware UI" task.
 
 - [ ] Update role-aware UI to use the active membership's role:
   - `frontend/src/hooks/useNavItems.ts` — switch from `me.role` to `activeMembership?.role`. Superadmins (no membership) get a superadmin-flavored nav (introduced in Phase 06). For now, fall back gracefully if `activeMembership` is null
