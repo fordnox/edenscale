@@ -56,11 +56,22 @@ This phase replaces the old synchronous "create user" invite flow with the new t
   - Both mutations invalidate `["/invitations"]` on success so the table refreshes immediately.
   - `pnpm run lint` (tsc --noEmit) passes.
 
-- [ ] Build the accept page:
+- [x] Build the accept page:
   - Create `frontend/src/pages/InvitationAcceptPage.tsx` rendered at `/invitations/accept` (route lives outside `AppShell` so it's chrome-free, but it DOES require a Hanko session — if not signed in, redirect to `/login?next=/invitations/accept?token=...`)
   - On mount: parse `token` from URL search params; call a small `GET /invitations/preview?token=...` endpoint OR (simpler) just render a generic "You're being invited to join an organization" card with an Accept button that calls `POST /invitations/accept`. If the backend doesn't have a preview endpoint, add one to Phase 04 retroactively only if absolutely necessary; otherwise show generic copy
   - On accept success: invalidate `/users/me/memberships`, set the new org as the active org via `setActiveOrganizationId`, toast "Welcome to {org name}", navigate to `/`
   - On error (expired, revoked, already accepted): show a clear card with the reason and a "Back to home" link
+
+  **Notes from implementation (2026-05-01):**
+  - Took the simpler path — no preview endpoint, just generic "You're being invited to join an organization" copy with a `MailCheck` icon, an "Accept invitation" primary button, and a "Not now" ghost link. The org name only appears post-accept (in the toast and via the active-org switcher), which is fine: the email already named the org, and a preview endpoint would have meant adding an unauthenticated route on the backend just to render one phrase.
+  - The page renders its own minimal frame (centered card on `bg-page`, max-width `lg`, `min-h-svh`) since the task #5 route will mount it outside `AppShell`. No sidebar/topbar/breadcrumbs.
+  - Auth gate: uses `useAuth()` and redirects unauth'd users to `/login?next=<encoded /invitations/accept?token=...>` via `navigate(..., { replace: true })`. While `useAuth` is still loading or the redirect is firing, renders a centered spinner (avoids a flicker of the accept card before the bounce).
+  - **Updated `LoginPage.tsx`** to honor the `?next=` query param — without that change the round trip would dead-end on `/`. Added a `safeNextPath()` guard that only accepts paths starting with a single `/` (rejects `//foo` and absolute URLs) to prevent open-redirects. Both the `isAuthenticated` effect and the `hanko.onSessionCreated` listener now `navigate(nextPath, { replace: true })`.
+  - On `POST /invitations/accept` success: invalidates both `["/users/me/memberships"]` and `["/users/me"]` (the `me` query also seeds isSuperadmin / role display), calls `setActiveOrganizationId(data.organization_id)` so the AppShell sees the new org immediately on mount, toasts "Welcome to {org}.", then `navigate("/")`. The active-org effect in `ActiveOrganizationContext` will reconcile once memberships refetch, but our optimistic set keeps the UI smooth in the interim.
+  - Error handling: declared an `onError` that pulls `error.detail` (the FastAPI `HTTPException` shape — 404 not found / 403 wrong user / 410 already-accepted/revoked/expired) into a state-held `errorMessage`, and renders an `EmptyState` card with that message + a "Back to home" link. Falls back to a generic message if `detail` isn't a string. The api.ts middleware will *also* fire its global "Request failed" toast for the same error — accepted that as a known minor UX papercut (toast = transient ack, card = persistent context); fixing it would require a cross-cutting middleware change to suppress per-request, which felt out of scope.
+  - Token-missing edge case: if `?token=` is absent from the URL, renders an EmptyState explaining the link is malformed rather than firing the mutation with an empty string.
+  - `cd frontend && pnpm run lint` (tsc --noEmit) passes.
+  - **Out of scope for this task** (covered by task #5): wiring the route into `App.tsx`. The page exists but won't render until that route is added.
 
 - [ ] Add a pending-invitation banner to the AppShell:
   - In `frontend/src/layouts/AppShell.tsx`, fetch `GET /invitations/pending-for-me`. If `data.length > 0`, render a thin top banner above the Topbar that says "You have {n} pending invitation(s). Review →" linking to a list page or opening a dialog showing each invitation with Accept / Decline buttons

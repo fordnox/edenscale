@@ -1,5 +1,5 @@
-import { useEffect } from "react"
-import { useNavigate, Link } from "react-router-dom"
+import { useEffect, useMemo } from "react"
+import { useNavigate, useSearchParams, Link } from "react-router-dom"
 import { Helmet } from "react-helmet-async"
 import { register } from "@teamhanko/hanko-elements"
 import { ArrowLeft, Sparkles, Zap, Shield, Code } from "lucide-react"
@@ -9,9 +9,22 @@ import { useAuth } from "@/hooks/useAuth"
 import { config } from "@/lib/config"
 import { hanko } from "@/lib/hanko"
 
+function safeNextPath(raw: string | null): string {
+  if (!raw) return "/"
+  // Only allow same-origin relative paths; reject protocol-relative and absolute URLs.
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/"
+  return raw
+}
+
 export default function LoginPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { isAuthenticated } = useAuth()
+
+  const nextPath = useMemo(
+    () => safeNextPath(searchParams.get("next")),
+    [searchParams],
+  )
 
   useEffect(() => {
     register(config.VITE_HANKO_API_URL).catch(console.error)
@@ -19,18 +32,18 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/")
+      navigate(nextPath, { replace: true })
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, navigate, nextPath])
 
   useEffect(() => {
     const unsub = hanko.onSessionCreated(() => {
-      navigate("/")
+      navigate(nextPath, { replace: true })
     })
     return () => {
       unsub()
     }
-  }, [navigate])
+  }, [navigate, nextPath])
 
   return (
     <>
