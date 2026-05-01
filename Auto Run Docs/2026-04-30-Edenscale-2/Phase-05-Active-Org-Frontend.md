@@ -65,10 +65,19 @@ This phase wires the frontend to the new multi-org world. A new `ActiveOrganizat
   - Role badge uses inline `text-[10px] tracking-[0.06em] uppercase text-ink-500` rather than the `Badge` component, since `Badge` ships with a status dot and rounded-full pill that would have been too heavy inside a menu row.
   - `tsc --noEmit` passes for this change. The 3 pre-existing errors in `OrganizationSettingsPage.tsx` and `ProfilePage.tsx` (superadmin missing from `Record<UserRole, string>` maps) are unchanged and remain scoped for the "Update role-aware UI" task.
 
-- [ ] Update role-aware UI to use the active membership's role:
+- [x] Update role-aware UI to use the active membership's role:
   - `frontend/src/hooks/useNavItems.ts` — switch from `me.role` to `activeMembership?.role`. Superadmins (no membership) get a superadmin-flavored nav (introduced in Phase 06). For now, fall back gracefully if `activeMembership` is null
   - `frontend/src/components/RequireRole.tsx` — accept role from active membership; keep prop API stable (`allowed: UserRole[]`)
   - The OrganizationSettingsPage `meQuery.data.organization_id` reference must move to `activeMembership.organization_id`; do a quick grep for `me.organization_id` and `me?.organization_id` in `frontend/src/` and update each
+
+  **Notes from implementation:**
+  - `useNavItems.ts` no longer fetches `/users/me` itself — it now consumes `useActiveOrganization()` and forwards its `isLoading` flag. `role` is `activeMembership?.role ?? null`. For superadmins (no membership), `navItemsForRole(null)` returns the default `FULL_ITEMS` set; the Phase 06 superadmin-flavored nav will replace this branch.
+  - `RequireRole.tsx` dropped its own `useApiQuery("/users/me")` and now reads `activeMembership` + `isLoading` from `useActiveOrganization()`. Prop API (`allowed: readonly UserRole[]`) unchanged. Superadmins with no active membership will fall to the deny branch — that's acceptable because Phase 06 routes them to `/superadmin/...` and existing role-gated pages (`/settings/organization`, `/audit-log`) are scoped to per-org admins anyway.
+  - `Sidebar.tsx` already reads `role` from `useNavItems()` so the role chip / "Organization settings" item now follow the active membership automatically — no direct edit needed.
+  - `OrganizationSettingsPage.tsx`: `orgId`, `isAdmin`, `isFundManager` all moved to `activeMembership`. Kept `meQuery` because `me.id` is still used for the "you cannot change your own role" guard. Loading guard now also waits on `isMembershipLoading`. `usersQuery.enabled` switched from `me !== undefined && ...` to `activeMembership !== null && ...`.
+  - `ProfilePage.tsx`: `orgId` moved to `activeMembership.organization_id`. `canManageOrg` now reads `activeMembership.role`. The "Role & access" badge and description use `displayRole = activeMembership?.role ?? me?.role` so superadmins (no membership) still see a meaningful label; added an empty-state for the rare null case. `meQuery` retained — still needed for first/last name, phone, title editing.
+  - Resolved the pre-existing `tsc` errors in both pages by adding `superadmin` entries to the `Record<UserRole, string>` maps (`ROLE_LABELS` in both, plus `ROLE_DESCRIPTIONS` in ProfilePage). The role `Select` dropdowns continue to whitelist only `["admin", "fund_manager", "lp"]` so superadmin remains unsettable through the UI.
+  - `cd frontend && pnpm run lint` now passes with zero errors.
 
 - [ ] Add an empty state for users with zero memberships:
   - When `memberships.length === 0` AND the user is NOT a superadmin, render a full-page placeholder inside `AppShell` saying "You haven't been invited to an organization yet. Check your email for a pending invitation, or contact your administrator." Do NOT block superadmins — they get redirected to `/superadmin/organizations` instead

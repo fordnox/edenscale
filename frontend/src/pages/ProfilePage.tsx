@@ -12,6 +12,7 @@ import { Card, CardSection } from "@/components/ui/card"
 import { Eyebrow } from "@/components/ui/eyebrow"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { useAuth } from "@/hooks/useAuth"
@@ -22,12 +23,14 @@ import type { components } from "@/lib/schema"
 type UserRole = components["schemas"]["UserRole"]
 
 const ROLE_LABELS: Record<UserRole, string> = {
+  superadmin: "Superadmin",
   admin: "Administrator",
   fund_manager: "Fund manager",
   lp: "Limited partner",
 }
 
 const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  superadmin: "Platform-level access across all organizations.",
   admin: "Full access to organization settings, audit log, and all firm data.",
   fund_manager: "Manages funds, investors, capital activity, and team members.",
   lp: "Read-only access to your commitments, documents, and letters.",
@@ -42,8 +45,9 @@ export default function ProfilePage() {
     staleTime: 5 * 60 * 1000,
   })
   const me = meQuery.data
+  const { activeMembership } = useActiveOrganization()
 
-  const orgId = me?.organization_id ?? null
+  const orgId = activeMembership?.organization_id ?? null
   const orgQuery = useApiQuery(
     "/organizations/{organization_id}",
     {
@@ -82,7 +86,10 @@ export default function ProfilePage() {
     )
   }, [me, firstName, lastName, phone, title])
 
-  const canManageOrg = me?.role === "admin" || me?.role === "fund_manager"
+  const displayRole: UserRole | null = activeMembership?.role ?? me?.role ?? null
+  const canManageOrg =
+    activeMembership?.role === "admin" ||
+    activeMembership?.role === "fund_manager"
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -232,15 +239,23 @@ export default function ProfilePage() {
               <CardSection>
                 <Eyebrow>Role &amp; access</Eyebrow>
                 <div className="mt-4 flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
-                    <Badge tone="info">{ROLE_LABELS[me.role]}</Badge>
-                    <span className="font-sans text-[12px] text-ink-500">
-                      {titleCase(me.role)}
-                    </span>
-                  </div>
-                  <p className="font-sans text-[13px] leading-[1.55] text-ink-700">
-                    {ROLE_DESCRIPTIONS[me.role]}
-                  </p>
+                  {displayRole ? (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <Badge tone="info">{ROLE_LABELS[displayRole]}</Badge>
+                        <span className="font-sans text-[12px] text-ink-500">
+                          {titleCase(displayRole)}
+                        </span>
+                      </div>
+                      <p className="font-sans text-[13px] leading-[1.55] text-ink-700">
+                        {ROLE_DESCRIPTIONS[displayRole]}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="font-sans text-[13px] leading-[1.55] text-ink-700">
+                      No role assigned in the current organization.
+                    </p>
+                  )}
                   <p className="font-sans text-[12px] text-ink-500">
                     Roles are managed by your administrator. Contact them if your
                     access needs to change.

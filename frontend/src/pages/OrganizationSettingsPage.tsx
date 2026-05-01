@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { config } from "@/lib/config"
@@ -40,6 +41,7 @@ type UserRead = components["schemas"]["UserRead"]
 type OrganizationType = components["schemas"]["OrganizationType"]
 
 const ROLE_LABELS: Record<UserRole, string> = {
+  superadmin: "Superadmin",
   admin: "Administrator",
   fund_manager: "Fund manager",
   lp: "Limited partner",
@@ -71,10 +73,13 @@ function OrganizationSettingsContent() {
     staleTime: 5 * 60 * 1000,
   })
   const me = meQuery.data
+  const { activeMembership, isLoading: isMembershipLoading } =
+    useActiveOrganization()
 
-  const orgId = me?.organization_id ?? null
-  const isAdmin = me?.role === "admin"
-  const isFundManager = me?.role === "fund_manager"
+  const orgId = activeMembership?.organization_id ?? null
+  const activeRole = activeMembership?.role
+  const isAdmin = activeRole === "admin"
+  const isFundManager = activeRole === "fund_manager"
 
   const orgQuery = useApiQuery(
     "/organizations/{organization_id}",
@@ -83,7 +88,7 @@ function OrganizationSettingsContent() {
   )
 
   const usersQuery = useApiQuery("/users", undefined, {
-    enabled: me !== undefined && (isAdmin || isFundManager),
+    enabled: activeMembership !== null && (isAdmin || isFundManager),
   })
 
   const [name, setName] = useState("")
@@ -198,7 +203,7 @@ function OrganizationSettingsContent() {
       />
 
       <div className="px-8 pb-16">
-        {meQuery.isLoading || orgQuery.isLoading ? (
+        {meQuery.isLoading || isMembershipLoading || orgQuery.isLoading ? (
           <div className="flex min-h-[280px] items-center justify-center text-ink-500">
             <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
           </div>

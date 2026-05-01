@@ -12,7 +12,7 @@ import {
   Users,
 } from "lucide-react"
 
-import { useApiQuery } from "@/hooks/useApiQuery"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import type { components } from "@/lib/schema"
 
 type UserRole = components["schemas"]["UserRole"]
@@ -73,12 +73,10 @@ interface UseNavItemsResult {
 }
 
 export function useNavItems(): UseNavItemsResult {
-  const meQuery = useApiQuery("/users/me", undefined, {
-    staleTime: 5 * 60 * 1000,
-  })
+  const { activeMembership, isLoading } = useActiveOrganization()
 
-  const role = meQuery.data?.role ?? null
+  const role = activeMembership?.role ?? null
   const items = useMemo(() => navItemsForRole(role), [role])
 
-  return { items, role, isLoading: meQuery.isLoading }
+  return { items, role, isLoading }
 }

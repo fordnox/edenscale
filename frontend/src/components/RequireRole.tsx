@@ -5,7 +5,7 @@ import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { EmptyState } from "@/components/ui/EmptyState"
-import { useApiQuery } from "@/hooks/useApiQuery"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import type { components } from "@/lib/schema"
 
 type UserRole = components["schemas"]["UserRole"]
@@ -17,11 +17,9 @@ interface RequireRoleProps {
 }
 
 export function RequireRole({ allowed, children, fallback }: RequireRoleProps) {
-  const meQuery = useApiQuery("/users/me", undefined, {
-    staleTime: 5 * 60 * 1000,
-  })
+  const { activeMembership, isLoading } = useActiveOrganization()
 
-  if (meQuery.isLoading) {
+  if (isLoading) {
     return (
       <div className="flex min-h-[280px] items-center justify-center text-ink-500">
         <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
@@ -29,7 +27,7 @@ export function RequireRole({ allowed, children, fallback }: RequireRoleProps) {
     )
   }
 
-  const role = meQuery.data?.role
+  const role = activeMembership?.role
   if (!role || !allowed.includes(role)) {
     if (fallback !== undefined) return <>{fallback}</>
     return (
