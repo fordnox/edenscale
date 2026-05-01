@@ -79,8 +79,16 @@ This phase wires the frontend to the new multi-org world. A new `ActiveOrganizat
   - Resolved the pre-existing `tsc` errors in both pages by adding `superadmin` entries to the `Record<UserRole, string>` maps (`ROLE_LABELS` in both, plus `ROLE_DESCRIPTIONS` in ProfilePage). The role `Select` dropdowns continue to whitelist only `["admin", "fund_manager", "lp"]` so superadmin remains unsettable through the UI.
   - `cd frontend && pnpm run lint` now passes with zero errors.
 
-- [ ] Add an empty state for users with zero memberships:
+- [x] Add an empty state for users with zero memberships:
   - When `memberships.length === 0` AND the user is NOT a superadmin, render a full-page placeholder inside `AppShell` saying "You haven't been invited to an organization yet. Check your email for a pending invitation, or contact your administrator." Do NOT block superadmins — they get redirected to `/superadmin/organizations` instead
+
+  **Notes from implementation:**
+  - Added the empty-state branch directly in `frontend/src/layouts/AppShell.tsx` rather than a new component — only one call site, no need to abstract.
+  - Reuses the existing `EmptyState` + `Card` primitives (mirrors the `RequireRole.tsx` pattern). The Mail icon was chosen because the body copy references checking email; matches `LettersPage.tsx`'s `strokeWidth={1.25}` convention.
+  - Title is "No organization yet" with the spec'd body copy. Wrapped the card in a centered flex container (`items-center justify-center`, `max-w-xl`) so it reads as a full-page placeholder rather than a top-of-page banner.
+  - Gated on `!isLoading && memberships.length === 0 && !isSuperadmin` so we don't flash the empty state during the initial `/users/me` + `/users/me/memberships` load. Superadmins fall through to the regular `<Outlet />` (Phase 06 will add their dedicated routing).
+  - Sidebar + Topbar remain visible — they sit outside the `<main>` swap. This means a no-org user still sees the sign-out menu in the sidebar, which is desirable. The sidebar's role-aware nav items still render (since `navItemsForRole(null)` returns the default set), but clicking them just bounces back to the empty state, which is acceptable for this edge case.
+  - `pnpm run lint` (`tsc --noEmit`) passes.
 
 - [ ] Tests:
   - If the project has frontend tests configured (check `frontend/package.json` and `frontend/vitest.config.*`), add at least:
