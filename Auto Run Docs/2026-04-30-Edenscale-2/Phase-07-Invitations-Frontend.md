@@ -37,11 +37,24 @@ This phase replaces the old synchronous "create user" invite flow with the new t
   - Invalidates `["/invitations"]` so the upcoming "Pending invitations" section (next task) will see fresh data once added.
   - `pnpm run lint` (tsc --noEmit) passes.
 
-- [ ] Add a "Pending invitations" section to OrganizationSettingsPage:
+- [x] Add a "Pending invitations" section to OrganizationSettingsPage:
   - Below the existing "Team" card, add a "Pending invitations" Card listing rows from `GET /invitations`
   - Columns: email, role (badge), invited_by (lookup user), expires_at (relative time), status, actions (Resend / Revoke)
   - Resend → `POST /invitations/{id}/resend`; Revoke → `POST /invitations/{id}/revoke`; both with optimistic toasts
   - Hide the section if the active membership role is not `admin` (LPs and fund managers don't need to see it)
+
+  **Notes from implementation (2026-05-01):**
+  - New `useApiQuery("/invitations")` is gated on `orgId !== null && isAdmin`, so the request is only fired for admins of the active org. The api client middleware auto-attaches `X-Organization-Id`, so the backend scopes results without any explicit header. Fund managers and LPs never see the card or the request.
+  - The card lists *all* invitations (pending + historical) rather than filtering server-side to `status=pending`. The section is named "Pending invitations" because that's the day-to-day use case, but admins also benefit from seeing recent revoked/expired/accepted ones for context. The status column carries its weight only because of this choice; if we ever filter to pending, drop the column.
+  - Sort is client-side: pending first, then most recently created. This keeps actionable rows at the top regardless of how the backend orders them.
+  - `invited_by` is a lookup against the existing `usersQuery.data` (`/users`), which is already loaded for admins/fund managers — built into a `Map<number, UserRead>` via `useMemo`. Falls back to "—" if the inviter isn't in the team list (e.g. superadmin invitations).
+  - Relative-time uses the existing `formatRelativeDays` helper (day-granularity is fine for 7-day token expiries).
+  - Status → tone mapping: pending=warning (brass), accepted=active (conifer), revoked=muted, expired=negative.
+  - Per-row mutation state: each Resend / Revoke button only spins for *that* row by checking `mutation.variables?.params.path.invitation_id === invitation.id`. Both buttons in a row disable while either is in flight to prevent double-clicks.
+  - Actions cell shows "—" for non-pending rows (only pending invitations can be resent/revoked per backend rules).
+  - The toasts pull `data.email` from the response (so they reflect normalized email casing).
+  - Both mutations invalidate `["/invitations"]` on success so the table refreshes immediately.
+  - `pnpm run lint` (tsc --noEmit) passes.
 
 - [ ] Build the accept page:
   - Create `frontend/src/pages/InvitationAcceptPage.tsx` rendered at `/invitations/accept` (route lives outside `AppShell` so it's chrome-free, but it DOES require a Hanko session — if not signed in, redirect to `/login?next=/invitations/accept?token=...`)

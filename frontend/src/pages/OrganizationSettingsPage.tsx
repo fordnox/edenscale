@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { useQueryClient } from "@tanstack/react-query"
-import { Loader2, Plus, Users } from "lucide-react"
+import { Loader2, Mail, Plus, RotateCw, Users, X as XIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { RequireRole } from "@/components/RequireRole"
@@ -34,11 +34,14 @@ import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { config } from "@/lib/config"
+import { formatRelativeDays } from "@/lib/format"
 import type { components } from "@/lib/schema"
 
 type UserRole = components["schemas"]["UserRole"]
 type UserRead = components["schemas"]["UserRead"]
 type OrganizationType = components["schemas"]["OrganizationType"]
+type InvitationListItem = components["schemas"]["InvitationListItem"]
+type InvitationStatus = components["schemas"]["InvitationStatus"]
 
 const ROLE_LABELS: Record<UserRole, string> = {
   superadmin: "Superadmin",
@@ -51,6 +54,22 @@ const ORG_TYPE_LABELS: Record<OrganizationType, string> = {
   fund_manager_firm: "Fund manager firm",
   investor_firm: "Investor firm",
   service_provider: "Service provider",
+}
+
+const STATUS_LABELS: Record<InvitationStatus, string> = {
+  pending: "Pending",
+  accepted: "Accepted",
+  revoked: "Revoked",
+  expired: "Expired",
+}
+
+type BadgeTone = "active" | "muted" | "warning" | "negative"
+
+const STATUS_TONES: Record<InvitationStatus, BadgeTone> = {
+  pending: "warning",
+  accepted: "active",
+  revoked: "muted",
+  expired: "negative",
 }
 
 function fullName(user: UserRead) {
@@ -133,6 +152,32 @@ function OrganizationSettingsContent() {
     },
   })
 
+  const invitationsQuery = useApiQuery("/invitations", undefined, {
+    enabled: orgId !== null && isAdmin,
+  })
+
+  const resendInvitation = useApiMutation(
+    "post",
+    "/invitations/{invitation_id}/resend",
+    {
+      onSuccess: (data) => {
+        toast.success(`Invitation resent to ${data.email}.`)
+        queryClient.invalidateQueries({ queryKey: ["/invitations"] })
+      },
+    },
+  )
+
+  const revokeInvitation = useApiMutation(
+    "post",
+    "/invitations/{invitation_id}/revoke",
+    {
+      onSuccess: (data) => {
+        toast.success(`Invitation to ${data.email} revoked.`)
+        queryClient.invalidateQueries({ queryKey: ["/invitations"] })
+      },
+    },
+  )
+
   const isDirty = useMemo(() => {
     if (!org) return false
     return (
@@ -191,6 +236,38 @@ function OrganizationSettingsContent() {
       return an.localeCompare(bn)
     })
   }, [usersQuery.data])
+
+  const userById = useMemo(() => {
+    const map = new Map<number, UserRead>()
+    for (const user of usersQuery.data ?? []) map.set(user.id, user)
+    return map
+  }, [usersQuery.data])
+
+  const invitations = useMemo(() => {
+    const list = (invitationsQuery.data ?? []).slice()
+    list.sort((a, b) => {
+      if (a.status === "pending" && b.status !== "pending") return -1
+      if (a.status !== "pending" && b.status === "pending") return 1
+      const ad = a.created_at ? Date.parse(a.created_at) : 0
+      const bd = b.created_at ? Date.parse(b.created_at) : 0
+      return bd - ad
+    })
+    return list
+  }, [invitationsQuery.data])
+
+  function handleResend(invitation: InvitationListItem) {
+    if (resendInvitation.isPending || revokeInvitation.isPending) return
+    resendInvitation.mutate({
+      params: { path: { invitation_id: invitation.id } },
+    })
+  }
+
+  function handleRevoke(invitation: InvitationListItem) {
+    if (resendInvitation.isPending || revokeInvitation.isPending) return
+    revokeInvitation.mutate({
+      params: { path: { invitation_id: invitation.id } },
+    })
+  }
 
   return (
     <>
@@ -411,6 +488,141 @@ function OrganizationSettingsContent() {
                 )}
               </CardSection>
             </Card>
+
+            {isAdmin && (
+              <Card>
+                <div className="flex items-end justify-between gap-4 px-6 pt-6 md:px-8 md:pt-8">
+                  <div className="flex flex-col gap-1.5">
+                    <Eyebrow>Pending invitations</Eyebrow>
+                    <p className="font-sans text-[13px] text-ink-700">
+                      People you&rsquo;ve invited who haven&rsquo;t joined yet.
+                      Resend the email or revoke if you change your mind.
+                    </p>
+                  </div>
+                </div>
+                <CardSection className="pt-4">
+                  {invitationsQuery.isLoading ? (
+                    <div className="flex min-h-[160px] items-center justify-center text-ink-500">
+                      <Loader2
+                        strokeWidth={1.5}
+                        className="size-6 animate-spin"
+                      />
+                    </div>
+                  ) : invitations.length === 0 ? (
+                    <EmptyState
+                      icon={<Mail strokeWidth={1.25} />}
+                      title="No invitations"
+                      body="When you invite someone, they'll appear here until they accept."
+                    />
+                  ) : (
+                    <DataTable>
+                      <thead>
+                        <tr>
+                          <TH>Email</TH>
+                          <TH>Role</TH>
+                          <TH>Invited by</TH>
+                          <TH>Expires</TH>
+                          <TH>Status</TH>
+                          <TH align="right">Actions</TH>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invitations.map((invitation) => {
+                          const inviter =
+                            invitation.invited_by_user_id !== null
+                              ? userById.get(invitation.invited_by_user_id)
+                              : undefined
+                          const isPending = invitation.status === "pending"
+                          const isMutating =
+                            (resendInvitation.isPending &&
+                              resendInvitation.variables?.params.path
+                                .invitation_id === invitation.id) ||
+                            (revokeInvitation.isPending &&
+                              revokeInvitation.variables?.params.path
+                                .invitation_id === invitation.id)
+                          return (
+                            <TR key={invitation.id}>
+                              <TD primary>{invitation.email}</TD>
+                              <TD>
+                                <Badge tone="info">
+                                  {ROLE_LABELS[invitation.role]}
+                                </Badge>
+                              </TD>
+                              <TD>{inviter ? fullName(inviter) : "—"}</TD>
+                              <TD>
+                                {formatRelativeDays(
+                                  invitation.expires_at,
+                                  new Date(),
+                                )}
+                              </TD>
+                              <TD>
+                                <Badge
+                                  tone={STATUS_TONES[invitation.status]}
+                                >
+                                  {STATUS_LABELS[invitation.status]}
+                                </Badge>
+                              </TD>
+                              <TD align="right">
+                                {isPending ? (
+                                  <div className="flex items-center justify-end gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleResend(invitation)}
+                                      disabled={isMutating}
+                                    >
+                                      {resendInvitation.isPending &&
+                                      resendInvitation.variables?.params.path
+                                        .invitation_id === invitation.id ? (
+                                        <Loader2
+                                          strokeWidth={1.5}
+                                          className="size-4 animate-spin"
+                                        />
+                                      ) : (
+                                        <RotateCw
+                                          strokeWidth={1.5}
+                                          className="size-4"
+                                        />
+                                      )}
+                                      Resend
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() => handleRevoke(invitation)}
+                                      disabled={isMutating}
+                                    >
+                                      {revokeInvitation.isPending &&
+                                      revokeInvitation.variables?.params.path
+                                        .invitation_id === invitation.id ? (
+                                        <Loader2
+                                          strokeWidth={1.5}
+                                          className="size-4 animate-spin"
+                                        />
+                                      ) : (
+                                        <XIcon
+                                          strokeWidth={1.5}
+                                          className="size-4"
+                                        />
+                                      )}
+                                      Revoke
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <span className="text-ink-500">—</span>
+                                )}
+                              </TD>
+                            </TR>
+                          )
+                        })}
+                      </tbody>
+                    </DataTable>
+                  )}
+                </CardSection>
+              </Card>
+            )}
           </div>
         )}
       </div>
