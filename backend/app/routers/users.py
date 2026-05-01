@@ -10,6 +10,9 @@ from app.core.rbac import (
 from app.models.enums import UserRole
 from app.models.user import User
 from app.models.user_organization_membership import UserOrganizationMembership
+from app.repositories.user_organization_membership_repository import (
+    UserOrganizationMembershipRepository,
+)
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import (
     UserCreate,
@@ -18,6 +21,7 @@ from app.schemas.user import (
     UserSelfUpdate,
     UserUpdate,
 )
+from app.schemas.user_organization_membership import MembershipRead
 
 router = APIRouter()
 
@@ -45,6 +49,15 @@ async def update_current_user(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     return updated
+
+
+@router.get("/me/memberships", response_model=list[MembershipRead])
+async def list_my_memberships(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_record),
+):
+    repo = UserOrganizationMembershipRepository(db)
+    return repo.list_for_user(current_user.id)  # type: ignore[invalid-argument-type]
 
 
 @router.get("", response_model=list[UserRead])

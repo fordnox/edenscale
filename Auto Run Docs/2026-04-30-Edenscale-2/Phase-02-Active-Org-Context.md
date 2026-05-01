@@ -60,9 +60,15 @@ This phase introduces the `X-Organization-Id` request header and a new `get_acti
   - **Test fixture migration**: every `_seed_user(... organization_id=...)` helper in the test suite now also creates a matching `UserOrganizationMembership` row, mirroring what `bulk_seed_from_legacy_user_org_id` does in production. Touched files: `test_funds_api.py`, `test_investors_api.py`, `test_capital_calls_api.py`, `test_commitments_api.py`, `test_distributions_api.py`, `test_documents_api.py`, `test_communications_api.py`, `test_tasks_api.py`, `test_notifications_api.py`, `test_users_api.py`, `test_dashboard.py`. In `test_dashboard.py` the previously platform-wide admin test (`test_admin_sees_aggregates_across_all_organizations`) was rewritten as `test_admin_with_multi_org_memberships_scopes_per_active_org` — now validates that an admin with memberships in two orgs sees only the org chosen via `X-Organization-Id`, which is the new per-org admin contract.
   - Gate trio green: `make openapi` (regenerated `openapi.json` + `frontend/src/lib/schema.d.ts`), `make lint`, `make test` (161 passed).
 
-- [ ] Add a `/users/me/memberships` route returning `list[MembershipRead]`:
+- [x] Add a `/users/me/memberships` route returning `list[MembershipRead]`:
   - Create or extend `backend/app/routers/users.py` with `GET /me/memberships`
   - The frontend will use this to populate the org switcher in Phase 05
+
+  **Implementation notes:**
+  - Added `GET /users/me/memberships` to `backend/app/routers/users.py` (placed adjacent to the other `/me` endpoints). Returns `list[MembershipRead]` — each item carries the full nested `OrganizationRead` payload so the frontend org switcher can render names without a follow-up fetch.
+  - Implementation simply calls `UserOrganizationMembershipRepository(db).list_for_user(current_user.id)`. Auth comes from the existing router-level `Depends(get_current_user)` in `main.py` plus the route-local `Depends(get_current_user_record)` to materialize the `User` row. No `X-Organization-Id` header involvement — this endpoint is intentionally non-org-scoped (it's *the* lookup the org switcher uses to discover which orgs a user can switch into).
+  - Route ordering note: declared `/me/memberships` after `/me` PATCH and before the `/{user_id}` PATCH route, so FastAPI's path matcher picks the literal `/me/memberships` first instead of treating `me` as a `{user_id}` path param.
+  - Gate trio green: `make openapi` (regenerated `backend/openapi.json` + `frontend/src/lib/schema.d.ts` — the new path is exposed to the frontend client), `make lint` (clean), `make test` (161 passed). Phase-02-task-5 will add a dedicated `test_users_memberships_route.py` for this endpoint; not adding speculative tests here per task ordering.
 
 - [ ] Add tests for the new dependency and the migrated routers:
   - `backend/tests/test_active_membership_dep.py`: header missing + single membership = resolves; header present + match = resolves; header present + no match + non-superadmin = 403; header present + superadmin = synthesized membership; header missing + superadmin = 400
