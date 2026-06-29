@@ -56,7 +56,7 @@ def _seed_user(
         db.close()
 
 
-def _seed_org(name: str = "Eden Capital") -> int:
+def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
         org = Organization(name=name, type=OrganizationType.fund_manager_firm)

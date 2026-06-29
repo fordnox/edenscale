@@ -51,7 +51,7 @@ def override_user():
     app.dependency_overrides.clear()
 
 
-def _seed_org(name: str = "Eden Capital") -> int:
+def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
         org = Organization(name=name, type=OrganizationType.fund_manager_firm)
@@ -95,7 +95,7 @@ def _seed_user(
         db.close()
 
 
-def _seed_fund(organization_id: int, *, name: str = "Eden Fund I") -> int:
+def _seed_fund(organization_id: int, *, name: str = "NewTaven Fund I") -> int:
     db = SessionLocal()
     try:
         fund = Fund(organization_id=organization_id, name=name)

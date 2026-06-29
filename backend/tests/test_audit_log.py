@@ -60,7 +60,7 @@ def override_user():
     app.dependency_overrides.clear()
 
 
-def _seed_org(name: str = "Eden Capital") -> int:
+def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
         org = Organization(name=name, type=OrganizationType.fund_manager_firm)
@@ -228,7 +228,7 @@ class TestAuditLogRoute:
 
     def test_filter_by_entity(self, client, override_user):
         _seed_user("hanko-admin", UserRole.admin)
-        org_id = _seed_org("Eden")
+        org_id = _seed_org("NewTaven")
         db = SessionLocal()
         try:
             fund = Fund(organization_id=org_id, name="Filter Fund")

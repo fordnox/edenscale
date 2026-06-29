@@ -74,7 +74,7 @@ def test_auto_provision_falls_back_to_blanks_when_claims_missing(db):
 
 
 def test_existing_user_is_returned_unchanged(db):
-    org = Organization(name="Eden Capital", type=OrganizationType.fund_manager_firm)
+    org = Organization(name="NewTaven Capital", type=OrganizationType.fund_manager_firm)
     db.add(org)
     db.flush()
     existing = User(
@@ -107,7 +107,7 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
     First Hanko sign-in with the matching email claim should bind the row by
     setting `hanko_subject_id`, not create a duplicate `lp` user.
     """
-    org = Organization(name="Eden Capital", type=OrganizationType.fund_manager_firm)
+    org = Organization(name="NewTaven Capital", type=OrganizationType.fund_manager_firm)
     db.add(org)
     db.flush()
     seeded = User(
@@ -115,7 +115,7 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
         role=UserRole.fund_manager,
         first_name="Ava",
         last_name="Morgan",
-        email="ava.morgan@edenscale.demo",
+        email="ava.morgan@newtaven.demo",
         hanko_subject_id=None,
     )
     db.add(seeded)
@@ -124,7 +124,7 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
 
     payload = {
         "sub": "hanko-claim-1",
-        "email": "ava.morgan@edenscale.demo",
+        "email": "ava.morgan@newtaven.demo",
     }
     user = get_current_user_record(payload=payload, db=db)
 
@@ -132,7 +132,7 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
     assert user.hanko_subject_id == "hanko-claim-1"
     assert user.role == UserRole.fund_manager
     assert (
-        db.query(User).filter(User.email == "ava.morgan@edenscale.demo").count() == 1
+        db.query(User).filter(User.email == "ava.morgan@newtaven.demo").count() == 1
     )
 
 
@@ -142,7 +142,7 @@ def test_seed_claim_refuses_when_email_already_linked(db):
     must NOT 500 on the unique-email constraint when auto-provisioning a
     duplicate. Returns 401 with a clear message instead.
     """
-    org = Organization(name="Eden Capital", type=OrganizationType.fund_manager_firm)
+    org = Organization(name="NewTaven Capital", type=OrganizationType.fund_manager_firm)
     db.add(org)
     db.flush()
     existing = User(
@@ -150,7 +150,7 @@ def test_seed_claim_refuses_when_email_already_linked(db):
         role=UserRole.fund_manager,
         first_name="Ava",
         last_name="Morgan",
-        email="ava.morgan@edenscale.demo",
+        email="ava.morgan@newtaven.demo",
         hanko_subject_id="hanko-original",
     )
     db.add(existing)
@@ -159,7 +159,7 @@ def test_seed_claim_refuses_when_email_already_linked(db):
 
     payload = {
         "sub": "hanko-impostor",
-        "email": "ava.morgan@edenscale.demo",
+        "email": "ava.morgan@newtaven.demo",
     }
     with pytest.raises(HTTPException) as excinfo:
         get_current_user_record(payload=payload, db=db)
@@ -168,7 +168,7 @@ def test_seed_claim_refuses_when_email_already_linked(db):
     rebound = db.query(User).filter(User.id == existing_id).one()
     assert rebound.hanko_subject_id == "hanko-original"
     assert (
-        db.query(User).filter(User.email == "ava.morgan@edenscale.demo").count() == 1
+        db.query(User).filter(User.email == "ava.morgan@newtaven.demo").count() == 1
     )
 
 

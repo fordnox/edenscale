@@ -90,7 +90,7 @@ def hanko_email_mock():
         yield mock
 
 
-def _seed_org(name: str = "Eden Capital") -> int:
+def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
         org = Organization(name=name, type=OrganizationType.fund_manager_firm)
@@ -213,7 +213,7 @@ class TestCreateInvitation:
         kwargs = hanko_email_mock.await_args.kwargs
         assert kwargs["email"] == "invitee@example.com"
         assert body["token"] in kwargs["accept_url"]
-        assert kwargs["organization_name"] == "Eden Capital"
+        assert kwargs["organization_name"] == "NewTaven Capital"
 
         # Row exists with the inviter recorded.
         db = SessionLocal()

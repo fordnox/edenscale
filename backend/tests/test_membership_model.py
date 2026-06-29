@@ -28,7 +28,7 @@ def setup_database():
 def _seed_user_and_org(
     *,
     email: str = "alice@example.com",
-    org_name: str = "Eden Capital",
+    org_name: str = "NewTaven Capital",
 ) -> tuple[int, int]:
     db = SessionLocal()
     try:

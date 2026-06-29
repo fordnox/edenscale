@@ -82,7 +82,7 @@ def _seed_user(
 
 
 def _seed_org(
-    name: str = "Eden Capital",
+    name: str = "NewTaven Capital",
     *,
     type_: OrganizationType = OrganizationType.fund_manager_firm,
     is_active: bool = True,

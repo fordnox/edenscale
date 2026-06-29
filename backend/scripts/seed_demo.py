@@ -582,12 +582,12 @@ def _seed_notification(
 def seed(db: Session) -> None:
     """Populate the database with a deterministic demo dataset."""
     # Organizations -------------------------------------------------------
-    eden = _get_or_create_organization(
+    newtaven = _get_or_create_organization(
         db,
-        name="Eden Capital Partners",
+        name="NewTaven Capital Partners",
         type=OrganizationType.fund_manager_firm,
-        legal_name="Eden Capital Partners LP",
-        website="https://eden.example.com",
+        legal_name="NewTaven Capital Partners LP",
+        website="https://newtaven.example.com",
         description="Mid-market growth equity and venture funds.",
     )
     northstar = _get_or_create_organization(
@@ -610,29 +610,29 @@ def seed(db: Session) -> None:
     # Users ---------------------------------------------------------------
     admin = _get_or_create_user(
         db,
-        email="admin@edenscale.demo",
+        email="admin@newtaven.demo",
         role=UserRole.admin,
         first_name="Alex",
         last_name="Taylor",
-        organization_id=eden.id,  # type: ignore[arg-type]
+        organization_id=newtaven.id,  # type: ignore[arg-type]
         title="Platform Administrator",
     )
     ava = _get_or_create_user(
         db,
-        email="ava.morgan@edenscale.demo",
+        email="ava.morgan@newtaven.demo",
         role=UserRole.fund_manager,
         first_name="Ava",
         last_name="Morgan",
-        organization_id=eden.id,  # type: ignore[arg-type]
+        organization_id=newtaven.id,  # type: ignore[arg-type]
         title="Managing Director",
     )
     ben = _get_or_create_user(
         db,
-        email="ben.shaw@edenscale.demo",
+        email="ben.shaw@newtaven.demo",
         role=UserRole.fund_manager,
         first_name="Ben",
         last_name="Shaw",
-        organization_id=eden.id,  # type: ignore[arg-type]
+        organization_id=newtaven.id,  # type: ignore[arg-type]
         title="Principal",
     )
     carla = _get_or_create_user(
@@ -676,14 +676,14 @@ def seed(db: Session) -> None:
     growth_group = _get_or_create_fund_group(
         db,
         name="Growth Equity",
-        organization_id=eden.id,  # type: ignore[arg-type]
+        organization_id=newtaven.id,  # type: ignore[arg-type]
         description="Late-stage growth equity vehicles.",
         created_by_user_id=ava.id,  # type: ignore[arg-type]
     )
     venture_group = _get_or_create_fund_group(
         db,
         name="Venture",
-        organization_id=eden.id,  # type: ignore[arg-type]
+        organization_id=newtaven.id,  # type: ignore[arg-type]
         description="Early- to growth-stage venture vehicles.",
         created_by_user_id=ava.id,  # type: ignore[arg-type]
     )
@@ -691,8 +691,8 @@ def seed(db: Session) -> None:
     # Funds ---------------------------------------------------------------
     growth_i = _get_or_create_fund(
         db,
-        name="Eden Growth Fund I",
-        organization_id=eden.id,  # type: ignore[arg-type]
+        name="NewTaven Growth Fund I",
+        organization_id=newtaven.id,  # type: ignore[arg-type]
         fund_group_id=growth_group.id,  # type: ignore[arg-type]
         vintage_year=2021,
         target_size=Decimal("250000000"),
@@ -702,8 +702,8 @@ def seed(db: Session) -> None:
     )
     growth_ii = _get_or_create_fund(
         db,
-        name="Eden Growth Fund II",
-        organization_id=eden.id,  # type: ignore[arg-type]
+        name="NewTaven Growth Fund II",
+        organization_id=newtaven.id,  # type: ignore[arg-type]
         fund_group_id=growth_group.id,  # type: ignore[arg-type]
         vintage_year=2024,
         target_size=Decimal("400000000"),
@@ -713,8 +713,8 @@ def seed(db: Session) -> None:
     )
     venture_i = _get_or_create_fund(
         db,
-        name="Eden Venture Fund I",
-        organization_id=eden.id,  # type: ignore[arg-type]
+        name="NewTaven Venture Fund I",
+        organization_id=newtaven.id,  # type: ignore[arg-type]
         fund_group_id=venture_group.id,  # type: ignore[arg-type]
         vintage_year=2022,
         target_size=Decimal("150000000"),
@@ -724,8 +724,8 @@ def seed(db: Session) -> None:
     )
     venture_ii = _get_or_create_fund(
         db,
-        name="Eden Venture Fund II",
-        organization_id=eden.id,  # type: ignore[arg-type]
+        name="NewTaven Venture Fund II",
+        organization_id=newtaven.id,  # type: ignore[arg-type]
         fund_group_id=venture_group.id,  # type: ignore[arg-type]
         vintage_year=2025,
         target_size=Decimal("200000000"),
@@ -844,10 +844,10 @@ def seed(db: Session) -> None:
     # Documents -----------------------------------------------------------
     _seed_document(
         db,
-        title="Eden Growth Fund I — LPA",
+        title="NewTaven Growth Fund I — LPA",
         file_name="growth-i-lpa.pdf",
         document_type=DocumentType.legal,
-        organization_id=eden.id,  # type: ignore[arg-type]
+        organization_id=newtaven.id,  # type: ignore[arg-type]
         fund_id=growth_i.id,  # type: ignore[arg-type]
         investor_id=None,
         uploaded_by_user_id=ava.id,  # type: ignore[arg-type]
@@ -855,7 +855,7 @@ def seed(db: Session) -> None:
     )
     _seed_document(
         db,
-        title="Eden Growth Fund I — Q4 2025 Report",
+        title="NewTaven Growth Fund I — Q4 2025 Report",
         file_name="growth-i-q4-2025.pdf",
         document_type=DocumentType.report,
         organization_id=None,
@@ -888,7 +888,7 @@ def seed(db: Session) -> None:
     )
     _seed_document(
         db,
-        title="Eden Growth Fund II — Audited Financials",
+        title="NewTaven Growth Fund II — Audited Financials",
         file_name="growth-ii-audit-2025.pdf",
         document_type=DocumentType.financial,
         organization_id=None,
@@ -922,7 +922,7 @@ def seed(db: Session) -> None:
         db,
         fund=growth_ii,
         subject="Fund II Final Close Notice",
-        body="We're pleased to announce the final close of Eden Growth Fund II "
+        body="We're pleased to announce the final close of NewTaven Growth Fund II "
         "at $400M. Subscription documents have been countersigned.",
         sender=ben,
         send=True,
@@ -1024,7 +1024,7 @@ def seed(db: Session) -> None:
         db,
         user=carla,
         title="New capital call: Growth I CC#2",
-        message="A capital call for Eden Growth Fund I is due in 15 days.",
+        message="A capital call for NewTaven Growth Fund I is due in 15 days.",
         related_type="capital_call",
         related_id=None,
         status=NotificationStatus.unread,
@@ -1033,7 +1033,7 @@ def seed(db: Session) -> None:
         db,
         user=david,
         title="New distribution: Growth I Q4 2025",
-        message="A distribution from Eden Growth Fund I has been paid.",
+        message="A distribution from NewTaven Growth Fund I has been paid.",
         related_type="distribution",
         related_id=None,
         status=NotificationStatus.unread,
@@ -1050,7 +1050,7 @@ def seed(db: Session) -> None:
     _seed_notification(
         db,
         user=frank,
-        title="Welcome to EdenScale",
+        title="Welcome to NewTaven",
         message="Your investor portal access is ready — explore your commitments.",
         related_type=None,
         related_id=None,
@@ -1105,9 +1105,9 @@ def main() -> None:
         print("Demo dataset seeded.")
         print(
             "Sign-in emails (claim them via Hanko on first login):\n"
-            "  admin                : admin@edenscale.demo\n"
-            "  fund_manager (Eden)  : ava.morgan@edenscale.demo\n"
-            "  fund_manager (Eden)  : ben.shaw@edenscale.demo\n"
+            "  admin                : admin@newtaven.demo\n"
+            "  fund_manager (NewTaven)  : ava.morgan@newtaven.demo\n"
+            "  fund_manager (NewTaven)  : ben.shaw@newtaven.demo\n"
             "  lp (Northstar)       : carla.diaz@northstar.demo\n"
             "  lp (Northstar)       : david.kim@northstar.demo\n"
             "  lp (Atlas)           : elena.park@atlas.demo\n"

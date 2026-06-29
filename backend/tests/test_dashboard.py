@@ -48,7 +48,7 @@ def _create_org_user(
     subject_id: str = "hanko-1",
     role: UserRole = UserRole.fund_manager,
     *,
-    org_name: str = "Eden Capital",
+    org_name: str = "NewTaven Capital",
 ) -> tuple[int, int]:
     """Insert one Organization + linked User + matching membership."""
     db = SessionLocal()
@@ -183,7 +183,7 @@ class TestDashboardOverview:
         try:
             active_fund = Fund(
                 organization_id=org_id,
-                name="Eden Growth I",
+                name="NewTaven Growth I",
                 vintage_year=2024,
                 strategy="Growth",
                 currency_code="USD",
@@ -191,7 +191,7 @@ class TestDashboardOverview:
             )
             closed_fund = Fund(
                 organization_id=org_id,
-                name="Eden Legacy",
+                name="NewTaven Legacy",
                 vintage_year=2018,
                 strategy="Buyout",
                 currency_code="USD",
@@ -312,11 +312,11 @@ class TestDashboardOverview:
 
         assert len(data["recent_funds"]) == 2
         fund_names = {f["name"] for f in data["recent_funds"]}
-        assert fund_names == {"Eden Growth I", "Eden Legacy"}
+        assert fund_names == {"NewTaven Growth I", "NewTaven Legacy"}
         assert "Foreign Fund" not in fund_names
 
         active_summary = next(
-            f for f in data["recent_funds"] if f["name"] == "Eden Growth I"
+            f for f in data["recent_funds"] if f["name"] == "NewTaven Growth I"
         )
         assert Decimal(active_summary["committed_amount"]) == Decimal("1000000.00")
         assert Decimal(active_summary["called_amount"]) == Decimal("250000.00")
@@ -324,7 +324,7 @@ class TestDashboardOverview:
         assert len(data["upcoming_capital_calls"]) == 1
         upcoming = data["upcoming_capital_calls"][0]
         assert upcoming["title"] == "Call 1"
-        assert upcoming["fund_name"] == "Eden Growth I"
+        assert upcoming["fund_name"] == "NewTaven Growth I"
         assert upcoming["status"] == "scheduled"
 
     def test_admin_with_multi_org_memberships_scopes_per_active_org(
@@ -555,7 +555,7 @@ class TestDashboardActivityAggregates:
         try:
             fund = Fund(
                 organization_id=org_id,
-                name="Eden Fund",
+                name="NewTaven Fund",
                 currency_code="USD",
                 status=FundStatus.active,
             )

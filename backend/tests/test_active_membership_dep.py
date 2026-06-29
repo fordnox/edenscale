@@ -36,7 +36,7 @@ def db():
         session.close()
 
 
-def _seed_org(db, name: str = "Eden Capital") -> Organization:
+def _seed_org(db, name: str = "NewTaven Capital") -> Organization:
     org = Organization(name=name, type=OrganizationType.fund_manager_firm)
     db.add(org)
     db.commit()

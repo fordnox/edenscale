@@ -46,7 +46,7 @@ def override_user():
     app.dependency_overrides.clear()
 
 
-def _seed_org(name: str = "Eden Capital") -> int:
+def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
         org = Organization(name=name, type=OrganizationType.fund_manager_firm)
@@ -110,7 +110,7 @@ def _seed_investor(
         db.close()
 
 
-def _seed_fund(organization_id: int, *, name: str = "Eden Fund I") -> int:
+def _seed_fund(organization_id: int, *, name: str = "NewTaven Fund I") -> int:
     db = SessionLocal()
     try:
         fund = Fund(organization_id=organization_id, name=name)
@@ -192,7 +192,7 @@ class TestCreateInvestor:
         assert data["fund_count"] == 0
 
     def test_fund_manager_create_payload_org_is_overridden(self, client, override_user):
-        own_org = _seed_org("Eden")
+        own_org = _seed_org("NewTaven")
         other_org = _seed_org("Other")
         _seed_user(
             "hanko-fm",
