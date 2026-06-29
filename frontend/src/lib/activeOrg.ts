@@ -1,4 +1,4 @@
-const STORAGE_KEY = "edenscale.active_org_id"
+const STORAGE_KEY = "newtaven.active_org_id"
 
 export function getActiveOrganizationId(): number | null {
   try {

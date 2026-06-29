@@ -91,7 +91,7 @@ function SidebarBody({ onOpenSearch, onCloseSheet }: SidebarBodyProps) {
         </span>
         <div className="flex flex-col leading-tight">
           <span className="font-sans text-[16px] font-semibold tracking-[-0.04em] text-ink-900">
-            EdenScale
+            NewTaven
           </span>
           <span className="font-sans text-[11px] tracking-[0.04em] text-ink-500">
             LP portal · {tagline}

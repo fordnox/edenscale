@@ -1,5 +1,5 @@
 /**
- * Formatters for EdenScale data screens.
+ * Formatters for NewTaven data screens.
  * Numbers are tabular by default; currency uses code-style formatting.
  */
 

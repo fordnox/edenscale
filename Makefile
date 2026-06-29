@@ -23,6 +23,12 @@ openapi:  ## Generate OpenAPI schema from FastAPI app
 	cd backend && uv run python -c "import app.main; import json; print(json.dumps(app.main.app.openapi()))" > ./openapi.json
 	cd frontend && pnpm run generate-client
 
+db-init: ## Create all database tables from SQLAlchemy models (dev only — use migrations in prod)
+	cd backend && uv run python -c "from app import models; from app.core.database import init_db; init_db(); print('✓ tables created')"
+
+db-seed: ## Seed the database with a demo dataset (idempotent)
+	cd backend && uv run python -m scripts.seed_demo
+
 migration: ## Create a new migration
 	cd backend && read -p "Enter migration name: " name && uv run alembic revision -m "$$name" --autogenerate
 
@@ -31,9 +37,6 @@ upgrade: ## Apply migrations
 
 downgrade: ## Apply downgrade migrations
 	cd backend && uv run alembic downgrade -1
-
-seed: ## Seed the database with a demo dataset (idempotent)
-	cd backend && uv run python -m scripts.seed_demo
 
 start-frontend: ## Start the development frontend
 	cd frontend && npm run dev

@@ -10,7 +10,7 @@ export interface Config {
 }
 
 export const config: Config = {
-  VITE_APP_TITLE: import.meta.env.VITE_APP_TITLE || "Fordnox",
+  VITE_APP_TITLE: import.meta.env.VITE_APP_TITLE || "NewTaven",
   VITE_APP_SLOGAN: import.meta.env.VITE_APP_SLOGAN || "AI template",
   VITE_APP_EMAIL: import.meta.env.VITE_APP_EMAIL || "fordnox@gmail.com",
   VITE_APP_URL: import.meta.env.VITE_APP_URL || "https://example.com",

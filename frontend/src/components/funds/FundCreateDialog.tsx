@@ -114,7 +114,7 @@ export function FundCreateDialog({ open, onOpenChange }: FundCreateDialogProps) 
               id="fund-name"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="EdenScale Capital VI"
+              placeholder="NewTaven Capital VI"
               autoFocus
               required
             />
@@ -125,7 +125,7 @@ export function FundCreateDialog({ open, onOpenChange }: FundCreateDialogProps) 
               id="fund-legal-name"
               value={legalName}
               onChange={(event) => setLegalName(event.target.value)}
-              placeholder="EdenScale Capital VI, L.P."
+              placeholder="NewTaven Capital VI, L.P."
             />
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

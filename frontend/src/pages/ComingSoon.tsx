@@ -8,7 +8,7 @@ export function ComingSoon({ page }: { page: string }) {
       <PageHero
         eyebrow={page}
         title={`${page} is on its way.`}
-        description="This area of EdenScale is being prepared. Check back soon — the data and workflows for this section are landing in a future release."
+        description="This area of NewTaven is being prepared. Check back soon — the data and workflows for this section are landing in a future release."
       />
       <div className="px-8 pb-16">
         <Card>

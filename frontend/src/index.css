@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 
 /* ============================================================
-   EdenScale webfonts — self-hosted from /public/fonts
+   NewTaven webfonts — self-hosted from /public/fonts
    ============================================================ */
 
 @font-face {
@@ -63,7 +63,7 @@
 }
 
 /* ============================================================
-   EdenScale tokens — exposed both as CSS vars and Tailwind theme
+   NewTaven tokens — exposed both as CSS vars and Tailwind theme
    ============================================================ */
 
 :root {
@@ -220,7 +220,7 @@
 }
 
 /* ============================================================
-   EdenScale semantic typography classes
+   NewTaven semantic typography classes
    ============================================================ */
 
 @layer components {

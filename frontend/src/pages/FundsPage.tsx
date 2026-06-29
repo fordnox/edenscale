@@ -55,7 +55,7 @@ export default function FundsPage() {
       <PageHero
         eyebrow="Programmes"
         title="Funds and vintages."
-        description="A history of EdenScale capital. Each line is a fund, each fund a small list of holdings."
+        description="A history of NewTaven capital. Each line is a fund, each fund a small list of holdings."
         actions={
           <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
             New fund
