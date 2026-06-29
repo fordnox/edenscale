@@ -1,8 +1,8 @@
-# EdenScale Design System
+# NewTaven Design System
 
 > A measured, generational visual language for a private investment group.
 
-EdenScale is a private equity & alternative investments group serving a selective community of long-term investors. The design system reflects that audience: deliberate, unhurried, institutional, and quietly distinctive. It speaks the language of stewardship — not growth-hacking.
+NewTaven is a private equity & alternative investments group serving a selective community of long-term investors. The design system reflects that audience: deliberate, unhurried, institutional, and quietly distinctive. It speaks the language of stewardship — not growth-hacking.
 
 ## Index
 
@@ -20,7 +20,7 @@ EdenScale is a private equity & alternative investments group serving a selectiv
 
 ## Brand context
 
-**EdenScale** is positioned as a private investment group focused on:
+**NewTaven** is positioned as a private investment group focused on:
 
 - Private equity (control and minority positions in established mid-market businesses)
 - Real assets (real estate, infrastructure, natural resources)
@@ -28,24 +28,17 @@ EdenScale is a private equity & alternative investments group serving a selectiv
 
 The audience is **limited partners, family offices, and accredited investors** — sophisticated, time-poor, and skeptical of marketing language. They expect substance over polish.
 
-The name carries two threads we lean into visually:
-
-- **Eden** — cultivated abundance, stewardship, patience, organic growth
-- **Scale** — balance, measurement, weight, capital allocation
-
-The wordmark mark literalizes this: a balance scale formed from a stylized stem, with subtle leaf flourishes at the top.
-
 ### Sources & references
 
-- **No external design system was provided.** This system was designed from first principles for EdenScale based on the brief: *original design system for a private equity / alternative investments group.*
+- **No external design system was provided.** This system was designed from first principles for NewTaven based on the brief: *original design system for a private equity / alternative investments group.*
 - The user's GitHub repo `fordnox/KUB-8BC` was attached but was empty (9-byte README), so it provided no codebase context.
-- Fonts substituted from Google Fonts (Cormorant Garamond, Inter Tight). **If EdenScale licenses brand-specific typefaces** (e.g. Söhne, Tiempos, GT Sectra, Untitled Sans), please supply them and I will swap.
+- Fonts substituted from Google Fonts (Cormorant Garamond, Inter Tight). **If NewTaven licenses brand-specific typefaces** (e.g. Söhne, Tiempos, GT Sectra, Untitled Sans), please supply them and I will swap.
 
 ---
 
 ## Content fundamentals
 
-EdenScale's voice is **plain, considered, and quietly confident**. It assumes the reader is intelligent and busy. It avoids superlatives, marketing puffery, and any hint of FOMO.
+NewTaven's voice is **plain, considered, and quietly confident**. It assumes the reader is intelligent and busy. It avoids superlatives, marketing puffery, and any hint of FOMO.
 
 ### Voice principles
 
@@ -59,9 +52,9 @@ EdenScale's voice is **plain, considered, and quietly confident**. It assumes th
 
 ### Voice — pronouns
 
-- **"We"** for the firm. Always plural — EdenScale is a group of partners, never a single voice.
+- **"We"** for the firm. Always plural — NewTaven is a group of partners, never a single voice.
 - **"You"** for the reader, used sparingly — only in direct contexts (forms, login, an LP portal). Marketing copy mostly stays in the third-person ("Limited partners can…").
-- Never "I." Never "us at EdenScale" — just "we."
+- Never "I." Never "us at NewTaven" — just "we."
 
 ### Tone — by surface
 
@@ -164,7 +157,7 @@ Restrained. Institutional things don't bounce.
 
 ### Borders & rules
 
-The hairline rule is the workhorse of EdenScale.
+The hairline rule is the workhorse of NewTaven.
 
 - **Default rule:** 1px, `rgba(26, 26, 24, 0.10)` (`--border-hairline`). Used between data rows, around cards, separating sections.
 - **Strong rule:** 1px, `rgba(26, 26, 24, 0.18)` (`--border-default`). Used at section breaks.
@@ -221,7 +214,7 @@ Used only:
 
 ## Iconography
 
-EdenScale uses **Lucide** as its icon system. Icons are line, 1.5px stroke, 24×24 default with a 1.25 stroke ratio — geometric, restrained, modern. Lucide pairs cleanly with Inter Tight without competing with the serif display.
+NewTaven uses **Lucide** as its icon system. Icons are line, 1.5px stroke, 24×24 default with a 1.25 stroke ratio — geometric, restrained, modern. Lucide pairs cleanly with Inter Tight without competing with the serif display.
 
 ### Loaded from CDN
 
@@ -242,11 +235,11 @@ Or as React: `lucide-react`.
 
 ### Custom marks
 
-The only custom-drawn iconography is the **EdenScale balance-scale mark** (`assets/edenscale-mark.svg`), which is reserved for the logo and favicon use. It is not part of the general icon set.
+The only custom-drawn iconography is the **NewTaven balance-scale mark** (`assets/newtaven-mark.svg`), which is reserved for the logo and favicon use. It is not part of the general icon set.
 
 ### Substitution note
 
-If EdenScale licenses a custom icon set (e.g. a bespoke commission, or a system like Phosphor / Geist Icons / Untitled Icons), swap `lucide` for that and update this section. The 1.5px / monoline / unfilled rules carry over regardless of provider.
+If NewTaven licenses a custom icon set (e.g. a bespoke commission, or a system like Phosphor / Geist Icons / Untitled Icons), swap `lucide` for that and update this section. The 1.5px / monoline / unfilled rules carry over regardless of provider.
 
 ---
 
@@ -257,7 +250,7 @@ If EdenScale licenses a custom icon set (e.g. a bespoke commission, or a system 
 <body class="es-page">
   <div class="es-eyebrow">Approach</div>
   <h1 class="es-display-l">Patient capital, deployed deliberately.</h1>
-  <p class="es-body-l">EdenScale invests on a generational horizon …</p>
+  <p class="es-body-l">NewTaven invests on a generational horizon …</p>
 </body>
 ```
 

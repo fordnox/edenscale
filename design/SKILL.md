@@ -1,10 +1,10 @@
 ---
-name: edenscale-design
-description: Use this skill to generate well-branded interfaces and assets for EdenScale, either for production or throwaway prototypes/mocks/etc. Contains essential design guidelines, colors, type, fonts, assets, and UI kit components for prototyping.
+name: newtaven-design
+description: Use this skill to generate well-branded interfaces and assets for NewTaven, either for production or throwaway prototypes/mocks/etc. Contains essential design guidelines, colors, type, fonts, assets, and UI kit components for prototyping.
 user-invocable: true
 ---
 
-# EdenScale design skill
+# NewTaven design skill
 
 Read the `README.md` file within this skill, and explore the other available files. The README is the source of truth for brand voice, visual foundations, and content rules.
 

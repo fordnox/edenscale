@@ -14,7 +14,7 @@ function Footer() {
                 <path fill="currentColor" fillRule="evenodd" clipRule="evenodd"
                   d="M32 4 C 18 12, 10 24, 10 36 C 10 49, 20 60, 32 60 C 44 60, 54 49, 54 36 C 54 24, 46 12, 32 4 Z M32 50 L 32 30 L 26 30 L 32 22 L 38 30 L 32 30 L 32 50 Z"/>
               </svg>
-              <span style={footerStyles.wordmark}>EdenScale</span>
+              <span style={footerStyles.wordmark}>NewTaven</span>
             </div>
             <p style={footerStyles.address}>
               Gediminas pr. 24<br/>
@@ -33,13 +33,13 @@ function Footer() {
         <hr style={footerStyles.rule}/>
         <div style={footerStyles.bottom}>
           <div style={footerStyles.disclosure}>
-            EdenScale Partners SCA, SICAV-RAIF is a Luxembourg-domiciled investment vehicle.
+            NewTaven Partners SCA, SICAV-RAIF is a Luxembourg-domiciled investment vehicle.
             This material is provided for informational purposes only and does not constitute
             an offer to sell or a solicitation to buy any security. Past performance is not
             indicative of future results.
           </div>
           <div style={footerStyles.copy}>
-            © 2009–2025 EdenScale Partners
+            © 2009–2025 NewTaven Partners
           </div>
         </div>
       </div>

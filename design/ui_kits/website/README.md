@@ -1,6 +1,6 @@
-# EdenScale — Website UI Kit
+# NewTaven — Website UI Kit
 
-Marketing-website surface for EdenScale: a private investment group's public presence. The kit covers a header, hero, an "approach" section, a portfolio strip, a quarterly-letter strip, a CTA card, and a footer — composed into a single demonstration page (`index.html`).
+Marketing-website surface for NewTaven: a private investment group's public presence. The kit covers a header, hero, an "approach" section, a portfolio strip, a quarterly-letter strip, a CTA card, and a footer — composed into a single demonstration page (`index.html`).
 
 ## Files
 

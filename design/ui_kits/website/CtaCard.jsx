@@ -7,7 +7,7 @@ function CtaCard() {
           A small number of subscriptions open each year.
         </h2>
         <p style={ctaStyles.body}>
-          EdenScale admits new limited partners by referral, and only when an existing
+          NewTaven admits new limited partners by referral, and only when an existing
           allocation closes. If your circumstances are aligned, we would welcome the
           conversation.
         </p>

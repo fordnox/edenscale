@@ -17,7 +17,7 @@ function Hero() {
         </h1>
         
         <p style={heroStyles.lede}>
-          EdenScale is a private investment group. We hold fewer companies, on longer
+          NewTaven is a private investment group. We hold fewer companies, on longer
           horizons, with the people who built them.
         </p>
         <div style={heroStyles.actions}>

@@ -3,12 +3,12 @@ function Header() {
   return (
     <header style={headerStyles.bar}>
       <div style={headerStyles.inner}>
-        <a href="#" style={headerStyles.brand} aria-label="EdenScale home">
+        <a href="#" style={headerStyles.brand} aria-label="NewTaven home">
           <svg width="26" height="26" viewBox="0 0 64 64" fill="none" style={{flexShrink:0}}>
             <path fill="currentColor" fillRule="evenodd" clipRule="evenodd"
               d="M32 4 C 18 12, 10 24, 10 36 C 10 49, 20 60, 32 60 C 44 60, 54 49, 54 36 C 54 24, 46 12, 32 4 Z M32 50 L 32 30 L 26 30 L 32 22 L 38 30 L 32 30 L 32 50 Z"/>
           </svg>
-          <span style={headerStyles.wordmark}>EdenScale</span>
+          <span style={headerStyles.wordmark}>NewTaven</span>
         </a>
         <nav style={headerStyles.nav}>
           {links.map(l => <a key={l} href="#" style={headerStyles.link}>{l}</a>)}
