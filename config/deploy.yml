@@ -1,0 +1,79 @@
+# Kamal deployment config for the FastAPI backend.
+# Docs: https://kamal-deploy.org
+#
+# This config does NOT build images — GitHub Actions builds and pushes them.
+# Deploy a fixed tag with:
+#   kamal deploy --skip-push --version=latest
+# which pulls ghcr.io/fordnox/speed:latest and boots it with
+# zero downtime.
+
+# Name of your application. Used to name containers/accessories, e.g. "gtlane-redis".
+service: newtaven
+
+# Image repository (without the registry host — that comes from `registry.server`).
+# Resolves to ghcr.io/fordnox/edenscale:<version> (default version: latest).
+image: fordnox/edenscale
+
+# Deploy the web app + the arq worker from the SAME image, different commands.
+servers:
+  web:
+    hosts:
+      - 46.224.143.162        # <-- replace with your server's IP / hostname
+  worker:
+    hosts:
+      - 46.224.143.162        # <-- can be the same host or a separate one
+    cmd: /app/.venv/bin/arq app.worker.WorkerSettings
+    proxy: false              # worker is background-only, not exposed via the proxy
+
+# kamal-proxy terminates TLS (auto Let's Encrypt) and routes to the container.
+proxy:
+  ssl: true
+  host: api.newtaven.com      # <-- DNS A-record must point at YOUR_SERVER_IP
+  app_port: 80                # the Dockerfile's `fastapi run --port 80`
+  healthcheck:
+    path: /                   # GET / returns 200 {"status": "running"}
+    interval: 3
+    timeout: 30
+
+# Container registry. GitHub Container Registry (ghcr.io).
+registry:
+  server: ghcr.io
+  username: fordnox
+  password:
+    - KAMAL_REGISTRY_PASSWORD   # a GitHub PAT with read:packages (resolved from .kamal/secrets)
+
+# `kamal build push` builds from ./backend (where the Dockerfile's COPY paths
+# resolve) and pushes to ghcr. `arch: amd64` cross-builds for the Linux server.
+builder:
+  arch: amd64
+  context: ./apps/backend
+  dockerfile: ./apps/backend/Dockerfile
+
+# Environment passed into BOTH web and worker containers.
+env:
+  clear:
+    # Accessory containers below share the "kamal" docker network and are
+    # reachable by name: <service>-<accessory>.
+    REDIS_URL: redis://newtaven-redis:6379
+  secret:
+    - APP_DOMAIN
+    - APP_DATA_PATH
+    - APP_DATABASE_DSN
+    - CORS_ALLOW_ORIGINS
+    - HANKO_API_URL
+    - HANKO_AUDIENCE
+    - GENERATE_OPENAPI_DOCS
+
+# Persisted local services on the server (managed by Kamal, not the proxy).
+accessories:
+  redis:
+    image: redis:7-alpine
+    host: 46.224.143.162
+    port: "127.0.0.1:6379:6379"
+    cmd: redis-server --appendonly yes
+    directories:
+      - redis-data:/data
+
+# Run alembic migrations inside a fresh copy of the just-deployed image,
+# after the new containers are healthy.
+#   kamal app exec --reuse "/app/.venv/bin/alembic upgrade head"

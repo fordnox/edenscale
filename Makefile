@@ -50,6 +50,21 @@ start-worker: ## Start arq worker
 test:
 	cd apps/backend && uv run pytest -v 2>&1
 
+kamal-check: ## Verify op + kamal are installed and signed in (used by build/deploy)
+	@command -v op >/dev/null 2>&1 || { echo "🚨 1Password CLI (op) not found — https://developer.1password.com/docs/cli/"; exit 1; }
+	@command -v kamal >/dev/null 2>&1 || { echo "🚨 Kamal not found — run 'gem install kamal'"; exit 1; }
+	@op whoami >/dev/null 2>&1 || { echo "🚨 Not signed in to 1Password — run 'op signin' (or export OP_SERVICE_ACCOUNT_TOKEN)"; exit 1; }
+
+kamal-build: kamal-check ## Build backend image with Kamal and push to ghcr (secrets via 1Password/op)
+	kamal build push
+
+kamal-deploy: kamal-check ## Deploy backend with Kamal — pulls fixed :latest image, no build (secrets via 1Password/op)
+	kamal deploy --skip-push --version=latest
+	kamal app exec --reuse --version=latest "/app/.venv/bin/alembic upgrade head"
+
+kamal-logs: kamal-check ## Tail logs
+	kamal app logs -f
+
 .PHONY: help
 .DEFAULT_GOAL := help
 
