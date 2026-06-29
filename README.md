@@ -18,3 +18,13 @@ Opinionated web project template for building projects with AI.
 1. Test must pass: run `make test` and fix any errors.
 2. Run `make lint` to check code style.
 3. Run `make openapi` to generate new OpenAPI schema.
+
+# Competitors
+
+- Fundrbird
+- HC Global
+- Carta
+- Fundpanel (by Aduro)
+- DealCloud
+- Affinity
+- Juniper Square
