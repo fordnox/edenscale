@@ -2,12 +2,12 @@ import createClient, { Middleware } from "openapi-fetch"
 import type { paths } from "@/lib/schema"
 import { config } from "@/lib/config"
 import { getActiveOrganizationId } from "@/lib/activeOrg"
+import { getSessionToken } from "@/lib/neonAuth"
 import { toast } from "sonner"
 
 const myMiddleware: Middleware = {
   async onRequest({ request }) {
-    const { getSessionToken } = await import("@/lib/hanko")
-    const token = getSessionToken()
+    const token = await getSessionToken()
     if (token) {
       request.headers.set("Authorization", `Bearer ${token}`)
     }

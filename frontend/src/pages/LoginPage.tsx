@@ -1,13 +1,12 @@
 import { useEffect, useMemo } from "react"
 import { useNavigate, useSearchParams, Link } from "react-router-dom"
 import { Helmet } from "react-helmet-async"
-import { register } from "@teamhanko/hanko-elements"
+import { AuthView } from "@neondatabase/auth-ui"
 import { ArrowLeft, Sparkles, Zap, Shield, Code } from "lucide-react"
 import { Card, CardSection } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
 import { config } from "@/lib/config"
-import { hanko } from "@/lib/hanko"
 
 function safeNextPath(raw: string | null): string {
   if (!raw) return "/"
@@ -27,23 +26,10 @@ export default function LoginPage() {
   )
 
   useEffect(() => {
-    register(config.VITE_HANKO_API_URL).catch(console.error)
-  }, [])
-
-  useEffect(() => {
     if (isAuthenticated) {
       navigate(nextPath, { replace: true })
     }
   }, [isAuthenticated, navigate, nextPath])
-
-  useEffect(() => {
-    const unsub = hanko.onSessionCreated(() => {
-      navigate(nextPath, { replace: true })
-    })
-    return () => {
-      unsub()
-    }
-  }, [navigate, nextPath])
 
   return (
     <>
@@ -174,7 +160,7 @@ export default function LoginPage() {
               {/* Login card */}
               <Card className="shadow-lg">
                 <CardSection>
-                  <hanko-auth />
+                  <AuthView path="sign-in" />
                 </CardSection>
               </Card>
 

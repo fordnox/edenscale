@@ -5,7 +5,7 @@ export interface Config {
   VITE_APP_URL: string;
   VITE_API_URL: string;
   VITE_GITHUB_URL: string;
-  VITE_HANKO_API_URL: string;
+  VITE_NEON_AUTH_URL: string;
   VITE_DEV_STORAGE_TOKEN: string;
 }
 
@@ -17,6 +17,6 @@ export const config: Config = {
   VITE_API_URL: import.meta.env.VITE_API_URL || "http://localhost:8000",
   VITE_GITHUB_URL:
     import.meta.env.VITE_GITHUB_URL || "https://github.com/fordnox",
-  VITE_HANKO_API_URL: import.meta.env.VITE_HANKO_API_URL || "",
+  VITE_NEON_AUTH_URL: import.meta.env.VITE_NEON_AUTH_URL || "",
   VITE_DEV_STORAGE_TOKEN: import.meta.env.VITE_DEV_STORAGE_TOKEN || "dev-storage",
 };

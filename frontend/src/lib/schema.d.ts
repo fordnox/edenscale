@@ -2516,8 +2516,8 @@ export interface components {
             phone?: string | null;
             /** Title */
             title?: string | null;
-            /** Hanko Subject Id */
-            hanko_subject_id?: string | null;
+            /** Auth Subject Id */
+            auth_subject_id?: string | null;
         };
         /** UserRead */
         UserRead: {
@@ -2540,8 +2540,8 @@ export interface components {
             is_active: boolean;
             /** Last Login At */
             last_login_at: string | null;
-            /** Hanko Subject Id */
-            hanko_subject_id: string | null;
+            /** Auth Subject Id */
+            auth_subject_id: string | null;
             /** Created At */
             created_at: string | null;
             /** Updated At */
