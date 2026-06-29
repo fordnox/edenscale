@@ -47,8 +47,8 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: ./apps/backend
+          file: ./apps/backend/Dockerfile
           platforms: linux/amd64
           push: true
           # Tag with the commit SHA so `kamal deploy --version` matches exactly,
