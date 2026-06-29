@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 All commands run from the repo root via the `Makefile`:
 
-- `make sync` — install deps (`uv sync` in `backend/`, `pnpm i` in `frontend/`)
+- `make sync` — install deps (`uv sync` in `apps/backend/`, `pnpm i` in `apps/frontend/`)
 - `make start-backend` — FastAPI dev server on `localhost:8000`
 - `make start-frontend` — Vite dev server on `0.0.0.0:3000`
 - `make start-worker` — run the arq worker (`app.worker.WorkerSettings`)
@@ -16,9 +16,9 @@ All commands run from the repo root via the `Makefile`:
 - `make migration` — prompts for a name and runs `alembic revision --autogenerate`
 - `make upgrade` / `make downgrade` — apply / revert one alembic migration
 
-Run a single backend test: `cd backend && uv run pytest tests/test_api.py::test_name -v`
+Run a single backend test: `cd apps/backend && uv run pytest tests/test_api.py::test_name -v`
 
-Frontend type-check only: `cd frontend && pnpm run lint` (`tsc --noEmit`).
+Frontend type-check only: `cd apps/frontend && pnpm run lint` (`tsc --noEmit`).
 
 ### Pre-commit rules (from README.md)
 1. `make test` must pass.
@@ -29,7 +29,7 @@ Frontend type-check only: `cd frontend && pnpm run lint` (`tsc --noEmit`).
 
 Two-service monorepo: Python FastAPI backend under `backend/` and a React/Vite frontend under `frontend/`. They are wired together through a generated OpenAPI client — the frontend never hand-writes API types.
 
-### Backend (`backend/app/`)
+### Backend (`apps/backend/app/`)
 
 - **Entrypoint**: `app/main.py` creates the `FastAPI` app, configures CORS (allows `http://localhost:3000` and `https://{APP_DOMAIN}`), and mounts routers under `/dashboard` and `/users`. Both router groups are protected by `Depends(get_current_user)` at the `include_router` level — individual routes don't re-declare auth.
 - **Layered structure**: `routers/` → `repositories/` → `models/` with `schemas/` (Pydantic) as the request/response contract. Routers take a `Session` via `Depends(get_db)` and instantiate a repository; business logic lives in repositories/services, not in route handlers.
@@ -38,7 +38,7 @@ Two-service monorepo: Python FastAPI backend under `backend/` and a React/Vite f
 - **Auth**: `app/core/auth.py` validates Hanko-issued JWTs using a cached `PyJWKClient` against `{HANKO_API_URL}/.well-known/jwks.json`, algorithm `RS256`, audience = `HANKO_API_URL`. `get_current_user` returns the decoded payload dict; there is no local user session.
 - **Background jobs**: arq worker defined in `app/worker.py` (`WorkerSettings`); the queue name is `settings.APP_DOMAIN`. Enqueue helpers live in `app/tasks.py` — `enqueue_task` opens and closes a fresh pool per call. Register new task functions in `WorkerSettings.functions`.
 
-### Frontend (`frontend/src/`)
+### Frontend (`apps/frontend/src/`)
 
 - **Stack**: React 18 + Vite 7 + TypeScript, Tailwind CSS v4 (via `@tailwindcss/vite`), React Router v6, TanStack Query, Radix UI primitives, shadcn-style components in `components/ui/`.
 - **Routing**: `App.tsx` defines routes. `MainLayout` (header + footer) wraps public/protected pages; `/login` renders standalone. `ProtectedLayout` exists for auth-gated sections.

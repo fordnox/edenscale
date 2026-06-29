@@ -5,50 +5,50 @@ export MY_UID := 1000
 export MY_GID := 1000
 
 sync: ## npm install and uv sync
-	cd backend && uv sync
-	cd frontend && pnpm i
+	cd apps/backend && uv sync
+	cd apps/frontend && pnpm i
 
 build: ## Build backend and frontend Docker images
 	@echo "Building backend Docker image..."
-	docker build -f backend/Dockerfile --tag backend:latest backend
+	docker build -f apps/backend/Dockerfile --tag backend:latest apps/backend
 
 lint: ## Run linters
-	@cd backend && uv run python -c "from app import *" || (echo '🚨 import failed, this means you introduced unprotected imports! 🚨'; exit 1)
-	@cd backend && uv run ruff check . --fix --exclude tests --exclude .venv --exclude app/alembic
-	@cd backend && uv run ty check . --exclude 'tests/**' --exclude '.venv/**' --exclude 'app/alembic/**'
-	@cd backend && uv run black . --exclude '/(tests|\.venv|app/alembic)/'
-	@cd backend && uv run isort . --skip tests --skip .venv --skip app/alembic
+	@cd apps/backend && uv run python -c "from app import *" || (echo '🚨 import failed, this means you introduced unprotected imports! 🚨'; exit 1)
+	@cd apps/backend && uv run ruff check . --fix --exclude tests --exclude .venv --exclude app/alembic
+	@cd apps/backend && uv run ty check . --exclude 'tests/**' --exclude '.venv/**' --exclude 'app/alembic/**'
+	@cd apps/backend && uv run black . --exclude '/(tests|\.venv|app/alembic)/'
+	@cd apps/backend && uv run isort . --skip tests --skip .venv --skip app/alembic
 
 openapi:  ## Generate OpenAPI schema from FastAPI app
-	cd backend && uv run python -c "import app.main; import json; print(json.dumps(app.main.app.openapi()))" > ./openapi.json
-	cd frontend && pnpm run generate-client
+	cd apps/backend && uv run python -c "import app.main; import json; print(json.dumps(app.main.app.openapi()))" > ./openapi.json
+	cd apps/frontend && pnpm run generate-client
 
 db-init: ## Create all database tables from SQLAlchemy models (dev only — use migrations in prod)
-	cd backend && uv run python -c "from app import models; from app.core.database import init_db; init_db(); print('✓ tables created')"
+	cd apps/backend && uv run python -c "from app import models; from app.core.database import init_db; init_db(); print('✓ tables created')"
 
 db-seed: ## Seed the database with a demo dataset (idempotent)
-	cd backend && uv run python -m scripts.seed_demo
+	cd apps/backend && uv run python -m scripts.seed_demo
 
 migration: ## Create a new migration
-	cd backend && read -p "Enter migration name: " name && uv run alembic revision -m "$$name" --autogenerate
+	cd apps/backend && read -p "Enter migration name: " name && uv run alembic revision -m "$$name" --autogenerate
 
 upgrade: ## Apply migrations
-	cd backend && uv run alembic upgrade head
+	cd apps/backend && uv run alembic upgrade head
 
 downgrade: ## Apply downgrade migrations
-	cd backend && uv run alembic downgrade -1
+	cd apps/backend && uv run alembic downgrade -1
 
 start-frontend: ## Start the development frontend
-	cd frontend && npm run dev
+	cd apps/frontend && npm run dev
 
 start-backend: ## Start the development backend
-	cd backend && uv run fastapi dev app/main.py --port 8000 --host localhost
+	cd apps/backend && uv run fastapi dev app/main.py --port 8000 --host localhost
 
 start-worker: ## Start arq worker
-	cd backend && uv run arq app.worker.WorkerSettings
+	cd apps/backend && uv run arq app.worker.WorkerSettings
 
 test:
-	cd backend && uv run pytest -v 2>&1
+	cd apps/backend && uv run pytest -v 2>&1
 
 .PHONY: help
 .DEFAULT_GOAL := help

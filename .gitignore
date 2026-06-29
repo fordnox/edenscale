@@ -207,5 +207,5 @@ __marimo__/
 .DS_Store
 .idea
 .env
-frontend/node_modules
+apps/frontend/node_modules
 database.db
