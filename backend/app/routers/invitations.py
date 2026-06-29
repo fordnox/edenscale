@@ -44,7 +44,7 @@ from app.schemas.organization_invitation import (
     InvitationRead,
 )
 from app.schemas.user_organization_membership import MembershipRead
-from app.services.hanko import send_invitation_email
+from app.services.invitations import send_invitation_email
 
 router = APIRouter()
 

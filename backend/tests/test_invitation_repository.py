@@ -52,7 +52,7 @@ def _seed_user(db, email: str, role: UserRole = UserRole.admin) -> int:
         first_name="First",
         last_name="Last",
         email=email,
-        hanko_subject_id=email,
+        auth_subject_id=email,
     )
     db.add(user)
     db.commit()

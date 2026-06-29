@@ -14,7 +14,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     phone: str | None = Field(default=None, max_length=50)
     title: str | None = Field(default=None, max_length=150)
-    hanko_subject_id: str | None = Field(default=None, max_length=255)
+    auth_subject_id: str | None = Field(default=None, max_length=255)
 
 
 class UserUpdate(BaseModel):
@@ -47,7 +47,7 @@ class UserRead(BaseModel):
     title: str | None
     is_active: bool
     last_login_at: datetime | None
-    hanko_subject_id: str | None
+    auth_subject_id: str | None
     created_at: datetime | None
     updated_at: datetime | None
     memberships: list[MembershipRead] = []

@@ -86,7 +86,7 @@ def _seed_user(
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.commit()
@@ -172,7 +172,7 @@ class TestEventListeners:
 
     def test_actor_is_pulled_from_context(self):
         org_id = _seed_org()
-        user_id = _seed_user("hanko-actor", UserRole.admin, organization_id=org_id)
+        user_id = _seed_user("neon-actor", UserRole.admin, organization_id=org_id)
         # Simulate request scope after auth
         set_audit_context(user_id=user_id, ip_address="10.0.0.1")
         db = SessionLocal()
@@ -192,7 +192,7 @@ class TestEventListeners:
 class TestRecordAuditHelper:
     def test_writes_row_with_metadata(self):
         org_id = _seed_org()
-        user_id = _seed_user("hanko-actor", UserRole.admin, organization_id=org_id)
+        user_id = _seed_user("neon-actor", UserRole.admin, organization_id=org_id)
         db = SessionLocal()
         try:
             user = db.query(User).filter(User.id == user_id).first()
@@ -215,10 +215,10 @@ class TestRecordAuditHelper:
 
 class TestAuditLogRoute:
     def test_admin_can_list(self, client, override_user):
-        admin_id = _seed_user("hanko-admin", UserRole.admin)
+        admin_id = _seed_user("neon-admin", UserRole.admin)
         # Trigger one audited write.
         _seed_org("Visible Org")
-        override_user("hanko-admin")
+        override_user("neon-admin")
         resp = client.get("/audit-logs")
         assert resp.status_code == 200
         rows = resp.json()
@@ -227,7 +227,7 @@ class TestAuditLogRoute:
         assert admin_id is not None
 
     def test_filter_by_entity(self, client, override_user):
-        _seed_user("hanko-admin", UserRole.admin)
+        _seed_user("neon-admin", UserRole.admin)
         org_id = _seed_org("NewTaven")
         db = SessionLocal()
         try:
@@ -237,7 +237,7 @@ class TestAuditLogRoute:
             fund_id = fund.id
         finally:
             db.close()
-        override_user("hanko-admin")
+        override_user("neon-admin")
         resp = client.get(
             f"/audit-logs?entity_type=fund&entity_id={fund_id}"
         )
@@ -251,7 +251,7 @@ class TestAuditLogRoute:
     def test_filter_by_date_range(self, client, override_user):
         from datetime import datetime, timedelta, timezone
 
-        _seed_user("hanko-admin", UserRole.admin)
+        _seed_user("neon-admin", UserRole.admin)
         # Two audited writes; backdate the first one so the date filter excludes it.
         org_id = _seed_org("Old Org")
         _seed_org("New Org")
@@ -274,7 +274,7 @@ class TestAuditLogRoute:
             db.close()
 
         cutoff = (now - timedelta(days=1)).isoformat()
-        override_user("hanko-admin")
+        override_user("neon-admin")
         resp = client.get(f"/audit-logs?date_from={cutoff}")
         assert resp.status_code == 200
         rows = resp.json()
@@ -289,14 +289,14 @@ class TestAuditLogRoute:
         assert any(row["id"] == old_row_id for row in rows)
 
     def test_non_admin_forbidden(self, client, override_user):
-        _seed_user("hanko-fm", UserRole.fund_manager)
-        override_user("hanko-fm")
+        _seed_user("neon-fm", UserRole.fund_manager)
+        override_user("neon-fm")
         resp = client.get("/audit-logs")
         assert resp.status_code == 403
 
     def test_lp_forbidden(self, client, override_user):
-        _seed_user("hanko-lp", UserRole.lp)
-        override_user("hanko-lp")
+        _seed_user("neon-lp", UserRole.lp)
+        override_user("neon-lp")
         resp = client.get("/audit-logs")
         assert resp.status_code == 403
 

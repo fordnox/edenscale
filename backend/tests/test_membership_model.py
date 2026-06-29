@@ -41,7 +41,7 @@ def _seed_user_and_org(
             first_name="Alice",
             last_name="Liddell",
             email=email,
-            hanko_subject_id=email,
+            auth_subject_id=email,
         )
         db.add(user)
         db.commit()

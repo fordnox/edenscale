@@ -1,8 +1,8 @@
-"""Role-based access control helpers layered on top of the Hanko JWT check.
+"""Role-based access control helpers layered on top of the Neon Auth JWT check.
 
 `get_current_user` (in `app.core.auth`) only validates the token and returns
 the decoded payload. The platform also needs a local `User` row keyed by
-`hanko_subject_id` so routes can authorise on `role`, scope queries by
+`auth_subject_id` so routes can authorise on `role`, scope queries by
 `organization_id`, and so on. This module bridges the two:
 
 * `get_current_user_record` — find-or-create the local `User` for the JWT
@@ -38,6 +38,36 @@ from app.repositories.user_organization_membership_repository import (
 )
 
 
+def _extract_email(payload: dict) -> str:
+    """Pull the email address from the JWT claims.
+
+    Neon Auth emits `email` as a plain string. A dict shape (`{"address": …}`)
+    is also tolerated defensively in case the claim is ever nested.
+    """
+    email_claim = payload.get("email")
+    if isinstance(email_claim, dict):
+        return email_claim.get("address") or ""
+    return email_claim or ""
+
+
+def _extract_names(payload: dict) -> tuple[str, str]:
+    """Resolve (first_name, last_name) from the JWT claims.
+
+    Prefers explicit `given_name` / `family_name` claims; otherwise falls back
+    to splitting Neon Auth's single `name` claim on the first space.
+    """
+    given = payload.get("given_name")
+    family = payload.get("family_name")
+    if given or family:
+        return given or "", family or ""
+
+    full_name = (payload.get("name") or "").strip()
+    if not full_name:
+        return "", ""
+    first, _, rest = full_name.partition(" ")
+    return first, rest
+
+
 def get_current_user_record(
     payload: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -46,15 +76,15 @@ def get_current_user_record(
 
     Resolution order:
 
-    1. Existing row with matching `hanko_subject_id` — return it.
-    2. Existing row with matching `email` and a NULL `hanko_subject_id` —
+    1. Existing row with matching `auth_subject_id` — return it.
+    2. Existing row with matching `email` and a NULL `auth_subject_id` —
        bind the row by setting its subject to the JWT `sub` and return it.
        This is how seed / pre-provisioned users (admin, fund_manager) get
-       claimed on first sign-in: the seed leaves `hanko_subject_id=None`,
-       and Hanko's email claim is verified by Hanko before the JWT is
-       issued, so binding by email here is safe.
+       claimed on first sign-in: the seed leaves `auth_subject_id=None`,
+       and Neon Auth verifies the email claim before the JWT is issued, so
+       binding by email here is safe.
     3. Otherwise auto-provision a fresh row, defaulting to `role=UserRole.lp`
-       and pulling email / first / last name from the JWT claims.
+       and pulling email / name from the JWT claims.
 
     `first_name` / `last_name` / `email` columns are NOT NULL, so missing
     claims fall back to empty strings — the user can complete their profile
@@ -67,27 +97,24 @@ def get_current_user_record(
             detail="Token missing subject claim",
         )
 
-    user = db.query(User).filter(User.hanko_subject_id == subject_id).first()
+    user = db.query(User).filter(User.auth_subject_id == subject_id).first()
     if user is not None:
         set_audit_user(user.id)  # type: ignore[invalid-argument-type]
         return user
 
-    email_claim = payload.get("email")
-    if isinstance(email_claim, dict):
-        email_value = email_claim.get("address") or ""
-    else:
-        email_value = email_claim or ""
+    email_value = _extract_email(payload)
+    first_name, last_name = _extract_names(payload)
 
     if email_value:
         existing_by_email = db.query(User).filter(User.email == email_value).first()
         if existing_by_email is not None:
-            if existing_by_email.hanko_subject_id is None:
-                existing_by_email.hanko_subject_id = subject_id
+            if existing_by_email.auth_subject_id is None:
+                existing_by_email.auth_subject_id = subject_id
                 db.commit()
                 db.refresh(existing_by_email)
                 set_audit_user(existing_by_email.id)  # type: ignore[invalid-argument-type]
                 return existing_by_email
-            # Email already linked to a different Hanko subject. Refuse rather
+            # Email already linked to a different auth subject. Refuse rather
             # than 500 on the unique-email constraint when we try to insert.
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -95,11 +122,11 @@ def get_current_user_record(
             )
 
     user = User(
-        hanko_subject_id=subject_id,
+        auth_subject_id=subject_id,
         role=UserRole.lp,
         email=email_value,
-        first_name=payload.get("given_name") or "",
-        last_name=payload.get("family_name") or "",
+        first_name=first_name,
+        last_name=last_name,
     )
     db.add(user)
     db.commit()

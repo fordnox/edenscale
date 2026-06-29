@@ -77,7 +77,7 @@ def _seed_user(
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -160,12 +160,12 @@ class TestCreateCommitment:
     def test_fund_manager_creates_commitment(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
 
@@ -191,12 +191,12 @@ class TestCreateCommitment:
     def test_duplicate_fund_investor_pair_returns_409(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         _seed_commitment(fund_id, investor_id)
@@ -215,12 +215,12 @@ class TestCreateCommitment:
     def test_called_amount_above_committed_rejected(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
 
@@ -241,12 +241,12 @@ class TestStatusTransitions:
     def test_pending_to_approved(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         commitment_id = _seed_commitment(fund_id, investor_id)
@@ -261,12 +261,12 @@ class TestStatusTransitions:
     def test_terminal_declined_cannot_transition(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         commitment_id = _seed_commitment(
@@ -282,12 +282,12 @@ class TestStatusTransitions:
     def test_terminal_cancelled_cannot_transition(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         commitment_id = _seed_commitment(
@@ -303,12 +303,12 @@ class TestStatusTransitions:
     def test_approved_to_cancelled_allowed(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         commitment_id = _seed_commitment(
@@ -335,14 +335,14 @@ class TestLpVisibility:
         _seed_commitment(fund_id, other_investor)
 
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
         _seed_contact(own_investor, lp_user_id)
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         response = client.get(f"/investors/{own_investor}/commitments")
 
         assert response.status_code == 200
@@ -361,14 +361,14 @@ class TestLpVisibility:
         _seed_commitment(fund_id, other_investor)
 
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
         _seed_contact(own_investor, lp_user_id)
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         response = client.get("/commitments")
 
         assert response.status_code == 200
@@ -380,12 +380,12 @@ class TestNestedFundRoute:
     def test_fund_manager_lists_commitments_under_fund(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_one = _seed_investor(org_id, name="LP One")
         investor_two = _seed_investor(org_id, name="LP Two")

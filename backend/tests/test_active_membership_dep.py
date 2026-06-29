@@ -50,7 +50,7 @@ def _seed_user(db, role: UserRole, *, email: str, subject_id: str) -> User:
         first_name="First",
         last_name="Last",
         email=email,
-        hanko_subject_id=subject_id,
+        auth_subject_id=subject_id,
     )
     db.add(user)
     db.commit()
@@ -75,7 +75,7 @@ def _seed_membership(
 def test_header_missing_with_single_membership_resolves(db):
     org = _seed_org(db)
     user = _seed_user(
-        db, UserRole.fund_manager, email="fm@example.com", subject_id="hanko-fm"
+        db, UserRole.fund_manager, email="fm@example.com", subject_id="neon-fm"
     )
     membership = _seed_membership(db, user.id, org.id, UserRole.fund_manager)
 
@@ -92,7 +92,7 @@ def test_header_present_with_matching_membership_resolves(db):
     org_a = _seed_org(db, "Org A")
     org_b = _seed_org(db, "Org B")
     user = _seed_user(
-        db, UserRole.lp, email="multi@example.com", subject_id="hanko-multi"
+        db, UserRole.lp, email="multi@example.com", subject_id="neon-multi"
     )
     _seed_membership(db, user.id, org_a.id, UserRole.lp)
     membership_b = _seed_membership(db, user.id, org_b.id, UserRole.admin)
@@ -110,7 +110,7 @@ def test_header_present_no_match_for_non_superadmin_returns_403(db):
     org_a = _seed_org(db, "Org A")
     org_b = _seed_org(db, "Org B")
     user = _seed_user(
-        db, UserRole.fund_manager, email="fm@example.com", subject_id="hanko-fm"
+        db, UserRole.fund_manager, email="fm@example.com", subject_id="neon-fm"
     )
     _seed_membership(db, user.id, org_a.id, UserRole.fund_manager)
 
@@ -129,7 +129,7 @@ def test_header_present_for_superadmin_synthesizes_membership(db):
         db,
         UserRole.superadmin,
         email="root@example.com",
-        subject_id="hanko-root",
+        subject_id="neon-root",
     )
 
     resolved = get_active_membership(
@@ -161,7 +161,7 @@ def test_header_present_for_superadmin_with_real_membership_returns_real_row(db)
         db,
         UserRole.superadmin,
         email="root@example.com",
-        subject_id="hanko-root",
+        subject_id="neon-root",
     )
     real = _seed_membership(db, superadmin.id, org.id, UserRole.admin)
 
@@ -178,7 +178,7 @@ def test_header_missing_for_superadmin_returns_400(db):
         db,
         UserRole.superadmin,
         email="root@example.com",
-        subject_id="hanko-root",
+        subject_id="neon-root",
     )
 
     with pytest.raises(HTTPException) as excinfo:
@@ -194,7 +194,7 @@ def test_header_missing_with_multiple_memberships_returns_400(db):
     org_a = _seed_org(db, "Org A")
     org_b = _seed_org(db, "Org B")
     user = _seed_user(
-        db, UserRole.lp, email="multi@example.com", subject_id="hanko-multi"
+        db, UserRole.lp, email="multi@example.com", subject_id="neon-multi"
     )
     _seed_membership(db, user.id, org_a.id, UserRole.lp)
     _seed_membership(db, user.id, org_b.id, UserRole.admin)
@@ -210,7 +210,7 @@ def test_header_missing_with_multiple_memberships_returns_400(db):
 
 def test_header_missing_with_zero_memberships_returns_400(db):
     user = _seed_user(
-        db, UserRole.lp, email="solo@example.com", subject_id="hanko-solo"
+        db, UserRole.lp, email="solo@example.com", subject_id="neon-solo"
     )
 
     with pytest.raises(HTTPException) as excinfo:
@@ -228,7 +228,7 @@ class TestRequireMembershipRoles:
             db,
             UserRole.lp,
             email="dual@example.com",
-            subject_id="hanko-dual",
+            subject_id="neon-dual",
         )
         # Globally lp, but admin within this org.
         membership = _seed_membership(db, user.id, org.id, UserRole.admin)
@@ -239,7 +239,7 @@ class TestRequireMembershipRoles:
     def test_rejects_non_matching_membership_role(self, db):
         org = _seed_org(db)
         user = _seed_user(
-            db, UserRole.lp, email="lp@example.com", subject_id="hanko-lp"
+            db, UserRole.lp, email="lp@example.com", subject_id="neon-lp"
         )
         membership = _seed_membership(db, user.id, org.id, UserRole.lp)
 

@@ -73,7 +73,7 @@ def _seed_user(
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -144,12 +144,12 @@ class TestCreateFund:
     def test_fund_manager_creates_in_own_org(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
 
         response = client.post(
             "/funds",
@@ -166,12 +166,12 @@ class TestCreateFund:
         own_org = _seed_org("NewTaven")
         other_org = _seed_org("Other")
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=own_org,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
 
         response = client.post(
             "/funds",
@@ -183,12 +183,12 @@ class TestCreateFund:
     def test_lp_cannot_create(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-lp")
+        override_user("neon-lp")
 
         response = client.post(
             "/funds",
@@ -204,14 +204,14 @@ class TestListFunds:
         _seed_fund(org_id, name="Hidden Fund")
 
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
         _seed_commitment_for_lp(visible_fund_id, org_id, lp_user_id)
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         response = client.get("/funds")
 
         assert response.status_code == 200
@@ -228,12 +228,12 @@ class TestListFunds:
         _seed_fund(other_org, name="Other Fund")
 
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=own_org,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
 
         response = client.get("/funds")
         assert response.status_code == 200
@@ -255,7 +255,7 @@ class TestCrossOrgScopingViaHeader:
                 first_name="Multi",
                 last_name="Admin",
                 email=f"{subject_id}@example.com",
-                hanko_subject_id=subject_id,
+                auth_subject_id=subject_id,
             )
             db.add(user)
             db.flush()
@@ -276,8 +276,8 @@ class TestCrossOrgScopingViaHeader:
         """No header + multi-org membership → 400 with the contract message."""
         org_a = _seed_org("Org A")
         org_b = _seed_org("Org B")
-        self._seed_multi_org_admin("hanko-multi", org_ids=[org_a, org_b])
-        override_user("hanko-multi")
+        self._seed_multi_org_admin("neon-multi", org_ids=[org_a, org_b])
+        override_user("neon-multi")
 
         response = client.get("/funds")
         assert response.status_code == 400
@@ -288,8 +288,8 @@ class TestCrossOrgScopingViaHeader:
         org_b = _seed_org("Org B")
         fund_a = _seed_fund(org_a, name="Fund A")
         fund_b = _seed_fund(org_b, name="Fund B")
-        self._seed_multi_org_admin("hanko-multi", org_ids=[org_a, org_b])
-        override_user("hanko-multi")
+        self._seed_multi_org_admin("neon-multi", org_ids=[org_a, org_b])
+        override_user("neon-multi")
 
         response_a = client.get("/funds", headers={"X-Organization-Id": str(org_a)})
         assert response_a.status_code == 200
@@ -305,8 +305,8 @@ class TestCrossOrgScopingViaHeader:
         org_a = _seed_org("Org A")
         org_b = _seed_org("Org B")
         fund_b = _seed_fund(org_b, name="Fund B")
-        self._seed_multi_org_admin("hanko-multi", org_ids=[org_a, org_b])
-        override_user("hanko-multi")
+        self._seed_multi_org_admin("neon-multi", org_ids=[org_a, org_b])
+        override_user("neon-multi")
 
         response = client.get(
             f"/funds/{fund_b}", headers={"X-Organization-Id": str(org_a)}
@@ -321,12 +321,12 @@ class TestCrossOrgScopingViaHeader:
         own_org = _seed_org("Own")
         other_org = _seed_org("Other")
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=own_org,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
 
         response = client.get(
             "/funds", headers={"X-Organization-Id": str(other_org)}
@@ -339,12 +339,12 @@ class TestArchiveFund:
         org_id = _seed_org()
         fund_id = _seed_fund(org_id, status=FundStatus.active)
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
 
         response = client.post(f"/funds/{fund_id}/archive")
         assert response.status_code == 200
@@ -359,12 +359,12 @@ class TestFundOverview:
     def test_returns_fund_kpis(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id, status=FundStatus.active)
 
         db = SessionLocal()
@@ -413,12 +413,12 @@ class TestFundOverview:
     def test_zero_commitments_returns_zeros(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
 
         response = client.get(f"/funds/{fund_id}/overview")
@@ -432,12 +432,12 @@ class TestFundOverview:
     def test_unknown_fund_returns_404(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
 
         response = client.get("/funds/9999/overview")
         assert response.status_code == 404
@@ -446,12 +446,12 @@ class TestFundOverview:
         own_org = _seed_org("Own")
         other_org = _seed_org("Other")
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=own_org,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         other_fund = _seed_fund(other_org, name="Other Fund")
 
         response = client.get(f"/funds/{other_fund}/overview")
@@ -461,7 +461,7 @@ class TestFundOverview:
         org_id = _seed_org()
         fund_id = _seed_fund(org_id, status=FundStatus.active)
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
@@ -472,7 +472,7 @@ class TestFundOverview:
             lp_user_id,
             committed_amount=Decimal("500000.00"),
         )
-        override_user("hanko-lp")
+        override_user("neon-lp")
 
         response = client.get(f"/funds/{fund_id}/overview")
         assert response.status_code == 200

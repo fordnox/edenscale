@@ -7,7 +7,7 @@ behind `Depends(get_current_user)` (JWT only) plus per-route
 * Every route 403s for non-superadmin callers (admin, fund_manager, lp).
 * `POST /superadmin/organizations` creates the org + the founding admin
   membership in one transaction, both for an existing user_id and for a
-  fresh `admin_email` (stub user is created with `hanko_subject_id=None`).
+  fresh `admin_email` (stub user is created with `auth_subject_id=None`).
 * `GET /superadmin/organizations` lists active *and* inactive orgs with the
   correct `member_count`.
 * `POST /superadmin/organizations/{id}/admins` is idempotent — re-targeting
@@ -72,7 +72,7 @@ def _seed_user(
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.commit()
@@ -113,8 +113,8 @@ def _seed_membership(user_id: int, organization_id: int, role: UserRole) -> int:
 
 
 def _login_as_superadmin(override_user) -> int:
-    user_id = _seed_user("hanko-super", UserRole.superadmin, email="super@example.com")
-    override_user("hanko-super")
+    user_id = _seed_user("neon-super", UserRole.superadmin, email="super@example.com")
+    override_user("neon-super")
     return user_id
 
 
@@ -124,9 +124,9 @@ class TestNonSuperadminForbidden:
     @pytest.mark.parametrize(
         "role,subject,email",
         [
-            (UserRole.admin, "hanko-admin", "admin@example.com"),
-            (UserRole.fund_manager, "hanko-fm", "fm@example.com"),
-            (UserRole.lp, "hanko-lp", "lp@example.com"),
+            (UserRole.admin, "neon-admin", "admin@example.com"),
+            (UserRole.fund_manager, "neon-fm", "fm@example.com"),
+            (UserRole.lp, "neon-lp", "lp@example.com"),
         ],
     )
     def test_list_organizations_forbidden(
@@ -141,9 +141,9 @@ class TestNonSuperadminForbidden:
     @pytest.mark.parametrize(
         "role,subject,email",
         [
-            (UserRole.admin, "hanko-admin", "admin@example.com"),
-            (UserRole.fund_manager, "hanko-fm", "fm@example.com"),
-            (UserRole.lp, "hanko-lp", "lp@example.com"),
+            (UserRole.admin, "neon-admin", "admin@example.com"),
+            (UserRole.fund_manager, "neon-fm", "fm@example.com"),
+            (UserRole.lp, "neon-lp", "lp@example.com"),
         ],
     )
     def test_create_organization_forbidden(
@@ -164,8 +164,8 @@ class TestNonSuperadminForbidden:
 
     def test_assign_admin_forbidden(self, client, override_user):
         org_id = _seed_org()
-        _seed_user("hanko-admin", UserRole.admin, email="admin@example.com")
-        override_user("hanko-admin")
+        _seed_user("neon-admin", UserRole.admin, email="admin@example.com")
+        override_user("neon-admin")
 
         response = client.post(
             f"/superadmin/organizations/{org_id}/admins",
@@ -175,24 +175,24 @@ class TestNonSuperadminForbidden:
 
     def test_disable_forbidden(self, client, override_user):
         org_id = _seed_org()
-        _seed_user("hanko-fm", UserRole.fund_manager, email="fm@example.com")
-        override_user("hanko-fm")
+        _seed_user("neon-fm", UserRole.fund_manager, email="fm@example.com")
+        override_user("neon-fm")
 
         response = client.patch(f"/superadmin/organizations/{org_id}/disable")
         assert response.status_code == 403
 
     def test_enable_forbidden(self, client, override_user):
         org_id = _seed_org(is_active=False)
-        _seed_user("hanko-lp", UserRole.lp, email="lp@example.com")
-        override_user("hanko-lp")
+        _seed_user("neon-lp", UserRole.lp, email="lp@example.com")
+        override_user("neon-lp")
 
         response = client.patch(f"/superadmin/organizations/{org_id}/enable")
         assert response.status_code == 403
 
     def test_list_members_forbidden(self, client, override_user):
         org_id = _seed_org()
-        _seed_user("hanko-admin", UserRole.admin, email="admin@example.com")
-        override_user("hanko-admin")
+        _seed_user("neon-admin", UserRole.admin, email="admin@example.com")
+        override_user("neon-admin")
 
         response = client.get(f"/superadmin/organizations/{org_id}/members")
         assert response.status_code == 403
@@ -207,8 +207,8 @@ class TestListOrganizations:
         empty_id = _seed_org("Empty Co", is_active=True)
 
         super_id = _login_as_superadmin(override_user)
-        member_one = _seed_user("hanko-m1", UserRole.lp, email="m1@example.com")
-        member_two = _seed_user("hanko-m2", UserRole.lp, email="m2@example.com")
+        member_one = _seed_user("neon-m1", UserRole.lp, email="m1@example.com")
+        member_two = _seed_user("neon-m2", UserRole.lp, email="m2@example.com")
         _seed_membership(super_id, active_id, UserRole.admin)
         _seed_membership(member_one, active_id, UserRole.lp)
         _seed_membership(member_two, inactive_id, UserRole.admin)
@@ -239,7 +239,7 @@ class TestCreateOrganizationWithAdmin:
     ):
         _login_as_superadmin(override_user)
         existing_user_id = _seed_user(
-            "hanko-existing", UserRole.lp, email="existing@example.com"
+            "neon-existing", UserRole.lp, email="existing@example.com"
         )
 
         response = client.post(
@@ -297,7 +297,7 @@ class TestCreateOrganizationWithAdmin:
         try:
             stub = db.query(User).filter(User.email == "stub@example.com").first()
             assert stub is not None
-            assert stub.hanko_subject_id is None
+            assert stub.auth_subject_id is None
             assert stub.first_name == "Stub"
             assert stub.last_name == "User"
             assert stub.role == UserRole.lp
@@ -321,7 +321,7 @@ class TestCreateOrganizationWithAdmin:
     ):
         _login_as_superadmin(override_user)
         existing_user_id = _seed_user(
-            "hanko-existing", UserRole.lp, email="reuse@example.com"
+            "neon-existing", UserRole.lp, email="reuse@example.com"
         )
 
         response = client.post(
@@ -356,7 +356,7 @@ class TestCreateOrganizationWithAdmin:
     def test_rejects_when_both_admin_targets_supplied(self, client, override_user):
         _login_as_superadmin(override_user)
         existing_user_id = _seed_user(
-            "hanko-existing", UserRole.lp, email="existing@example.com"
+            "neon-existing", UserRole.lp, email="existing@example.com"
         )
 
         response = client.post(
@@ -388,7 +388,7 @@ class TestAssignOrganizationAdmin:
     def test_creates_admin_membership_for_existing_user(self, client, override_user):
         _login_as_superadmin(override_user)
         org_id = _seed_org("Roster Co")
-        target_id = _seed_user("hanko-target", UserRole.lp, email="target@example.com")
+        target_id = _seed_user("neon-target", UserRole.lp, email="target@example.com")
 
         response = client.post(
             f"/superadmin/organizations/{org_id}/admins",
@@ -403,7 +403,7 @@ class TestAssignOrganizationAdmin:
     def test_idempotent_when_user_is_already_admin(self, client, override_user):
         _login_as_superadmin(override_user)
         org_id = _seed_org()
-        target_id = _seed_user("hanko-target", UserRole.lp, email="target@example.com")
+        target_id = _seed_user("neon-target", UserRole.lp, email="target@example.com")
         membership_id = _seed_membership(target_id, org_id, UserRole.admin)
 
         response = client.post(
@@ -430,7 +430,7 @@ class TestAssignOrganizationAdmin:
     def test_upgrades_existing_membership_to_admin(self, client, override_user):
         _login_as_superadmin(override_user)
         org_id = _seed_org()
-        target_id = _seed_user("hanko-target", UserRole.lp, email="target@example.com")
+        target_id = _seed_user("neon-target", UserRole.lp, email="target@example.com")
         membership_id = _seed_membership(target_id, org_id, UserRole.lp)
 
         response = client.post(
@@ -467,13 +467,13 @@ class TestAssignOrganizationAdmin:
         try:
             stub = db.query(User).filter(User.email == "fresh@example.com").first()
             assert stub is not None
-            assert stub.hanko_subject_id is None
+            assert stub.auth_subject_id is None
         finally:
             db.close()
 
     def test_404_when_organization_missing(self, client, override_user):
         _login_as_superadmin(override_user)
-        target_id = _seed_user("hanko-target", UserRole.lp, email="target@example.com")
+        target_id = _seed_user("neon-target", UserRole.lp, email="target@example.com")
 
         response = client.post(
             "/superadmin/organizations/9999/admins",
@@ -496,7 +496,7 @@ class TestDisableEnableOrganization:
     def test_disable_then_enable_round_trip(self, client, override_user):
         _login_as_superadmin(override_user)
         org_id = _seed_org()
-        member_id = _seed_user("hanko-m", UserRole.lp, email="m@example.com")
+        member_id = _seed_user("neon-m", UserRole.lp, email="m@example.com")
         _seed_membership(member_id, org_id, UserRole.lp)
 
         disable_response = client.patch(
@@ -541,10 +541,10 @@ class TestListOrganizationMembers:
         super_id = _login_as_superadmin(override_user)
         org_id = _seed_org()
         member_one = _seed_user(
-            "hanko-m1", UserRole.lp, email="member1@example.com"
+            "neon-m1", UserRole.lp, email="member1@example.com"
         )
         member_two = _seed_user(
-            "hanko-m2", UserRole.fund_manager, email="member2@example.com"
+            "neon-m2", UserRole.fund_manager, email="member2@example.com"
         )
         _seed_membership(super_id, org_id, UserRole.admin)
         _seed_membership(member_one, org_id, UserRole.lp)

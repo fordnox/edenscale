@@ -1104,7 +1104,7 @@ def main() -> None:
         seed(db)
         print("Demo dataset seeded.")
         print(
-            "Sign-in emails (claim them via Hanko on first login):\n"
+            "Sign-in emails (claim them via Neon Auth on first login):\n"
             "  admin                : admin@newtaven.demo\n"
             "  fund_manager (NewTaven)  : ava.morgan@newtaven.demo\n"
             "  fund_manager (NewTaven)  : ben.shaw@newtaven.demo\n"

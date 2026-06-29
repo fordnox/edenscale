@@ -30,9 +30,9 @@ class User(Base):
     password_hash = Column(String(255), nullable=False, default="")
     is_active = Column(Boolean, nullable=False, default=True)
     last_login_at = Column(DateTime, nullable=True)
-    # Hanko compatibility: indexed external subject id from the Hanko JWT.
-    # Nullable so existing rows / non-Hanko users do not require it.
-    hanko_subject_id = Column(String(255), nullable=True, unique=True, index=True)
+    # Indexed external subject id (`sub` claim) from the Neon Auth JWT.
+    # Nullable so pre-provisioned / not-yet-signed-in users do not require it.
+    auth_subject_id = Column(String(255), nullable=True, unique=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

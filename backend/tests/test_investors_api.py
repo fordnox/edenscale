@@ -72,7 +72,7 @@ def _seed_user(
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -171,12 +171,12 @@ class TestCreateInvestor:
     def test_fund_manager_creates_in_own_org(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
 
         response = client.post(
             "/investors",
@@ -195,12 +195,12 @@ class TestCreateInvestor:
         own_org = _seed_org("NewTaven")
         other_org = _seed_org("Other")
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=own_org,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
 
         response = client.post(
             "/investors",
@@ -211,8 +211,8 @@ class TestCreateInvestor:
 
     def test_lp_cannot_create(self, client, override_user):
         org_id = _seed_org()
-        _seed_user("hanko-lp", UserRole.lp, organization_id=org_id)
-        override_user("hanko-lp")
+        _seed_user("neon-lp", UserRole.lp, organization_id=org_id)
+        override_user("neon-lp")
 
         response = client.post("/investors", json={"name": "Forbidden LP"})
         assert response.status_code == 403
@@ -224,12 +224,12 @@ class TestInvestorWithContacts:
     ):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
 
         investor_response = client.post(
             "/investors",
@@ -271,12 +271,12 @@ class TestInvestorWithContacts:
     def test_setting_a_new_primary_clears_the_old_one(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         investor_id = _seed_investor(org_id)
         original_primary = _seed_contact(
             investor_id, first_name="Original", is_primary=True
@@ -303,12 +303,12 @@ class TestDeleteInvestor:
     def test_delete_with_commitments_returns_409(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         investor_id = _seed_investor(org_id)
         fund_id = _seed_fund(org_id)
         _seed_commitment(fund_id, investor_id)
@@ -319,12 +319,12 @@ class TestDeleteInvestor:
     def test_delete_without_commitments_succeeds(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         investor_id = _seed_investor(org_id)
 
         response = client.delete(f"/investors/{investor_id}")
@@ -340,14 +340,14 @@ class TestLpVisibility:
         visible = _seed_investor(org_id, name="Visible LP")
         _seed_investor(org_id, name="Hidden LP")
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
         _seed_contact(visible, user_id=lp_user_id)
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         response = client.get("/investors")
 
         assert response.status_code == 200

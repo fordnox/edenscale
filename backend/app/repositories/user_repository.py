@@ -29,8 +29,8 @@ class UserRepository:
     def get_by_email(self, email: str) -> User | None:
         return self.db.query(User).filter(User.email == email).first()
 
-    def get_by_hanko_subject(self, subject_id: str) -> User | None:
-        return self.db.query(User).filter(User.hanko_subject_id == subject_id).first()
+    def get_by_auth_subject(self, subject_id: str) -> User | None:
+        return self.db.query(User).filter(User.auth_subject_id == subject_id).first()
 
     def create(self, data: UserCreate) -> User:
         user = User(**data.model_dump())

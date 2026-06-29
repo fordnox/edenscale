@@ -69,7 +69,7 @@ def _seed_user_with_memberships(
             first_name="First",
             last_name="Last",
             email=email,
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -91,12 +91,12 @@ def test_lists_all_memberships_with_nested_org_payload(client, override_user):
     org_a = _seed_org("Org A")
     org_b = _seed_org("Org B")
     _seed_user_with_memberships(
-        "hanko-multi",
+        "neon-multi",
         UserRole.lp,
         email="multi@example.com",
         memberships=[(org_a, UserRole.lp), (org_b, UserRole.admin)],
     )
-    override_user("hanko-multi")
+    override_user("neon-multi")
 
     response = client.get("/users/me/memberships")
     assert response.status_code == 200
@@ -120,12 +120,12 @@ def test_per_org_role_can_differ_from_global_user_role(client, override_user):
     the right capabilities."""
     org_id = _seed_org("Org Z")
     _seed_user_with_memberships(
-        "hanko-dual",
+        "neon-dual",
         UserRole.lp,
         email="dual@example.com",
         memberships=[(org_id, UserRole.admin)],
     )
-    override_user("hanko-dual")
+    override_user("neon-dual")
 
     response = client.get("/users/me/memberships")
     assert response.status_code == 200
@@ -136,12 +136,12 @@ def test_per_org_role_can_differ_from_global_user_role(client, override_user):
 
 def test_returns_empty_list_when_user_has_no_memberships(client, override_user):
     _seed_user_with_memberships(
-        "hanko-solo",
+        "neon-solo",
         UserRole.lp,
         email="solo@example.com",
         memberships=[],
     )
-    override_user("hanko-solo")
+    override_user("neon-solo")
 
     response = client.get("/users/me/memberships")
     assert response.status_code == 200
@@ -156,12 +156,12 @@ def test_does_not_require_x_organization_id_header(client, override_user):
     org_a = _seed_org("Org A")
     org_b = _seed_org("Org B")
     _seed_user_with_memberships(
-        "hanko-multi",
+        "neon-multi",
         UserRole.lp,
         email="multi@example.com",
         memberships=[(org_a, UserRole.lp), (org_b, UserRole.admin)],
     )
-    override_user("hanko-multi")
+    override_user("neon-multi")
 
     response = client.get("/users/me/memberships")
     assert response.status_code == 200

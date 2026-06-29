@@ -52,7 +52,7 @@ def _resolve_or_create_user(
     """Return the `User` referenced by ``user_id`` or ``email``.
 
     If ``email`` is given and no user exists for it yet, a stub row is
-    staged on the session (not committed) with ``hanko_subject_id=None``
+    staged on the session (not committed) with ``auth_subject_id=None``
     so that ``get_current_user_record`` claims it on first sign-in.
     """
     if user_id is not None:
@@ -74,7 +74,7 @@ def _resolve_or_create_user(
         first_name=first_name or "",
         last_name=last_name or "",
         email=email,
-        hanko_subject_id=None,
+        auth_subject_id=None,
     )
     db.add(stub)
     db.flush()

@@ -73,7 +73,7 @@ def _seed_user(
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -159,12 +159,12 @@ class TestDistributionLifecycle:
     def test_full_lifecycle_partial_then_full_payment(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         commitment_id = _seed_commitment(
@@ -248,12 +248,12 @@ class TestDistributionProRata:
     def test_pro_rata_splits_across_approved_commitments(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         inv_a = _seed_investor(org_id, name="LP A")
         inv_b = _seed_investor(org_id, name="LP B")
@@ -301,12 +301,12 @@ class TestDistributionProRata:
     ):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         # Only a pending commitment exists — pro-rata should reject.
@@ -338,12 +338,12 @@ class TestDistributionValidation:
     def test_create_zero_amount_rejected(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
 
         response = client.post(
@@ -360,12 +360,12 @@ class TestDistributionValidation:
     def test_duplicate_allocation_rejected(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         commitment_id = _seed_commitment(fund_id, investor_id)
@@ -399,12 +399,12 @@ class TestDistributionRbac:
     def test_lp_cannot_create(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-lp")
+        override_user("neon-lp")
         fund_id = _seed_fund(org_id)
 
         response = client.post(
@@ -429,12 +429,12 @@ class TestDistributionRbac:
         other_commitment = _seed_commitment(fund_id, other_investor)
 
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         own_dist = client.post(
             "/distributions",
             json={
@@ -467,13 +467,13 @@ class TestDistributionRbac:
         )
 
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
         _seed_contact(own_investor, lp_user_id)
-        override_user("hanko-lp")
+        override_user("neon-lp")
 
         response = client.get("/distributions")
         assert response.status_code == 200
@@ -485,12 +485,12 @@ class TestNestedFundRoute:
     def test_lists_distributions_under_fund(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         other_fund = _seed_fund(org_id, name="Sibling Fund")
 

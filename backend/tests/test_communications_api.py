@@ -73,7 +73,7 @@ def _seed_user(
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -164,12 +164,12 @@ class TestCommunicationLifecycle:
     ):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         # Approved investor with primary contact -> should receive
         approved_investor = _seed_investor(org_id, name="Approved LP")
@@ -177,7 +177,7 @@ class TestCommunicationLifecycle:
             fund_id, approved_investor, status=CommitmentStatus.approved
         )
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
@@ -225,15 +225,15 @@ class TestCommunicationLifecycle:
     ):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         target_user_id = _seed_user(
-            "hanko-target",
+            "neon-target",
             UserRole.lp,
             email="target@example.com",
             organization_id=org_id,
@@ -261,12 +261,12 @@ class TestCommunicationLifecycle:
     def test_send_already_sent_returns_409(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         _seed_commitment(fund_id, investor_id, status=CommitmentStatus.approved)
@@ -290,12 +290,12 @@ class TestCommunicationLifecycle:
     def test_send_without_recipients_returns_409(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
 
         comm_id = client.post(
@@ -314,12 +314,12 @@ class TestCommunicationLifecycle:
     def test_update_after_send_rejected(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         _seed_commitment(fund_id, investor_id, status=CommitmentStatus.approved)
@@ -345,17 +345,17 @@ class TestCommunicationLifecycle:
     def test_recipient_can_mark_read(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         _seed_commitment(fund_id, investor_id, status=CommitmentStatus.approved)
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
@@ -374,7 +374,7 @@ class TestCommunicationLifecycle:
         sent = client.post(f"/communications/{comm_id}/send").json()
         recipient_id = sent["recipients"][0]["id"]
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         read_resp = client.post(
             f"/communications/{comm_id}/recipients/{recipient_id}/read"
         )
@@ -386,12 +386,12 @@ class TestCommunicationRbac:
     def test_lp_cannot_create(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-lp")
+        override_user("neon-lp")
         fund_id = _seed_fund(org_id)
 
         response = client.post(
@@ -411,12 +411,12 @@ class TestCommunicationRbac:
         org_a = _seed_org(name="Org A")
         org_b = _seed_org(name="Org B")
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_a,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_in_b = _seed_fund(org_b, name="Other Org Fund")
 
         response = client.post(
@@ -442,7 +442,7 @@ class TestCommunicationRbac:
             fund_id, other_investor, status=CommitmentStatus.approved
         )
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
@@ -452,12 +452,12 @@ class TestCommunicationRbac:
         _seed_contact(other_investor, None, is_primary=True)
 
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         own_comm = client.post(
             "/communications",
             json={
@@ -479,7 +479,7 @@ class TestCommunicationRbac:
             },
         ).json()["id"]
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         listing = client.get("/communications")
         assert listing.status_code == 200
         ids = [row["id"] for row in listing.json()]
@@ -496,13 +496,13 @@ class TestCommunicationRbac:
             fund_id, other_investor, status=CommitmentStatus.approved
         )
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
         other_user_id = _seed_user(
-            "hanko-other",
+            "neon-other",
             UserRole.lp,
             email="other@example.com",
             organization_id=org_id,
@@ -511,12 +511,12 @@ class TestCommunicationRbac:
         _seed_contact(other_investor, other_user_id, is_primary=True)
 
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         comm_id = client.post(
             "/communications",
             json={
@@ -532,7 +532,7 @@ class TestCommunicationRbac:
             r for r in recipients if r["user_id"] == other_user_id
         )
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         resp = client.post(
             f"/communications/{comm_id}/recipients/{other_recipient['id']}/read"
         )
@@ -543,12 +543,12 @@ class TestNestedFundRoute:
     def test_lists_communications_under_fund(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         other_fund = _seed_fund(org_id, name="Sibling Fund")
 

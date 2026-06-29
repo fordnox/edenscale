@@ -52,7 +52,7 @@ def _seed_user(
             first_name=first_name,
             last_name=last_name,
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -85,7 +85,7 @@ class TestReadCurrentUser:
     def test_get_me_returns_seeded_user(self, client, override_user):
         org_id = _seed_org()
         user_id = _seed_user(
-            "hanko-me",
+            "neon-me",
             UserRole.fund_manager,
             email="me@example.com",
             organization_id=org_id,
@@ -93,7 +93,7 @@ class TestReadCurrentUser:
             last_name="Lane",
         )
 
-        override_user("hanko-me")
+        override_user("neon-me")
         response = client.get("/users/me")
 
         assert response.status_code == 200
@@ -106,32 +106,32 @@ class TestReadCurrentUser:
         assert data["last_name"] == "Lane"
 
     def test_get_me_auto_provisions_unknown_subject_as_lp(self, client, override_user):
-        override_user("hanko-fresh")
+        override_user("neon-fresh")
         response = client.get("/users/me")
 
         assert response.status_code == 200
         data = response.json()
         assert data["role"] == "lp"
-        assert data["hanko_subject_id"] == "hanko-fresh"
+        assert data["auth_subject_id"] == "neon-fresh"
 
 
 class TestUpdateUserRole:
     def test_non_admin_cannot_change_role(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
         target_id = _seed_user(
-            "hanko-target",
+            "neon-target",
             UserRole.lp,
             email="target@example.com",
             organization_id=org_id,
         )
 
-        override_user("hanko-fm")
+        override_user("neon-fm")
         response = client.patch(
             f"/users/{target_id}/role", json={"role": "admin"}
         )
@@ -141,19 +141,19 @@ class TestUpdateUserRole:
     def test_admin_can_change_role(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-admin",
+            "neon-admin",
             UserRole.admin,
             email="admin@example.com",
             organization_id=org_id,
         )
         target_id = _seed_user(
-            "hanko-target",
+            "neon-target",
             UserRole.lp,
             email="target@example.com",
             organization_id=org_id,
         )
 
-        override_user("hanko-admin")
+        override_user("neon-admin")
         response = client.patch(
             f"/users/{target_id}/role", json={"role": "fund_manager"}
         )

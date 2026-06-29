@@ -73,7 +73,7 @@ def _seed_user(
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -159,12 +159,12 @@ class TestCapitalCallLifecycle:
     def test_full_lifecycle_partial_then_full_payment(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         commitment_id = _seed_commitment(
@@ -256,12 +256,12 @@ class TestCapitalCallLifecycle:
     ):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_a = _seed_investor(org_id, name="LP A")
         investor_b = _seed_investor(org_id, name="LP B")
@@ -320,12 +320,12 @@ class TestCapitalCallValidation:
     def test_create_with_unknown_fund_returns_404(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
 
         response = client.post(
             "/capital-calls",
@@ -341,12 +341,12 @@ class TestCapitalCallValidation:
     def test_create_zero_amount_rejected(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
 
         response = client.post(
@@ -363,12 +363,12 @@ class TestCapitalCallValidation:
     def test_add_item_with_cross_fund_commitment_rejected(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_a = _seed_fund(org_id, name="Fund A")
         fund_b = _seed_fund(org_id, name="Fund B")
         investor_id = _seed_investor(org_id)
@@ -403,12 +403,12 @@ class TestCapitalCallValidation:
     def test_duplicate_allocation_rejected(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         commitment_id = _seed_commitment(fund_id, investor_id)
@@ -445,12 +445,12 @@ class TestCapitalCallSendCancel:
     def test_cancel_from_draft(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
 
         create_resp = client.post(
@@ -471,12 +471,12 @@ class TestCapitalCallSendCancel:
     def test_send_from_paid_rejected(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id)
         commitment_id = _seed_commitment(fund_id, investor_id)
@@ -511,12 +511,12 @@ class TestCapitalCallRbac:
     def test_lp_cannot_create(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-lp")
+        override_user("neon-lp")
         fund_id = _seed_fund(org_id)
 
         response = client.post(
@@ -534,12 +534,12 @@ class TestCapitalCallRbac:
         org_a = _seed_org(name="Org A")
         org_b = _seed_org(name="Org B")
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_a,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_in_b = _seed_fund(org_b, name="Other Org Fund")
 
         response = client.post(
@@ -563,12 +563,12 @@ class TestCapitalCallRbac:
 
         # Seed two calls via the fund_manager so both have items.
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         own_call = client.post(
             "/capital-calls",
             json={
@@ -605,13 +605,13 @@ class TestCapitalCallRbac:
         )
 
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
         _seed_contact(own_investor, lp_user_id)
-        override_user("hanko-lp")
+        override_user("neon-lp")
 
         response = client.get("/capital-calls")
         assert response.status_code == 200
@@ -623,12 +623,12 @@ class TestNestedFundRoute:
     def test_lists_capital_calls_under_fund(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         other_fund = _seed_fund(org_id, name="Sibling Fund")
 

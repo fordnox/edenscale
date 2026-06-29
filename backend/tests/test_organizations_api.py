@@ -47,7 +47,7 @@ def _seed_user(
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.commit()
@@ -69,8 +69,8 @@ def _seed_org(name: str = "NewTaven Capital") -> int:
 
 class TestCreateOrganization:
     def test_superadmin_can_create_and_read(self, client, override_user):
-        _seed_user("hanko-super", UserRole.superadmin, email="super@example.com")
-        override_user("hanko-super")
+        _seed_user("neon-super", UserRole.superadmin, email="super@example.com")
+        override_user("neon-super")
 
         create_response = client.post(
             "/organizations",
@@ -91,8 +91,8 @@ class TestCreateOrganization:
         assert get_response.json()["id"] == created["id"]
 
     def test_admin_cannot_create(self, client, override_user):
-        _seed_user("hanko-admin", UserRole.admin, email="admin@example.com")
-        override_user("hanko-admin")
+        _seed_user("neon-admin", UserRole.admin, email="admin@example.com")
+        override_user("neon-admin")
 
         response = client.post(
             "/organizations",
@@ -101,8 +101,8 @@ class TestCreateOrganization:
         assert response.status_code == 403
 
     def test_lp_cannot_create(self, client, override_user):
-        _seed_user("hanko-lp", UserRole.lp, email="lp@example.com")
-        override_user("hanko-lp")
+        _seed_user("neon-lp", UserRole.lp, email="lp@example.com")
+        override_user("neon-lp")
 
         response = client.post(
             "/organizations",
@@ -115,12 +115,12 @@ class TestListAndReadOrganization:
     def test_fund_manager_can_read(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
 
         list_response = client.get("/organizations")
         assert list_response.status_code == 200
@@ -136,28 +136,28 @@ class TestDeleteOrganization:
     def test_fund_manager_cannot_delete(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
 
         response = client.delete(f"/organizations/{org_id}")
         assert response.status_code == 403
 
     def test_admin_cannot_delete(self, client, override_user):
         org_id = _seed_org()
-        _seed_user("hanko-admin", UserRole.admin, email="admin@example.com")
-        override_user("hanko-admin")
+        _seed_user("neon-admin", UserRole.admin, email="admin@example.com")
+        override_user("neon-admin")
 
         response = client.delete(f"/organizations/{org_id}")
         assert response.status_code == 403
 
     def test_superadmin_can_delete_soft(self, client, override_user):
         org_id = _seed_org()
-        _seed_user("hanko-super", UserRole.superadmin, email="super@example.com")
-        override_user("hanko-super")
+        _seed_user("neon-super", UserRole.superadmin, email="super@example.com")
+        override_user("neon-super")
 
         response = client.delete(f"/organizations/{org_id}")
         assert response.status_code == 200

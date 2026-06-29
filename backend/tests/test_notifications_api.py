@@ -76,7 +76,7 @@ def _seed_user(
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -202,15 +202,15 @@ def _list_notifications(user_id: int) -> list[Notification]:
 
 class TestNotificationListing:
     def test_lists_only_current_users_notifications_desc(self, client, override_user):
-        user_id = _seed_user("hanko-me", UserRole.lp)
-        other_id = _seed_user("hanko-other", UserRole.lp, email="other@example.com")
+        user_id = _seed_user("neon-me", UserRole.lp)
+        other_id = _seed_user("neon-other", UserRole.lp, email="other@example.com")
         # Older then newer for the current user
         _seed_notification(user_id, title="Older")
         _seed_notification(user_id, title="Newer")
         # Should not appear: another user's notification
         _seed_notification(other_id, title="Theirs")
 
-        override_user("hanko-me")
+        override_user("neon-me")
         resp = client.get("/notifications")
         assert resp.status_code == 200
         rows = resp.json()
@@ -220,11 +220,11 @@ class TestNotificationListing:
         assert "Theirs" not in titles
 
     def test_status_filter_returns_only_matching(self, client, override_user):
-        user_id = _seed_user("hanko-me", UserRole.lp)
+        user_id = _seed_user("neon-me", UserRole.lp)
         _seed_notification(user_id, title="Unread one")
         _seed_notification(user_id, title="Read one", status=NotificationStatus.read)
 
-        override_user("hanko-me")
+        override_user("neon-me")
         resp = client.get("/notifications?status_filter=unread")
         assert resp.status_code == 200
         titles = [row["title"] for row in resp.json()]
@@ -233,10 +233,10 @@ class TestNotificationListing:
 
 class TestNotificationActions:
     def test_mark_read(self, client, override_user):
-        user_id = _seed_user("hanko-me", UserRole.lp)
+        user_id = _seed_user("neon-me", UserRole.lp)
         notif_id = _seed_notification(user_id)
 
-        override_user("hanko-me")
+        override_user("neon-me")
         resp = client.post(f"/notifications/{notif_id}/read")
         assert resp.status_code == 200
         body = resp.json()
@@ -244,16 +244,16 @@ class TestNotificationActions:
         assert body["read_at"] is not None
 
     def test_archive(self, client, override_user):
-        user_id = _seed_user("hanko-me", UserRole.lp)
+        user_id = _seed_user("neon-me", UserRole.lp)
         notif_id = _seed_notification(user_id)
 
-        override_user("hanko-me")
+        override_user("neon-me")
         resp = client.post(f"/notifications/{notif_id}/archive")
         assert resp.status_code == 200
         assert resp.json()["status"] == "archived"
 
     def test_read_all_marks_unread_only(self, client, override_user):
-        user_id = _seed_user("hanko-me", UserRole.lp)
+        user_id = _seed_user("neon-me", UserRole.lp)
         _seed_notification(user_id, title="One")
         _seed_notification(user_id, title="Two")
         _seed_notification(
@@ -263,7 +263,7 @@ class TestNotificationActions:
             user_id, title="Archived", status=NotificationStatus.archived
         )
 
-        override_user("hanko-me")
+        override_user("neon-me")
         resp = client.post("/notifications/read-all")
         assert resp.status_code == 200
         assert resp.json()["updated"] == 2
@@ -272,18 +272,18 @@ class TestNotificationActions:
         assert statuses.count(NotificationStatus.archived) == 1
 
     def test_cannot_mark_other_users_notification(self, client, override_user):
-        user_id = _seed_user("hanko-me", UserRole.lp)
-        other_id = _seed_user("hanko-other", UserRole.lp, email="other@example.com")
+        user_id = _seed_user("neon-me", UserRole.lp)
+        other_id = _seed_user("neon-other", UserRole.lp, email="other@example.com")
         notif_id = _seed_notification(other_id)
         assert user_id != other_id
 
-        override_user("hanko-me")
+        override_user("neon-me")
         resp = client.post(f"/notifications/{notif_id}/read")
         assert resp.status_code == 403
 
     def test_mark_unknown_returns_404(self, client, override_user):
-        _seed_user("hanko-me", UserRole.lp)
-        override_user("hanko-me")
+        _seed_user("neon-me", UserRole.lp)
+        override_user("neon-me")
         resp = client.post("/notifications/9999/read")
         assert resp.status_code == 404
 
@@ -292,17 +292,17 @@ class TestNotificationFanOut:
     def test_communication_send_creates_notifications(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         investor_id = _seed_investor(org_id, name="Approved LP")
         _seed_commitment(fund_id, investor_id, status=CommitmentStatus.approved)
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
@@ -331,18 +331,18 @@ class TestNotificationFanOut:
     def test_task_assignment_notifies_assignee(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
         assignee_id = _seed_user(
-            "hanko-assignee",
+            "neon-assignee",
             UserRole.lp,
             email="assignee@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
 
         resp = client.post(
@@ -362,12 +362,12 @@ class TestNotificationFanOut:
     def test_task_self_assignment_does_not_notify(self, client, override_user):
         org_id = _seed_org()
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
 
         resp = client.post(
@@ -386,18 +386,18 @@ class TestNotificationFanOut:
     ):
         org_id = _seed_org()
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
         new_assignee_id = _seed_user(
-            "hanko-new",
+            "neon-new",
             UserRole.lp,
             email="new@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         # Seed a task created by fm and originally self-assigned
         db = SessionLocal()
@@ -431,7 +431,7 @@ def test_repository_marks_read_idempotently():
     """Calling mark_read on an already-read notification should not bump read_at."""
     from app.repositories.notification_repository import NotificationRepository
 
-    user_id = _seed_user("hanko-me", UserRole.lp)
+    user_id = _seed_user("neon-me", UserRole.lp)
     db = SessionLocal()
     try:
         repo = NotificationRepository(db)

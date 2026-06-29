@@ -90,7 +90,7 @@ def _seed_user(
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -150,12 +150,12 @@ class TestDocumentUploadFlow:
     def test_upload_init_then_create_then_get_round_trip(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
 
         init = client.post(
@@ -210,12 +210,12 @@ class TestDocumentUploadFlow:
     def test_dev_storage_rejects_missing_token(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         init = client.post(
             "/documents/upload-init",
             json={"file_name": "f.bin", "mime_type": "application/octet-stream"},
@@ -231,12 +231,12 @@ class TestDocumentRbac:
     ):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         other_investor = _seed_investor(org_id, name="Other LP")
 
@@ -266,13 +266,13 @@ class TestDocumentRbac:
         # Now switch to an LP that has no contact for that investor.
         own_investor = _seed_investor(org_id, name="Own LP")
         lp_user_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
         _seed_contact(own_investor, lp_user_id)
-        override_user("hanko-lp")
+        override_user("neon-lp")
 
         listing = client.get("/documents")
         assert listing.status_code == 200
@@ -285,12 +285,12 @@ class TestDocumentRbac:
     def test_lp_cannot_create_document(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-lp")
+        override_user("neon-lp")
         fund_id = _seed_fund(org_id)
 
         init = client.post(
@@ -315,12 +315,12 @@ class TestDocumentRbac:
         own_org = _seed_org("Own FM Firm")
         other_org = _seed_org("Other FM Firm")
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=own_org,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         other_fund = _seed_fund(other_org, name="Outsider Fund")
 
         init = client.post(
@@ -345,12 +345,12 @@ class TestDocumentMutations:
     def test_patch_and_delete_lifecycle(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
 
         init = client.post(

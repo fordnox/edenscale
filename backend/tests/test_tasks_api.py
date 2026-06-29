@@ -70,7 +70,7 @@ def _seed_user(
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -129,12 +129,12 @@ class TestTaskLifecycle:
     def test_fm_can_create_task(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
 
         resp = client.post(
@@ -157,12 +157,12 @@ class TestTaskLifecycle:
     def test_complete_sets_status_done_and_timestamp(self, client, override_user):
         org_id = _seed_org()
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         task_id = _seed_task(
             fund_id=fund_id,
@@ -179,12 +179,12 @@ class TestTaskLifecycle:
     def test_complete_idempotent(self, client, override_user):
         org_id = _seed_org()
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         task_id = _seed_task(
             fund_id=fund_id,
@@ -201,12 +201,12 @@ class TestTaskLifecycle:
     def test_complete_cancelled_returns_409(self, client, override_user):
         org_id = _seed_org()
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         task_id = _seed_task(
             fund_id=fund_id,
@@ -221,12 +221,12 @@ class TestTaskLifecycle:
     def test_patch_to_done_stamps_completed_at(self, client, override_user):
         org_id = _seed_org()
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         task_id = _seed_task(
             fund_id=fund_id,
@@ -248,18 +248,18 @@ class TestTaskListing:
     def test_default_lists_tasks_assigned_to_current_user(self, client, override_user):
         org_id = _seed_org()
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
         other_fm_id = _seed_user(
-            "hanko-other-fm",
+            "neon-other-fm",
             UserRole.fund_manager,
             email="other-fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         my_task = _seed_task(
             fund_id=fund_id,
@@ -285,18 +285,18 @@ class TestTaskListing:
     ):
         org_id = _seed_org()
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
         other_fm_id = _seed_user(
-            "hanko-other-fm",
+            "neon-other-fm",
             UserRole.fund_manager,
             email="other-fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         mine = _seed_task(
             fund_id=fund_id,
@@ -320,18 +320,18 @@ class TestTaskListing:
     def test_assignee_filter_for_fund_manager(self, client, override_user):
         org_id = _seed_org()
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
         other_fm_id = _seed_user(
-            "hanko-other-fm",
+            "neon-other-fm",
             UserRole.fund_manager,
             email="other-fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         _seed_task(
             fund_id=fund_id,
@@ -354,12 +354,12 @@ class TestTaskListing:
     def test_nested_fund_route_lists_tasks(self, client, override_user):
         org_id = _seed_org()
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         fund_id = _seed_fund(org_id)
         other_fund_id = _seed_fund(org_id, name="Sibling Fund")
         in_fund = _seed_task(
@@ -383,12 +383,12 @@ class TestTaskRbac:
     def test_lp_cannot_create(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
-        override_user("hanko-lp")
+        override_user("neon-lp")
         fund_id = _seed_fund(org_id)
 
         resp = client.post(
@@ -401,12 +401,12 @@ class TestTaskRbac:
         org_a = _seed_org(name="Org A")
         org_b = _seed_org(name="Org B")
         _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_a,
         )
-        override_user("hanko-fm")
+        override_user("neon-fm")
         other_fund = _seed_fund(org_b, name="Other Org Fund")
 
         resp = client.post(
@@ -418,13 +418,13 @@ class TestTaskRbac:
     def test_lp_can_complete_assigned_task(self, client, override_user):
         org_id = _seed_org()
         lp_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
@@ -437,7 +437,7 @@ class TestTaskRbac:
             title="Sign docs",
         )
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         resp = client.post(f"/tasks/{task_id}/complete")
         assert resp.status_code == 200
         assert resp.json()["status"] == "done"
@@ -445,19 +445,19 @@ class TestTaskRbac:
     def test_lp_cannot_complete_other_users_task(self, client, override_user):
         org_id = _seed_org()
         lp_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
         other_lp_id = _seed_user(
-            "hanko-other-lp",
+            "neon-other-lp",
             UserRole.lp,
             email="other-lp@example.com",
             organization_id=org_id,
         )
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
@@ -471,20 +471,20 @@ class TestTaskRbac:
         # silence unused warning (lp_id seeded for symmetry)
         assert lp_id != other_lp_id
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         resp = client.post(f"/tasks/{task_id}/complete")
         assert resp.status_code == 403
 
     def test_lp_cannot_view_unassigned_task(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
@@ -496,20 +496,20 @@ class TestTaskRbac:
             created_by_user_id=fm_id,
         )
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         resp = client.get(f"/tasks/{task_id}")
         assert resp.status_code == 403
 
     def test_lp_listing_only_returns_their_tasks(self, client, override_user):
         org_id = _seed_org()
         lp_id = _seed_user(
-            "hanko-lp",
+            "neon-lp",
             UserRole.lp,
             email="lp@example.com",
             organization_id=org_id,
         )
         fm_id = _seed_user(
-            "hanko-fm",
+            "neon-fm",
             UserRole.fund_manager,
             email="fm@example.com",
             organization_id=org_id,
@@ -528,7 +528,7 @@ class TestTaskRbac:
             title="Theirs",
         )
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         resp = client.get("/tasks")
         assert resp.status_code == 200
         ids = [row["id"] for row in resp.json()]
@@ -538,13 +538,13 @@ class TestTaskRbac:
         org_a = _seed_org(name="Org A")
         org_b = _seed_org(name="Org B")
         fm_a_id = _seed_user(
-            "hanko-fm-a",
+            "neon-fm-a",
             UserRole.fund_manager,
             email="fm-a@example.com",
             organization_id=org_a,
         )
         fm_b_id = _seed_user(
-            "hanko-fm-b",
+            "neon-fm-b",
             UserRole.fund_manager,
             email="fm-b@example.com",
             organization_id=org_b,
@@ -558,6 +558,6 @@ class TestTaskRbac:
         # silence unused warning
         assert fm_a_id != fm_b_id
 
-        override_user("hanko-fm-a")
+        override_user("neon-fm-a")
         resp = client.patch(f"/tasks/{task_id}", json={"title": "Hijack"})
         assert resp.status_code == 403

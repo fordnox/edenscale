@@ -45,7 +45,7 @@ def override_user():
 
 
 def _create_org_user(
-    subject_id: str = "hanko-1",
+    subject_id: str = "neon-1",
     role: UserRole = UserRole.fund_manager,
     *,
     org_name: str = "NewTaven Capital",
@@ -62,7 +62,7 @@ def _create_org_user(
             first_name="Margot",
             last_name="Lane",
             email=f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -89,7 +89,7 @@ def _create_admin_user(subject_id: str, *, organization_ids: list[int]) -> int:
             first_name="Root",
             last_name="Admin",
             email=f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -116,7 +116,7 @@ def _create_lp_user(subject_id: str, *, organization_id: int | None = None) -> i
             first_name="Lp",
             last_name="Holder",
             email=f"{subject_id}@example.com",
-            hanko_subject_id=subject_id,
+            auth_subject_id=subject_id,
         )
         db.add(user)
         db.flush()
@@ -160,7 +160,7 @@ class TestDashboardOverview:
                 first_name="Solo",
                 last_name="User",
                 email="solo@example.com",
-                hanko_subject_id="solo-1",
+                auth_subject_id="solo-1",
             )
             db.add(user)
             db.commit()
@@ -175,9 +175,9 @@ class TestDashboardOverview:
         assert data["recent_funds"] == []
 
     def test_aggregates_filtered_to_user_organization(self, client, override_user):
-        org_id, _ = _create_org_user("hanko-1")
+        org_id, _ = _create_org_user("neon-1")
         # Foreign org — its data must not leak into the response
-        other_org_id, _ = _create_org_user("hanko-other")
+        other_org_id, _ = _create_org_user("neon-other")
 
         db = SessionLocal()
         try:
@@ -299,7 +299,7 @@ class TestDashboardOverview:
         finally:
             db.close()
 
-        override_user("hanko-1")
+        override_user("neon-1")
         response = client.get("/dashboard/overview")
         assert response.status_code == 200
         data = response.json()
@@ -331,9 +331,9 @@ class TestDashboardOverview:
         self, client, override_user
     ):
         """A multi-org admin sees only the org chosen via X-Organization-Id."""
-        org_a, _ = _create_org_user("hanko-mgr-a", org_name="Org A")
-        org_b, _ = _create_org_user("hanko-mgr-b", org_name="Org B")
-        _create_admin_user("hanko-admin", organization_ids=[org_a, org_b])
+        org_a, _ = _create_org_user("neon-mgr-a", org_name="Org A")
+        org_b, _ = _create_org_user("neon-mgr-b", org_name="Org B")
+        _create_admin_user("neon-admin", organization_ids=[org_a, org_b])
 
         db = SessionLocal()
         try:
@@ -379,7 +379,7 @@ class TestDashboardOverview:
         finally:
             db.close()
 
-        override_user("hanko-admin")
+        override_user("neon-admin")
 
         response_a = client.get(
             "/dashboard/overview", headers={"X-Organization-Id": str(org_a)}
@@ -400,8 +400,8 @@ class TestDashboardOverview:
         assert Decimal(data_b["commitments_total_amount"]) == Decimal("600000.00")
 
     def test_lp_sees_only_their_commitments_and_investors(self, client, override_user):
-        org_id, _ = _create_org_user("hanko-mgr")
-        lp_user_id = _create_lp_user("hanko-lp", organization_id=org_id)
+        org_id, _ = _create_org_user("neon-mgr")
+        lp_user_id = _create_lp_user("neon-lp", organization_id=org_id)
 
         db = SessionLocal()
         try:
@@ -475,7 +475,7 @@ class TestDashboardOverview:
         finally:
             db.close()
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         response = client.get("/dashboard/overview")
         assert response.status_code == 200
         data = response.json()
@@ -496,8 +496,8 @@ class TestDashboardActivityAggregates:
     def test_unread_notifications_count_only_for_current_user(
         self, client, override_user
     ):
-        _, user_id = _create_org_user("hanko-1")
-        _, other_user_id = _create_org_user("hanko-2", org_name="Other Org")
+        _, user_id = _create_org_user("neon-1")
+        _, other_user_id = _create_org_user("neon-2", org_name="Other Org")
 
         db = SessionLocal()
         try:
@@ -540,7 +540,7 @@ class TestDashboardActivityAggregates:
         finally:
             db.close()
 
-        override_user("hanko-1")
+        override_user("neon-1")
         response = client.get("/dashboard/overview")
         assert response.status_code == 200
         assert response.json()["unread_notifications_count"] == 2
@@ -548,8 +548,8 @@ class TestDashboardActivityAggregates:
     def test_open_tasks_count_only_counts_current_user_assignments(
         self, client, override_user
     ):
-        org_id, user_id = _create_org_user("hanko-1")
-        _, other_user_id = _create_org_user("hanko-2", org_name="Other Org")
+        org_id, user_id = _create_org_user("neon-1")
+        _, other_user_id = _create_org_user("neon-2", org_name="Other Org")
 
         db = SessionLocal()
         try:
@@ -600,7 +600,7 @@ class TestDashboardActivityAggregates:
         finally:
             db.close()
 
-        override_user("hanko-1")
+        override_user("neon-1")
         response = client.get("/dashboard/overview")
         assert response.status_code == 200
         assert response.json()["open_tasks_count"] == 2
@@ -608,7 +608,7 @@ class TestDashboardActivityAggregates:
     def test_recent_communications_only_sent_and_capped_to_five(
         self, client, override_user
     ):
-        org_id, user_id = _create_org_user("hanko-1")
+        org_id, user_id = _create_org_user("neon-1")
 
         db = SessionLocal()
         try:
@@ -639,7 +639,7 @@ class TestDashboardActivityAggregates:
         finally:
             db.close()
 
-        override_user("hanko-1")
+        override_user("neon-1")
         response = client.get("/dashboard/overview")
         assert response.status_code == 200
         items = response.json()["recent_communications"]
@@ -651,8 +651,8 @@ class TestDashboardActivityAggregates:
     def test_recent_communications_filtered_by_lp_visibility(
         self, client, override_user
     ):
-        org_id, fm_user_id = _create_org_user("hanko-mgr")
-        lp_user_id = _create_lp_user("hanko-lp", organization_id=org_id)
+        org_id, fm_user_id = _create_org_user("neon-mgr")
+        lp_user_id = _create_lp_user("neon-lp", organization_id=org_id)
 
         db = SessionLocal()
         try:
@@ -708,7 +708,7 @@ class TestDashboardActivityAggregates:
         finally:
             db.close()
 
-        override_user("hanko-lp")
+        override_user("neon-lp")
         response = client.get("/dashboard/overview")
         assert response.status_code == 200
         subjects = [c["subject"] for c in response.json()["recent_communications"]]

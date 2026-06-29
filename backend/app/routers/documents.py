@@ -254,7 +254,7 @@ async def delete_document(
 #
 # Mounted in ``app.main`` (NOT under ``/documents`` and NOT behind the JWT
 # auth dependency) so the LocalDevStorage backend's presigned PUTs work
-# without forcing test/dev clients to re-attach the Hanko bearer token.
+# without forcing test/dev clients to re-attach the Neon Auth bearer token.
 
 dev_storage_router = APIRouter()
 

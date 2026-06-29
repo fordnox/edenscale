@@ -31,7 +31,7 @@ def db():
 
 def test_unknown_subject_is_auto_provisioned(db):
     payload = {
-        "sub": "hanko-new-1",
+        "sub": "neon-new-1",
         "email": "new@example.com",
         "given_name": "Ada",
         "family_name": "Lovelace",
@@ -40,16 +40,31 @@ def test_unknown_subject_is_auto_provisioned(db):
     user = get_current_user_record(payload=payload, db=db)
 
     assert user.id is not None
-    assert user.hanko_subject_id == "hanko-new-1"
+    assert user.auth_subject_id == "neon-new-1"
     assert user.role == UserRole.lp
     assert user.email == "new@example.com"
     assert user.first_name == "Ada"
     assert user.last_name == "Lovelace"
 
 
-def test_auto_provision_extracts_address_from_hanko_email_object(db):
+def test_auto_provision_splits_name_claim(db):
+    """Neon Auth emits a single `name` claim; it is split into first/last."""
     payload = {
-        "sub": "hanko-new-3",
+        "sub": "neon-name-1",
+        "email": "grace@example.com",
+        "name": "Grace Hopper",
+    }
+
+    user = get_current_user_record(payload=payload, db=db)
+
+    assert user.first_name == "Grace"
+    assert user.last_name == "Hopper"
+
+
+def test_auto_provision_extracts_address_from_email_object(db):
+    """Defensive: a nested `{"address": ...}` email claim is still handled."""
+    payload = {
+        "sub": "neon-new-3",
         "email": {
             "address": "arturas@example.com",
             "is_primary": True,
@@ -63,7 +78,7 @@ def test_auto_provision_extracts_address_from_hanko_email_object(db):
 
 
 def test_auto_provision_falls_back_to_blanks_when_claims_missing(db):
-    payload = {"sub": "hanko-new-2"}
+    payload = {"sub": "neon-new-2"}
 
     user = get_current_user_record(payload=payload, db=db)
 
@@ -83,14 +98,14 @@ def test_existing_user_is_returned_unchanged(db):
         first_name="Margot",
         last_name="Lane",
         email="margot@example.com",
-        hanko_subject_id="hanko-existing",
+        auth_subject_id="neon-existing",
     )
     db.add(existing)
     db.commit()
     existing_id = existing.id
 
     payload = {
-        "sub": "hanko-existing",
+        "sub": "neon-existing",
         "email": "should-not-overwrite@example.com",
         "given_name": "ShouldNotOverwrite",
     }
@@ -103,9 +118,9 @@ def test_existing_user_is_returned_unchanged(db):
 
 
 def test_seed_row_is_claimed_by_email_on_first_signin(db):
-    """Pre-provisioned user (e.g. from `make seed`) has hanko_subject_id=None.
-    First Hanko sign-in with the matching email claim should bind the row by
-    setting `hanko_subject_id`, not create a duplicate `lp` user.
+    """Pre-provisioned user (e.g. from `make seed`) has auth_subject_id=None.
+    First Neon Auth sign-in with the matching email claim should bind the row by
+    setting `auth_subject_id`, not create a duplicate `lp` user.
     """
     org = Organization(name="NewTaven Capital", type=OrganizationType.fund_manager_firm)
     db.add(org)
@@ -116,20 +131,20 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
         first_name="Ava",
         last_name="Morgan",
         email="ava.morgan@newtaven.demo",
-        hanko_subject_id=None,
+        auth_subject_id=None,
     )
     db.add(seeded)
     db.commit()
     seeded_id = seeded.id
 
     payload = {
-        "sub": "hanko-claim-1",
+        "sub": "neon-claim-1",
         "email": "ava.morgan@newtaven.demo",
     }
     user = get_current_user_record(payload=payload, db=db)
 
     assert user.id == seeded_id
-    assert user.hanko_subject_id == "hanko-claim-1"
+    assert user.auth_subject_id == "neon-claim-1"
     assert user.role == UserRole.fund_manager
     assert (
         db.query(User).filter(User.email == "ava.morgan@newtaven.demo").count() == 1
@@ -137,7 +152,7 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
 
 
 def test_seed_claim_refuses_when_email_already_linked(db):
-    """If the email is already linked to a different `hanko_subject_id`, the
+    """If the email is already linked to a different `auth_subject_id`, the
     second sign-in must NOT rebind the row (would be account takeover) and
     must NOT 500 on the unique-email constraint when auto-provisioning a
     duplicate. Returns 401 with a clear message instead.
@@ -151,14 +166,14 @@ def test_seed_claim_refuses_when_email_already_linked(db):
         first_name="Ava",
         last_name="Morgan",
         email="ava.morgan@newtaven.demo",
-        hanko_subject_id="hanko-original",
+        auth_subject_id="neon-original",
     )
     db.add(existing)
     db.commit()
     existing_id = existing.id
 
     payload = {
-        "sub": "hanko-impostor",
+        "sub": "neon-impostor",
         "email": "ava.morgan@newtaven.demo",
     }
     with pytest.raises(HTTPException) as excinfo:
@@ -166,7 +181,7 @@ def test_seed_claim_refuses_when_email_already_linked(db):
     assert excinfo.value.status_code == 401
 
     rebound = db.query(User).filter(User.id == existing_id).one()
-    assert rebound.hanko_subject_id == "hanko-original"
+    assert rebound.auth_subject_id == "neon-original"
     assert (
         db.query(User).filter(User.email == "ava.morgan@newtaven.demo").count() == 1
     )
@@ -184,7 +199,7 @@ def test_require_roles_allows_matching_role():
         first_name="A",
         last_name="B",
         email="a@b.com",
-        hanko_subject_id="x",
+        auth_subject_id="x",
     )
     dep = require_roles(UserRole.admin, UserRole.fund_manager)
 
@@ -197,7 +212,7 @@ def test_require_roles_rejects_other_role():
         first_name="A",
         last_name="B",
         email="a@b.com",
-        hanko_subject_id="x",
+        auth_subject_id="x",
     )
     dep = require_roles(UserRole.admin, UserRole.fund_manager)
 
@@ -212,7 +227,7 @@ def test_require_superadmin_allows_superadmin():
         first_name="Sam",
         last_name="Root",
         email="sam@example.com",
-        hanko_subject_id="x",
+        auth_subject_id="x",
     )
 
     assert require_superadmin(current_user=user) is user
@@ -228,7 +243,7 @@ def test_require_superadmin_rejects_non_superadmin(role):
         first_name="A",
         last_name="B",
         email="a@b.com",
-        hanko_subject_id="x",
+        auth_subject_id="x",
     )
 
     with pytest.raises(HTTPException) as excinfo:
