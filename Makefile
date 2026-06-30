@@ -7,6 +7,7 @@ export MY_GID := 1000
 sync: ## npm install and uv sync
 	cd apps/backend && uv sync
 	cd apps/frontend && pnpm i
+	cd apps/emails && pnpm i
 
 build: ## Build backend and frontend Docker images
 	@echo "Building backend Docker image..."
