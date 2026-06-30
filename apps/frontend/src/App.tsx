@@ -1,7 +1,8 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Outlet } from 'react-router-dom'
 import { ActiveOrganizationProvider } from './contexts/ActiveOrganizationContext'
 import { PendingInvitationsBannerProvider } from './contexts/PendingInvitationsBannerContext'
 import AppShell from './layouts/AppShell'
+import ProtectedLayout from './layouts/ProtectedLayout'
 import DashboardPage from './pages/DashboardPage'
 import FundsPage from './pages/FundsPage'
 import FundDetailPage from './pages/FundDetailPage'
@@ -20,11 +21,30 @@ import SuperadminOrganizationDetailPage from './pages/superadmin/SuperadminOrgan
 import InvitationAcceptPage from './pages/InvitationAcceptPage'
 import LoginPage from './pages/LoginPage'
 
-function App() {
+function ProtectedProviders() {
   return (
     <ActiveOrganizationProvider>
       <PendingInvitationsBannerProvider>
-        <Routes>
+        <Outlet />
+      </PendingInvitationsBannerProvider>
+    </ActiveOrganizationProvider>
+  )
+}
+
+function App() {
+  return (
+    <Routes>
+      {/* Pages without authenticated app providers */}
+      <Route path="/login" element={<LoginPage />} />
+
+      {/* Authenticated application routes */}
+      <Route element={<ProtectedLayout />}>
+        <Route element={<ProtectedProviders />}>
+          <Route
+            path="/invitations/accept"
+            element={<InvitationAcceptPage />}
+          />
+
           {/* Dashboard application shell (sidebar + main) */}
           <Route element={<AppShell />}>
             <Route path="/" element={<DashboardPage />} />
@@ -52,16 +72,9 @@ function App() {
               element={<SuperadminOrganizationDetailPage />}
             />
           </Route>
-
-          {/* Pages without layout */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/invitations/accept"
-            element={<InvitationAcceptPage />}
-          />
-        </Routes>
-      </PendingInvitationsBannerProvider>
-    </ActiveOrganizationProvider>
+        </Route>
+      </Route>
+    </Routes>
   )
 }
 

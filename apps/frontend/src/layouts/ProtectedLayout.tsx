@@ -1,11 +1,10 @@
-import { Outlet, useNavigate } from "react-router-dom"
-import { Loader2, Lock } from "lucide-react"
+import { Navigate, Outlet, useLocation } from "react-router-dom"
+import { Loader2 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
-import { Button } from "@/components/ui/button"
 
 export default function ProtectedLayout() {
-  const { user, isLoading, isAuthenticated } = useAuth()
-  const navigate = useNavigate()
+  const { isLoading, isAuthenticated } = useAuth()
+  const location = useLocation()
 
   if (isLoading) {
     return (
@@ -17,20 +16,14 @@ export default function ProtectedLayout() {
     )
   }
 
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated) {
+    const next = `${location.pathname}${location.search}${location.hash}`
     return (
-      <main className="flex-1 container mx-auto px-6 py-8">
-        <div className="max-w-md mx-auto text-center py-16">
-          <Lock className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-          <h1 className="text-2xl font-bold text-foreground mb-2">Login Required</h1>
-          <p className="text-muted-foreground mb-6">
-            Please log in to access this page.
-          </p>
-          <Button onClick={() => navigate("/login")}>
-            Go to Login
-          </Button>
-        </div>
-      </main>
+      <Navigate
+        to={`/login?next=${encodeURIComponent(next)}`}
+        replace
+        state={{ from: location }}
+      />
     )
   }
 
