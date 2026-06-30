@@ -4,6 +4,10 @@ from datetime import datetime
 from sqlalchemy.orm import Query, Session
 
 from app.models.audit_log import AuditLog
+from app.models.enums import UserRole
+from app.models.user_organization_membership import UserOrganizationMembership
+
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
 
 
 class AuditLogRepository:
@@ -13,8 +17,9 @@ class AuditLogRepository:
     def _base_query(self) -> Query:
         return self.db.query(AuditLog)
 
-    def list(
+    def list_for_membership(
         self,
+        membership: UserOrganizationMembership,
         *,
         entity_type: str | None = None,
         entity_id: uuid.UUID | None = None,
@@ -25,13 +30,25 @@ class AuditLogRepository:
         skip: int = 0,
         limit: int = 100,
     ) -> list[AuditLog]:
-        query = self._base_query()
+        """Audit entries visible to the active membership.
+
+        Admins/fund managers/superadmins see every event in the org; everyone
+        else only sees events they themselves caused — the `user_id` filter is
+        forced to their own id rather than honoring an arbitrary request, so a
+        non-privileged caller can't page through other users' activity.
+        """
+        query = self._base_query().filter(
+            AuditLog.organization_id == membership.organization_id
+        )
+        effective_user_id = (
+            user_id if membership.role in _ORG_VISIBLE_ROLES else membership.user_id
+        )
         if entity_type is not None:
             query = query.filter(AuditLog.entity_type == entity_type)
         if entity_id is not None:
             query = query.filter(AuditLog.entity_id == entity_id)
-        if user_id is not None:
-            query = query.filter(AuditLog.user_id == user_id)
+        if effective_user_id is not None:
+            query = query.filter(AuditLog.user_id == effective_user_id)
         if action is not None:
             query = query.filter(AuditLog.action == action)
         if date_from is not None:

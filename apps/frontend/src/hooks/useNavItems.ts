@@ -78,12 +78,12 @@ const LP_ITEMS: NavItem[] = [
   DOCUMENTS,
   LETTERS,
   NOTIFICATIONS,
+  AUDIT_LOG,
 ]
 
 export function navItemsForRole(role: UserRole | null | undefined): NavItem[] {
   if (role === "lp") return LP_ITEMS
-  if (role === "admin") return [...FULL_ITEMS, AUDIT_LOG]
-  return FULL_ITEMS
+  return [...FULL_ITEMS, AUDIT_LOG]
 }
 
 interface UseNavItemsResult {

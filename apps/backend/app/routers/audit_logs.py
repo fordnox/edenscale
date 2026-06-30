@@ -6,9 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
-from app.core.rbac import require_roles
-from app.models.enums import UserRole
-from app.models.user import User
+from app.core.rbac import get_active_membership
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.audit_log_repository import AuditLogRepository
 from app.schemas.audit_log import AuditLogRead
 
@@ -26,10 +25,16 @@ async def list_audit_logs(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.admin)),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
+    """List audit events visible to the caller's active membership.
+
+    Admins/fund managers/superadmins see every event in the org; everyone
+    else only sees events they caused themselves.
+    """
     repo = AuditLogRepository(db)
-    return repo.list(
+    return repo.list_for_membership(
+        membership,
         entity_type=entity_type,
         entity_id=entity_id,
         user_id=user_id,
