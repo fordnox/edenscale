@@ -51,7 +51,12 @@ class TaskRepository:
             query = query.filter(Task.fund_id == fund_id)
         if status is not None:
             query = query.filter(Task.status == status)
-        return query.order_by(Task.id.desc()).offset(skip).limit(limit).all()
+        return (
+            query.order_by(Task.created_at.desc(), Task.id.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def get(self, task_id: uuid.UUID) -> Task | None:
         return self._base_query().filter(Task.id == task_id).first()

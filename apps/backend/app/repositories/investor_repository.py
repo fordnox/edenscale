@@ -50,7 +50,12 @@ class InvestorRepository:
                 InvestorContact.user_id == membership.user_id
             )
             query = query.filter(Investor.id.in_(visible_investor_ids))
-        return query.order_by(Investor.id).offset(skip).limit(limit).all()
+        return (
+            query.order_by(Investor.created_at, Investor.id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def get(self, investor_id: uuid.UUID) -> tuple[Investor, Decimal, int] | None:
         return self._base_query().filter(Investor.id == investor_id).first()

@@ -20,7 +20,12 @@ class FundGroupRepository:
         query = self.db.query(FundGroup)
         if organization_id is not None:
             query = query.filter(FundGroup.organization_id == organization_id)
-        return query.order_by(FundGroup.id).offset(skip).limit(limit).all()
+        return (
+            query.order_by(FundGroup.created_at, FundGroup.id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def get(self, fund_group_id: uuid.UUID) -> FundGroup | None:
         return self.db.query(FundGroup).filter(FundGroup.id == fund_group_id).first()

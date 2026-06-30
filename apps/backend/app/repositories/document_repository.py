@@ -75,7 +75,12 @@ class DocumentRepository:
             query = query.filter(Document.investor_id == investor_id)
         if document_type is not None:
             query = query.filter(Document.document_type == document_type)
-        return query.order_by(Document.id.desc()).offset(skip).limit(limit).all()
+        return (
+            query.order_by(Document.created_at.desc(), Document.id.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def get(self, document_id: uuid.UUID) -> Document | None:
         return self._base_query().filter(Document.id == document_id).first()

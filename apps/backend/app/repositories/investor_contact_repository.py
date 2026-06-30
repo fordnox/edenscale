@@ -22,7 +22,7 @@ class InvestorContactRepository:
         return (
             self.db.query(InvestorContact)
             .filter(InvestorContact.investor_id == investor_id)
-            .order_by(InvestorContact.id)
+            .order_by(InvestorContact.created_at, InvestorContact.id)
             .offset(skip)
             .limit(limit)
             .all()
@@ -39,7 +39,7 @@ class InvestorContactRepository:
                 InvestorContact.investor_id == investor_id,
                 InvestorContact.user_id == user_id,
             )
-            .order_by(InvestorContact.id)
+            .order_by(InvestorContact.created_at, InvestorContact.id)
             .all()
         )
 

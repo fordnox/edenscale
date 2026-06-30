@@ -39,7 +39,7 @@ class UserRepository:
         query = self.db.query(User).filter(User.organization_id == organization_id)
         if not include_inactive:
             query = query.filter(User.is_active.is_(True))
-        return query.order_by(User.id).offset(skip).limit(limit).all()
+        return query.order_by(User.created_at, User.id).offset(skip).limit(limit).all()
 
     def get_by_id(self, user_id: uuid.UUID) -> User | None:
         return self.db.query(User).filter(User.id == user_id).first()

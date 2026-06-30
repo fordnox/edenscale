@@ -15,7 +15,9 @@ class UserOrganizationMembershipRepository:
         return (
             self.db.query(UserOrganizationMembership)
             .filter(UserOrganizationMembership.user_id == user_id)
-            .order_by(UserOrganizationMembership.id)
+            .order_by(
+                UserOrganizationMembership.created_at, UserOrganizationMembership.id
+            )
             .all()
         )
 
@@ -25,7 +27,9 @@ class UserOrganizationMembershipRepository:
         return (
             self.db.query(UserOrganizationMembership)
             .filter(UserOrganizationMembership.organization_id == organization_id)
-            .order_by(UserOrganizationMembership.id)
+            .order_by(
+                UserOrganizationMembership.created_at, UserOrganizationMembership.id
+            )
             .all()
         )
 
@@ -99,7 +103,7 @@ class UserOrganizationMembershipRepository:
         legacy_users = (
             self.db.query(User)
             .filter(User.organization_id.is_not(None))
-            .order_by(User.id)
+            .order_by(User.created_at, User.id)
             .all()
         )
         inserted = 0

@@ -46,7 +46,12 @@ class CommitmentRepository:
             query = query.filter(Commitment.fund_id == fund_id)
         if investor_id is not None:
             query = query.filter(Commitment.investor_id == investor_id)
-        return query.order_by(Commitment.id).offset(skip).limit(limit).all()
+        return (
+            query.order_by(Commitment.created_at, Commitment.id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def get(self, commitment_id: uuid.UUID) -> Commitment | None:
         return self._base_query().filter(Commitment.id == commitment_id).first()

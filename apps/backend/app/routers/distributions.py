@@ -164,7 +164,7 @@ async def add_distribution_items(
                 Commitment.fund_id == distribution.fund_id,
                 Commitment.status == CommitmentStatus.approved,
             )
-            .order_by(Commitment.id)
+            .order_by(Commitment.created_at, Commitment.id)
             .all()
         )
         if not approved:

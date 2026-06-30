@@ -92,7 +92,12 @@ class CapitalCallRepository:
             query = query.filter(CapitalCall.fund_id == fund_id)
         if status is not None:
             query = query.filter(CapitalCall.status == status)
-        return query.order_by(CapitalCall.id).offset(skip).limit(limit).all()
+        return (
+            query.order_by(CapitalCall.created_at, CapitalCall.id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def get_with_items(self, call_id: uuid.UUID) -> CapitalCall | None:
         return self._base_query().filter(CapitalCall.id == call_id).first()

@@ -22,7 +22,7 @@ class FundTeamMemberRepository:
         return (
             self.db.query(FundTeamMember)
             .filter(FundTeamMember.fund_id == fund_id)
-            .order_by(FundTeamMember.id)
+            .order_by(FundTeamMember.created_at, FundTeamMember.id)
             .offset(skip)
             .limit(limit)
             .all()

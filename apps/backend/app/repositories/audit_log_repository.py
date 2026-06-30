@@ -38,4 +38,9 @@ class AuditLogRepository:
             query = query.filter(AuditLog.created_at >= date_from)
         if date_to is not None:
             query = query.filter(AuditLog.created_at <= date_to)
-        return query.order_by(AuditLog.id.desc()).offset(skip).limit(limit).all()
+        return (
+            query.order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )

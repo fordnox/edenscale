@@ -85,7 +85,12 @@ class DistributionRepository:
             query = query.filter(Distribution.fund_id == fund_id)
         if status is not None:
             query = query.filter(Distribution.status == status)
-        return query.order_by(Distribution.id).offset(skip).limit(limit).all()
+        return (
+            query.order_by(Distribution.created_at, Distribution.id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def get_with_items(self, distribution_id: uuid.UUID) -> Distribution | None:
         return self._base_query().filter(Distribution.id == distribution_id).first()

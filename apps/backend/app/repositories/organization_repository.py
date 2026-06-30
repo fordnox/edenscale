@@ -25,7 +25,7 @@ class OrganizationRepository:
                 UserOrganizationMembership.organization_id == Organization.id,
             )
             .group_by(Organization.id)
-            .order_by(Organization.id)
+            .order_by(Organization.created_at, Organization.id)
             .all()  # type: ignore[invalid-return-type]
         )
 
@@ -38,7 +38,12 @@ class OrganizationRepository:
         query = self.db.query(Organization)
         if not include_inactive:
             query = query.filter(Organization.is_active.is_(True))
-        return query.order_by(Organization.id).offset(skip).limit(limit).all()
+        return (
+            query.order_by(Organization.created_at, Organization.id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def get(self, organization_id: uuid.UUID) -> Organization | None:
         return (

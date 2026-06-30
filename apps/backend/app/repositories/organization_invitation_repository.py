@@ -62,7 +62,9 @@ class OrganizationInvitationRepository:
         )
         if status is not None:
             query = query.filter(OrganizationInvitation.status == status)
-        return query.order_by(OrganizationInvitation.id.desc()).all()
+        return query.order_by(
+            OrganizationInvitation.created_at.desc(), OrganizationInvitation.id.desc()
+        ).all()
 
     def list_pending_for_email(self, email: str) -> list[OrganizationInvitation]:
         return (
@@ -71,7 +73,10 @@ class OrganizationInvitationRepository:
                 OrganizationInvitation.email == email,
                 OrganizationInvitation.status == InvitationStatus.pending,
             )
-            .order_by(OrganizationInvitation.id.desc())
+            .order_by(
+                OrganizationInvitation.created_at.desc(),
+                OrganizationInvitation.id.desc(),
+            )
             .all()
         )
 

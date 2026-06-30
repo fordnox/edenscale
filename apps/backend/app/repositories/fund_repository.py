@@ -52,7 +52,7 @@ class FundRepository:
                 .where(InvestorContact.user_id == membership.user_id)
             )
             query = query.filter(Fund.id.in_(visible_fund_ids))
-        return query.order_by(Fund.id).offset(skip).limit(limit).all()
+        return query.order_by(Fund.created_at, Fund.id).offset(skip).limit(limit).all()
 
     def get(self, fund_id: uuid.UUID) -> tuple[Fund, Decimal] | None:
         return self._base_query().filter(Fund.id == fund_id).first()

@@ -72,7 +72,12 @@ class CommunicationRepository:
             query = query.filter(Communication.fund_id == fund_id)
         if comm_type is not None:
             query = query.filter(Communication.type == comm_type)
-        return query.order_by(Communication.id.desc()).offset(skip).limit(limit).all()
+        return (
+            query.order_by(Communication.created_at.desc(), Communication.id.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def list_recent_for_membership(
         self, membership: UserOrganizationMembership, *, limit: int = 5
@@ -217,7 +222,7 @@ class CommunicationRepository:
                 Commitment.status == CommitmentStatus.approved,
                 InvestorContact.is_primary.is_(True),
             )
-            .order_by(InvestorContact.id)
+            .order_by(InvestorContact.created_at, InvestorContact.id)
             .all()
         )
         return [(user_id, contact_id) for contact_id, user_id in rows]
