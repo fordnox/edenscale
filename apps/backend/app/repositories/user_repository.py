@@ -76,9 +76,7 @@ class UserRepository:
         different Hanko subject.
         """
         existing = (
-            self.db.query(User)
-            .filter(User.hanko_subject_id == hanko_id)
-            .one_or_none()
+            self.db.query(User).filter(User.hanko_subject_id == hanko_id).one_or_none()
         )
         if existing is not None:
             return existing, False

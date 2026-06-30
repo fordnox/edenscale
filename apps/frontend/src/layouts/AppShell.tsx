@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react"
-import { Outlet } from "react-router-dom"
-import { Mail } from "lucide-react"
+import { Outlet, useNavigate } from "react-router-dom"
+import { Landmark, Mail } from "lucide-react"
 
 import { CommandPalette } from "@/components/layout/CommandPalette"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Topbar } from "@/components/layout/Topbar"
+import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { PendingInvitationsBanner } from "@/components/invitations/PendingInvitationsBanner"
@@ -15,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { useCommandPalette } from "@/hooks/useCommandPalette"
 
 export default function AppShell() {
+  const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette()
   const { memberships, isSuperadmin, isLoading } = useActiveOrganization()
@@ -71,7 +73,17 @@ export default function AppShell() {
                 <EmptyState
                   icon={<Mail strokeWidth={1.25} />}
                   title="No organization yet"
-                  body="You haven't been invited to an organization yet. Check your email for a pending invitation, or contact your administrator."
+                  body="You haven't been invited to an organization yet. Check your email for a pending invitation, or create your own fund manager firm to get started."
+                  action={
+                    <Button
+                      variant="primary"
+                      size="md"
+                      onClick={() => navigate("/onboarding")}
+                    >
+                      <Landmark strokeWidth={1.5} className="size-4" />
+                      Create your firm
+                    </Button>
+                  }
                 />
               </Card>
             </div>

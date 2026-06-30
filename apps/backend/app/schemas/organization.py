@@ -14,6 +14,20 @@ class OrganizationCreate(BaseModel):
     description: str | None = None
 
 
+class OrganizationOnboardingCreate(BaseModel):
+    """Payload for self-serve onboarding: any signed-in user can found their
+    own fund manager firm without an invitation. The org `type` is fixed to
+    `fund_manager_firm` server-side — self-serve signup is only for managers
+    starting their own fund, not investor firms or service providers, which
+    still require a superadmin or an invitation.
+    """
+
+    name: str = Field(min_length=1, max_length=255)
+    legal_name: str | None = Field(default=None, max_length=255)
+    website: str | None = Field(default=None, max_length=255)
+    description: str | None = None
+
+
 class OrganizationUpdate(BaseModel):
     type: OrganizationType | None = None
     name: str | None = Field(default=None, min_length=1, max_length=255)

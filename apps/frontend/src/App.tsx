@@ -19,6 +19,7 @@ import AuditLogPage from './pages/AuditLogPage'
 import SuperadminOrganizationsPage from './pages/superadmin/SuperadminOrganizationsPage'
 import SuperadminOrganizationDetailPage from './pages/superadmin/SuperadminOrganizationDetailPage'
 import InvitationAcceptPage from './pages/InvitationAcceptPage'
+import OnboardingPage from './pages/OnboardingPage'
 import LoginPage from './pages/LoginPage'
 
 function ProtectedProviders() {
@@ -44,6 +45,7 @@ function App() {
             path="/invitations/accept"
             element={<InvitationAcceptPage />}
           />
+          <Route path="/onboarding" element={<OnboardingPage />} />
 
           {/* Dashboard application shell (sidebar + main) */}
           <Route element={<AppShell />}>

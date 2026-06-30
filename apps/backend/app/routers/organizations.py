@@ -2,17 +2,61 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.rbac import require_membership_roles, require_superadmin
-from app.models.enums import UserRole
+from app.core.rbac import (
+    get_current_user_record,
+    require_membership_roles,
+    require_superadmin,
+)
+from app.models.enums import OrganizationType, UserRole
+from app.models.user import User
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.organization_repository import OrganizationRepository
+from app.repositories.user_organization_membership_repository import (
+    UserOrganizationMembershipRepository,
+)
 from app.schemas.organization import (
     OrganizationCreate,
+    OrganizationOnboardingCreate,
     OrganizationRead,
     OrganizationUpdate,
 )
+from app.schemas.user_organization_membership import MembershipRead
 
 router = APIRouter()
+
+
+@router.post(
+    "/self-serve",
+    response_model=MembershipRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_organization_self_serve(
+    data: OrganizationOnboardingCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_record),
+):
+    """Onboarding entry point for a signed-in user with no organization.
+
+    Creates a new `fund_manager_firm` organization and makes the caller its
+    `admin`, so they can immediately create and manage their own fund without
+    waiting on an invitation.
+    """
+    repo = OrganizationRepository(db)
+    organization = repo.create(
+        OrganizationCreate(
+            type=OrganizationType.fund_manager_firm,
+            name=data.name,
+            legal_name=data.legal_name,
+            website=data.website,
+            description=data.description,
+        )
+    )
+    membership = UserOrganizationMembershipRepository(db).create(
+        user_id=current_user.id,  # type: ignore[invalid-argument-type]
+        organization_id=organization.id,  # type: ignore[invalid-argument-type]
+        role=UserRole.admin,
+    )
+    return membership
 
 
 @router.get("", response_model=list[OrganizationRead])

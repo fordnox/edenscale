@@ -99,6 +99,48 @@ class TestCreateOrganization:
         assert response.status_code == 403
 
 
+class TestSelfServeCreateOrganization:
+    def test_lp_with_no_org_can_create_and_becomes_admin(self, client, override_user):
+        _seed_user("hanko-newcomer", UserRole.lp, email="newcomer@example.com")
+        override_user("hanko-newcomer")
+
+        response = client.post(
+            "/organizations/self-serve",
+            json={"name": "Newcomer Capital", "legal_name": "Newcomer Capital LLC"},
+        )
+        assert response.status_code == 201
+        body = response.json()
+        assert body["role"] == "admin"
+        assert body["organization"]["name"] == "Newcomer Capital"
+        assert body["organization"]["type"] == "fund_manager_firm"
+
+        memberships_response = client.get("/users/me/memberships")
+        assert memberships_response.status_code == 200
+        memberships = memberships_response.json()
+        assert len(memberships) == 1
+        assert memberships[0]["organization_id"] == body["organization_id"]
+        assert memberships[0]["role"] == "admin"
+
+    def test_user_already_in_an_org_can_self_serve_a_second_one(
+        self, client, override_user
+    ):
+        org_id = _seed_org("Existing Co")
+        _seed_user(
+            "hanko-existing",
+            UserRole.fund_manager,
+            email="existing@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-existing")
+
+        response = client.post(
+            "/organizations/self-serve",
+            json={"name": "Side Fund"},
+        )
+        assert response.status_code == 201
+        assert response.json()["organization"]["name"] == "Side Fund"
+
+
 class TestListAndReadOrganization:
     def test_fund_manager_can_read(self, client, override_user):
         org_id = _seed_org()

@@ -117,6 +117,30 @@ export interface paths {
         patch: operations["update_user_role_users__user_id__role_patch"];
         trace?: never;
     };
+    "/organizations/self-serve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Organization Self Serve
+         * @description Onboarding entry point for a signed-in user with no organization.
+         *
+         *     Creates a new `fund_manager_firm` organization and makes the caller its
+         *     `admin`, so they can immediately create and manage their own fund without
+         *     waiting on an invitation.
+         */
+        post: operations["create_organization_self_serve_organizations_self_serve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organizations": {
         parameters: {
             query?: never;
@@ -2345,6 +2369,24 @@ export interface components {
             /** Description */
             description?: string | null;
         };
+        /**
+         * OrganizationOnboardingCreate
+         * @description Payload for self-serve onboarding: any signed-in user can found their
+         *     own fund manager firm without an invitation. The org `type` is fixed to
+         *     `fund_manager_firm` server-side — self-serve signup is only for managers
+         *     starting their own fund, not investor firms or service providers, which
+         *     still require a superadmin or an invitation.
+         */
+        OrganizationOnboardingCreate: {
+            /** Name */
+            name: string;
+            /** Legal Name */
+            legal_name?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Description */
+            description?: string | null;
+        };
         /** OrganizationRead */
         OrganizationRead: {
             /** Id */
@@ -2840,6 +2882,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_organization_self_serve_organizations_self_serve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationOnboardingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipRead"];
                 };
             };
             /** @description Validation Error */
