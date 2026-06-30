@@ -72,3 +72,68 @@ def _ensure_test_database() -> None:
 
 
 _ensure_test_database()
+
+
+# ---------------------------------------------------------------------------
+# Shared fixtures. Imported below the env rewrite above so ``app.*`` modules
+# pick up the overridden ``APP_DATABASE_DSN`` when first imported.
+# ---------------------------------------------------------------------------
+
+import pytest  # noqa: E402
+from fastapi import HTTPException, status  # noqa: E402
+
+from app.core.auth import get_current_user  # noqa: E402
+from app.core.database import SessionLocal  # noqa: E402
+from app.main import app  # noqa: E402
+from app.models.user import User  # noqa: E402
+from app.repositories.user_repository import UserRepository  # noqa: E402
+
+
+@pytest.fixture
+def override_user():
+    """Override the auth dependency so routes resolve a real local ``User``.
+
+    ``get_current_user`` returns the provisioned ``User`` row (not a JWT
+    payload), so this resolves — or auto-provisions on first sign-in — the user
+    for the given Hanko subject through the same repository path production
+    uses. An explicit ``email`` is honoured (and may bind a pre-seeded,
+    subject-less row); otherwise a new subject is provisioned with a synthetic
+    address while existing rows are returned untouched. The backing session is
+    kept open until teardown so the returned instance stays attached while the
+    request is served.
+    """
+    sessions: list = []
+
+    def _set(subject_id: str | None, *, email: str | None = None) -> None:
+        if subject_id is None:
+
+            def _missing() -> User:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Not authenticated",
+                )
+
+            app.dependency_overrides[get_current_user] = _missing
+            return
+
+        def _resolve() -> User:
+            db = SessionLocal()
+            sessions.append(db)
+            existing = (
+                db.query(User).filter(User.hanko_subject_id == subject_id).first()
+            )
+            resolved_email = email
+            if existing is None and resolved_email is None:
+                resolved_email = f"{subject_id}@example.com"
+            user, _ = UserRepository(db).get_or_provision_by_hanko_id(
+                hanko_id=subject_id,
+                email=resolved_email,
+            )
+            return user
+
+        app.dependency_overrides[get_current_user] = _resolve
+
+    yield _set
+    app.dependency_overrides.clear()
+    for db in sessions:
+        db.close()

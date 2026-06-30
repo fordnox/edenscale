@@ -1,16 +1,20 @@
-"""Tests for the RBAC layer in `app.core.rbac`.
+"""Tests for the auth/RBAC layer.
 
-These exercise `get_current_user_record` (auto-provisioning) and the
-`require_roles` factory directly with the SQLAlchemy session — no FastAPI
-client needed.
+User resolution and first-login provisioning now live in
+`UserRepository.get_or_provision_by_hanko_id` (exercised here directly against
+the SQLAlchemy session); `app.core.rbac` only layers role checks
+(`require_roles` / `require_superadmin`) on top of the resolved user. No
+FastAPI client needed.
 """
 
 import pytest
 from fastapi import HTTPException
 
+from app.core.auth import _extract_email_from_hanko_payload
 from app.core.database import Base, SessionLocal, engine
-from app.core.rbac import get_current_user_record, require_roles, require_superadmin
+from app.core.rbac import require_roles, require_superadmin
 from app.models import Organization, OrganizationType, User, UserRole
+from app.repositories.user_repository import UserRepository
 
 
 @pytest.fixture(autouse=True)
@@ -30,15 +34,14 @@ def db():
 
 
 def test_unknown_subject_is_auto_provisioned(db):
-    payload = {
-        "sub": "hanko-new-1",
-        "email": "new@example.com",
-        "given_name": "Ada",
-        "family_name": "Lovelace",
-    }
+    user, is_new = UserRepository(db).get_or_provision_by_hanko_id(
+        hanko_id="hanko-new-1",
+        email="new@example.com",
+        first_name="Ada",
+        last_name="Lovelace",
+    )
 
-    user = get_current_user_record(payload=payload, db=db)
-
+    assert is_new is True
     assert user.id is not None
     assert user.hanko_subject_id == "hanko-new-1"
     assert user.role == UserRole.lp
@@ -47,7 +50,10 @@ def test_unknown_subject_is_auto_provisioned(db):
     assert user.last_name == "Lovelace"
 
 
-def test_auto_provision_extracts_address_from_hanko_email_object(db):
+def test_extract_email_from_hanko_payload_handles_object():
+    """Hanko may deliver `email` as a nested object; auth normalises it before
+    the value ever reaches the repository.
+    """
     payload = {
         "sub": "hanko-new-3",
         "email": {
@@ -57,19 +63,31 @@ def test_auto_provision_extracts_address_from_hanko_email_object(db):
         },
     }
 
-    user = get_current_user_record(payload=payload, db=db)
-
-    assert user.email == "arturas@example.com"
+    assert _extract_email_from_hanko_payload(payload) == "arturas@example.com"
 
 
-def test_auto_provision_falls_back_to_blanks_when_claims_missing(db):
-    payload = {"sub": "hanko-new-2"}
+def test_provision_without_email_raises(db):
+    """A new subject with no email cannot be provisioned (email is NOT NULL and
+    unique); the repository signals this with `ValueError`, which auth maps to
+    a 401.
+    """
+    with pytest.raises(ValueError):
+        UserRepository(db).get_or_provision_by_hanko_id(
+            hanko_id="hanko-new-2",
+            email=None,
+        )
 
-    user = get_current_user_record(payload=payload, db=db)
 
+def test_auto_provision_derives_name_when_claims_missing(db):
+    user, is_new = UserRepository(db).get_or_provision_by_hanko_id(
+        hanko_id="hanko-new-4",
+        email="solo@example.com",
+    )
+
+    assert is_new is True
     assert user.role == UserRole.lp
-    assert user.email == ""
-    assert user.first_name == ""
+    assert user.email == "solo@example.com"
+    assert user.first_name == "Solo"  # derived from the email local part
     assert user.last_name == ""
 
 
@@ -89,13 +107,13 @@ def test_existing_user_is_returned_unchanged(db):
     db.commit()
     existing_id = existing.id
 
-    payload = {
-        "sub": "hanko-existing",
-        "email": "should-not-overwrite@example.com",
-        "given_name": "ShouldNotOverwrite",
-    }
-    user = get_current_user_record(payload=payload, db=db)
+    user, is_new = UserRepository(db).get_or_provision_by_hanko_id(
+        hanko_id="hanko-existing",
+        email="should-not-overwrite@example.com",
+        first_name="ShouldNotOverwrite",
+    )
 
+    assert is_new is False
     assert user.id == existing_id
     assert user.role == UserRole.fund_manager
     assert user.email == "margot@example.com"
@@ -122,12 +140,12 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
     db.commit()
     seeded_id = seeded.id
 
-    payload = {
-        "sub": "hanko-claim-1",
-        "email": "ava.morgan@newtaven.demo",
-    }
-    user = get_current_user_record(payload=payload, db=db)
+    user, is_new = UserRepository(db).get_or_provision_by_hanko_id(
+        hanko_id="hanko-claim-1",
+        email="ava.morgan@newtaven.demo",
+    )
 
+    assert is_new is False
     assert user.id == seeded_id
     assert user.hanko_subject_id == "hanko-claim-1"
     assert user.role == UserRole.fund_manager
@@ -139,8 +157,8 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
 def test_seed_claim_refuses_when_email_already_linked(db):
     """If the email is already linked to a different `hanko_subject_id`, the
     second sign-in must NOT rebind the row (would be account takeover) and
-    must NOT 500 on the unique-email constraint when auto-provisioning a
-    duplicate. Returns 401 with a clear message instead.
+    must NOT 500 on the unique-email constraint when provisioning a duplicate.
+    The repository raises `ValueError` (mapped to a 401 by auth) instead.
     """
     org = Organization(name="NewTaven Capital", type=OrganizationType.fund_manager_firm)
     db.add(org)
@@ -157,25 +175,17 @@ def test_seed_claim_refuses_when_email_already_linked(db):
     db.commit()
     existing_id = existing.id
 
-    payload = {
-        "sub": "hanko-impostor",
-        "email": "ava.morgan@newtaven.demo",
-    }
-    with pytest.raises(HTTPException) as excinfo:
-        get_current_user_record(payload=payload, db=db)
-    assert excinfo.value.status_code == 401
+    with pytest.raises(ValueError):
+        UserRepository(db).get_or_provision_by_hanko_id(
+            hanko_id="hanko-impostor",
+            email="ava.morgan@newtaven.demo",
+        )
 
     rebound = db.query(User).filter(User.id == existing_id).one()
     assert rebound.hanko_subject_id == "hanko-original"
     assert (
         db.query(User).filter(User.email == "ava.morgan@newtaven.demo").count() == 1
     )
-
-
-def test_missing_subject_raises_401(db):
-    with pytest.raises(HTTPException) as excinfo:
-        get_current_user_record(payload={}, db=db)
-    assert excinfo.value.status_code == 401
 
 
 def test_require_roles_allows_matching_role():

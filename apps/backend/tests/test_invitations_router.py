@@ -28,7 +28,6 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.auth import get_current_user
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
 from app.models import (
@@ -52,25 +51,6 @@ def setup_database():
 @pytest.fixture
 def client():
     return TestClient(app)
-
-
-@pytest.fixture
-def override_user():
-    """Replace the auth dependency with a fake JWT payload, then clean up."""
-
-    def _set(subject_id: str | None, *, email: str | None = None) -> None:
-        def _payload():
-            data: dict = {}
-            if subject_id is not None:
-                data["sub"] = subject_id
-            if email is not None:
-                data["email"] = email
-            return data
-
-        app.dependency_overrides[get_current_user] = _payload
-
-    yield _set
-    app.dependency_overrides.clear()
 
 
 @pytest.fixture

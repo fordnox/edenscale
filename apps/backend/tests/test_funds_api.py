@@ -6,7 +6,6 @@ from decimal import Decimal
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.auth import get_current_user
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
 from app.models import (
@@ -34,17 +33,6 @@ def setup_database():
 @pytest.fixture
 def client():
     return TestClient(app)
-
-
-@pytest.fixture
-def override_user():
-    def _set(subject_id: str | None) -> None:
-        app.dependency_overrides[get_current_user] = lambda: (
-            {"sub": subject_id} if subject_id is not None else {}
-        )
-
-    yield _set
-    app.dependency_overrides.clear()
 
 
 def _seed_org(name: str = "NewTaven Capital") -> int:

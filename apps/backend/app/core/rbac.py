@@ -39,73 +39,19 @@ from app.repositories.user_organization_membership_repository import (
 
 
 def get_current_user_record(
-    payload: dict = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> User:
     """Return the local `User` row for the authenticated JWT subject.
 
-    Resolution order:
-
-    1. Existing row with matching `hanko_subject_id` — return it.
-    2. Existing row with matching `email` and a NULL `hanko_subject_id` —
-       bind the row by setting its subject to the JWT `sub` and return it.
-       This is how seed / pre-provisioned users (admin, fund_manager) get
-       claimed on first sign-in: the seed leaves `hanko_subject_id=None`,
-       and Hanko's email claim is verified by Hanko before the JWT is
-       issued, so binding by email here is safe.
-    3. Otherwise auto-provision a fresh row, defaulting to `role=UserRole.lp`
-       and pulling email / first / last name from the JWT claims.
-
-    `first_name` / `last_name` / `email` columns are NOT NULL, so missing
-    claims fall back to empty strings — the user can complete their profile
-    later via `PATCH /users/me`.
+    `get_current_user` (in `app.core.auth`) already verifies the token and
+    resolves — or auto-provisions on first sign-in — the local `User` row via
+    `UserRepository.get_or_provision_by_hanko_id` (including binding
+    pre-provisioned seed users by verified email). This dependency simply
+    records the resolved user for audit logging and returns it, so routes have
+    a single place to layer role checks on top.
     """
-    subject_id = payload.get("sub")
-    if not subject_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token missing subject claim",
-        )
-
-    user = db.query(User).filter(User.hanko_subject_id == subject_id).first()
-    if user is not None:
-        set_audit_user(user.id)  # type: ignore[invalid-argument-type]
-        return user
-
-    email_claim = payload.get("email")
-    if isinstance(email_claim, dict):
-        email_value = email_claim.get("address") or ""
-    else:
-        email_value = email_claim or ""
-
-    if email_value:
-        existing_by_email = db.query(User).filter(User.email == email_value).first()
-        if existing_by_email is not None:
-            if existing_by_email.hanko_subject_id is None:
-                existing_by_email.hanko_subject_id = subject_id
-                db.commit()
-                db.refresh(existing_by_email)
-                set_audit_user(existing_by_email.id)  # type: ignore[invalid-argument-type]
-                return existing_by_email
-            # Email already linked to a different Hanko subject. Refuse rather
-            # than 500 on the unique-email constraint when we try to insert.
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Email already linked to a different account",
-            )
-
-    user = User(
-        hanko_subject_id=subject_id,
-        role=UserRole.lp,
-        email=email_value,
-        first_name=payload.get("given_name") or "",
-        last_name=payload.get("family_name") or "",
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    set_audit_user(user.id)  # type: ignore[invalid-argument-type]
-    return user
+    set_audit_user(current_user.id)  # type: ignore[invalid-argument-type]
+    return current_user
 
 
 def require_roles(*allowed: UserRole) -> Callable[[User], User]:
