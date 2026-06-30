@@ -48,7 +48,7 @@ jobs:
           # Deploy secrets item used by .kamal/secrets (`--from Github/taven`).
           op item get taven --vault Github >/dev/null
           # SSH key item read by the "Load SSH key" step.
-          op read "op://Github/mle/SSH_PRIVATE_KEY" >/dev/null
+          op read "op://Github/taven/APP_DATABASE_DSN" >/dev/null
           echo "All required 1Password secrets are accessible."
 
       # --- BUILD (GitHub Actions) ---------------------------------------
@@ -89,7 +89,7 @@ jobs:
       - name: Load SSH key from 1Password into the agent
         run: |
           eval "$(ssh-agent -s)"
-          op read "op://Github/mle/SSH_PRIVATE_KEY" | ssh-add -
+          op read "op://Github/taven/SSH_PRIVATE_KEY" | ssh-add -
           echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
           echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> "$GITHUB_ENV"
 
