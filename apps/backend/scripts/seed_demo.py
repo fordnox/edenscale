@@ -11,6 +11,7 @@ defaults, status transitions, and pro-rata allocation logic stay in sync.
 
 from __future__ import annotations
 
+import uuid
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -91,7 +92,7 @@ def _get_or_create_user(
     role: UserRole,
     first_name: str,
     last_name: str,
-    organization_id: int | None,
+    organization_id: uuid.UUID | None,
     title: str | None = None,
 ) -> User:
     repo = UserRepository(db)
@@ -114,9 +115,9 @@ def _get_or_create_fund_group(
     db: Session,
     *,
     name: str,
-    organization_id: int,
+    organization_id: uuid.UUID,
     description: str | None,
-    created_by_user_id: int | None,
+    created_by_user_id: uuid.UUID | None,
 ) -> FundGroup:
     existing = (
         db.query(FundGroup)
@@ -143,8 +144,8 @@ def _get_or_create_fund(
     db: Session,
     *,
     name: str,
-    organization_id: int,
-    fund_group_id: int,
+    organization_id: uuid.UUID,
+    fund_group_id: uuid.UUID,
     vintage_year: int,
     target_size: Decimal,
     status: FundStatus,
@@ -178,7 +179,7 @@ def _get_or_create_investor(
     db: Session,
     *,
     name: str,
-    organization_id: int,
+    organization_id: uuid.UUID,
     investor_code: str,
     investor_type: str,
     accredited: bool,
@@ -209,7 +210,7 @@ def _get_or_create_investor(
 def _get_or_create_primary_contact(
     db: Session,
     *,
-    investor_id: int,
+    investor_id: uuid.UUID,
     user: User,
 ) -> InvestorContact:
     existing = (
@@ -240,8 +241,8 @@ def _get_or_create_primary_contact(
 def _get_or_create_commitment(
     db: Session,
     *,
-    fund_id: int,
-    investor_id: int,
+    fund_id: uuid.UUID,
+    investor_id: uuid.UUID,
     committed_amount: Decimal,
     commitment_date: date,
     status: CommitmentStatus = CommitmentStatus.approved,
@@ -269,7 +270,7 @@ def _seed_capital_call(
     title: str,
     amount: Decimal,
     due_date: date,
-    created_by_user_id: int,
+    created_by_user_id: uuid.UUID,
     target_status: CapitalCallStatus,
     paid_fraction: Decimal,
 ) -> CapitalCall:
@@ -315,7 +316,7 @@ def _seed_capital_call(
         (Decimal(c.committed_amount) for c in commitments),  # type: ignore[invalid-argument-type]
         Decimal("0"),
     )
-    allocations: list[tuple[int, Decimal]] = []
+    allocations: list[tuple[uuid.UUID, Decimal]] = []
     running_total = Decimal("0")
     for idx, c in enumerate(commitments):
         if idx == len(commitments) - 1:
@@ -358,7 +359,7 @@ def _seed_distribution(
     title: str,
     amount: Decimal,
     distribution_date: date,
-    created_by_user_id: int,
+    created_by_user_id: uuid.UUID,
     target_status: DistributionStatus,
     paid_fraction: Decimal,
 ) -> Distribution:
@@ -398,7 +399,7 @@ def _seed_distribution(
         (Decimal(c.committed_amount) for c in commitments),  # type: ignore[invalid-argument-type]
         Decimal("0"),
     )
-    allocations: list[tuple[int, Decimal]] = []
+    allocations: list[tuple[uuid.UUID, Decimal]] = []
     running_total = Decimal("0")
     for idx, c in enumerate(commitments):
         if idx == len(commitments) - 1:
@@ -440,10 +441,10 @@ def _seed_document(
     title: str,
     file_name: str,
     document_type: DocumentType,
-    organization_id: int | None,
-    fund_id: int | None,
-    investor_id: int | None,
-    uploaded_by_user_id: int,
+    organization_id: uuid.UUID | None,
+    fund_id: uuid.UUID | None,
+    investor_id: uuid.UUID | None,
+    uploaded_by_user_id: uuid.UUID,
     is_confidential: bool,
 ) -> Document:
     existing = (
@@ -515,9 +516,9 @@ def _seed_task(
     *,
     title: str,
     description: str,
-    fund_id: int | None,
-    assigned_to_user_id: int | None,
-    created_by_user_id: int,
+    fund_id: uuid.UUID | None,
+    assigned_to_user_id: uuid.UUID | None,
+    created_by_user_id: uuid.UUID,
     status: TaskStatus,
     due_date: date | None,
 ) -> Task:
@@ -552,7 +553,7 @@ def _seed_notification(
     title: str,
     message: str,
     related_type: str | None,
-    related_id: int | None,
+    related_id: uuid.UUID | None,
     status: NotificationStatus,
 ) -> Notification:
     existing = (

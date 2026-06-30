@@ -1,4 +1,5 @@
 import re
+import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
@@ -30,7 +31,7 @@ class UserRepository:
 
     def list_by_organization(
         self,
-        organization_id: int,
+        organization_id: uuid.UUID,
         skip: int = 0,
         limit: int = 100,
         include_inactive: bool = False,
@@ -40,7 +41,7 @@ class UserRepository:
             query = query.filter(User.is_active.is_(True))
         return query.order_by(User.id).offset(skip).limit(limit).all()
 
-    def get_by_id(self, user_id: int) -> User | None:
+    def get_by_id(self, user_id: uuid.UUID) -> User | None:
         return self.db.query(User).filter(User.id == user_id).first()
 
     def get_by_email(self, email: str) -> User | None:
@@ -108,6 +109,38 @@ class UserRepository:
     def get_by_hanko_subject(self, subject_id: str) -> User | None:
         return self.db.query(User).filter(User.hanko_subject_id == subject_id).first()
 
+    def resolve_or_create_stub(
+        self,
+        *,
+        user_id: uuid.UUID | None,
+        email: str | None,
+        first_name: str | None,
+        last_name: str | None,
+    ) -> User | None:
+        """Return the user for `user_id`, or find/stage-create one for `email`.
+
+        Returns None only when `user_id` is given but doesn't resolve. The
+        `email` path always returns a user — the stub is added and flushed
+        (not committed) so callers that need to land it alongside other rows
+        (e.g. a fresh organization + its admin membership) can commit once.
+        """
+        if user_id is not None:
+            return self.get_by_id(user_id)
+        assert email is not None
+        existing = self.get_by_email(email)
+        if existing is not None:
+            return existing
+        stub = User(
+            role=UserRole.lp,
+            first_name=first_name or "",
+            last_name=last_name or "",
+            email=email,
+            hanko_subject_id=None,
+        )
+        self.db.add(stub)
+        self.db.flush()
+        return stub
+
     def create(self, data: UserCreate) -> User:
         user = User(**data.model_dump())
         self.db.add(user)
@@ -115,7 +148,7 @@ class UserRepository:
         self.db.refresh(user)
         return user
 
-    def update(self, user_id: int, data: UserUpdate) -> User | None:
+    def update(self, user_id: uuid.UUID, data: UserUpdate) -> User | None:
         user = self.get_by_id(user_id)
         if user is None:
             return None
@@ -125,7 +158,7 @@ class UserRepository:
         self.db.refresh(user)
         return user
 
-    def update_role(self, user_id: int, role: UserRole) -> User | None:
+    def update_role(self, user_id: uuid.UUID, role: UserRole) -> User | None:
         user = self.get_by_id(user_id)
         if user is None:
             return None
@@ -134,7 +167,7 @@ class UserRepository:
         self.db.refresh(user)
         return user
 
-    def set_active(self, user_id: int, is_active: bool) -> User | None:
+    def set_active(self, user_id: uuid.UUID, is_active: bool) -> User | None:
         user = self.get_by_id(user_id)
         if user is None:
             return None
@@ -143,7 +176,7 @@ class UserRepository:
         self.db.refresh(user)
         return user
 
-    def record_last_login(self, user_id: int) -> User | None:
+    def record_last_login(self, user_id: uuid.UUID) -> User | None:
         user = self.get_by_id(user_id)
         if user is None:
             return None

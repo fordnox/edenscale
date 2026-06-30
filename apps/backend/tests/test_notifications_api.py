@@ -1,6 +1,7 @@
 """Integration tests for the /notifications router and the
 notification fan-out from capital-call/distribution/communication/task flows."""
 
+import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -272,7 +273,7 @@ class TestNotificationActions:
     def test_mark_unknown_returns_404(self, client, override_user):
         _seed_user("hanko-me", UserRole.lp)
         override_user("hanko-me")
-        resp = client.post("/notifications/9999/read")
+        resp = client.post(f"/notifications/{uuid.uuid4()}/read")
         assert resp.status_code == 404
 
 
@@ -300,7 +301,7 @@ class TestNotificationFanOut:
         create_resp = client.post(
             "/communications",
             json={
-                "fund_id": fund_id,
+                "fund_id": str(fund_id),
                 "type": "announcement",
                 "subject": "Q1 Update",
                 "body": "Hello LPs",
@@ -313,7 +314,7 @@ class TestNotificationFanOut:
         rows = _list_notifications(lp_user_id)
         assert len(rows) == 1
         assert rows[0].related_type == "communication"
-        assert rows[0].related_id == comm_id
+        assert rows[0].related_id == uuid.UUID(comm_id)
         assert "Q1 Update" in rows[0].title
 
     def test_task_assignment_notifies_assignee(self, client, override_user):
@@ -336,9 +337,9 @@ class TestNotificationFanOut:
         resp = client.post(
             "/tasks",
             json={
-                "fund_id": fund_id,
+                "fund_id": str(fund_id),
                 "title": "Sign docs",
-                "assigned_to_user_id": assignee_id,
+                "assigned_to_user_id": str(assignee_id),
             },
         )
         assert resp.status_code == 201
@@ -361,9 +362,9 @@ class TestNotificationFanOut:
         resp = client.post(
             "/tasks",
             json={
-                "fund_id": fund_id,
+                "fund_id": str(fund_id),
                 "title": "Solo work",
-                "assigned_to_user_id": fm_id,
+                "assigned_to_user_id": str(fm_id),
             },
         )
         assert resp.status_code == 201
@@ -407,7 +408,7 @@ class TestNotificationFanOut:
 
         resp = client.patch(
             f"/tasks/{task_id}",
-            json={"assigned_to_user_id": new_assignee_id},
+            json={"assigned_to_user_id": str(new_assignee_id)},
         )
         assert resp.status_code == 200
         rows = _list_notifications(new_assignee_id)

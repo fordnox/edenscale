@@ -1,5 +1,6 @@
 """Integration tests for the /funds router."""
 
+import uuid
 from datetime import date
 from decimal import Decimal
 
@@ -41,7 +42,7 @@ def _seed_org(name: str = "NewTaven Capital") -> int:
         org = Organization(name=name, type=OrganizationType.fund_manager_firm)
         db.add(org)
         db.commit()
-        return org.id
+        return str(org.id)
     finally:
         db.close()
 
@@ -74,7 +75,7 @@ def _seed_user(
                 )
             )
         db.commit()
-        return user.id
+        return str(user.id)
     finally:
         db.close()
 
@@ -90,7 +91,7 @@ def _seed_fund(
         fund = Fund(organization_id=organization_id, name=name, status=status)
         db.add(fund)
         db.commit()
-        return fund.id
+        return str(fund.id)
     finally:
         db.close()
 
@@ -256,7 +257,7 @@ class TestCrossOrgScopingViaHeader:
                     )
                 )
             db.commit()
-            return user.id
+            return str(user.id)
         finally:
             db.close()
 
@@ -427,7 +428,7 @@ class TestFundOverview:
         )
         override_user("hanko-fm")
 
-        response = client.get("/funds/9999/overview")
+        response = client.get(f"/funds/{uuid.uuid4()}/overview")
         assert response.status_code == 404
 
     def test_fund_manager_cannot_view_other_org_overview(self, client, override_user):

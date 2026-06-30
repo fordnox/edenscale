@@ -1,13 +1,13 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import UUID4, BaseModel, ConfigDict, Field, field_validator
 
 from app.models.enums import CapitalCallStatus, FundStatus
 
 
 class CapitalCallFundSummary(BaseModel):
-    id: int
+    id: UUID4
     name: str
     currency_code: str
     status: FundStatus
@@ -17,7 +17,7 @@ class CapitalCallFundSummary(BaseModel):
 
 
 class CapitalCallItemCreate(BaseModel):
-    commitment_id: int
+    commitment_id: UUID4
     amount_due: Decimal
     note: str | None = None
 
@@ -44,9 +44,9 @@ class CapitalCallItemUpdate(BaseModel):
 
 
 class CapitalCallItemRead(BaseModel):
-    id: int
-    capital_call_id: int
-    commitment_id: int
+    id: UUID4
+    capital_call_id: UUID4
+    commitment_id: UUID4
     amount_due: Decimal
     amount_paid: Decimal
     paid_at: datetime | None
@@ -62,7 +62,7 @@ class CapitalCallItemBulkCreate(BaseModel):
 
 
 class CapitalCallCreate(BaseModel):
-    fund_id: int
+    fund_id: UUID4
     title: str = Field(min_length=1, max_length=255)
     description: str | None = None
     due_date: date
@@ -93,15 +93,15 @@ class CapitalCallUpdate(BaseModel):
 
 
 class CapitalCallRead(BaseModel):
-    id: int
-    fund_id: int
+    id: UUID4
+    fund_id: UUID4
     title: str
     description: str | None
     due_date: date
     call_date: date | None
     amount: Decimal
     status: CapitalCallStatus
-    created_by_user_id: int | None
+    created_by_user_id: UUID4 | None
     created_at: datetime | None
     updated_at: datetime | None
     items: list[CapitalCallItemRead]

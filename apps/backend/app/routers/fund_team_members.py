@@ -1,7 +1,10 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import UserRole
@@ -15,12 +18,11 @@ from app.schemas.fund_team_member import (
     FundTeamMemberUpdate,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
-def _load_fund_or_404(db: Session, fund_id: int) -> Fund:
-    repo = FundRepository(db)
-    row = repo.get(fund_id)
+def _load_fund_or_404(db: Session, fund_id: uuid.UUID) -> Fund:
+    row = FundRepository(db).get(fund_id)
     if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
@@ -38,7 +40,7 @@ def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> Non
 
 @router.get("/{fund_id}/team", response_model=list[FundTeamMemberRead])
 async def list_team_members(
-    fund_id: int,
+    fund_id: uuid.UUID,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -59,7 +61,7 @@ async def list_team_members(
     status_code=status.HTTP_201_CREATED,
 )
 async def add_team_member(
-    fund_id: int,
+    fund_id: uuid.UUID,
     data: FundTeamMemberCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -91,8 +93,8 @@ async def add_team_member(
     response_model=FundTeamMemberRead,
 )
 async def update_team_member(
-    fund_id: int,
-    member_id: int,
+    fund_id: uuid.UUID,
+    member_id: uuid.UUID,
     data: FundTeamMemberUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -119,8 +121,8 @@ async def update_team_member(
     response_model=FundTeamMemberRead,
 )
 async def remove_team_member(
-    fund_id: int,
-    member_id: int,
+    fund_id: uuid.UUID,
+    member_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
         require_membership_roles(

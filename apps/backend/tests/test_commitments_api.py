@@ -1,6 +1,7 @@
 """Integration tests for the /commitments router and the nested
 /funds/{id}/commitments and /investors/{id}/commitments routes."""
 
+import uuid
 from datetime import date
 from decimal import Decimal
 
@@ -45,7 +46,7 @@ def _seed_org(name: str = "NewTaven Capital") -> int:
         org = Organization(name=name, type=OrganizationType.fund_manager_firm)
         db.add(org)
         db.commit()
-        return org.id
+        return str(org.id)
     finally:
         db.close()
 
@@ -78,7 +79,7 @@ def _seed_user(
                 )
             )
         db.commit()
-        return user.id
+        return str(user.id)
     finally:
         db.close()
 
@@ -89,7 +90,7 @@ def _seed_fund(organization_id: int, *, name: str = "NewTaven Fund I") -> int:
         fund = Fund(organization_id=organization_id, name=name)
         db.add(fund)
         db.commit()
-        return fund.id
+        return str(fund.id)
     finally:
         db.close()
 
@@ -100,7 +101,7 @@ def _seed_investor(organization_id: int, *, name: str = "Acme LP") -> int:
         investor = Investor(organization_id=organization_id, name=name)
         db.add(investor)
         db.commit()
-        return investor.id
+        return str(investor.id)
     finally:
         db.close()
 
@@ -123,7 +124,7 @@ def _seed_commitment(
         )
         db.add(commitment)
         db.commit()
-        return commitment.id
+        return str(commitment.id)
     finally:
         db.close()
 
@@ -139,7 +140,7 @@ def _seed_contact(investor_id: int, user_id: int) -> int:
         )
         db.add(contact)
         db.commit()
-        return contact.id
+        return str(contact.id)
     finally:
         db.close()
 
@@ -419,14 +420,18 @@ class TestRecomputeTotalsLifecycle:
                     amount=Decimal("1500.00"),
                 )
             )
+            # repo.add_items bypasses Pydantic's str->UUID coercion (these are
+            # raw tuples, not a validated schema), so pass real UUID objects.
+            commitment_a_uuid = uuid.UUID(commitment_a)
+            commitment_b_uuid = uuid.UUID(commitment_b)
             items = repo.add_items(
                 call.id,
                 [
-                    (commitment_a, Decimal("1000.00")),
-                    (commitment_b, Decimal("500.00")),
+                    (commitment_a_uuid, Decimal("1000.00")),
+                    (commitment_b_uuid, Decimal("500.00")),
                 ],
             )
-            item_a = next(i for i in items if i.commitment_id == commitment_a)
+            item_a = next(i for i in items if i.commitment_id == commitment_a_uuid)
 
             commitment = db.get(Commitment, commitment_a)
             assert commitment.called_amount == Decimal("0.00")
@@ -476,8 +481,10 @@ class TestRecomputeTotalsLifecycle:
                     amount=Decimal("500.00"),
                 )
             )
+            # repo.add_items bypasses Pydantic's str->UUID coercion (these are
+            # raw tuples, not a validated schema), so pass a real UUID object.
             items = repo.add_items(
-                distribution.id, [(commitment_id, Decimal("500.00"))]
+                distribution.id, [(uuid.UUID(commitment_id), Decimal("500.00"))]
             )
             item = items[0]
 

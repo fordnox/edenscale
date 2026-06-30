@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import (
     Column,
     Date,
@@ -8,6 +10,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Uuid,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -19,12 +22,12 @@ from app.models.enums import FundStatus
 class Fund(Base):
     __tablename__ = "funds"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(
-        Integer, ForeignKey("organizations.id"), nullable=False, index=True
+        Uuid(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True
     )
     fund_group_id = Column(
-        Integer, ForeignKey("fund_groups.id"), nullable=True, index=True
+        Uuid(as_uuid=True), ForeignKey("fund_groups.id"), nullable=True, index=True
     )
     name = Column(String(255), nullable=False)
     legal_name = Column(String(255), nullable=True)

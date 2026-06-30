@@ -1,11 +1,13 @@
+import uuid
+
 from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
-    Integer,
     Numeric,
     Text,
     UniqueConstraint,
+    Uuid,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -23,12 +25,12 @@ class DistributionItem(Base):
         ),
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     distribution_id = Column(
-        Integer, ForeignKey("distributions.id"), nullable=False, index=True
+        Uuid(as_uuid=True), ForeignKey("distributions.id"), nullable=False, index=True
     )
     commitment_id = Column(
-        Integer, ForeignKey("commitments.id"), nullable=False, index=True
+        Uuid(as_uuid=True), ForeignKey("commitments.id"), nullable=False, index=True
     )
     amount_due = Column(Numeric(18, 2), nullable=False)
     amount_paid = Column(Numeric(18, 2), nullable=False, default=0)

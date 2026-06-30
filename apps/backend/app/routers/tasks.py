@@ -1,26 +1,31 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import TaskStatus, UserRole
 from app.models.fund import Fund
 from app.models.user_organization_membership import UserOrganizationMembership
+from app.repositories.fund_repository import FundRepository
 from app.repositories.task_repository import TaskRepository
 from app.schemas.task import TaskCreate, TaskRead, TaskUpdate
 from app.services.notification_service import notify
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 _ORG_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
 
 
-def _load_fund(db: Session, fund_id: int) -> Fund | None:
-    return db.query(Fund).filter(Fund.id == fund_id).first()
+def _load_fund(db: Session, fund_id: uuid.UUID) -> Fund | None:
+    row = FundRepository(db).get(fund_id)
+    return row[0] if row is not None else None
 
 
 def _ensure_can_attach_fund(
-    membership: UserOrganizationMembership, db: Session, fund_id: int
+    membership: UserOrganizationMembership, db: Session, fund_id: uuid.UUID
 ) -> Fund:
     fund = _load_fund(db, fund_id)
     if fund is None:
@@ -37,9 +42,9 @@ def _ensure_can_attach_fund(
 
 @router.get("", response_model=list[TaskRead])
 async def list_tasks(
-    fund_id: int | None = None,
+    fund_id: uuid.UUID | None = None,
     status_filter: TaskStatus | None = None,
-    assignee: int | None = None,
+    assignee: uuid.UUID | None = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -49,14 +54,14 @@ async def list_tasks(
     effective_assignee = assignee
     if membership.role not in _ORG_ROLES:
         # LPs only ever see their own tasks regardless of `assignee`.
-        effective_assignee = int(membership.user_id)  # type: ignore[invalid-argument-type]
+        effective_assignee = membership.user_id
     elif effective_assignee is None and fund_id is None and status_filter is None:
-        effective_assignee = int(membership.user_id)  # type: ignore[invalid-argument-type]
+        effective_assignee = membership.user_id
     return repo.list_for_membership(
         membership,
         fund_id=fund_id,
         status=status_filter,
-        assignee=effective_assignee,
+        assignee=effective_assignee,  # type: ignore[invalid-argument-type]
         skip=skip,
         limit=limit,
     )
@@ -64,7 +69,7 @@ async def list_tasks(
 
 @router.get("/{task_id}", response_model=TaskRead)
 async def get_task(
-    task_id: int,
+    task_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
@@ -112,7 +117,7 @@ async def create_task(
 
 @router.patch("/{task_id}", response_model=TaskRead)
 async def update_task(
-    task_id: int,
+    task_id: uuid.UUID,
     data: TaskUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -150,7 +155,7 @@ async def update_task(
 
 @router.post("/{task_id}/complete", response_model=TaskRead)
 async def complete_task(
-    task_id: int,
+    task_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
@@ -174,14 +179,14 @@ async def complete_task(
     return completed
 
 
-fund_tasks_router = APIRouter()
+fund_tasks_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @fund_tasks_router.get("/{fund_id}/tasks", response_model=list[TaskRead])
 async def list_tasks_for_fund(
-    fund_id: int,
+    fund_id: uuid.UUID,
     status_filter: TaskStatus | None = None,
-    assignee: int | None = None,
+    assignee: uuid.UUID | None = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -195,12 +200,12 @@ async def list_tasks_for_fund(
     repo = TaskRepository(db)
     effective_assignee = assignee
     if membership.role not in _ORG_ROLES:
-        effective_assignee = int(membership.user_id)  # type: ignore[invalid-argument-type]
+        effective_assignee = membership.user_id
     return repo.list_for_membership(
         membership,
         fund_id=fund_id,
         status=status_filter,
-        assignee=effective_assignee,
+        assignee=effective_assignee,  # type: ignore[invalid-argument-type]
         skip=skip,
         limit=limit,
     )

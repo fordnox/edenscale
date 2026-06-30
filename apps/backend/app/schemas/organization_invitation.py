@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import UUID4, BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.models.enums import InvitationStatus, UserRole
 from app.schemas.organization import OrganizationRead
@@ -13,7 +13,7 @@ def _reject_superadmin(role: UserRole) -> UserRole:
 
 
 class InvitationCreate(BaseModel):
-    organization_id: int
+    organization_id: UUID4
     email: EmailStr
     role: UserRole
 
@@ -28,14 +28,14 @@ class InvitationAccept(BaseModel):
 
 
 class InvitationRead(BaseModel):
-    id: int
-    organization_id: int
+    id: UUID4
+    organization_id: UUID4
     email: str
     role: UserRole
     token: str
     status: InvitationStatus
     expires_at: datetime
-    invited_by_user_id: int | None
+    invited_by_user_id: UUID4 | None
     accepted_at: datetime | None
     created_at: datetime | None
     updated_at: datetime | None
@@ -45,13 +45,13 @@ class InvitationRead(BaseModel):
 
 
 class InvitationListItem(BaseModel):
-    id: int
-    organization_id: int
+    id: UUID4
+    organization_id: UUID4
     email: str
     role: UserRole
     status: InvitationStatus
     expires_at: datetime
-    invited_by_user_id: int | None
+    invited_by_user_id: UUID4 | None
     accepted_at: datetime | None
     created_at: datetime | None
 

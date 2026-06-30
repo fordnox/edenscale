@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, Column, DateTime, Enum, Integer, String, Text, func
+import uuid
+
+from sqlalchemy import Boolean, Column, DateTime, Enum, String, Text, Uuid, func
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -8,7 +10,7 @@ from app.models.enums import OrganizationType
 class Organization(Base):
     __tablename__ = "organizations"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     type = Column(Enum(OrganizationType, name="organization_type"), nullable=False)
     name = Column(String(255), nullable=False)
     legal_name = Column(String(255), nullable=True)

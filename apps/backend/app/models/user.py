@@ -1,11 +1,13 @@
+import uuid
+
 from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
     Enum,
     ForeignKey,
-    Integer,
     String,
+    Uuid,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -17,9 +19,9 @@ from app.models.enums import UserRole
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(
-        Integer, ForeignKey("organizations.id"), nullable=True, index=True
+        Uuid(as_uuid=True), ForeignKey("organizations.id"), nullable=True, index=True
     )
     role = Column(Enum(UserRole, name="user_role"), nullable=False)
     first_name = Column(String(100), nullable=False)

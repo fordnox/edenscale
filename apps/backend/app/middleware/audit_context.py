@@ -11,6 +11,7 @@ the caller's IP address; the user id is filled in later by
 ``get_current_user_record`` once auth has resolved the local user row.
 """
 
+import uuid
 from contextvars import ContextVar, Token
 from dataclasses import dataclass
 
@@ -20,7 +21,7 @@ from starlette.requests import Request
 
 @dataclass
 class AuditContext:
-    user_id: int | None = None
+    user_id: uuid.UUID | None = None
     ip_address: str | None = None
 
 
@@ -34,13 +35,13 @@ def get_audit_context() -> AuditContext:
 
 
 def set_audit_context(
-    *, user_id: int | None = None, ip_address: str | None = None
+    *, user_id: uuid.UUID | None = None, ip_address: str | None = None
 ) -> Token:
     """Replace the current context. Returns a token suitable for ``reset``."""
     return _audit_context.set(AuditContext(user_id=user_id, ip_address=ip_address))
 
 
-def set_audit_user(user_id: int | None) -> None:
+def set_audit_user(user_id: uuid.UUID | None) -> None:
     """Backfill the actor id on the current context (mutates in place)."""
     ctx = _audit_context.get()
     if ctx is _EMPTY:

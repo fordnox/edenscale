@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -64,7 +65,7 @@ class CapitalCallRepository:
         self,
         membership: UserOrganizationMembership,
         *,
-        fund_id: int | None = None,
+        fund_id: uuid.UUID | None = None,
         status: CapitalCallStatus | None = None,
         skip: int = 0,
         limit: int = 100,
@@ -93,7 +94,7 @@ class CapitalCallRepository:
             query = query.filter(CapitalCall.status == status)
         return query.order_by(CapitalCall.id).offset(skip).limit(limit).all()
 
-    def get_with_items(self, call_id: int) -> CapitalCall | None:
+    def get_with_items(self, call_id: uuid.UUID) -> CapitalCall | None:
         return self._base_query().filter(CapitalCall.id == call_id).first()
 
     def membership_can_view(
@@ -120,7 +121,7 @@ class CapitalCallRepository:
         )
 
     def create_draft(
-        self, data: CapitalCallCreate, *, created_by_user_id: int | None = None
+        self, data: CapitalCallCreate, *, created_by_user_id: uuid.UUID | None = None
     ) -> CapitalCall:
         call = CapitalCall(
             fund_id=data.fund_id,
@@ -137,7 +138,7 @@ class CapitalCallRepository:
         self.db.refresh(call)
         return call
 
-    def update(self, call_id: int, data: CapitalCallUpdate) -> CapitalCall | None:
+    def update(self, call_id: uuid.UUID, data: CapitalCallUpdate) -> CapitalCall | None:
         call = self.db.query(CapitalCall).filter(CapitalCall.id == call_id).first()
         if call is None:
             return None
@@ -149,8 +150,8 @@ class CapitalCallRepository:
 
     def add_items(
         self,
-        call_id: int,
-        allocations: list[tuple[int, Decimal]],
+        call_id: uuid.UUID,
+        allocations: list[tuple[uuid.UUID, Decimal]],
     ) -> list[CapitalCallItem]:
         """Bulk-insert allocations on the capital call.
 
@@ -206,7 +207,7 @@ class CapitalCallRepository:
 
     def set_item_payment(
         self,
-        item_id: int,
+        item_id: uuid.UUID,
         amount_paid: Decimal,
         paid_at: datetime | None = None,
     ) -> CapitalCallItem | None:
@@ -226,7 +227,7 @@ class CapitalCallRepository:
 
     def update_item(
         self,
-        item_id: int,
+        item_id: uuid.UUID,
         *,
         amount_due: Decimal | None = None,
         amount_paid: Decimal | None = None,
@@ -256,7 +257,7 @@ class CapitalCallRepository:
         return item
 
     def transition_status(
-        self, call_id: int, new_status: CapitalCallStatus
+        self, call_id: uuid.UUID, new_status: CapitalCallStatus
     ) -> CapitalCall | None:
         call = self.db.query(CapitalCall).filter(CapitalCall.id == call_id).first()
         if call is None:
@@ -274,7 +275,7 @@ class CapitalCallRepository:
         self.db.commit()
         return self.get_with_items(call_id)
 
-    def recompute_status(self, call_id: int) -> CapitalCall | None:
+    def recompute_status(self, call_id: uuid.UUID) -> CapitalCall | None:
         call = self.db.query(CapitalCall).filter(CapitalCall.id == call_id).first()
         if call is None:
             return None
@@ -306,7 +307,7 @@ class CapitalCallRepository:
         self.db.flush()
         return call
 
-    def send(self, call_id: int) -> CapitalCall | None:
+    def send(self, call_id: uuid.UUID) -> CapitalCall | None:
         call = self.db.query(CapitalCall).filter(CapitalCall.id == call_id).first()
         if call is None:
             return None
@@ -320,5 +321,5 @@ class CapitalCallRepository:
         self.db.commit()
         return self.get_with_items(call_id)
 
-    def cancel(self, call_id: int) -> CapitalCall | None:
+    def cancel(self, call_id: uuid.UUID) -> CapitalCall | None:
         return self.transition_status(call_id, CapitalCallStatus.cancelled)

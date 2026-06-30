@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -51,7 +52,7 @@ class InvestorRepository:
             query = query.filter(Investor.id.in_(visible_investor_ids))
         return query.order_by(Investor.id).offset(skip).limit(limit).all()
 
-    def get(self, investor_id: int) -> tuple[Investor, Decimal, int] | None:
+    def get(self, investor_id: uuid.UUID) -> tuple[Investor, Decimal, int] | None:
         return self._base_query().filter(Investor.id == investor_id).first()
 
     def membership_can_view(
@@ -79,7 +80,7 @@ class InvestorRepository:
         return result
 
     def update(
-        self, investor_id: int, data: InvestorUpdate
+        self, investor_id: uuid.UUID, data: InvestorUpdate
     ) -> tuple[Investor, Decimal, int] | None:
         investor = self.db.query(Investor).filter(Investor.id == investor_id).first()
         if investor is None:
@@ -90,7 +91,7 @@ class InvestorRepository:
         self.db.refresh(investor)
         return self.get(investor_id)
 
-    def has_commitments(self, investor_id: int) -> bool:
+    def has_commitments(self, investor_id: uuid.UUID) -> bool:
         return (
             self.db.query(Commitment.id)
             .filter(Commitment.investor_id == investor_id)
@@ -98,7 +99,7 @@ class InvestorRepository:
             is not None
         )
 
-    def delete(self, investor_id: int) -> Investor | None:
+    def delete(self, investor_id: uuid.UUID) -> Investor | None:
         investor = self.db.query(Investor).filter(Investor.id == investor_id).first()
         if investor is None:
             return None

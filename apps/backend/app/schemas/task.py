@@ -1,13 +1,13 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 from app.models.enums import TaskStatus
 
 
 class TaskCreate(BaseModel):
-    fund_id: int | None = None
-    assigned_to_user_id: int | None = None
+    fund_id: UUID4 | None = None
+    assigned_to_user_id: UUID4 | None = None
     title: str = Field(min_length=1, max_length=255)
     description: str | None = None
     status: TaskStatus = TaskStatus.open
@@ -15,8 +15,8 @@ class TaskCreate(BaseModel):
 
 
 class TaskUpdate(BaseModel):
-    fund_id: int | None = None
-    assigned_to_user_id: int | None = None
+    fund_id: UUID4 | None = None
+    assigned_to_user_id: UUID4 | None = None
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = None
     status: TaskStatus | None = None
@@ -24,10 +24,10 @@ class TaskUpdate(BaseModel):
 
 
 class TaskRead(BaseModel):
-    id: int
-    fund_id: int | None
-    assigned_to_user_id: int | None
-    created_by_user_id: int | None
+    id: UUID4
+    fund_id: UUID4 | None
+    assigned_to_user_id: UUID4 | None
+    created_by_user_id: UUID4 | None
     title: str
     description: str | None
     status: TaskStatus

@@ -1,13 +1,15 @@
+import uuid
+
 from sqlalchemy import (
     Column,
     Date,
     DateTime,
     Enum,
     ForeignKey,
-    Integer,
     Numeric,
     String,
     Text,
+    Uuid,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -19,8 +21,10 @@ from app.models.enums import DistributionStatus
 class Distribution(Base):
     __tablename__ = "distributions"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    fund_id = Column(Integer, ForeignKey("funds.id"), nullable=False, index=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    fund_id = Column(
+        Uuid(as_uuid=True), ForeignKey("funds.id"), nullable=False, index=True
+    )
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     distribution_date = Column(Date, nullable=False)
@@ -32,7 +36,7 @@ class Distribution(Base):
         default=DistributionStatus.draft,
     )
     created_by_user_id = Column(
-        Integer, ForeignKey("users.id"), nullable=True, index=True
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
     )
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

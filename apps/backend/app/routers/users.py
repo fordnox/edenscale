@@ -1,6 +1,9 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import (
     get_current_user_record,
@@ -23,7 +26,7 @@ from app.schemas.user import (
 )
 from app.schemas.user_organization_membership import MembershipRead
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("/me", response_model=UserRead)
@@ -123,7 +126,7 @@ async def invite_user(
 
 @router.patch("/{user_id}", response_model=UserRead)
 async def update_user(
-    user_id: int,
+    user_id: uuid.UUID,
     data: UserUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -155,7 +158,7 @@ async def update_user(
     dependencies=[Depends(require_roles(UserRole.admin, UserRole.superadmin))],
 )
 async def update_user_role(
-    user_id: int,
+    user_id: uuid.UUID,
     data: UserRoleUpdate,
     db: Session = Depends(get_db),
 ):

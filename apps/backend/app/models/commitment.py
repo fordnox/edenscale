@@ -1,14 +1,16 @@
+import uuid
+
 from sqlalchemy import (
     Column,
     Date,
     DateTime,
     Enum,
     ForeignKey,
-    Integer,
     Numeric,
     String,
     Text,
     UniqueConstraint,
+    Uuid,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -23,10 +25,12 @@ class Commitment(Base):
         UniqueConstraint("fund_id", "investor_id", name="uq_commitment_fund_investor"),
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    fund_id = Column(Integer, ForeignKey("funds.id"), nullable=False, index=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    fund_id = Column(
+        Uuid(as_uuid=True), ForeignKey("funds.id"), nullable=False, index=True
+    )
     investor_id = Column(
-        Integer, ForeignKey("investors.id"), nullable=False, index=True
+        Uuid(as_uuid=True), ForeignKey("investors.id"), nullable=False, index=True
     )
     committed_amount = Column(Numeric(18, 2), nullable=False)
     called_amount = Column(Numeric(18, 2), nullable=False, default=0)

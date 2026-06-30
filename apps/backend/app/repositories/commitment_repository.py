@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -26,8 +27,8 @@ class CommitmentRepository:
         self,
         membership: UserOrganizationMembership,
         *,
-        fund_id: int | None = None,
-        investor_id: int | None = None,
+        fund_id: uuid.UUID | None = None,
+        investor_id: uuid.UUID | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> list[Commitment]:
@@ -47,11 +48,11 @@ class CommitmentRepository:
             query = query.filter(Commitment.investor_id == investor_id)
         return query.order_by(Commitment.id).offset(skip).limit(limit).all()
 
-    def get(self, commitment_id: int) -> Commitment | None:
+    def get(self, commitment_id: uuid.UUID) -> Commitment | None:
         return self._base_query().filter(Commitment.id == commitment_id).first()
 
     def get_by_fund_and_investor(
-        self, fund_id: int, investor_id: int
+        self, fund_id: uuid.UUID, investor_id: uuid.UUID
     ) -> Commitment | None:
         return (
             self._base_query()
@@ -87,7 +88,9 @@ class CommitmentRepository:
         self.db.refresh(commitment)
         return commitment
 
-    def update(self, commitment_id: int, data: CommitmentUpdate) -> Commitment | None:
+    def update(
+        self, commitment_id: uuid.UUID, data: CommitmentUpdate
+    ) -> Commitment | None:
         commitment = self.get(commitment_id)
         if commitment is None:
             return None
@@ -98,7 +101,7 @@ class CommitmentRepository:
         return commitment
 
     def set_status(
-        self, commitment_id: int, new_status: CommitmentStatus
+        self, commitment_id: uuid.UUID, new_status: CommitmentStatus
     ) -> Commitment | None:
         commitment = self.get(commitment_id)
         if commitment is None:
@@ -108,7 +111,7 @@ class CommitmentRepository:
         self.db.refresh(commitment)
         return commitment
 
-    def recompute_totals(self, commitment_id: int) -> Commitment | None:
+    def recompute_totals(self, commitment_id: uuid.UUID) -> Commitment | None:
         commitment = self.get(commitment_id)
         if commitment is None:
             return None

@@ -16,11 +16,13 @@ Authorization model:
   that the invitation email matches the signed-in user.
 """
 
+import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rbac import (
@@ -46,7 +48,7 @@ from app.schemas.organization_invitation import (
 from app.schemas.user_organization_membership import MembershipRead
 from app.services.hanko import send_invitation_email
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 def _build_accept_url(token: str) -> str:
@@ -55,7 +57,7 @@ def _build_accept_url(token: str) -> str:
 
 
 def _ensure_can_act_on_org(
-    membership: UserOrganizationMembership, organization_id: int
+    membership: UserOrganizationMembership, organization_id: uuid.UUID
 ) -> None:
     """Refuse cross-org actions for non-superadmin callers."""
     if membership.role is UserRole.superadmin:
@@ -67,7 +69,7 @@ def _ensure_can_act_on_org(
         )
 
 
-def _inviter_user_id(membership: UserOrganizationMembership) -> int | None:
+def _inviter_user_id(membership: UserOrganizationMembership) -> uuid.UUID | None:
     # Synthesized superadmin memberships have no row id; the FK on the
     # invitation is nullable, so record None and rely on `invited_by_user_id`
     # for the persisted-membership case.
@@ -180,8 +182,8 @@ async def accept_invitation(
         expires_at is not None and expires_at < now
     ):
         if invitation.status is not InvitationStatus.expired:
-            invitation.status = InvitationStatus.expired
-            db.commit()
+            invitation = repo.mark_expired(invitation.id)  # type: ignore[invalid-argument-type,assignment]
+            assert invitation is not None
         raise HTTPException(
             status_code=status.HTTP_410_GONE,
             detail="Invitation has expired",
@@ -194,9 +196,8 @@ async def accept_invitation(
     )
     if existing is not None:
         if existing.role != invitation.role:
-            existing.role = invitation.role
-            db.commit()
-            db.refresh(existing)
+            existing = membership_repo.update_role(existing.id, invitation.role)  # type: ignore[invalid-argument-type,assignment]
+            assert existing is not None
         new_membership = existing
     else:
         new_membership = membership_repo.create(
@@ -211,7 +212,7 @@ async def accept_invitation(
 
 @router.post("/{invitation_id}/revoke", response_model=InvitationRead)
 async def revoke_invitation(
-    invitation_id: int,
+    invitation_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
         require_membership_roles(UserRole.admin, UserRole.superadmin)
@@ -238,7 +239,7 @@ async def revoke_invitation(
 
 @router.post("/{invitation_id}/resend", response_model=InvitationRead)
 async def resend_invitation(
-    invitation_id: int,
+    invitation_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
         require_membership_roles(UserRole.admin, UserRole.superadmin)

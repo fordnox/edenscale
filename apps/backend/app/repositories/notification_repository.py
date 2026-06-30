@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Query, Session
@@ -15,7 +16,7 @@ class NotificationRepository:
 
     def list_for_user(
         self,
-        user_id: int,
+        user_id: uuid.UUID,
         *,
         status: NotificationStatus | None = None,
         skip: int = 0,
@@ -31,17 +32,17 @@ class NotificationRepository:
             .all()
         )
 
-    def get(self, notification_id: int) -> Notification | None:
+    def get(self, notification_id: uuid.UUID) -> Notification | None:
         return self._base_query().filter(Notification.id == notification_id).first()
 
     def create(
         self,
         *,
-        user_id: int,
+        user_id: uuid.UUID,
         title: str,
         message: str,
         related_type: str | None = None,
-        related_id: int | None = None,
+        related_id: uuid.UUID | None = None,
     ) -> Notification:
         notification = Notification(
             user_id=user_id,
@@ -56,7 +57,7 @@ class NotificationRepository:
         self.db.refresh(notification)
         return notification
 
-    def mark_read(self, notification_id: int) -> Notification | None:
+    def mark_read(self, notification_id: uuid.UUID) -> Notification | None:
         notification = self.get(notification_id)
         if notification is None:
             return None
@@ -67,7 +68,7 @@ class NotificationRepository:
             self.db.refresh(notification)
         return notification
 
-    def mark_archived(self, notification_id: int) -> Notification | None:
+    def mark_archived(self, notification_id: uuid.UUID) -> Notification | None:
         notification = self.get(notification_id)
         if notification is None:
             return None
@@ -77,7 +78,7 @@ class NotificationRepository:
             self.db.refresh(notification)
         return notification
 
-    def mark_all_read(self, user_id: int) -> int:
+    def mark_all_read(self, user_id: uuid.UUID) -> int:
         now = datetime.now(timezone.utc)
         updated = (
             self.db.query(Notification)

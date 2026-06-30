@@ -2,16 +2,16 @@ import json
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import UUID4, BaseModel, ConfigDict, field_validator
 
 
 class AuditLogRead(BaseModel):
-    id: int
-    user_id: int | None
-    organization_id: int | None
+    id: UUID4
+    user_id: UUID4 | None
+    organization_id: UUID4 | None
     action: str
     entity_type: str | None
-    entity_id: int | None
+    entity_id: UUID4 | None
     audit_metadata: dict[str, Any] | None
     ip_address: str | None
     created_at: datetime | None

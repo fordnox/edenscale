@@ -4,6 +4,7 @@ Covers create / lookup / list / mark / rotate / expire helpers. ``expire_stale``
 must be idempotent and must not flip already-accepted or already-revoked rows.
 """
 
+import uuid
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -117,7 +118,7 @@ class TestCreateAndLookup:
         )
 
         assert repo.get(invitation.id).id == invitation.id
-        assert repo.get(99999) is None
+        assert repo.get(uuid.uuid4()) is None
 
     def test_get_by_token_returns_row_or_none(self, db):
         org_id = _seed_org(db)
@@ -160,7 +161,10 @@ class TestLists:
         )
 
         rows = repo.list_for_organization(org_a)
-        assert [r.id for r in rows] == [a2.id, a1.id]
+        # Repository returns desc by id (a UUID, so creation order no
+        # longer determines ordering) — assert it contains exactly these
+        # two rows, ordered consistently with ``id`` descending.
+        assert [r.id for r in rows] == sorted([a1.id, a2.id], reverse=True)
 
     def test_list_for_organization_with_status_filter(self, db):
         org_id = _seed_org(db)
@@ -245,7 +249,7 @@ class TestStatusTransitions:
 
     def test_mark_accepted_returns_none_for_unknown(self, db):
         repo = OrganizationInvitationRepository(db)
-        assert repo.mark_accepted(99999) is None
+        assert repo.mark_accepted(uuid.uuid4()) is None
 
     def test_mark_revoked_flips_status(self, db):
         org_id = _seed_org(db)
@@ -263,7 +267,7 @@ class TestStatusTransitions:
 
     def test_mark_revoked_returns_none_for_unknown(self, db):
         repo = OrganizationInvitationRepository(db)
-        assert repo.mark_revoked(99999) is None
+        assert repo.mark_revoked(uuid.uuid4()) is None
 
     def test_rotate_token_issues_new_token(self, db):
         org_id = _seed_org(db)
@@ -286,7 +290,7 @@ class TestStatusTransitions:
 
     def test_rotate_token_returns_none_for_unknown(self, db):
         repo = OrganizationInvitationRepository(db)
-        assert repo.rotate_token(99999) is None
+        assert repo.rotate_token(uuid.uuid4()) is None
 
 
 class TestExpireStale:

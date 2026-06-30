@@ -1,13 +1,13 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import UUID4, BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.enums import UserRole
 from app.schemas.user_organization_membership import MembershipRead
 
 
 class UserCreate(BaseModel):
-    organization_id: int | None = None
+    organization_id: UUID4 | None = None
     role: UserRole
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
@@ -37,8 +37,8 @@ class UserRoleUpdate(BaseModel):
 
 
 class UserRead(BaseModel):
-    id: int
-    organization_id: int | None
+    id: UUID4
+    organization_id: UUID4 | None
     role: UserRole
     first_name: str
     last_name: str

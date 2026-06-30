@@ -54,7 +54,7 @@ def _seed_org(name: str = "NewTaven Capital") -> int:
         org = Organization(name=name, type=OrganizationType.fund_manager_firm)
         db.add(org)
         db.commit()
-        return org.id
+        return str(org.id)
     finally:
         db.close()
 
@@ -78,7 +78,7 @@ def _seed_user(
         )
         db.add(user)
         db.commit()
-        return user.id
+        return str(user.id)
     finally:
         db.close()
 
@@ -103,7 +103,7 @@ class TestEventListeners:
         org_id = _seed_org("Listener Co")
         rows = _audit_rows(entity_type="organization", action="create")
         assert len(rows) == 1
-        assert rows[0].entity_id == org_id
+        assert str(rows[0].entity_id) == org_id
         assert rows[0].action == "create"
 
     def test_update_emits_diff(self):
@@ -172,9 +172,9 @@ class TestEventListeners:
             db.close()
         rows = _audit_rows(entity_type="fund", action="create")
         assert len(rows) == 1
-        assert rows[0].user_id == user_id
+        assert str(rows[0].user_id) == user_id
         assert rows[0].ip_address == "10.0.0.1"
-        assert rows[0].organization_id == org_id
+        assert str(rows[0].organization_id) == org_id
 
 
 class TestRecordAuditHelper:
@@ -196,7 +196,7 @@ class TestRecordAuditHelper:
             assert log.id is not None
             assert log.action == "login"
             assert json.loads(log.audit_metadata) == {"reason": "manual"}
-            assert log.user_id == user_id
+            assert str(log.user_id) == user_id
         finally:
             db.close()
 
@@ -222,7 +222,7 @@ class TestAuditLogRoute:
             fund = Fund(organization_id=org_id, name="Filter Fund")
             db.add(fund)
             db.commit()
-            fund_id = fund.id
+            fund_id = str(fund.id)
         finally:
             db.close()
         override_user("hanko-admin")
@@ -257,7 +257,7 @@ class TestAuditLogRoute:
             old_row.created_at = now - timedelta(days=10)
             db.add(old_row)
             db.commit()
-            old_row_id = old_row.id
+            old_row_id = str(old_row.id)
         finally:
             db.close()
 

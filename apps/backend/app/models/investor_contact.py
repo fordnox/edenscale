@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, func
+import uuid
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Uuid, func
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -7,11 +9,13 @@ from app.core.database import Base
 class InvestorContact(Base):
     __tablename__ = "investor_contacts"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     investor_id = Column(
-        Integer, ForeignKey("investors.id"), nullable=False, index=True
+        Uuid(as_uuid=True), ForeignKey("investors.id"), nullable=False, index=True
     )
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    user_id = Column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
+    )
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     email = Column(String(255), nullable=True)

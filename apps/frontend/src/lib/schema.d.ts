@@ -1239,18 +1239,21 @@ export interface components {
     schemas: {
         /** AuditLogRead */
         AuditLogRead: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             /** User Id */
-            user_id: number | null;
+            user_id: string | null;
             /** Organization Id */
-            organization_id: number | null;
+            organization_id: string | null;
             /** Action */
             action: string;
             /** Entity Type */
             entity_type: string | null;
             /** Entity Id */
-            entity_id: number | null;
+            entity_id: string | null;
             /** Audit Metadata */
             audit_metadata: Record<string, never> | null;
             /** Ip Address */
@@ -1260,8 +1263,11 @@ export interface components {
         };
         /** CapitalCallCreate */
         CapitalCallCreate: {
-            /** Fund Id */
-            fund_id: number;
+            /**
+             * Fund Id
+             * Format: uuid4
+             */
+            fund_id: string;
             /** Title */
             title: string;
             /** Description */
@@ -1278,8 +1284,11 @@ export interface components {
         };
         /** CapitalCallFundSummary */
         CapitalCallFundSummary: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             /** Name */
             name: string;
             /** Currency Code */
@@ -1295,8 +1304,11 @@ export interface components {
         };
         /** CapitalCallItemCreate */
         CapitalCallItemCreate: {
-            /** Commitment Id */
-            commitment_id: number;
+            /**
+             * Commitment Id
+             * Format: uuid4
+             */
+            commitment_id: string;
             /** Amount Due */
             amount_due: number | string;
             /** Note */
@@ -1304,12 +1316,21 @@ export interface components {
         };
         /** CapitalCallItemRead */
         CapitalCallItemRead: {
-            /** Id */
-            id: number;
-            /** Capital Call Id */
-            capital_call_id: number;
-            /** Commitment Id */
-            commitment_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Capital Call Id
+             * Format: uuid4
+             */
+            capital_call_id: string;
+            /**
+             * Commitment Id
+             * Format: uuid4
+             */
+            commitment_id: string;
             /** Amount Due */
             amount_due: string;
             /** Amount Paid */
@@ -1336,10 +1357,16 @@ export interface components {
         };
         /** CapitalCallRead */
         CapitalCallRead: {
-            /** Id */
-            id: number;
-            /** Fund Id */
-            fund_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Fund Id
+             * Format: uuid4
+             */
+            fund_id: string;
             /** Title */
             title: string;
             /** Description */
@@ -1355,7 +1382,7 @@ export interface components {
             amount: string;
             status: components["schemas"]["CapitalCallStatus"];
             /** Created By User Id */
-            created_by_user_id: number | null;
+            created_by_user_id: string | null;
             /** Created At */
             created_at: string | null;
             /** Updated At */
@@ -1371,10 +1398,16 @@ export interface components {
         CapitalCallStatus: "draft" | "scheduled" | "sent" | "partially_paid" | "paid" | "overdue" | "cancelled";
         /** CapitalCallSummary */
         CapitalCallSummary: {
-            /** Id */
-            id: number;
-            /** Fund Id */
-            fund_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Fund Id
+             * Format: uuid4
+             */
+            fund_id: string;
             /** Fund Name */
             fund_name: string;
             /** Title */
@@ -1403,10 +1436,16 @@ export interface components {
         };
         /** CommitmentCreate */
         CommitmentCreate: {
-            /** Fund Id */
-            fund_id: number;
-            /** Investor Id */
-            investor_id: number;
+            /**
+             * Fund Id
+             * Format: uuid4
+             */
+            fund_id: string;
+            /**
+             * Investor Id
+             * Format: uuid4
+             */
+            investor_id: string;
             /** Committed Amount */
             committed_amount: number | string;
             /**
@@ -1433,8 +1472,11 @@ export interface components {
         };
         /** CommitmentFundSummary */
         CommitmentFundSummary: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             /** Name */
             name: string;
             /** Currency Code */
@@ -1445,8 +1487,11 @@ export interface components {
         };
         /** CommitmentInvestorSummary */
         CommitmentInvestorSummary: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             /** Name */
             name: string;
             /** Investor Code */
@@ -1454,12 +1499,21 @@ export interface components {
         };
         /** CommitmentRead */
         CommitmentRead: {
-            /** Id */
-            id: number;
-            /** Fund Id */
-            fund_id: number;
-            /** Investor Id */
-            investor_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Fund Id
+             * Format: uuid4
+             */
+            fund_id: string;
+            /**
+             * Investor Id
+             * Format: uuid4
+             */
+            investor_id: string;
             /** Committed Amount */
             committed_amount: string;
             /** Called Amount */
@@ -1510,7 +1564,7 @@ export interface components {
         /** CommunicationCreate */
         CommunicationCreate: {
             /** Fund Id */
-            fund_id?: number | null;
+            fund_id?: string | null;
             type: components["schemas"]["CommunicationType"];
             /** Subject */
             subject: string;
@@ -1519,12 +1573,15 @@ export interface components {
         };
         /** CommunicationRead */
         CommunicationRead: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             /** Fund Id */
-            fund_id: number | null;
+            fund_id: string | null;
             /** Sender User Id */
-            sender_user_id: number | null;
+            sender_user_id: string | null;
             type: components["schemas"]["CommunicationType"];
             /** Subject */
             subject: string;
@@ -1541,14 +1598,20 @@ export interface components {
         };
         /** CommunicationRecipientRead */
         CommunicationRecipientRead: {
-            /** Id */
-            id: number;
-            /** Communication Id */
-            communication_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Communication Id
+             * Format: uuid4
+             */
+            communication_id: string;
             /** User Id */
-            user_id: number | null;
+            user_id: string | null;
             /** Investor Contact Id */
-            investor_contact_id: number | null;
+            investor_contact_id: string | null;
             /** Delivered At */
             delivered_at: string | null;
             /** Read At */
@@ -1567,9 +1630,9 @@ export interface components {
          */
         CommunicationRecipientRef: {
             /** User Id */
-            user_id?: number | null;
+            user_id?: string | null;
             /** Investor Contact Id */
-            investor_contact_id?: number | null;
+            investor_contact_id?: string | null;
         };
         /** CommunicationSendRequest */
         CommunicationSendRequest: {
@@ -1578,12 +1641,15 @@ export interface components {
         };
         /** CommunicationSummary */
         CommunicationSummary: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             /** Fund Id */
-            fund_id: number | null;
+            fund_id: string | null;
             /** Sender User Id */
-            sender_user_id: number | null;
+            sender_user_id: string | null;
             type: components["schemas"]["CommunicationType"];
             /** Subject */
             subject: string;
@@ -1600,7 +1666,7 @@ export interface components {
         /** CommunicationUpdate */
         CommunicationUpdate: {
             /** Fund Id */
-            fund_id?: number | null;
+            fund_id?: string | null;
             type?: components["schemas"]["CommunicationType"] | null;
             /** Subject */
             subject?: string | null;
@@ -1632,8 +1698,11 @@ export interface components {
         };
         /** DistributionCreate */
         DistributionCreate: {
-            /** Fund Id */
-            fund_id: number;
+            /**
+             * Fund Id
+             * Format: uuid4
+             */
+            fund_id: string;
             /** Title */
             title: string;
             /** Description */
@@ -1650,8 +1719,11 @@ export interface components {
         };
         /** DistributionFundSummary */
         DistributionFundSummary: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             /** Name */
             name: string;
             /** Currency Code */
@@ -1667,8 +1739,11 @@ export interface components {
         };
         /** DistributionItemCreate */
         DistributionItemCreate: {
-            /** Commitment Id */
-            commitment_id: number;
+            /**
+             * Commitment Id
+             * Format: uuid4
+             */
+            commitment_id: string;
             /** Amount Due */
             amount_due: number | string;
             /** Note */
@@ -1676,12 +1751,21 @@ export interface components {
         };
         /** DistributionItemRead */
         DistributionItemRead: {
-            /** Id */
-            id: number;
-            /** Distribution Id */
-            distribution_id: number;
-            /** Commitment Id */
-            commitment_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Distribution Id
+             * Format: uuid4
+             */
+            distribution_id: string;
+            /**
+             * Commitment Id
+             * Format: uuid4
+             */
+            commitment_id: string;
             /** Amount Due */
             amount_due: string;
             /** Amount Paid */
@@ -1708,10 +1792,16 @@ export interface components {
         };
         /** DistributionRead */
         DistributionRead: {
-            /** Id */
-            id: number;
-            /** Fund Id */
-            fund_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Fund Id
+             * Format: uuid4
+             */
+            fund_id: string;
             /** Title */
             title: string;
             /** Description */
@@ -1727,7 +1817,7 @@ export interface components {
             amount: string;
             status: components["schemas"]["DistributionStatus"];
             /** Created By User Id */
-            created_by_user_id: number | null;
+            created_by_user_id: string | null;
             /** Created At */
             created_at: string | null;
             /** Updated At */
@@ -1757,11 +1847,11 @@ export interface components {
         /** DocumentCreate */
         DocumentCreate: {
             /** Organization Id */
-            organization_id?: number | null;
+            organization_id?: string | null;
             /** Fund Id */
-            fund_id?: number | null;
+            fund_id?: string | null;
             /** Investor Id */
-            investor_id?: number | null;
+            investor_id?: string | null;
             document_type: components["schemas"]["DocumentType"];
             /** Title */
             title: string;
@@ -1781,16 +1871,19 @@ export interface components {
         };
         /** DocumentRead */
         DocumentRead: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             /** Organization Id */
-            organization_id: number | null;
+            organization_id: string | null;
             /** Fund Id */
-            fund_id: number | null;
+            fund_id: string | null;
             /** Investor Id */
-            investor_id: number | null;
+            investor_id: string | null;
             /** Uploaded By User Id */
-            uploaded_by_user_id: number | null;
+            uploaded_by_user_id: string | null;
             document_type: components["schemas"]["DocumentType"];
             /** Title */
             title: string;
@@ -1819,11 +1912,11 @@ export interface components {
         /** DocumentUpdate */
         DocumentUpdate: {
             /** Organization Id */
-            organization_id?: number | null;
+            organization_id?: string | null;
             /** Fund Id */
-            fund_id?: number | null;
+            fund_id?: string | null;
             /** Investor Id */
-            investor_id?: number | null;
+            investor_id?: string | null;
             document_type?: components["schemas"]["DocumentType"] | null;
             /** Title */
             title?: string | null;
@@ -1860,9 +1953,9 @@ export interface components {
         /** FundCreate */
         FundCreate: {
             /** Organization Id */
-            organization_id?: number | null;
+            organization_id?: string | null;
             /** Fund Group Id */
-            fund_group_id?: number | null;
+            fund_group_id?: string | null;
             /** Name */
             name: string;
             /** Legal Name */
@@ -1892,7 +1985,7 @@ export interface components {
         /** FundGroupCreate */
         FundGroupCreate: {
             /** Organization Id */
-            organization_id?: number | null;
+            organization_id?: string | null;
             /** Name */
             name: string;
             /** Description */
@@ -1900,16 +1993,22 @@ export interface components {
         };
         /** FundGroupRead */
         FundGroupRead: {
-            /** Id */
-            id: number;
-            /** Organization Id */
-            organization_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
             /** Name */
             name: string;
             /** Description */
             description: string | null;
             /** Created By User Id */
-            created_by_user_id: number | null;
+            created_by_user_id: string | null;
             /** Created At */
             created_at: string | null;
             /** Updated At */
@@ -1924,12 +2023,18 @@ export interface components {
         };
         /** FundListItem */
         FundListItem: {
-            /** Id */
-            id: number;
-            /** Organization Id */
-            organization_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
             /** Fund Group Id */
-            fund_group_id: number | null;
+            fund_group_id: string | null;
             /** Name */
             name: string;
             /** Currency Code */
@@ -1944,8 +2049,11 @@ export interface components {
         };
         /** FundOverview */
         FundOverview: {
-            /** Fund Id */
-            fund_id: number;
+            /**
+             * Fund Id
+             * Format: uuid4
+             */
+            fund_id: string;
             /** Currency Code */
             currency_code: string;
             /** Committed */
@@ -1961,12 +2069,18 @@ export interface components {
         };
         /** FundRead */
         FundRead: {
-            /** Id */
-            id: number;
-            /** Organization Id */
-            organization_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
             /** Fund Group Id */
-            fund_group_id: number | null;
+            fund_group_id: string | null;
             /** Name */
             name: string;
             /** Legal Name */
@@ -2002,8 +2116,11 @@ export interface components {
         FundStatus: "draft" | "active" | "closed" | "liquidating" | "archived";
         /** FundSummary */
         FundSummary: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             /** Name */
             name: string;
             /** Vintage Year */
@@ -2024,8 +2141,11 @@ export interface components {
         };
         /** FundTeamMemberCreate */
         FundTeamMemberCreate: {
-            /** User Id */
-            user_id: number;
+            /**
+             * User Id
+             * Format: uuid4
+             */
+            user_id: string;
             /** Title */
             title?: string | null;
             /** Permissions */
@@ -2033,12 +2153,21 @@ export interface components {
         };
         /** FundTeamMemberRead */
         FundTeamMemberRead: {
-            /** Id */
-            id: number;
-            /** Fund Id */
-            fund_id: number;
-            /** User Id */
-            user_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Fund Id
+             * Format: uuid4
+             */
+            fund_id: string;
+            /**
+             * User Id
+             * Format: uuid4
+             */
+            user_id: string;
             /** Title */
             title: string | null;
             /** Permissions */
@@ -2058,7 +2187,7 @@ export interface components {
         /** FundUpdate */
         FundUpdate: {
             /** Fund Group Id */
-            fund_group_id?: number | null;
+            fund_group_id?: string | null;
             /** Name */
             name?: string | null;
             /** Legal Name */
@@ -2089,7 +2218,7 @@ export interface components {
         /** InvestorContactCreate */
         InvestorContactCreate: {
             /** User Id */
-            user_id?: number | null;
+            user_id?: string | null;
             /** First Name */
             first_name: string;
             /** Last Name */
@@ -2108,12 +2237,18 @@ export interface components {
         };
         /** InvestorContactRead */
         InvestorContactRead: {
-            /** Id */
-            id: number;
-            /** Investor Id */
-            investor_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Investor Id
+             * Format: uuid4
+             */
+            investor_id: string;
             /** User Id */
-            user_id: number | null;
+            user_id: string | null;
             /** First Name */
             first_name: string;
             /** Last Name */
@@ -2134,7 +2269,7 @@ export interface components {
         /** InvestorContactUpdate */
         InvestorContactUpdate: {
             /** User Id */
-            user_id?: number | null;
+            user_id?: string | null;
             /** First Name */
             first_name?: string | null;
             /** Last Name */
@@ -2151,7 +2286,7 @@ export interface components {
         /** InvestorCreate */
         InvestorCreate: {
             /** Organization Id */
-            organization_id?: number | null;
+            organization_id?: string | null;
             /** Investor Code */
             investor_code?: string | null;
             /** Name */
@@ -2168,10 +2303,16 @@ export interface components {
         };
         /** InvestorListItem */
         InvestorListItem: {
-            /** Id */
-            id: number;
-            /** Organization Id */
-            organization_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
             /** Investor Code */
             investor_code: string | null;
             /** Name */
@@ -2187,10 +2328,16 @@ export interface components {
         };
         /** InvestorRead */
         InvestorRead: {
-            /** Id */
-            id: number;
-            /** Organization Id */
-            organization_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
             /** Investor Code */
             investor_code: string | null;
             /** Name */
@@ -2230,8 +2377,11 @@ export interface components {
         };
         /** InvitationCreate */
         InvitationCreate: {
-            /** Organization Id */
-            organization_id: number;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
             /**
              * Email
              * Format: email
@@ -2241,10 +2391,16 @@ export interface components {
         };
         /** InvitationListItem */
         InvitationListItem: {
-            /** Id */
-            id: number;
-            /** Organization Id */
-            organization_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
             /** Email */
             email: string;
             role: components["schemas"]["UserRole"];
@@ -2255,7 +2411,7 @@ export interface components {
              */
             expires_at: string;
             /** Invited By User Id */
-            invited_by_user_id: number | null;
+            invited_by_user_id: string | null;
             /** Accepted At */
             accepted_at: string | null;
             /** Created At */
@@ -2263,10 +2419,16 @@ export interface components {
         };
         /** InvitationRead */
         InvitationRead: {
-            /** Id */
-            id: number;
-            /** Organization Id */
-            organization_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
             /** Email */
             email: string;
             role: components["schemas"]["UserRole"];
@@ -2279,7 +2441,7 @@ export interface components {
              */
             expires_at: string;
             /** Invited By User Id */
-            invited_by_user_id: number | null;
+            invited_by_user_id: string | null;
             /** Accepted At */
             accepted_at: string | null;
             /** Created At */
@@ -2295,12 +2457,21 @@ export interface components {
         InvitationStatus: "pending" | "accepted" | "revoked" | "expired";
         /** MembershipRead */
         MembershipRead: {
-            /** Id */
-            id: number;
-            /** User Id */
-            user_id: number;
-            /** Organization Id */
-            organization_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * User Id
+             * Format: uuid4
+             */
+            user_id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
             role: components["schemas"]["UserRole"];
             organization: components["schemas"]["OrganizationRead"];
             /** Created At */
@@ -2310,12 +2481,21 @@ export interface components {
         };
         /** MembershipWithUserRead */
         MembershipWithUserRead: {
-            /** Id */
-            id: number;
-            /** User Id */
-            user_id: number;
-            /** Organization Id */
-            organization_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * User Id
+             * Format: uuid4
+             */
+            user_id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
             role: components["schemas"]["UserRole"];
             user: components["schemas"]["UserRead"];
             /** Created At */
@@ -2325,10 +2505,16 @@ export interface components {
         };
         /** NotificationRead */
         NotificationRead: {
-            /** Id */
-            id: number;
-            /** User Id */
-            user_id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * User Id
+             * Format: uuid4
+             */
+            user_id: string;
             /** Title */
             title: string;
             /** Message */
@@ -2337,7 +2523,7 @@ export interface components {
             /** Related Type */
             related_type: string | null;
             /** Related Id */
-            related_id: number | null;
+            related_id: string | null;
             /** Read At */
             read_at: string | null;
             /** Created At */
@@ -2389,8 +2575,11 @@ export interface components {
         };
         /** OrganizationRead */
         OrganizationRead: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             type: components["schemas"]["OrganizationType"];
             /** Name */
             name: string;
@@ -2433,7 +2622,7 @@ export interface components {
         /** SuperadminAdminAssignment */
         SuperadminAdminAssignment: {
             /** User Id */
-            user_id?: number | null;
+            user_id?: string | null;
             /** Email */
             email?: string | null;
             /** First Name */
@@ -2455,7 +2644,7 @@ export interface components {
             /** Description */
             description?: string | null;
             /** Admin User Id */
-            admin_user_id?: number | null;
+            admin_user_id?: string | null;
             /** Admin Email */
             admin_email?: string | null;
             /** Admin First Name */
@@ -2470,8 +2659,11 @@ export interface components {
         };
         /** SuperadminOrganizationRead */
         SuperadminOrganizationRead: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             type: components["schemas"]["OrganizationType"];
             /** Name */
             name: string;
@@ -2485,9 +2677,9 @@ export interface components {
         /** TaskCreate */
         TaskCreate: {
             /** Fund Id */
-            fund_id?: number | null;
+            fund_id?: string | null;
             /** Assigned To User Id */
-            assigned_to_user_id?: number | null;
+            assigned_to_user_id?: string | null;
             /** Title */
             title: string;
             /** Description */
@@ -2499,14 +2691,17 @@ export interface components {
         };
         /** TaskRead */
         TaskRead: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             /** Fund Id */
-            fund_id: number | null;
+            fund_id: string | null;
             /** Assigned To User Id */
-            assigned_to_user_id: number | null;
+            assigned_to_user_id: string | null;
             /** Created By User Id */
-            created_by_user_id: number | null;
+            created_by_user_id: string | null;
             /** Title */
             title: string;
             /** Description */
@@ -2529,9 +2724,9 @@ export interface components {
         /** TaskUpdate */
         TaskUpdate: {
             /** Fund Id */
-            fund_id?: number | null;
+            fund_id?: string | null;
             /** Assigned To User Id */
-            assigned_to_user_id?: number | null;
+            assigned_to_user_id?: string | null;
             /** Title */
             title?: string | null;
             /** Description */
@@ -2543,7 +2738,7 @@ export interface components {
         /** UserCreate */
         UserCreate: {
             /** Organization Id */
-            organization_id?: number | null;
+            organization_id?: string | null;
             role: components["schemas"]["UserRole"];
             /** First Name */
             first_name: string;
@@ -2563,10 +2758,13 @@ export interface components {
         };
         /** UserRead */
         UserRead: {
-            /** Id */
-            id: number;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
             /** Organization Id */
-            organization_id: number | null;
+            organization_id: string | null;
             role: components["schemas"]["UserRole"];
             /** First Name */
             first_name: string;
@@ -2653,7 +2851,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -2761,7 +2959,7 @@ export interface operations {
                 include_inactive?: boolean;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -2792,7 +2990,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -2827,10 +3025,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                user_id: number;
+                user_id: string;
             };
             cookie?: never;
         };
@@ -2865,7 +3063,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                user_id: number;
+                user_id: string;
             };
             cookie?: never;
         };
@@ -2999,7 +3197,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                organization_id: number;
+                organization_id: string;
             };
             cookie?: never;
         };
@@ -3030,7 +3228,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                organization_id: number;
+                organization_id: string;
             };
             cookie?: never;
         };
@@ -3060,10 +3258,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                organization_id: number;
+                organization_id: string;
             };
             cookie?: never;
         };
@@ -3151,7 +3349,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                organization_id: number;
+                organization_id: string;
             };
             cookie?: never;
         };
@@ -3186,7 +3384,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                organization_id: number;
+                organization_id: string;
             };
             cookie?: never;
         };
@@ -3217,7 +3415,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                organization_id: number;
+                organization_id: string;
             };
             cookie?: never;
         };
@@ -3248,7 +3446,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                organization_id: number;
+                organization_id: string;
             };
             cookie?: never;
         };
@@ -3280,7 +3478,7 @@ export interface operations {
                 status_filter?: components["schemas"]["InvitationStatus"] | null;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -3311,7 +3509,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -3399,10 +3597,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                invitation_id: number;
+                invitation_id: string;
             };
             cookie?: never;
         };
@@ -3432,10 +3630,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                invitation_id: number;
+                invitation_id: string;
             };
             cookie?: never;
         };
@@ -3468,7 +3666,7 @@ export interface operations {
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -3499,7 +3697,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -3534,10 +3732,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_group_id: number;
+                fund_group_id: string;
             };
             cookie?: never;
         };
@@ -3567,10 +3765,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_group_id: number;
+                fund_group_id: string;
             };
             cookie?: never;
         };
@@ -3600,10 +3798,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_group_id: number;
+                fund_group_id: string;
             };
             cookie?: never;
         };
@@ -3640,7 +3838,7 @@ export interface operations {
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -3671,7 +3869,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -3706,10 +3904,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
+                fund_id: string;
             };
             cookie?: never;
         };
@@ -3739,10 +3937,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
+                fund_id: string;
             };
             cookie?: never;
         };
@@ -3776,10 +3974,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
+                fund_id: string;
             };
             cookie?: never;
         };
@@ -3809,10 +4007,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
+                fund_id: string;
             };
             cookie?: never;
         };
@@ -3845,10 +4043,10 @@ export interface operations {
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
+                fund_id: string;
             };
             cookie?: never;
         };
@@ -3878,10 +4076,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
+                fund_id: string;
             };
             cookie?: never;
         };
@@ -3915,11 +4113,11 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
-                member_id: number;
+                fund_id: string;
+                member_id: string;
             };
             cookie?: never;
         };
@@ -3949,11 +4147,11 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
-                member_id: number;
+                fund_id: string;
+                member_id: string;
             };
             cookie?: never;
         };
@@ -3990,7 +4188,7 @@ export interface operations {
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -4021,7 +4219,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -4056,10 +4254,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                investor_id: number;
+                investor_id: string;
             };
             cookie?: never;
         };
@@ -4089,10 +4287,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                investor_id: number;
+                investor_id: string;
             };
             cookie?: never;
         };
@@ -4120,10 +4318,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                investor_id: number;
+                investor_id: string;
             };
             cookie?: never;
         };
@@ -4160,10 +4358,10 @@ export interface operations {
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                investor_id: number;
+                investor_id: string;
             };
             cookie?: never;
         };
@@ -4193,10 +4391,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                investor_id: number;
+                investor_id: string;
             };
             cookie?: never;
         };
@@ -4230,11 +4428,11 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                investor_id: number;
-                contact_id: number;
+                investor_id: string;
+                contact_id: string;
             };
             cookie?: never;
         };
@@ -4264,11 +4462,11 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                investor_id: number;
-                contact_id: number;
+                investor_id: string;
+                contact_id: string;
             };
             cookie?: never;
         };
@@ -4301,13 +4499,13 @@ export interface operations {
     list_commitments_commitments_get: {
         parameters: {
             query?: {
-                fund_id?: number | null;
-                investor_id?: number | null;
+                fund_id?: string | null;
+                investor_id?: string | null;
                 skip?: number;
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -4338,7 +4536,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -4373,10 +4571,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                commitment_id: number;
+                commitment_id: string;
             };
             cookie?: never;
         };
@@ -4406,10 +4604,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                commitment_id: number;
+                commitment_id: string;
             };
             cookie?: never;
         };
@@ -4443,10 +4641,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                commitment_id: number;
+                commitment_id: string;
             };
             cookie?: never;
         };
@@ -4483,10 +4681,10 @@ export interface operations {
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
+                fund_id: string;
             };
             cookie?: never;
         };
@@ -4519,10 +4717,10 @@ export interface operations {
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                investor_id: number;
+                investor_id: string;
             };
             cookie?: never;
         };
@@ -4551,13 +4749,13 @@ export interface operations {
     list_capital_calls_capital_calls_get: {
         parameters: {
             query?: {
-                fund_id?: number | null;
+                fund_id?: string | null;
                 status_filter?: components["schemas"]["CapitalCallStatus"] | null;
                 skip?: number;
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -4588,7 +4786,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -4623,10 +4821,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                call_id: number;
+                call_id: string;
             };
             cookie?: never;
         };
@@ -4656,10 +4854,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                call_id: number;
+                call_id: string;
             };
             cookie?: never;
         };
@@ -4695,10 +4893,10 @@ export interface operations {
                 mode?: "manual" | "pro-rata";
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                call_id: number;
+                call_id: string;
             };
             cookie?: never;
         };
@@ -4732,11 +4930,11 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                call_id: number;
-                item_id: number;
+                call_id: string;
+                item_id: string;
             };
             cookie?: never;
         };
@@ -4770,10 +4968,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                call_id: number;
+                call_id: string;
             };
             cookie?: never;
         };
@@ -4803,10 +5001,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                call_id: number;
+                call_id: string;
             };
             cookie?: never;
         };
@@ -4840,10 +5038,10 @@ export interface operations {
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
+                fund_id: string;
             };
             cookie?: never;
         };
@@ -4872,13 +5070,13 @@ export interface operations {
     list_distributions_distributions_get: {
         parameters: {
             query?: {
-                fund_id?: number | null;
+                fund_id?: string | null;
                 status_filter?: components["schemas"]["DistributionStatus"] | null;
                 skip?: number;
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -4909,7 +5107,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -4944,10 +5142,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                distribution_id: number;
+                distribution_id: string;
             };
             cookie?: never;
         };
@@ -4977,10 +5175,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                distribution_id: number;
+                distribution_id: string;
             };
             cookie?: never;
         };
@@ -5016,10 +5214,10 @@ export interface operations {
                 mode?: "manual" | "pro-rata";
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                distribution_id: number;
+                distribution_id: string;
             };
             cookie?: never;
         };
@@ -5053,11 +5251,11 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                distribution_id: number;
-                item_id: number;
+                distribution_id: string;
+                item_id: string;
             };
             cookie?: never;
         };
@@ -5091,10 +5289,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                distribution_id: number;
+                distribution_id: string;
             };
             cookie?: never;
         };
@@ -5124,10 +5322,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                distribution_id: number;
+                distribution_id: string;
             };
             cookie?: never;
         };
@@ -5161,10 +5359,10 @@ export interface operations {
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
+                fund_id: string;
             };
             cookie?: never;
         };
@@ -5226,15 +5424,15 @@ export interface operations {
     list_documents_documents_get: {
         parameters: {
             query?: {
-                organization_id?: number | null;
-                fund_id?: number | null;
-                investor_id?: number | null;
+                organization_id?: string | null;
+                fund_id?: string | null;
+                investor_id?: string | null;
                 document_type?: components["schemas"]["DocumentType"] | null;
                 skip?: number;
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -5265,7 +5463,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -5300,10 +5498,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                document_id: number;
+                document_id: string;
             };
             cookie?: never;
         };
@@ -5333,10 +5531,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                document_id: number;
+                document_id: string;
             };
             cookie?: never;
         };
@@ -5364,10 +5562,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                document_id: number;
+                document_id: string;
             };
             cookie?: never;
         };
@@ -5489,13 +5687,13 @@ export interface operations {
     list_communications_communications_get: {
         parameters: {
             query?: {
-                fund_id?: number | null;
+                fund_id?: string | null;
                 type?: components["schemas"]["CommunicationType"] | null;
                 skip?: number;
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -5526,7 +5724,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -5561,10 +5759,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                communication_id: number;
+                communication_id: string;
             };
             cookie?: never;
         };
@@ -5594,10 +5792,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                communication_id: number;
+                communication_id: string;
             };
             cookie?: never;
         };
@@ -5631,10 +5829,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                communication_id: number;
+                communication_id: string;
             };
             cookie?: never;
         };
@@ -5668,11 +5866,11 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                communication_id: number;
-                recipient_id: number;
+                communication_id: string;
+                recipient_id: string;
             };
             cookie?: never;
         };
@@ -5706,10 +5904,10 @@ export interface operations {
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
+                fund_id: string;
             };
             cookie?: never;
         };
@@ -5738,14 +5936,14 @@ export interface operations {
     list_tasks_tasks_get: {
         parameters: {
             query?: {
-                fund_id?: number | null;
+                fund_id?: string | null;
                 status_filter?: components["schemas"]["TaskStatus"] | null;
-                assignee?: number | null;
+                assignee?: string | null;
                 skip?: number;
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -5776,7 +5974,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path?: never;
             cookie?: never;
@@ -5811,10 +6009,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                task_id: number;
+                task_id: string;
             };
             cookie?: never;
         };
@@ -5844,10 +6042,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                task_id: number;
+                task_id: string;
             };
             cookie?: never;
         };
@@ -5881,10 +6079,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                task_id: number;
+                task_id: string;
             };
             cookie?: never;
         };
@@ -5914,15 +6112,15 @@ export interface operations {
         parameters: {
             query?: {
                 status_filter?: components["schemas"]["TaskStatus"] | null;
-                assignee?: number | null;
+                assignee?: string | null;
                 skip?: number;
                 limit?: number;
             };
             header?: {
-                "X-Organization-Id"?: number | null;
+                "X-Organization-Id"?: string | null;
             };
             path: {
-                fund_id: number;
+                fund_id: string;
             };
             cookie?: never;
         };
@@ -6006,7 +6204,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                notification_id: number;
+                notification_id: string;
             };
             cookie?: never;
         };
@@ -6037,7 +6235,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                notification_id: number;
+                notification_id: string;
             };
             cookie?: never;
         };
@@ -6067,8 +6265,8 @@ export interface operations {
         parameters: {
             query?: {
                 entity_type?: string | null;
-                entity_id?: number | null;
-                user_id?: number | null;
+                entity_id?: string | null;
+                user_id?: string | null;
                 action?: string | null;
                 date_from?: string | null;
                 date_to?: string | null;

@@ -1,13 +1,13 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import UUID4, BaseModel, ConfigDict
 
 from app.models.enums import CapitalCallStatus, CommunicationType, FundStatus
 
 
 class FundSummary(BaseModel):
-    id: int
+    id: UUID4
     name: str
     vintage_year: int | None = None
     strategy: str | None = None
@@ -22,8 +22,8 @@ class FundSummary(BaseModel):
 
 
 class CapitalCallSummary(BaseModel):
-    id: int
-    fund_id: int
+    id: UUID4
+    fund_id: UUID4
     fund_name: str
     title: str
     amount: Decimal
@@ -34,9 +34,9 @@ class CapitalCallSummary(BaseModel):
 
 
 class CommunicationSummary(BaseModel):
-    id: int
-    fund_id: int | None
-    sender_user_id: int | None
+    id: UUID4
+    fund_id: UUID4 | None
+    sender_user_id: UUID4 | None
     type: CommunicationType
     subject: str
     sent_at: datetime | None

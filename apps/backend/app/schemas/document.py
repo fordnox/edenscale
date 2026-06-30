@@ -1,14 +1,14 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 from app.models.enums import DocumentType
 
 
 class DocumentCreate(BaseModel):
-    organization_id: int | None = None
-    fund_id: int | None = None
-    investor_id: int | None = None
+    organization_id: UUID4 | None = None
+    fund_id: UUID4 | None = None
+    investor_id: UUID4 | None = None
     document_type: DocumentType
     title: str = Field(min_length=1, max_length=255)
     file_name: str = Field(min_length=1, max_length=255)
@@ -19,9 +19,9 @@ class DocumentCreate(BaseModel):
 
 
 class DocumentUpdate(BaseModel):
-    organization_id: int | None = None
-    fund_id: int | None = None
-    investor_id: int | None = None
+    organization_id: UUID4 | None = None
+    fund_id: UUID4 | None = None
+    investor_id: UUID4 | None = None
     document_type: DocumentType | None = None
     title: str | None = Field(default=None, min_length=1, max_length=255)
     file_name: str | None = Field(default=None, min_length=1, max_length=255)
@@ -31,11 +31,11 @@ class DocumentUpdate(BaseModel):
 
 
 class DocumentRead(BaseModel):
-    id: int
-    organization_id: int | None
-    fund_id: int | None
-    investor_id: int | None
-    uploaded_by_user_id: int | None
+    id: UUID4
+    organization_id: UUID4 | None
+    fund_id: UUID4 | None
+    investor_id: UUID4 | None
+    uploaded_by_user_id: UUID4 | None
     document_type: DocumentType
     title: str
     file_name: str

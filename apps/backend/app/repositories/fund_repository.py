@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -53,7 +54,7 @@ class FundRepository:
             query = query.filter(Fund.id.in_(visible_fund_ids))
         return query.order_by(Fund.id).offset(skip).limit(limit).all()
 
-    def get(self, fund_id: int) -> tuple[Fund, Decimal] | None:
+    def get(self, fund_id: uuid.UUID) -> tuple[Fund, Decimal] | None:
         return self._base_query().filter(Fund.id == fund_id).first()
 
     def membership_can_view(
@@ -84,7 +85,9 @@ class FundRepository:
         assert result is not None
         return result
 
-    def update(self, fund_id: int, data: FundUpdate) -> tuple[Fund, Decimal] | None:
+    def update(
+        self, fund_id: uuid.UUID, data: FundUpdate
+    ) -> tuple[Fund, Decimal] | None:
         fund = self.db.query(Fund).filter(Fund.id == fund_id).first()
         if fund is None:
             return None
@@ -94,7 +97,7 @@ class FundRepository:
         self.db.refresh(fund)
         return self.get(fund_id)
 
-    def archive(self, fund_id: int) -> tuple[Fund, Decimal] | None:
+    def archive(self, fund_id: uuid.UUID) -> tuple[Fund, Decimal] | None:
         fund = self.db.query(Fund).filter(Fund.id == fund_id).first()
         if fund is None:
             return None
@@ -103,7 +106,7 @@ class FundRepository:
         self.db.refresh(fund)
         return self.get(fund_id)
 
-    def overview_totals(self, fund_id: int) -> tuple[Decimal, Decimal, Decimal]:
+    def overview_totals(self, fund_id: uuid.UUID) -> tuple[Decimal, Decimal, Decimal]:
         """Return `(committed, called, distributed)` summed across the fund's commitments."""
         row = (
             self.db.query(

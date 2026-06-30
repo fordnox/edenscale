@@ -31,6 +31,16 @@ from app.schemas.dashboard import (
     DashboardOverviewResponse,
     FundSummary,
 )
+from app.schemas.distribution import (
+    DistributionCreate,
+    DistributionFundSummary,
+    DistributionItemBulkCreate,
+    DistributionItemCreate,
+    DistributionItemRead,
+    DistributionItemUpdate,
+    DistributionRead,
+    DistributionUpdate,
+)
 from app.schemas.document import (
     DocumentCreate,
     DocumentRead,
@@ -73,6 +83,7 @@ from app.schemas.notification import (
 )
 from app.schemas.organization import (
     OrganizationCreate,
+    OrganizationOnboardingCreate,
     OrganizationRead,
     OrganizationUpdate,
 )
@@ -133,6 +144,14 @@ __all__ = [
     "CommunicationSummary",
     "CommunicationUpdate",
     "DashboardOverviewResponse",
+    "DistributionCreate",
+    "DistributionFundSummary",
+    "DistributionItemBulkCreate",
+    "DistributionItemCreate",
+    "DistributionItemRead",
+    "DistributionItemUpdate",
+    "DistributionRead",
+    "DistributionUpdate",
     "DocumentCreate",
     "DocumentRead",
     "DocumentUpdate",
@@ -170,6 +189,7 @@ __all__ = [
     "NotificationRead",
     "NotificationsReadAllResponse",
     "OrganizationCreate",
+    "OrganizationOnboardingCreate",
     "OrganizationRead",
     "OrganizationUpdate",
     "SuperadminAdminAssignment",

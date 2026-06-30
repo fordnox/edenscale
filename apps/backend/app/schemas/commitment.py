@@ -2,13 +2,20 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    UUID4,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from app.models.enums import CommitmentStatus, FundStatus
 
 
 class CommitmentFundSummary(BaseModel):
-    id: int
+    id: UUID4
     name: str
     currency_code: str
     status: FundStatus
@@ -18,7 +25,7 @@ class CommitmentFundSummary(BaseModel):
 
 
 class CommitmentInvestorSummary(BaseModel):
-    id: int
+    id: UUID4
     name: str
     investor_code: str | None = None
 
@@ -26,8 +33,8 @@ class CommitmentInvestorSummary(BaseModel):
 
 
 class CommitmentCreate(BaseModel):
-    fund_id: int
-    investor_id: int
+    fund_id: UUID4
+    investor_id: UUID4
     committed_amount: Decimal
     called_amount: Decimal = Decimal("0")
     # Why: distributed_amount is unbounded by committed_amount because private
@@ -103,9 +110,9 @@ class CommitmentStatusUpdate(BaseModel):
 
 
 class CommitmentRead(BaseModel):
-    id: int
-    fund_id: int
-    investor_id: int
+    id: UUID4
+    fund_id: UUID4
+    investor_id: UUID4
     committed_amount: Decimal
     called_amount: Decimal
     distributed_amount: Decimal

@@ -22,6 +22,7 @@ the decoded payload. The platform also needs a local `User` row keyed by
   membership's role is not in the allow-list.
 """
 
+import uuid
 from collections.abc import Callable
 
 from fastapi import Depends, Header, HTTPException, status
@@ -87,7 +88,9 @@ def require_superadmin(
 
 
 def get_active_membership(
-    x_organization_id: int | None = Header(default=None, alias="X-Organization-Id"),
+    x_organization_id: uuid.UUID | None = Header(
+        default=None, alias="X-Organization-Id"
+    ),
     current_user: User = Depends(get_current_user_record),
     db: Session = Depends(get_db),
 ) -> UserOrganizationMembership:

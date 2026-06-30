@@ -8,27 +8,27 @@ tenant-scoped routes.
 
 Cross-resource writes (``POST /superadmin/organizations``,
 ``POST /superadmin/organizations/{id}/admins``) need to land org/user/
-membership rows together, so they bypass the eager-commit repository
-helpers and stage everything on the request session before a single
-final commit.
+membership rows together; `OrganizationRepository.create_with_admin` and
+`UserRepository.resolve_or_create_stub` stage those rows and commit once
+rather than going through the per-entity eager-commit repository helpers.
 """
 
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import require_superadmin
 from app.models.enums import UserRole
-from app.models.organization import Organization
 from app.models.user import User
-from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.organization_repository import OrganizationRepository
 from app.repositories.user_organization_membership_repository import (
     UserOrganizationMembershipRepository,
 )
 from app.repositories.user_repository import UserRepository
-from app.schemas.organization import OrganizationRead
+from app.schemas.organization import OrganizationCreate, OrganizationRead
 from app.schemas.superadmin import (
     MembershipWithUserRead,
     SuperadminAdminAssignment,
@@ -38,47 +38,26 @@ from app.schemas.superadmin import (
 )
 from app.schemas.user_organization_membership import MembershipRead
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
-def _resolve_or_create_user(
+def _resolve_or_create_user_or_404(
     db: Session,
     *,
-    user_id: int | None,
+    user_id: uuid.UUID | None,
     email: str | None,
     first_name: str | None,
     last_name: str | None,
 ) -> User:
-    """Return the `User` referenced by ``user_id`` or ``email``.
-
-    If ``email`` is given and no user exists for it yet, a stub row is
-    staged on the session (not committed) with ``hanko_subject_id=None``
-    so that ``get_current_user_record`` claims it on first sign-in.
-    """
-    if user_id is not None:
-        user = UserRepository(db).get_by_id(user_id)
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
-            )
-        return user
-
-    assert email is not None
-    existing = UserRepository(db).get_by_email(email)
-    if existing is not None:
-        return existing
-
-    stub = User(
-        role=UserRole.lp,
-        first_name=first_name or "",
-        last_name=last_name or "",
-        email=email,
-        hanko_subject_id=None,
+    user = UserRepository(db).resolve_or_create_stub(
+        user_id=user_id, email=email, first_name=first_name, last_name=last_name
     )
-    db.add(stub)
-    db.flush()
-    return stub
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return user
 
 
 @router.get(
@@ -89,27 +68,15 @@ def _resolve_or_create_user(
 async def list_all_organizations(
     db: Session = Depends(get_db),
 ) -> list[SuperadminOrganizationRead]:
-    rows = (
-        db.query(
-            Organization,
-            func.count(UserOrganizationMembership.id).label("member_count"),
-        )
-        .outerjoin(
-            UserOrganizationMembership,
-            UserOrganizationMembership.organization_id == Organization.id,
-        )
-        .group_by(Organization.id)
-        .order_by(Organization.id)
-        .all()
-    )
+    rows = OrganizationRepository(db).list_with_member_counts()
     return [
         SuperadminOrganizationRead(
-            id=org.id,
-            type=org.type,
-            name=org.name,
-            is_active=org.is_active,
+            id=org.id,  # type: ignore[invalid-argument-type]
+            type=org.type,  # type: ignore[invalid-argument-type]
+            name=org.name,  # type: ignore[invalid-argument-type]
+            is_active=org.is_active,  # type: ignore[invalid-argument-type]
             member_count=int(member_count or 0),
-            created_at=org.created_at,
+            created_at=org.created_at,  # type: ignore[invalid-argument-type]
         )
         for org, member_count in rows
     ]
@@ -125,7 +92,7 @@ async def create_organization_with_admin(
     data: SuperadminOrganizationCreate,
     db: Session = Depends(get_db),
 ) -> SuperadminOrganizationCreateResponse:
-    admin = _resolve_or_create_user(
+    admin = _resolve_or_create_user_or_404(
         db,
         user_id=data.admin_user_id,
         email=data.admin_email,
@@ -133,26 +100,17 @@ async def create_organization_with_admin(
         last_name=data.admin_last_name,
     )
 
-    organization = Organization(
-        type=data.type,
-        name=data.name,
-        legal_name=data.legal_name,
-        tax_id=data.tax_id,
-        website=data.website,
-        description=data.description,
+    organization, membership = OrganizationRepository(db).create_with_admin(
+        OrganizationCreate(
+            type=data.type,
+            name=data.name,
+            legal_name=data.legal_name,
+            tax_id=data.tax_id,
+            website=data.website,
+            description=data.description,
+        ),
+        admin=admin,
     )
-    db.add(organization)
-    db.flush()
-
-    membership = UserOrganizationMembership(
-        user_id=admin.id,
-        organization_id=organization.id,
-        role=UserRole.admin,
-    )
-    db.add(membership)
-    db.commit()
-    db.refresh(organization)
-    db.refresh(membership)
 
     return SuperadminOrganizationCreateResponse(
         organization=OrganizationRead.model_validate(organization),
@@ -166,7 +124,7 @@ async def create_organization_with_admin(
     dependencies=[Depends(require_superadmin)],
 )
 async def assign_organization_admin(
-    organization_id: int,
+    organization_id: uuid.UUID,
     data: SuperadminAdminAssignment,
     db: Session = Depends(get_db),
 ) -> MembershipRead:
@@ -177,7 +135,7 @@ async def assign_organization_admin(
             detail="Organization not found",
         )
 
-    user = _resolve_or_create_user(
+    user = _resolve_or_create_user_or_404(
         db,
         user_id=data.user_id,
         email=data.email,
@@ -189,9 +147,8 @@ async def assign_organization_admin(
     existing = membership_repo.get(user.id, organization_id)  # type: ignore[invalid-argument-type]
     if existing is not None:
         if existing.role != UserRole.admin:
-            existing.role = UserRole.admin
-            db.commit()
-            db.refresh(existing)
+            existing = membership_repo.update_role(existing.id, UserRole.admin)  # type: ignore[invalid-argument-type,assignment]
+            assert existing is not None
         return MembershipRead.model_validate(existing)
 
     membership = membership_repo.create(
@@ -202,31 +159,23 @@ async def assign_organization_admin(
     return MembershipRead.model_validate(membership)
 
 
-def _set_organization_active(
-    db: Session, organization_id: int, *, is_active: bool
-) -> Organization:
-    organization = OrganizationRepository(db).get(organization_id)
-    if organization is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Organization not found",
-        )
-    organization.is_active = is_active
-    db.commit()
-    db.refresh(organization)
-    return organization
-
-
 @router.patch(
     "/organizations/{organization_id}/disable",
     response_model=OrganizationRead,
     dependencies=[Depends(require_superadmin)],
 )
 async def disable_organization(
-    organization_id: int,
+    organization_id: uuid.UUID,
     db: Session = Depends(get_db),
 ) -> OrganizationRead:
-    organization = _set_organization_active(db, organization_id, is_active=False)
+    organization = OrganizationRepository(db).set_active(
+        organization_id, is_active=False
+    )
+    if organization is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found",
+        )
     return OrganizationRead.model_validate(organization)
 
 
@@ -236,10 +185,17 @@ async def disable_organization(
     dependencies=[Depends(require_superadmin)],
 )
 async def enable_organization(
-    organization_id: int,
+    organization_id: uuid.UUID,
     db: Session = Depends(get_db),
 ) -> OrganizationRead:
-    organization = _set_organization_active(db, organization_id, is_active=True)
+    organization = OrganizationRepository(db).set_active(
+        organization_id, is_active=True
+    )
+    if organization is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found",
+        )
     return OrganizationRead.model_validate(organization)
 
 
@@ -249,7 +205,7 @@ async def enable_organization(
     dependencies=[Depends(require_superadmin)],
 )
 async def list_organization_members(
-    organization_id: int,
+    organization_id: uuid.UUID,
     db: Session = Depends(get_db),
 ) -> list[MembershipWithUserRead]:
     organization = OrganizationRepository(db).get(organization_id)

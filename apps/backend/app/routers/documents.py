@@ -1,9 +1,11 @@
 import secrets
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.rbac import (
@@ -12,12 +14,12 @@ from app.core.rbac import (
     require_roles,
 )
 from app.models.enums import DocumentType, UserRole
-from app.models.fund import Fund
-from app.models.investor import Investor
-from app.models.organization import Organization
 from app.models.user import User
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.document_repository import DocumentRepository
+from app.repositories.fund_repository import FundRepository
+from app.repositories.investor_repository import InvestorRepository
+from app.repositories.organization_repository import OrganizationRepository
 from app.schemas.document import (
     DocumentCreate,
     DocumentRead,
@@ -31,7 +33,7 @@ from app.services.storage import (
     key_from_file_url,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 _ORG_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
 
@@ -61,23 +63,23 @@ def _ensure_can_attach(
             detail="Cannot attach document to a different organization",
         )
     if data.fund_id is not None:
-        fund = db.query(Fund).filter(Fund.id == data.fund_id).first()
-        if fund is None:
+        fund_row = FundRepository(db).get(data.fund_id)
+        if fund_row is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
             )
-        if fund.organization_id != org_id:
+        if fund_row[0].organization_id != org_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Cannot attach document to a fund outside your organization",
             )
     if data.investor_id is not None:
-        investor = db.query(Investor).filter(Investor.id == data.investor_id).first()
-        if investor is None:
+        investor_row = InvestorRepository(db).get(data.investor_id)
+        if investor_row is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Investor not found"
             )
-        if investor.organization_id != org_id:
+        if investor_row[0].organization_id != org_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Cannot attach document to an investor outside your organization",
@@ -140,11 +142,7 @@ async def create_document(
 ):
     _ensure_can_attach(membership, db, data)
     if data.organization_id is not None:
-        org = (
-            db.query(Organization)
-            .filter(Organization.id == data.organization_id)
-            .first()
-        )
+        org = OrganizationRepository(db).get(data.organization_id)
         if org is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found"
@@ -156,9 +154,9 @@ async def create_document(
 
 @router.get("", response_model=list[DocumentRead])
 async def list_documents(
-    organization_id: int | None = None,
-    fund_id: int | None = None,
-    investor_id: int | None = None,
+    organization_id: uuid.UUID | None = None,
+    fund_id: uuid.UUID | None = None,
+    investor_id: uuid.UUID | None = None,
     document_type: DocumentType | None = None,
     skip: int = 0,
     limit: int = 100,
@@ -180,7 +178,7 @@ async def list_documents(
 
 @router.get("/{document_id}", response_model=DocumentRead)
 async def get_document(
-    document_id: int,
+    document_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
@@ -200,7 +198,7 @@ async def get_document(
 
 @router.patch("/{document_id}", response_model=DocumentRead)
 async def update_document(
-    document_id: int,
+    document_id: uuid.UUID,
     data: DocumentUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -227,7 +225,7 @@ async def update_document(
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
-    document_id: int,
+    document_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
         require_membership_roles(

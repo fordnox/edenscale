@@ -1,4 +1,6 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, UniqueConstraint, func
+import uuid
+
+from sqlalchemy import Column, DateTime, ForeignKey, UniqueConstraint, Uuid, func
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -12,13 +14,18 @@ class CommunicationRecipient(Base):
         ),
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     communication_id = Column(
-        Integer, ForeignKey("communications.id"), nullable=False, index=True
+        Uuid(as_uuid=True), ForeignKey("communications.id"), nullable=False, index=True
     )
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    user_id = Column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
+    )
     investor_contact_id = Column(
-        Integer, ForeignKey("investor_contacts.id"), nullable=True, index=True
+        Uuid(as_uuid=True),
+        ForeignKey("investor_contacts.id"),
+        nullable=True,
+        index=True,
     )
     delivered_at = Column(DateTime, nullable=True)
     read_at = Column(DateTime, nullable=True)

@@ -1,7 +1,11 @@
+import logging
+
 from arq import create_pool
 from arq.connections import RedisSettings
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 # Redis connection settings
 redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
@@ -36,3 +40,9 @@ async def enqueue_task(task_name: str, *args, **kwargs):
 async def enqueue_task_ping():
     """Enqueue a simple ping task for testing"""
     return await enqueue_task("task_ping")
+
+
+async def task_ping(ctx: dict) -> str:
+    """Worker function for the `task_ping` job enqueued by `enqueue_task_ping`."""
+    logger.info("task_ping executed")
+    return "pong"

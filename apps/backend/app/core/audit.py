@@ -17,6 +17,7 @@ non-DB-mutation event (e.g. a successful login). It commits its own row.
 from __future__ import annotations
 
 import json
+import uuid
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
@@ -88,23 +89,23 @@ def _build_diff(target: Any) -> dict[str, dict[str, Any]]:
     return diff
 
 
-def _organization_id_for(target: Any) -> int | None:
+def _organization_id_for(target: Any) -> uuid.UUID | None:
     """Best-effort organization id for the affected row."""
     return getattr(target, "organization_id", None)
 
 
-def _entity_id(target: Any) -> int | None:
+def _entity_id(target: Any) -> uuid.UUID | None:
     return getattr(target, "id", None)
 
 
 def _write_audit_via_connection(
     connection: Connection,
     *,
-    user_id: int | None,
-    organization_id: int | None,
+    user_id: uuid.UUID | None,
+    organization_id: uuid.UUID | None,
     action: str,
     entity_type: str,
-    entity_id: int | None,
+    entity_id: uuid.UUID | None,
     metadata: dict[str, Any] | None,
     ip_address: str | None,
 ) -> None:
@@ -131,7 +132,7 @@ def record_audit(
     user: User | None,
     action: str,
     entity_type: str,
-    entity_id: int | None,
+    entity_id: uuid.UUID | None,
     metadata: dict[str, Any] | None = None,
     request: Any = None,
 ) -> AuditLog:

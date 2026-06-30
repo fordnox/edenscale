@@ -1,6 +1,9 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_current_user_record
 from app.models.enums import NotificationStatus
@@ -8,7 +11,7 @@ from app.models.user import User
 from app.repositories.notification_repository import NotificationRepository
 from app.schemas.notification import NotificationRead, NotificationsReadAllResponse
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[NotificationRead])
@@ -40,7 +43,7 @@ async def mark_all_notifications_read(
 
 @router.post("/{notification_id}/read", response_model=NotificationRead)
 async def mark_notification_read(
-    notification_id: int,
+    notification_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),
 ):
@@ -62,7 +65,7 @@ async def mark_notification_read(
 
 @router.post("/{notification_id}/archive", response_model=NotificationRead)
 async def archive_notification(
-    notification_id: int,
+    notification_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),
 ):

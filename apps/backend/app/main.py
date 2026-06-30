@@ -1,9 +1,8 @@
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
 from app.core import audit  # noqa: F401 — registers SQLAlchemy event listeners
-from app.core.auth import get_current_user
 from app.core.config import settings
 from app.middleware.audit_context import AuditContextMiddleware
 from app.routers import (
@@ -63,110 +62,79 @@ app.add_middleware(
 
 app.add_middleware(AuditContextMiddleware)  # type: ignore[invalid-argument-type]
 
-app.include_router(
-    dashboard.router, prefix="/dashboard", dependencies=[Depends(get_current_user)]
-)
-app.include_router(
-    users.router,
-    prefix="/users",
-    tags=["users"],
-    dependencies=[Depends(get_current_user)],
-)
+app.include_router(dashboard.router, prefix="/dashboard")
+app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(
     organizations.router,
     prefix="/organizations",
     tags=["organizations"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     superadmin.router,
     prefix="/superadmin",
     tags=["superadmin"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     invitations.router,
     prefix="/invitations",
     tags=["invitations"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     fund_groups.router,
     prefix="/fund-groups",
     tags=["fund-groups"],
-    dependencies=[Depends(get_current_user)],
 )
-app.include_router(
-    funds.router,
-    prefix="/funds",
-    tags=["funds"],
-    dependencies=[Depends(get_current_user)],
-)
+app.include_router(funds.router, prefix="/funds", tags=["funds"])
 app.include_router(
     fund_team_members.router,
     prefix="/funds",
     tags=["fund-team-members"],
-    dependencies=[Depends(get_current_user)],
 )
-app.include_router(
-    investors.router,
-    prefix="/investors",
-    tags=["investors"],
-    dependencies=[Depends(get_current_user)],
-)
+app.include_router(investors.router, prefix="/investors", tags=["investors"])
 app.include_router(
     investor_contacts.router,
     prefix="/investors",
     tags=["investor-contacts"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     commitments.router,
     prefix="/commitments",
     tags=["commitments"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     commitments.fund_commitments_router,
     prefix="/funds",
     tags=["commitments"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     commitments.investor_commitments_router,
     prefix="/investors",
     tags=["commitments"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     capital_calls.router,
     prefix="/capital-calls",
     tags=["capital-calls"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     capital_calls.fund_capital_calls_router,
     prefix="/funds",
     tags=["capital-calls"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     distributions.router,
     prefix="/distributions",
     tags=["distributions"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     distributions.fund_distributions_router,
     prefix="/funds",
     tags=["distributions"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     documents.router,
     prefix="/documents",
     tags=["documents"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     documents.dev_storage_router,
@@ -176,37 +144,31 @@ app.include_router(
     communications.router,
     prefix="/communications",
     tags=["communications"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     communications.fund_communications_router,
     prefix="/funds",
     tags=["communications"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     tasks.router,
     prefix="/tasks",
     tags=["tasks"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     tasks.fund_tasks_router,
     prefix="/funds",
     tags=["tasks"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     notifications.router,
     prefix="/notifications",
     tags=["notifications"],
-    dependencies=[Depends(get_current_user)],
 )
 app.include_router(
     audit_logs.router,
     prefix="/audit-logs",
     tags=["audit-logs"],
-    dependencies=[Depends(get_current_user)],
 )
 
 

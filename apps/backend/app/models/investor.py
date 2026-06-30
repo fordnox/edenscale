@@ -1,11 +1,13 @@
+import uuid
+
 from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
     ForeignKey,
-    Integer,
     String,
     Text,
+    Uuid,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -16,9 +18,9 @@ from app.core.database import Base
 class Investor(Base):
     __tablename__ = "investors"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(
-        Integer, ForeignKey("organizations.id"), nullable=False, index=True
+        Uuid(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True
     )
     investor_code = Column(String(50), nullable=True, unique=True)
     name = Column(String(255), nullable=False)

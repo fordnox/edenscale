@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 from typing import Literal
 
@@ -5,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.capital_call_item import CapitalCallItem
@@ -14,6 +16,7 @@ from app.models.fund import Fund
 from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.capital_call_repository import CapitalCallRepository
+from app.repositories.fund_repository import FundRepository
 from app.schemas.capital_call import (
     CapitalCallCreate,
     CapitalCallItemBulkCreate,
@@ -25,11 +28,12 @@ from app.schemas.capital_call import (
 from app.services.allocation import allocate_pro_rata
 from app.services.notification_service import notify
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
-def _load_fund(db: Session, fund_id: int) -> Fund | None:
-    return db.query(Fund).filter(Fund.id == fund_id).first()
+def _load_fund(db: Session, fund_id: uuid.UUID) -> Fund | None:
+    row = FundRepository(db).get(fund_id)
+    return row[0] if row is not None else None
 
 
 def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> None:
@@ -42,7 +46,7 @@ def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> Non
 
 @router.get("", response_model=list[CapitalCallRead])
 async def list_capital_calls(
-    fund_id: int | None = None,
+    fund_id: uuid.UUID | None = None,
     status_filter: CapitalCallStatus | None = None,
     skip: int = 0,
     limit: int = 100,
@@ -61,7 +65,7 @@ async def list_capital_calls(
 
 @router.get("/{call_id}", response_model=CapitalCallRead)
 async def get_capital_call(
-    call_id: int,
+    call_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
@@ -104,7 +108,7 @@ async def create_capital_call(
 
 @router.patch("/{call_id}", response_model=CapitalCallRead)
 async def update_capital_call(
-    call_id: int,
+    call_id: uuid.UUID,
     data: CapitalCallUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -133,7 +137,7 @@ async def update_capital_call(
     status_code=status.HTTP_201_CREATED,
 )
 async def add_capital_call_items(
-    call_id: int,
+    call_id: uuid.UUID,
     payload: CapitalCallItemBulkCreate,
     mode: Literal["manual", "pro-rata"] = Query("manual"),
     db: Session = Depends(get_db),
@@ -152,7 +156,7 @@ async def add_capital_call_items(
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
     assert fund is not None
     _ensure_org_scope(membership, fund)
-    allocations: list[tuple[int, Decimal]]
+    allocations: list[tuple[uuid.UUID, Decimal]]
     if mode == "pro-rata":
         approved = (
             db.query(Commitment)
@@ -174,7 +178,7 @@ async def add_capital_call_items(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
             ) from exc
-        allocations = [(int(c.id), amount) for c, amount in shares]  # type: ignore[invalid-argument-type]
+        allocations = [(c.id, amount) for c, amount in shares]  # type: ignore[invalid-argument-type]
     else:
         allocations = [(item.commitment_id, item.amount_due) for item in payload.items]
     try:
@@ -197,8 +201,8 @@ async def add_capital_call_items(
     response_model=CapitalCallItemRead,
 )
 async def update_capital_call_item(
-    call_id: int,
-    item_id: int,
+    call_id: uuid.UUID,
+    item_id: uuid.UUID,
     data: CapitalCallItemUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -238,7 +242,7 @@ async def update_capital_call_item(
 
 @router.post("/{call_id}/send", response_model=CapitalCallRead)
 async def send_capital_call(
-    call_id: int,
+    call_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
         require_membership_roles(
@@ -288,7 +292,7 @@ async def send_capital_call(
 
 @router.post("/{call_id}/cancel", response_model=CapitalCallRead)
 async def cancel_capital_call(
-    call_id: int,
+    call_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
         require_membership_roles(
@@ -315,14 +319,14 @@ async def cancel_capital_call(
     return cancelled
 
 
-fund_capital_calls_router = APIRouter()
+fund_capital_calls_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @fund_capital_calls_router.get(
     "/{fund_id}/capital-calls", response_model=list[CapitalCallRead]
 )
 async def list_capital_calls_for_fund(
-    fund_id: int,
+    fund_id: uuid.UUID,
     status_filter: CapitalCallStatus | None = None,
     skip: int = 0,
     limit: int = 100,

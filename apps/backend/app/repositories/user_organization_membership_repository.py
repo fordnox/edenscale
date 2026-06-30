@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy.orm import Session
 
 from app.models.enums import UserRole
@@ -9,7 +11,7 @@ class UserOrganizationMembershipRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def list_for_user(self, user_id: int) -> list[UserOrganizationMembership]:
+    def list_for_user(self, user_id: uuid.UUID) -> list[UserOrganizationMembership]:
         return (
             self.db.query(UserOrganizationMembership)
             .filter(UserOrganizationMembership.user_id == user_id)
@@ -18,7 +20,7 @@ class UserOrganizationMembershipRepository:
         )
 
     def list_for_organization(
-        self, organization_id: int
+        self, organization_id: uuid.UUID
     ) -> list[UserOrganizationMembership]:
         return (
             self.db.query(UserOrganizationMembership)
@@ -28,7 +30,7 @@ class UserOrganizationMembershipRepository:
         )
 
     def get(
-        self, user_id: int, organization_id: int
+        self, user_id: uuid.UUID, organization_id: uuid.UUID
     ) -> UserOrganizationMembership | None:
         return (
             self.db.query(UserOrganizationMembership)
@@ -40,7 +42,7 @@ class UserOrganizationMembershipRepository:
         )
 
     def create(
-        self, user_id: int, organization_id: int, role: UserRole
+        self, user_id: uuid.UUID, organization_id: uuid.UUID, role: UserRole
     ) -> UserOrganizationMembership:
         membership = UserOrganizationMembership(
             user_id=user_id,
@@ -53,7 +55,7 @@ class UserOrganizationMembershipRepository:
         return membership
 
     def update_role(
-        self, membership_id: int, role: UserRole
+        self, membership_id: uuid.UUID, role: UserRole
     ) -> UserOrganizationMembership | None:
         membership = (
             self.db.query(UserOrganizationMembership)
@@ -67,7 +69,16 @@ class UserOrganizationMembershipRepository:
         self.db.refresh(membership)
         return membership
 
-    def delete(self, membership_id: int) -> UserOrganizationMembership | None:
+    def delete_all_for_organization(self, organization_id: uuid.UUID) -> int:
+        deleted = (
+            self.db.query(UserOrganizationMembership)
+            .filter(UserOrganizationMembership.organization_id == organization_id)
+            .delete(synchronize_session=False)
+        )
+        self.db.commit()
+        return int(deleted)
+
+    def delete(self, membership_id: uuid.UUID) -> UserOrganizationMembership | None:
         membership = (
             self.db.query(UserOrganizationMembership)
             .filter(UserOrganizationMembership.id == membership_id)

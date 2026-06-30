@@ -1,6 +1,9 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import require_membership_roles
 from app.models.enums import UserRole
@@ -12,7 +15,7 @@ from app.schemas.fund_group import (
     FundGroupUpdate,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[FundGroupRead])
@@ -34,7 +37,7 @@ async def list_fund_groups(
 
 @router.get("/{fund_group_id}", response_model=FundGroupRead)
 async def get_fund_group(
-    fund_group_id: int,
+    fund_group_id: uuid.UUID,
     db: Session = Depends(get_db),
     # TODO: scope to LP commitments — for now restrict reads to fund_manager+admin.
     membership: UserOrganizationMembership = Depends(
@@ -78,7 +81,7 @@ async def create_fund_group(
 
 @router.patch("/{fund_group_id}", response_model=FundGroupRead)
 async def update_fund_group(
-    fund_group_id: int,
+    fund_group_id: uuid.UUID,
     data: FundGroupUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -103,7 +106,7 @@ async def update_fund_group(
 
 @router.delete("/{fund_group_id}", response_model=FundGroupRead)
 async def delete_fund_group(
-    fund_group_id: int,
+    fund_group_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
         require_membership_roles(

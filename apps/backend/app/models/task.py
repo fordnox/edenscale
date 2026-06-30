@@ -1,12 +1,14 @@
+import uuid
+
 from sqlalchemy import (
     Column,
     Date,
     DateTime,
     Enum,
     ForeignKey,
-    Integer,
     String,
     Text,
+    Uuid,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -18,13 +20,15 @@ from app.models.enums import TaskStatus
 class Task(Base):
     __tablename__ = "tasks"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    fund_id = Column(Integer, ForeignKey("funds.id"), nullable=True, index=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    fund_id = Column(
+        Uuid(as_uuid=True), ForeignKey("funds.id"), nullable=True, index=True
+    )
     assigned_to_user_id = Column(
-        Integer, ForeignKey("users.id"), nullable=True, index=True
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
     )
     created_by_user_id = Column(
-        Integer, ForeignKey("users.id"), nullable=True, index=True
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
     )
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)

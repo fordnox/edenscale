@@ -1,10 +1,10 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import UUID4, BaseModel, ConfigDict, EmailStr, Field
 
 
 class InvestorContactCreate(BaseModel):
-    user_id: int | None = None
+    user_id: UUID4 | None = None
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
     email: EmailStr | None = None
@@ -14,7 +14,7 @@ class InvestorContactCreate(BaseModel):
 
 
 class InvestorContactUpdate(BaseModel):
-    user_id: int | None = None
+    user_id: UUID4 | None = None
     first_name: str | None = Field(default=None, min_length=1, max_length=100)
     last_name: str | None = Field(default=None, min_length=1, max_length=100)
     email: EmailStr | None = None
@@ -24,9 +24,9 @@ class InvestorContactUpdate(BaseModel):
 
 
 class InvestorContactRead(BaseModel):
-    id: int
-    investor_id: int
-    user_id: int | None
+    id: UUID4
+    investor_id: UUID4
+    user_id: UUID4 | None
     first_name: str
     last_name: str
     email: str | None

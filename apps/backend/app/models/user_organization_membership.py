@@ -1,10 +1,12 @@
+import uuid
+
 from sqlalchemy import (
     Column,
     DateTime,
     Enum,
     ForeignKey,
-    Integer,
     UniqueConstraint,
+    Uuid,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -19,10 +21,12 @@ class UserOrganizationMembership(Base):
         UniqueConstraint("user_id", "organization_id", name="uq_user_org_membership"),
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
     organization_id = Column(
-        Integer, ForeignKey("organizations.id"), nullable=False, index=True
+        Uuid(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True
     )
     role = Column(Enum(UserRole, name="membership_role"), nullable=False)
     created_at = Column(DateTime, server_default=func.now())

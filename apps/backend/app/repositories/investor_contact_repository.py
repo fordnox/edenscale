@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy.orm import Session
 
 from app.models.investor_contact import InvestorContact
@@ -13,7 +15,7 @@ class InvestorContactRepository:
 
     def list_for_investor(
         self,
-        investor_id: int,
+        investor_id: uuid.UUID,
         skip: int = 0,
         limit: int = 100,
     ) -> list[InvestorContact]:
@@ -28,8 +30,8 @@ class InvestorContactRepository:
 
     def list_for_user_and_investor(
         self,
-        investor_id: int,
-        user_id: int,
+        investor_id: uuid.UUID,
+        user_id: uuid.UUID,
     ) -> list[InvestorContact]:
         return (
             self.db.query(InvestorContact)
@@ -41,7 +43,7 @@ class InvestorContactRepository:
             .all()
         )
 
-    def get(self, contact_id: int) -> InvestorContact | None:
+    def get(self, contact_id: uuid.UUID) -> InvestorContact | None:
         return (
             self.db.query(InvestorContact)
             .filter(InvestorContact.id == contact_id)
@@ -49,7 +51,7 @@ class InvestorContactRepository:
         )
 
     def _clear_other_primaries(
-        self, investor_id: int, except_contact_id: int | None
+        self, investor_id: uuid.UUID, except_contact_id: uuid.UUID | None
     ) -> None:
         query = self.db.query(InvestorContact).filter(
             InvestorContact.investor_id == investor_id,
@@ -60,7 +62,9 @@ class InvestorContactRepository:
         for sibling in query.all():
             sibling.is_primary = False
 
-    def create(self, investor_id: int, data: InvestorContactCreate) -> InvestorContact:
+    def create(
+        self, investor_id: uuid.UUID, data: InvestorContactCreate
+    ) -> InvestorContact:
         payload = data.model_dump()
         is_primary = bool(payload.get("is_primary"))
         contact = InvestorContact(investor_id=investor_id, **payload)
@@ -76,7 +80,7 @@ class InvestorContactRepository:
         return contact
 
     def update(
-        self, contact_id: int, data: InvestorContactUpdate
+        self, contact_id: uuid.UUID, data: InvestorContactUpdate
     ) -> InvestorContact | None:
         contact = self.get(contact_id)
         if contact is None:
@@ -92,7 +96,7 @@ class InvestorContactRepository:
         self.db.refresh(contact)
         return contact
 
-    def delete(self, contact_id: int) -> InvestorContact | None:
+    def delete(self, contact_id: uuid.UUID) -> InvestorContact | None:
         contact = self.get(contact_id)
         if contact is None:
             return None

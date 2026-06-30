@@ -1,14 +1,14 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 from app.models.enums import FundStatus
 
 
 class FundCreate(BaseModel):
-    organization_id: int | None = None
-    fund_group_id: int | None = None
+    organization_id: UUID4 | None = None
+    fund_group_id: UUID4 | None = None
     name: str = Field(min_length=1, max_length=255)
     legal_name: str | None = Field(default=None, max_length=255)
     vintage_year: int | None = None
@@ -23,7 +23,7 @@ class FundCreate(BaseModel):
 
 
 class FundUpdate(BaseModel):
-    fund_group_id: int | None = None
+    fund_group_id: UUID4 | None = None
     name: str | None = Field(default=None, min_length=1, max_length=255)
     legal_name: str | None = Field(default=None, max_length=255)
     vintage_year: int | None = None
@@ -38,9 +38,9 @@ class FundUpdate(BaseModel):
 
 
 class FundRead(BaseModel):
-    id: int
-    organization_id: int
-    fund_group_id: int | None
+    id: UUID4
+    organization_id: UUID4
+    fund_group_id: UUID4 | None
     name: str
     legal_name: str | None
     vintage_year: int | None
@@ -60,9 +60,9 @@ class FundRead(BaseModel):
 
 
 class FundListItem(BaseModel):
-    id: int
-    organization_id: int
-    fund_group_id: int | None
+    id: UUID4
+    organization_id: UUID4
+    fund_group_id: UUID4 | None
     name: str
     currency_code: str
     target_size: Decimal | None
@@ -74,7 +74,7 @@ class FundListItem(BaseModel):
 
 
 class FundOverview(BaseModel):
-    fund_id: int
+    fund_id: UUID4
     currency_code: str
     committed: Decimal
     called: Decimal

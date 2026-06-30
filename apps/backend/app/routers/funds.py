@@ -1,8 +1,10 @@
+import uuid
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import UserRole
@@ -17,7 +19,7 @@ from app.schemas.fund import (
     FundUpdate,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 def _to_read_dict(fund: FundModel, current_size: Decimal) -> dict:
@@ -70,7 +72,7 @@ async def list_funds(
 
 @router.get("/{fund_id}", response_model=FundRead)
 async def get_fund(
-    fund_id: int,
+    fund_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
@@ -91,7 +93,7 @@ async def get_fund(
 
 @router.get("/{fund_id}/overview", response_model=FundOverview)
 async def get_fund_overview(
-    fund_id: int,
+    fund_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
@@ -138,7 +140,7 @@ async def create_fund(
 
 @router.patch("/{fund_id}", response_model=FundRead)
 async def update_fund(
-    fund_id: int,
+    fund_id: uuid.UUID,
     data: FundUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -170,7 +172,7 @@ async def update_fund(
 
 @router.post("/{fund_id}/archive", response_model=FundRead)
 async def archive_fund(
-    fund_id: int,
+    fund_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
         require_membership_roles(

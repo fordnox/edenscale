@@ -6,6 +6,8 @@ idempotent so re-running it (during partial migrations or tests) doesn't
 duplicate rows.
 """
 
+import uuid
+
 import pytest
 
 from app.core.database import Base, SessionLocal, engine
@@ -123,7 +125,7 @@ class TestUpdateRole:
         db = SessionLocal()
         try:
             repo = UserOrganizationMembershipRepository(db)
-            assert repo.update_role(9999, UserRole.admin) is None
+            assert repo.update_role(uuid.uuid4(), UserRole.admin) is None
         finally:
             db.close()
 
@@ -148,7 +150,7 @@ class TestDelete:
         db = SessionLocal()
         try:
             repo = UserOrganizationMembershipRepository(db)
-            assert repo.delete(9999) is None
+            assert repo.delete(uuid.uuid4()) is None
         finally:
             db.close()
 

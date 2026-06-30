@@ -1,11 +1,13 @@
+import uuid
+
 from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
-    Integer,
     String,
     Text,
     UniqueConstraint,
+    Uuid,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -19,9 +21,13 @@ class FundTeamMember(Base):
         UniqueConstraint("fund_id", "user_id", name="uq_fund_team_member_fund_user"),
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    fund_id = Column(Integer, ForeignKey("funds.id"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    fund_id = Column(
+        Uuid(as_uuid=True), ForeignKey("funds.id"), nullable=False, index=True
+    )
+    user_id = Column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
     title = Column(String(150), nullable=True)
     permissions = Column(Text, nullable=True)
     created_at = Column(DateTime, server_default=func.now())

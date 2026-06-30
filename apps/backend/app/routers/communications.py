@@ -1,6 +1,9 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.communication import Communication
@@ -9,6 +12,7 @@ from app.models.fund import Fund
 from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.communication_repository import CommunicationRepository
+from app.repositories.fund_repository import FundRepository
 from app.schemas.communication import (
     CommunicationCreate,
     CommunicationRead,
@@ -18,17 +22,18 @@ from app.schemas.communication import (
 )
 from app.services.notification_service import notify
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 def _ensure_can_attach_fund(
-    membership: UserOrganizationMembership, db: Session, fund_id: int
+    membership: UserOrganizationMembership, db: Session, fund_id: uuid.UUID
 ) -> Fund:
-    fund = db.query(Fund).filter(Fund.id == fund_id).first()
-    if fund is None:
+    row = FundRepository(db).get(fund_id)
+    if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
+    fund = row[0]
     if fund.organization_id != membership.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -51,7 +56,7 @@ def _ensure_can_manage(
 
 @router.get("", response_model=list[CommunicationRead])
 async def list_communications(
-    fund_id: int | None = None,
+    fund_id: uuid.UUID | None = None,
     type: CommunicationType | None = None,
     skip: int = 0,
     limit: int = 100,
@@ -70,7 +75,7 @@ async def list_communications(
 
 @router.get("/{communication_id}", response_model=CommunicationRead)
 async def get_communication(
-    communication_id: int,
+    communication_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
@@ -107,7 +112,7 @@ async def create_communication(
 
 @router.patch("/{communication_id}", response_model=CommunicationRead)
 async def update_communication(
-    communication_id: int,
+    communication_id: uuid.UUID,
     data: CommunicationUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -137,7 +142,7 @@ async def update_communication(
 
 @router.post("/{communication_id}/send", response_model=CommunicationRead)
 async def send_communication(
-    communication_id: int,
+    communication_id: uuid.UUID,
     payload: CommunicationSendRequest | None = None,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -161,9 +166,9 @@ async def send_communication(
             status_code=status.HTTP_409_CONFLICT, detail=str(exc)
         ) from exc
     assert sent is not None
-    notified: set[int] = set()
+    notified: set[uuid.UUID] = set()
     for recipient in sent.recipients:
-        target_user_id: int | None = recipient.user_id
+        target_user_id: uuid.UUID | None = recipient.user_id
         if target_user_id is None and recipient.investor_contact_id is not None:
             contact = (
                 db.query(InvestorContact)
@@ -190,8 +195,8 @@ async def send_communication(
     response_model=CommunicationRecipientRead,
 )
 async def mark_recipient_read(
-    communication_id: int,
-    recipient_id: int,
+    communication_id: uuid.UUID,
+    recipient_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
@@ -235,22 +240,22 @@ async def mark_recipient_read(
     return updated
 
 
-fund_communications_router = APIRouter()
+fund_communications_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @fund_communications_router.get(
     "/{fund_id}/communications", response_model=list[CommunicationRead]
 )
 async def list_communications_for_fund(
-    fund_id: int,
+    fund_id: uuid.UUID,
     type: CommunicationType | None = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
-    fund = db.query(Fund).filter(Fund.id == fund_id).first()
-    if fund is None:
+    row = FundRepository(db).get(fund_id)
+    if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )

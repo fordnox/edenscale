@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 
 from sqlalchemy.orm import Query, Session
@@ -16,8 +17,8 @@ class AuditLogRepository:
         self,
         *,
         entity_type: str | None = None,
-        entity_id: int | None = None,
-        user_id: int | None = None,
+        entity_id: uuid.UUID | None = None,
+        user_id: uuid.UUID | None = None,
         action: str | None = None,
         date_from: datetime | None = None,
         date_to: datetime | None = None,

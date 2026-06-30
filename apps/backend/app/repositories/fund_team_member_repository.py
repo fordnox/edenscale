@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy.orm import Session
 
 from app.models.fund_team_member import FundTeamMember
@@ -13,7 +15,7 @@ class FundTeamMemberRepository:
 
     def list_for_fund(
         self,
-        fund_id: int,
+        fund_id: uuid.UUID,
         skip: int = 0,
         limit: int = 100,
     ) -> list[FundTeamMember]:
@@ -26,12 +28,14 @@ class FundTeamMemberRepository:
             .all()
         )
 
-    def get(self, member_id: int) -> FundTeamMember | None:
+    def get(self, member_id: uuid.UUID) -> FundTeamMember | None:
         return (
             self.db.query(FundTeamMember).filter(FundTeamMember.id == member_id).first()
         )
 
-    def get_by_fund_and_user(self, fund_id: int, user_id: int) -> FundTeamMember | None:
+    def get_by_fund_and_user(
+        self, fund_id: uuid.UUID, user_id: uuid.UUID
+    ) -> FundTeamMember | None:
         return (
             self.db.query(FundTeamMember)
             .filter(
@@ -41,7 +45,7 @@ class FundTeamMemberRepository:
             .first()
         )
 
-    def create(self, fund_id: int, data: FundTeamMemberCreate) -> FundTeamMember:
+    def create(self, fund_id: uuid.UUID, data: FundTeamMemberCreate) -> FundTeamMember:
         member = FundTeamMember(fund_id=fund_id, **data.model_dump())
         self.db.add(member)
         self.db.commit()
@@ -49,7 +53,7 @@ class FundTeamMemberRepository:
         return member
 
     def update(
-        self, member_id: int, data: FundTeamMemberUpdate
+        self, member_id: uuid.UUID, data: FundTeamMemberUpdate
     ) -> FundTeamMember | None:
         member = self.get(member_id)
         if member is None:
@@ -60,7 +64,7 @@ class FundTeamMemberRepository:
         self.db.refresh(member)
         return member
 
-    def delete(self, member_id: int) -> FundTeamMember | None:
+    def delete(self, member_id: uuid.UUID) -> FundTeamMember | None:
         member = self.get(member_id)
         if member is None:
             return None

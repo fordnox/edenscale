@@ -1,6 +1,9 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import UserRole
@@ -14,14 +17,13 @@ from app.schemas.investor_contact import (
     InvestorContactUpdate,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 _ORG_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
 
 
-def _load_investor_or_404(db: Session, investor_id: int) -> Investor:
-    repo = InvestorRepository(db)
-    row = repo.get(investor_id)
+def _load_investor_or_404(db: Session, investor_id: uuid.UUID) -> Investor:
+    row = InvestorRepository(db).get(investor_id)
     if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Investor not found"
@@ -41,7 +43,7 @@ def _ensure_org_scope(
 
 @router.get("/{investor_id}/contacts", response_model=list[InvestorContactRead])
 async def list_investor_contacts(
-    investor_id: int,
+    investor_id: uuid.UUID,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -71,7 +73,7 @@ async def list_investor_contacts(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_investor_contact(
-    investor_id: int,
+    investor_id: uuid.UUID,
     data: InvestorContactCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -91,8 +93,8 @@ async def create_investor_contact(
     response_model=InvestorContactRead,
 )
 async def update_investor_contact(
-    investor_id: int,
-    contact_id: int,
+    investor_id: uuid.UUID,
+    contact_id: uuid.UUID,
     data: InvestorContactUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -119,8 +121,8 @@ async def update_investor_contact(
     response_model=InvestorContactRead,
 )
 async def delete_investor_contact(
-    investor_id: int,
-    contact_id: int,
+    investor_id: uuid.UUID,
+    contact_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
         require_membership_roles(

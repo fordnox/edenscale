@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy.orm import Session
 
 from app.models.fund import Fund
@@ -13,18 +15,18 @@ class FundGroupRepository:
         self,
         skip: int = 0,
         limit: int = 100,
-        organization_id: int | None = None,
+        organization_id: uuid.UUID | None = None,
     ) -> list[FundGroup]:
         query = self.db.query(FundGroup)
         if organization_id is not None:
             query = query.filter(FundGroup.organization_id == organization_id)
         return query.order_by(FundGroup.id).offset(skip).limit(limit).all()
 
-    def get(self, fund_group_id: int) -> FundGroup | None:
+    def get(self, fund_group_id: uuid.UUID) -> FundGroup | None:
         return self.db.query(FundGroup).filter(FundGroup.id == fund_group_id).first()
 
     def create(
-        self, data: FundGroupCreate, *, created_by_user_id: int | None
+        self, data: FundGroupCreate, *, created_by_user_id: uuid.UUID | None
     ) -> FundGroup:
         fund_group = FundGroup(
             **data.model_dump(),
@@ -35,7 +37,9 @@ class FundGroupRepository:
         self.db.refresh(fund_group)
         return fund_group
 
-    def update(self, fund_group_id: int, data: FundGroupUpdate) -> FundGroup | None:
+    def update(
+        self, fund_group_id: uuid.UUID, data: FundGroupUpdate
+    ) -> FundGroup | None:
         fund_group = self.get(fund_group_id)
         if fund_group is None:
             return None
@@ -45,13 +49,13 @@ class FundGroupRepository:
         self.db.refresh(fund_group)
         return fund_group
 
-    def has_funds(self, fund_group_id: int) -> bool:
+    def has_funds(self, fund_group_id: uuid.UUID) -> bool:
         return (
             self.db.query(Fund).filter(Fund.fund_group_id == fund_group_id).first()
             is not None
         )
 
-    def delete(self, fund_group_id: int) -> FundGroup | None:
+    def delete(self, fund_group_id: uuid.UUID) -> FundGroup | None:
         fund_group = self.get(fund_group_id)
         if fund_group is None:
             return None

@@ -19,6 +19,8 @@ behind `Depends(get_current_user)` (JWT only) plus per-route
   nested user payloads.
 """
 
+import uuid
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -64,7 +66,7 @@ def _seed_user(
         )
         db.add(user)
         db.commit()
-        return user.id
+        return str(user.id)
     finally:
         db.close()
 
@@ -80,7 +82,7 @@ def _seed_org(
         org = Organization(name=name, type=type_, is_active=is_active)
         db.add(org)
         db.commit()
-        return org.id
+        return str(org.id)
     finally:
         db.close()
 
@@ -95,7 +97,7 @@ def _seed_membership(user_id: int, organization_id: int, role: UserRole) -> int:
         )
         db.add(m)
         db.commit()
-        return m.id
+        return str(m.id)
     finally:
         db.close()
 
@@ -366,7 +368,7 @@ class TestCreateOrganizationWithAdmin:
             json={
                 "type": "fund_manager_firm",
                 "name": "GhostCo",
-                "admin_user_id": 9999,
+                "admin_user_id": str(uuid.uuid4()),
             },
         )
         assert response.status_code == 404
@@ -464,7 +466,7 @@ class TestAssignOrganizationAdmin:
         target_id = _seed_user("hanko-target", UserRole.lp, email="target@example.com")
 
         response = client.post(
-            "/superadmin/organizations/9999/admins",
+            f"/superadmin/organizations/{uuid.uuid4()}/admins",
             json={"user_id": target_id},
         )
         assert response.status_code == 404
@@ -514,13 +516,13 @@ class TestDisableEnableOrganization:
     def test_disable_404_when_org_missing(self, client, override_user):
         _login_as_superadmin(override_user)
 
-        response = client.patch("/superadmin/organizations/9999/disable")
+        response = client.patch(f"/superadmin/organizations/{uuid.uuid4()}/disable")
         assert response.status_code == 404
 
     def test_enable_404_when_org_missing(self, client, override_user):
         _login_as_superadmin(override_user)
 
-        response = client.patch("/superadmin/organizations/9999/enable")
+        response = client.patch(f"/superadmin/organizations/{uuid.uuid4()}/enable")
         assert response.status_code == 404
 
 
@@ -552,5 +554,5 @@ class TestListOrganizationMembers:
     def test_404_when_organization_missing(self, client, override_user):
         _login_as_superadmin(override_user)
 
-        response = client.get("/superadmin/organizations/9999/members")
+        response = client.get(f"/superadmin/organizations/{uuid.uuid4()}/members")
         assert response.status_code == 404

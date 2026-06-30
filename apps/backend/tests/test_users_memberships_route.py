@@ -38,7 +38,7 @@ def _seed_org(name: str = "NewTaven Capital") -> int:
         org = Organization(name=name, type=OrganizationType.fund_manager_firm)
         db.add(org)
         db.commit()
-        return org.id
+        return str(org.id)
     finally:
         db.close()
 
@@ -70,7 +70,7 @@ def _seed_user_with_memberships(
                 )
             )
         db.commit()
-        return user.id
+        return str(user.id)
     finally:
         db.close()
 

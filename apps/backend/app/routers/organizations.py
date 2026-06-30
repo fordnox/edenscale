@@ -1,6 +1,9 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import (
     get_current_user_record,
@@ -22,7 +25,7 @@ from app.schemas.organization import (
 )
 from app.schemas.user_organization_membership import MembershipRead
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.post(
@@ -72,7 +75,7 @@ async def list_organizations(
 
 @router.get("/{organization_id}", response_model=OrganizationRead)
 async def get_organization(
-    organization_id: int,
+    organization_id: uuid.UUID,
     db: Session = Depends(get_db),
 ):
     repo = OrganizationRepository(db)
@@ -103,7 +106,7 @@ async def create_organization(
     response_model=OrganizationRead,
 )
 async def update_organization(
-    organization_id: int,
+    organization_id: uuid.UUID,
     data: OrganizationUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -132,7 +135,7 @@ async def update_organization(
     dependencies=[Depends(require_superadmin)],
 )
 async def delete_organization(
-    organization_id: int,
+    organization_id: uuid.UUID,
     db: Session = Depends(get_db),
 ):
     repo = OrganizationRepository(db)
@@ -141,14 +144,13 @@ async def delete_organization(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found"
         )
-    organization.is_active = False
     # Cascade: delete every membership for this org so re-enabling does not
     # silently restore old access. Memberships have no `is_active` column,
     # so hard-delete is the only "deactivate" available — distinct from
     # PATCH /superadmin/organizations/{id}/disable, which preserves them.
-    db.query(UserOrganizationMembership).filter(
-        UserOrganizationMembership.organization_id == organization_id
-    ).delete(synchronize_session=False)
-    db.commit()
-    db.refresh(organization)
-    return organization
+    UserOrganizationMembershipRepository(db).delete_all_for_organization(
+        organization_id
+    )
+    deactivated = repo.soft_delete(organization_id)
+    assert deactivated is not None
+    return deactivated

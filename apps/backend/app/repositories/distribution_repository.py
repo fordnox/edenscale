@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -57,7 +58,7 @@ class DistributionRepository:
         self,
         membership: UserOrganizationMembership,
         *,
-        fund_id: int | None = None,
+        fund_id: uuid.UUID | None = None,
         status: DistributionStatus | None = None,
         skip: int = 0,
         limit: int = 100,
@@ -86,7 +87,7 @@ class DistributionRepository:
             query = query.filter(Distribution.status == status)
         return query.order_by(Distribution.id).offset(skip).limit(limit).all()
 
-    def get_with_items(self, distribution_id: int) -> Distribution | None:
+    def get_with_items(self, distribution_id: uuid.UUID) -> Distribution | None:
         return self._base_query().filter(Distribution.id == distribution_id).first()
 
     def membership_can_view(
@@ -116,7 +117,7 @@ class DistributionRepository:
         self,
         data: DistributionCreate,
         *,
-        created_by_user_id: int | None = None,
+        created_by_user_id: uuid.UUID | None = None,
     ) -> Distribution:
         distribution = Distribution(
             fund_id=data.fund_id,
@@ -134,7 +135,7 @@ class DistributionRepository:
         return distribution
 
     def update(
-        self, distribution_id: int, data: DistributionUpdate
+        self, distribution_id: uuid.UUID, data: DistributionUpdate
     ) -> Distribution | None:
         distribution = (
             self.db.query(Distribution)
@@ -151,8 +152,8 @@ class DistributionRepository:
 
     def add_items(
         self,
-        distribution_id: int,
-        allocations: list[tuple[int, Decimal]],
+        distribution_id: uuid.UUID,
+        allocations: list[tuple[uuid.UUID, Decimal]],
     ) -> list[DistributionItem]:
         """Bulk-insert allocations on the distribution.
 
@@ -213,7 +214,7 @@ class DistributionRepository:
 
     def set_item_payment(
         self,
-        item_id: int,
+        item_id: uuid.UUID,
         amount_paid: Decimal,
         paid_at: datetime | None = None,
     ) -> DistributionItem | None:
@@ -235,7 +236,7 @@ class DistributionRepository:
 
     def update_item(
         self,
-        item_id: int,
+        item_id: uuid.UUID,
         *,
         amount_due: Decimal | None = None,
         amount_paid: Decimal | None = None,
@@ -267,7 +268,7 @@ class DistributionRepository:
         return item
 
     def transition_status(
-        self, distribution_id: int, new_status: DistributionStatus
+        self, distribution_id: uuid.UUID, new_status: DistributionStatus
     ) -> Distribution | None:
         distribution = (
             self.db.query(Distribution)
@@ -289,7 +290,7 @@ class DistributionRepository:
         self.db.commit()
         return self.get_with_items(distribution_id)
 
-    def recompute_status(self, distribution_id: int) -> Distribution | None:
+    def recompute_status(self, distribution_id: uuid.UUID) -> Distribution | None:
         distribution = (
             self.db.query(Distribution)
             .filter(Distribution.id == distribution_id)
@@ -327,7 +328,7 @@ class DistributionRepository:
         self.db.flush()
         return distribution
 
-    def send(self, distribution_id: int) -> Distribution | None:
+    def send(self, distribution_id: uuid.UUID) -> Distribution | None:
         distribution = (
             self.db.query(Distribution)
             .filter(Distribution.id == distribution_id)
@@ -345,5 +346,5 @@ class DistributionRepository:
         self.db.commit()
         return self.get_with_items(distribution_id)
 
-    def cancel(self, distribution_id: int) -> Distribution | None:
+    def cancel(self, distribution_id: uuid.UUID) -> Distribution | None:
         return self.transition_status(distribution_id, DistributionStatus.cancelled)

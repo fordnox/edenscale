@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import or_, select
@@ -32,7 +33,7 @@ class CommunicationRepository:
         self,
         membership: UserOrganizationMembership,
         *,
-        fund_id: int | None = None,
+        fund_id: uuid.UUID | None = None,
         comm_type: CommunicationType | None = None,
         skip: int = 0,
         limit: int = 100,
@@ -119,7 +120,7 @@ class CommunicationRepository:
             .all()
         )
 
-    def get(self, communication_id: int) -> Communication | None:
+    def get(self, communication_id: uuid.UUID) -> Communication | None:
         return self._base_query().filter(Communication.id == communication_id).first()
 
     def membership_can_view(
@@ -166,7 +167,7 @@ class CommunicationRepository:
         )
 
     def create_draft(
-        self, data: CommunicationCreate, *, sender_user_id: int | None = None
+        self, data: CommunicationCreate, *, sender_user_id: uuid.UUID | None = None
     ) -> Communication:
         communication = Communication(
             fund_id=data.fund_id,
@@ -181,7 +182,7 @@ class CommunicationRepository:
         return communication
 
     def update(
-        self, communication_id: int, data: CommunicationUpdate
+        self, communication_id: uuid.UUID, data: CommunicationUpdate
     ) -> Communication | None:
         communication = (
             self.db.query(Communication)
@@ -199,8 +200,8 @@ class CommunicationRepository:
         return self.get(communication_id)
 
     def resolve_default_recipients(
-        self, fund_id: int
-    ) -> list[tuple[int | None, int | None]]:
+        self, fund_id: uuid.UUID
+    ) -> list[tuple[uuid.UUID | None, uuid.UUID | None]]:
         """Expand a fund into one (user_id, investor_contact_id) per primary
         contact whose investor holds an approved commitment in the fund.
 
@@ -223,7 +224,7 @@ class CommunicationRepository:
 
     def send(
         self,
-        communication_id: int,
+        communication_id: uuid.UUID,
         *,
         explicit_recipients: list[CommunicationRecipientRef] | None = None,
     ) -> Communication | None:
@@ -237,7 +238,7 @@ class CommunicationRepository:
         if communication.sent_at is not None:
             raise ValueError("Communication already sent")
 
-        recipient_pairs: list[tuple[int | None, int | None]]
+        recipient_pairs: list[tuple[uuid.UUID | None, uuid.UUID | None]]
         if explicit_recipients:
             recipient_pairs = [
                 (ref.user_id, ref.investor_contact_id) for ref in explicit_recipients
@@ -254,8 +255,8 @@ class CommunicationRepository:
         if not recipient_pairs:
             raise ValueError("No recipients resolved for this communication")
 
-        seen: set[tuple[int | None, int | None]] = set()
-        deduped: list[tuple[int | None, int | None]] = []
+        seen: set[tuple[uuid.UUID | None, uuid.UUID | None]] = set()
+        deduped: list[tuple[uuid.UUID | None, uuid.UUID | None]] = []
         for pair in recipient_pairs:
             if pair in seen:
                 continue
@@ -276,7 +277,7 @@ class CommunicationRepository:
         return self.get(communication_id)
 
     def mark_recipient_read(
-        self, communication_id: int, recipient_id: int
+        self, communication_id: uuid.UUID, recipient_id: uuid.UUID
     ) -> CommunicationRecipient | None:
         recipient = (
             self.db.query(CommunicationRecipient)

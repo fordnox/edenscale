@@ -7,6 +7,8 @@ break the underlying business operation, so this helper swallows errors after
 rolling back its own pending writes.
 """
 
+import uuid
+
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
@@ -16,11 +18,11 @@ from app.repositories.notification_repository import NotificationRepository
 def notify(
     db: Session,
     *,
-    user_id: int | None,
+    user_id: uuid.UUID | None,
     title: str,
     message: str,
     related_type: str | None = None,
-    related_id: int | None = None,
+    related_id: uuid.UUID | None = None,
 ) -> Notification | None:
     """Persist one notification row for ``user_id``.
 

@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -5,9 +7,9 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
-    Integer,
     String,
     Text,
+    Uuid,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -19,14 +21,18 @@ from app.models.enums import DocumentType
 class Document(Base):
     __tablename__ = "documents"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(
-        Integer, ForeignKey("organizations.id"), nullable=True, index=True
+        Uuid(as_uuid=True), ForeignKey("organizations.id"), nullable=True, index=True
     )
-    fund_id = Column(Integer, ForeignKey("funds.id"), nullable=True, index=True)
-    investor_id = Column(Integer, ForeignKey("investors.id"), nullable=True, index=True)
+    fund_id = Column(
+        Uuid(as_uuid=True), ForeignKey("funds.id"), nullable=True, index=True
+    )
+    investor_id = Column(
+        Uuid(as_uuid=True), ForeignKey("investors.id"), nullable=True, index=True
+    )
     uploaded_by_user_id = Column(
-        Integer, ForeignKey("users.id"), nullable=True, index=True
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
     )
     document_type = Column(Enum(DocumentType, name="document_type"), nullable=False)
     title = Column(String(255), nullable=False)

@@ -1,8 +1,10 @@
+import uuid
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import UserRole
@@ -16,7 +18,7 @@ from app.schemas.investor import (
     InvestorUpdate,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 def _to_read_dict(
@@ -69,7 +71,7 @@ async def list_investors(
 
 @router.get("/{investor_id}", response_model=InvestorRead)
 async def get_investor(
-    investor_id: int,
+    investor_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
@@ -107,7 +109,7 @@ async def create_investor(
 
 @router.patch("/{investor_id}", response_model=InvestorRead)
 async def update_investor(
-    investor_id: int,
+    investor_id: uuid.UUID,
     data: InvestorUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -139,7 +141,7 @@ async def update_investor(
 
 @router.delete("/{investor_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_investor(
-    investor_id: int,
+    investor_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
         require_membership_roles(

@@ -17,7 +17,7 @@ the per-tenant `OrganizationRead` / `MembershipRead` are not:
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import UUID4, BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.models.enums import OrganizationType, UserRole
 from app.schemas.organization import OrganizationCreate, OrganizationRead
@@ -26,7 +26,7 @@ from app.schemas.user_organization_membership import MembershipRead
 
 
 class SuperadminOrganizationRead(BaseModel):
-    id: int
+    id: UUID4
     type: OrganizationType
     name: str
     is_active: bool
@@ -37,7 +37,7 @@ class SuperadminOrganizationRead(BaseModel):
 
 
 class SuperadminOrganizationCreate(OrganizationCreate):
-    admin_user_id: int | None = None
+    admin_user_id: UUID4 | None = None
     admin_email: EmailStr | None = None
     admin_first_name: str | None = Field(default=None, min_length=1, max_length=100)
     admin_last_name: str | None = Field(default=None, min_length=1, max_length=100)
@@ -55,7 +55,7 @@ class SuperadminOrganizationCreateResponse(BaseModel):
 
 
 class SuperadminAdminAssignment(BaseModel):
-    user_id: int | None = None
+    user_id: UUID4 | None = None
     email: EmailStr | None = None
     first_name: str | None = Field(default=None, min_length=1, max_length=100)
     last_name: str | None = Field(default=None, min_length=1, max_length=100)
@@ -68,9 +68,9 @@ class SuperadminAdminAssignment(BaseModel):
 
 
 class MembershipWithUserRead(BaseModel):
-    id: int
-    user_id: int
-    organization_id: int
+    id: UUID4
+    user_id: UUID4
+    organization_id: UUID4
     role: UserRole
     user: UserRead
     created_at: datetime | None

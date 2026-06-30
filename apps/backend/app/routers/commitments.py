@@ -1,7 +1,10 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import CommitmentStatus, UserRole
@@ -9,6 +12,8 @@ from app.models.fund import Fund
 from app.models.investor import Investor
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.commitment_repository import CommitmentRepository
+from app.repositories.fund_repository import FundRepository
+from app.repositories.investor_repository import InvestorRepository
 from app.schemas.commitment import (
     CommitmentCreate,
     CommitmentRead,
@@ -16,18 +21,20 @@ from app.schemas.commitment import (
     CommitmentUpdate,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 _TERMINAL_STATUSES = {CommitmentStatus.declined, CommitmentStatus.cancelled}
 
 
-def _load_fund(db: Session, fund_id: int) -> Fund | None:
-    return db.query(Fund).filter(Fund.id == fund_id).first()
+def _load_fund(db: Session, fund_id: uuid.UUID) -> Fund | None:
+    row = FundRepository(db).get(fund_id)
+    return row[0] if row is not None else None
 
 
-def _load_investor(db: Session, investor_id: int) -> Investor | None:
-    return db.query(Investor).filter(Investor.id == investor_id).first()
+def _load_investor(db: Session, investor_id: uuid.UUID) -> Investor | None:
+    row = InvestorRepository(db).get(investor_id)
+    return row[0] if row is not None else None
 
 
 def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> None:
@@ -40,8 +47,8 @@ def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> Non
 
 @router.get("", response_model=list[CommitmentRead])
 async def list_commitments(
-    fund_id: int | None = None,
-    investor_id: int | None = None,
+    fund_id: uuid.UUID | None = None,
+    investor_id: uuid.UUID | None = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -59,7 +66,7 @@ async def list_commitments(
 
 @router.get("/{commitment_id}", response_model=CommitmentRead)
 async def get_commitment(
-    commitment_id: int,
+    commitment_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
@@ -116,7 +123,7 @@ async def create_commitment(
 
 @router.patch("/{commitment_id}", response_model=CommitmentRead)
 async def update_commitment(
-    commitment_id: int,
+    commitment_id: uuid.UUID,
     data: CommitmentUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -141,7 +148,7 @@ async def update_commitment(
 
 @router.post("/{commitment_id}/status", response_model=CommitmentRead)
 async def update_commitment_status(
-    commitment_id: int,
+    commitment_id: uuid.UUID,
     data: CommitmentStatusUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -169,14 +176,14 @@ async def update_commitment_status(
     return updated
 
 
-fund_commitments_router = APIRouter()
+fund_commitments_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @fund_commitments_router.get(
     "/{fund_id}/commitments", response_model=list[CommitmentRead]
 )
 async def list_commitments_for_fund(
-    fund_id: int,
+    fund_id: uuid.UUID,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -191,14 +198,14 @@ async def list_commitments_for_fund(
     return repo.list_for_membership(membership, fund_id=fund_id, skip=skip, limit=limit)
 
 
-investor_commitments_router = APIRouter()
+investor_commitments_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @investor_commitments_router.get(
     "/{investor_id}/commitments", response_model=list[CommitmentRead]
 )
 async def list_commitments_for_investor(
-    investor_id: int,
+    investor_id: uuid.UUID,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),

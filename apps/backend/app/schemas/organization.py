@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 from app.models.enums import OrganizationType
 
@@ -39,7 +39,7 @@ class OrganizationUpdate(BaseModel):
 
 
 class OrganizationRead(BaseModel):
-    id: int
+    id: UUID4
     type: OrganizationType
     name: str
     legal_name: str | None

@@ -1,13 +1,13 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import UUID4, BaseModel, ConfigDict, Field, field_validator
 
 from app.models.enums import DistributionStatus, FundStatus
 
 
 class DistributionFundSummary(BaseModel):
-    id: int
+    id: UUID4
     name: str
     currency_code: str
     status: FundStatus
@@ -17,7 +17,7 @@ class DistributionFundSummary(BaseModel):
 
 
 class DistributionItemCreate(BaseModel):
-    commitment_id: int
+    commitment_id: UUID4
     amount_due: Decimal
     note: str | None = None
 
@@ -44,9 +44,9 @@ class DistributionItemUpdate(BaseModel):
 
 
 class DistributionItemRead(BaseModel):
-    id: int
-    distribution_id: int
-    commitment_id: int
+    id: UUID4
+    distribution_id: UUID4
+    commitment_id: UUID4
     amount_due: Decimal
     amount_paid: Decimal
     paid_at: datetime | None
@@ -62,7 +62,7 @@ class DistributionItemBulkCreate(BaseModel):
 
 
 class DistributionCreate(BaseModel):
-    fund_id: int
+    fund_id: UUID4
     title: str = Field(min_length=1, max_length=255)
     description: str | None = None
     distribution_date: date
@@ -93,15 +93,15 @@ class DistributionUpdate(BaseModel):
 
 
 class DistributionRead(BaseModel):
-    id: int
-    fund_id: int
+    id: UUID4
+    fund_id: UUID4
     title: str
     description: str | None
     distribution_date: date
     record_date: date | None
     amount: Decimal
     status: DistributionStatus
-    created_by_user_id: int | None
+    created_by_user_id: UUID4 | None
     created_at: datetime | None
     updated_at: datetime | None
     items: list[DistributionItemRead]

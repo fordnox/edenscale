@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Query, Session
 
@@ -57,9 +59,9 @@ class DocumentRepository:
         self,
         membership: UserOrganizationMembership,
         *,
-        organization_id: int | None = None,
-        fund_id: int | None = None,
-        investor_id: int | None = None,
+        organization_id: uuid.UUID | None = None,
+        fund_id: uuid.UUID | None = None,
+        investor_id: uuid.UUID | None = None,
         document_type: DocumentType | None = None,
         skip: int = 0,
         limit: int = 100,
@@ -75,7 +77,7 @@ class DocumentRepository:
             query = query.filter(Document.document_type == document_type)
         return query.order_by(Document.id.desc()).offset(skip).limit(limit).all()
 
-    def get(self, document_id: int) -> Document | None:
+    def get(self, document_id: uuid.UUID) -> Document | None:
         return self._base_query().filter(Document.id == document_id).first()
 
     def membership_can_view(
@@ -145,7 +147,7 @@ class DocumentRepository:
         return False
 
     def create(
-        self, data: DocumentCreate, *, uploaded_by_user_id: int | None = None
+        self, data: DocumentCreate, *, uploaded_by_user_id: uuid.UUID | None = None
     ) -> Document:
         document = Document(
             **data.model_dump(),
@@ -156,7 +158,7 @@ class DocumentRepository:
         self.db.refresh(document)
         return document
 
-    def update(self, document_id: int, data: DocumentUpdate) -> Document | None:
+    def update(self, document_id: uuid.UUID, data: DocumentUpdate) -> Document | None:
         document = self.get(document_id)
         if document is None:
             return None
@@ -166,7 +168,7 @@ class DocumentRepository:
         self.db.refresh(document)
         return document
 
-    def delete(self, document_id: int) -> bool:
+    def delete(self, document_id: uuid.UUID) -> bool:
         document = self.get(document_id)
         if document is None:
             return False

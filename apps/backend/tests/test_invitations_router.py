@@ -22,6 +22,7 @@ The Hanko service is patched at ``app.routers.invitations.send_invitation_email`
 so no HTTP traffic leaves the test process.
 """
 
+import uuid
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
 
@@ -173,7 +174,7 @@ class TestCreateInvitation:
         response = client.post(
             "/invitations",
             json={
-                "organization_id": org_id,
+                "organization_id": str(org_id),
                 "email": "Invitee@Example.com",
                 "role": "lp",
             },
@@ -184,8 +185,8 @@ class TestCreateInvitation:
         assert body["email"] == "invitee@example.com"
         assert body["role"] == "lp"
         assert body["status"] == "pending"
-        assert body["organization_id"] == org_id
-        assert body["organization"]["id"] == org_id
+        assert body["organization_id"] == str(org_id)
+        assert body["organization"]["id"] == str(org_id)
 
         # Service called once with the persisted (lower-cased) email and a
         # well-formed accept_url containing the token.
@@ -200,7 +201,7 @@ class TestCreateInvitation:
         try:
             row = (
                 db.query(OrganizationInvitation)
-                .filter(OrganizationInvitation.id == body["id"])
+                .filter(OrganizationInvitation.id == uuid.UUID(body["id"]))
                 .one()
             )
             assert row.invited_by_user_id == admin_id
@@ -226,7 +227,11 @@ class TestCreateInvitation:
 
         response = client.post(
             "/invitations",
-            json={"organization_id": org_id, "email": "x@example.com", "role": "lp"},
+            json={
+                "organization_id": str(org_id),
+                "email": "x@example.com",
+                "role": "lp",
+            },
         )
         assert response.status_code == 403
         hanko_email_mock.assert_not_awaited()
@@ -251,7 +256,11 @@ class TestCreateInvitation:
 
         response = client.post(
             "/invitations",
-            json={"organization_id": org_b, "email": "x@example.com", "role": "lp"},
+            json={
+                "organization_id": str(org_b),
+                "email": "x@example.com",
+                "role": "lp",
+            },
             headers={"X-Organization-Id": str(org_a)},
         )
         assert response.status_code == 403
@@ -266,7 +275,11 @@ class TestCreateInvitation:
 
         response = client.post(
             "/invitations",
-            json={"organization_id": org_id, "email": "new@example.com", "role": "admin"},
+            json={
+                "organization_id": str(org_id),
+                "email": "new@example.com",
+                "role": "admin",
+            },
             headers={"X-Organization-Id": str(org_id)},
         )
         assert response.status_code == 201
@@ -278,7 +291,7 @@ class TestCreateInvitation:
         try:
             row = (
                 db.query(OrganizationInvitation)
-                .filter(OrganizationInvitation.id == response.json()["id"])
+                .filter(OrganizationInvitation.id == uuid.UUID(response.json()["id"]))
                 .one()
             )
             assert row.invited_by_user_id is None
@@ -300,7 +313,7 @@ class TestCreateInvitation:
         response = client.post(
             "/invitations",
             json={
-                "organization_id": org_id,
+                "organization_id": str(org_id),
                 "email": "x@example.com",
                 "role": "superadmin",
             },
@@ -314,10 +327,15 @@ class TestCreateInvitation:
         _seed_user("hanko-super", UserRole.superadmin, email="root@example.com")
         override_user("hanko-super")
 
+        missing_org_id = str(uuid.uuid4())
         response = client.post(
             "/invitations",
-            json={"organization_id": 9999, "email": "x@example.com", "role": "lp"},
-            headers={"X-Organization-Id": "9999"},
+            json={
+                "organization_id": missing_org_id,
+                "email": "x@example.com",
+                "role": "lp",
+            },
+            headers={"X-Organization-Id": missing_org_id},
         )
         assert response.status_code == 404
         hanko_email_mock.assert_not_awaited()
@@ -341,8 +359,9 @@ class TestListInvitations:
         response = client.get("/invitations")
         assert response.status_code == 200
         ids = [row["id"] for row in response.json()]
-        # Repository returns desc by id.
-        assert ids == [second, first]
+        # Repository returns desc by id (a UUID, so not insertion order) —
+        # assert it contains exactly these two rows in that order.
+        assert ids == sorted([str(first), str(second)], reverse=True)
 
     def test_non_admin_gets_403(self, client, override_user, hanko_email_mock):
         org_id = _seed_org()
@@ -424,7 +443,7 @@ class TestRevokeInvitation:
         )
         override_user("hanko-admin")
 
-        response = client.post("/invitations/9999/revoke")
+        response = client.post(f"/invitations/{uuid.uuid4()}/revoke")
         assert response.status_code == 404
 
 
@@ -493,8 +512,8 @@ class TestAcceptInvitation:
         response = client.post("/invitations/accept", json={"token": "t-accept"})
         assert response.status_code == 200
         body = response.json()
-        assert body["user_id"] == invitee_id
-        assert body["organization_id"] == org_id
+        assert body["user_id"] == str(invitee_id)
+        assert body["organization_id"] == str(org_id)
         assert body["role"] == "fund_manager"
 
         db = SessionLocal()
@@ -673,7 +692,7 @@ class TestPendingForMe:
         response = client.get("/invitations/pending-for-me")
         assert response.status_code == 200
         ids = {row["id"] for row in response.json()}
-        assert ids == {target_id, other_org_id}
+        assert ids == {str(target_id), str(other_org_id)}
 
     def test_returns_empty_when_no_email_claim(
         self, client, override_user, hanko_email_mock

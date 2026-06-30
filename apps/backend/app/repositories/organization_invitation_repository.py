@@ -1,4 +1,5 @@
 import secrets
+import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
@@ -18,10 +19,10 @@ class OrganizationInvitationRepository:
     def create(
         self,
         *,
-        organization_id: int,
+        organization_id: uuid.UUID,
         email: str,
         role: UserRole,
-        invited_by_user_id: int | None,
+        invited_by_user_id: uuid.UUID | None,
     ) -> OrganizationInvitation:
         invitation = OrganizationInvitation(
             organization_id=organization_id,
@@ -36,7 +37,7 @@ class OrganizationInvitationRepository:
         self.db.refresh(invitation)
         return invitation
 
-    def get(self, invitation_id: int) -> OrganizationInvitation | None:
+    def get(self, invitation_id: uuid.UUID) -> OrganizationInvitation | None:
         return (
             self.db.query(OrganizationInvitation)
             .filter(OrganizationInvitation.id == invitation_id)
@@ -52,7 +53,7 @@ class OrganizationInvitationRepository:
 
     def list_for_organization(
         self,
-        organization_id: int,
+        organization_id: uuid.UUID,
         *,
         status: InvitationStatus | None = None,
     ) -> list[OrganizationInvitation]:
@@ -74,7 +75,7 @@ class OrganizationInvitationRepository:
             .all()
         )
 
-    def mark_accepted(self, invitation_id: int) -> OrganizationInvitation | None:
+    def mark_accepted(self, invitation_id: uuid.UUID) -> OrganizationInvitation | None:
         invitation = self.get(invitation_id)
         if invitation is None:
             return None
@@ -84,7 +85,7 @@ class OrganizationInvitationRepository:
         self.db.refresh(invitation)
         return invitation
 
-    def mark_revoked(self, invitation_id: int) -> OrganizationInvitation | None:
+    def mark_revoked(self, invitation_id: uuid.UUID) -> OrganizationInvitation | None:
         invitation = self.get(invitation_id)
         if invitation is None:
             return None
@@ -93,7 +94,16 @@ class OrganizationInvitationRepository:
         self.db.refresh(invitation)
         return invitation
 
-    def rotate_token(self, invitation_id: int) -> OrganizationInvitation | None:
+    def mark_expired(self, invitation_id: uuid.UUID) -> OrganizationInvitation | None:
+        invitation = self.get(invitation_id)
+        if invitation is None:
+            return None
+        invitation.status = InvitationStatus.expired
+        self.db.commit()
+        self.db.refresh(invitation)
+        return invitation
+
+    def rotate_token(self, invitation_id: uuid.UUID) -> OrganizationInvitation | None:
         """Issue a new token for a pending invitation, invalidating the old one.
 
         Used by the resend flow so the prior email's link stops working.

@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import or_, select
@@ -23,9 +24,9 @@ class TaskRepository:
         self,
         membership: UserOrganizationMembership,
         *,
-        fund_id: int | None = None,
+        fund_id: uuid.UUID | None = None,
         status: TaskStatus | None = None,
-        assignee: int | None = None,
+        assignee: uuid.UUID | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> list[Task]:
@@ -52,7 +53,7 @@ class TaskRepository:
             query = query.filter(Task.status == status)
         return query.order_by(Task.id.desc()).offset(skip).limit(limit).all()
 
-    def get(self, task_id: int) -> Task | None:
+    def get(self, task_id: uuid.UUID) -> Task | None:
         return self._base_query().filter(Task.id == task_id).first()
 
     def membership_can_view(
@@ -95,7 +96,7 @@ class TaskRepository:
         return bool(task.assigned_to_user_id == membership.user_id)
 
     def create(
-        self, data: TaskCreate, *, created_by_user_id: int | None = None
+        self, data: TaskCreate, *, created_by_user_id: uuid.UUID | None = None
     ) -> Task:
         task = Task(
             fund_id=data.fund_id,
@@ -111,7 +112,7 @@ class TaskRepository:
         self.db.refresh(task)
         return task
 
-    def update(self, task_id: int, data: TaskUpdate) -> Task | None:
+    def update(self, task_id: uuid.UUID, data: TaskUpdate) -> Task | None:
         task = self.get(task_id)
         if task is None:
             return None
@@ -129,7 +130,7 @@ class TaskRepository:
         self.db.refresh(task)
         return task
 
-    def complete(self, task_id: int) -> Task | None:
+    def complete(self, task_id: uuid.UUID) -> Task | None:
         task = self.get(task_id)
         if task is None:
             return None
