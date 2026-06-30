@@ -1,10 +1,15 @@
 import { useEffect, useMemo } from "react"
-import { useNavigate, useSearchParams, Link } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { Helmet } from "react-helmet-async"
 import { register } from "@teamhanko/hanko-elements"
-import { ArrowLeft, Sparkles, Zap, Shield, Code } from "lucide-react"
+import {
+  ArrowUpRight,
+  Building2,
+  FileText,
+  Landmark,
+  LockKeyhole,
+} from "lucide-react"
 import { Card, CardSection } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
 import { config } from "@/lib/config"
 import { hanko } from "@/lib/hanko"
@@ -48,144 +53,174 @@ export default function LoginPage() {
   return (
     <>
       <Helmet>
-        <title>{`Login | ${config.VITE_APP_TITLE}`}</title>
-        <meta name="description" content="Sign in to your account." />
+        <title>{`Investor portal login | ${config.VITE_APP_TITLE}`}</title>
+        <meta
+          name="description"
+          content="Sign in to the NewTaven investor portal."
+        />
         <link rel="canonical" href={`${config.VITE_APP_URL}/login`} />
-        <meta property="og:title" content={`Login | ${config.VITE_APP_TITLE}`} />
-        <meta property="og:description" content="Sign in to your account." />
+        <meta
+          property="og:title"
+          content={`Investor portal login | ${config.VITE_APP_TITLE}`}
+        />
+        <meta
+          property="og:description"
+          content="Sign in to the NewTaven investor portal."
+        />
         <meta property="og:url" content={`${config.VITE_APP_URL}/login`} />
         <meta property="og:type" content="website" />
-        <meta name="twitter:title" content={`Login | ${config.VITE_APP_TITLE}`} />
-        <meta name="twitter:description" content="Sign in to your account." />
+        <meta
+          name="twitter:title"
+          content={`Investor portal login | ${config.VITE_APP_TITLE}`}
+        />
+        <meta
+          name="twitter:description"
+          content="Sign in to the NewTaven investor portal."
+        />
       </Helmet>
 
-      <div className="min-h-screen grid lg:grid-cols-2">
-        {/* Left panel — branding */}
-        <div className="hidden lg:flex relative flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground">
-          {/* Background decoration */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-primary-foreground/10 via-transparent to-transparent" />
-          <div className="absolute top-1/3 -right-24 w-96 h-96 rounded-full bg-primary-foreground/5 blur-3xl" />
-          <div className="absolute -bottom-12 -left-12 w-72 h-72 rounded-full bg-primary-foreground/5 blur-3xl" />
-
-          {/* Grid pattern */}
-          <div
-            className="absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage: `linear-gradient(hsl(var(--primary-foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary-foreground)) 1px, transparent 1px)`,
-              backgroundSize: "48px 48px",
-            }}
-          />
-
-          {/* Top — logo */}
-          <div className="relative z-10">
-            <Link to="/" className="flex items-center gap-2 group">
-              <ArrowLeft className="size-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-              <span className="text-lg font-bold">{config.VITE_APP_TITLE}</span>
-            </Link>
+      <div className="grid min-h-svh bg-page text-ink-900 lg:grid-cols-[minmax(0,0.95fr)_minmax(480px,1.05fr)]">
+        <div className="hidden border-r border-[var(--border-inverse)] bg-conifer-700 text-parchment-50 lg:flex lg:flex-col">
+          <div className="flex items-center justify-between border-b border-[var(--border-inverse)] px-10 py-8">
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden
+                className="flex size-9 items-center justify-center border border-[var(--border-inverse)] text-parchment-50"
+              >
+                <Landmark strokeWidth={1.5} className="size-5" />
+              </span>
+              <span className="font-sans text-[18px] font-semibold tracking-tight">
+                {config.VITE_APP_TITLE}
+              </span>
+            </div>
+            <span className="es-eyebrow es-eyebrow-inverse">
+              Investor portal
+            </span>
           </div>
 
-          {/* Center — value props */}
-          <div className="relative z-10 space-y-8">
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold tracking-tight">Start building today</h2>
-              <p className="text-primary-foreground/70 text-lg max-w-sm">
-                Sign in to access your dashboard and start shipping faster.
+          <div className="flex flex-1 flex-col justify-between px-10 py-12">
+            <div className="max-w-xl">
+              <p className="es-eyebrow es-eyebrow-inverse mb-5">
+                Limited partner access
+              </p>
+              <h1 className="font-display text-[48px] font-medium leading-[1.02] text-parchment-50 text-balance xl:text-[60px]">
+                Your fund activity, documents, and letters in one secure place.
+              </h1>
+              <p className="mt-6 max-w-md font-sans text-[16px] leading-[1.65] text-parchment-100/80">
+                Review commitments, capital calls, distributions, quarterly
+                letters, and shared documents from the NewTaven investor portal.
               </p>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center size-10 rounded-lg bg-primary-foreground/10 backdrop-blur-sm">
-                  <Zap className="size-5" />
-                </div>
-                <div>
-                  <p className="font-medium">Lightning Fast</p>
-                  <p className="text-sm text-primary-foreground/60">Optimized for performance</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center size-10 rounded-lg bg-primary-foreground/10 backdrop-blur-sm">
-                  <Shield className="size-5" />
-                </div>
-                <div>
-                  <p className="font-medium">Secure by Default</p>
-                  <p className="text-sm text-primary-foreground/60">Built-in auth and safety</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center size-10 rounded-lg bg-primary-foreground/10 backdrop-blur-sm">
-                  <Code className="size-5" />
-                </div>
-                <div>
-                  <p className="font-medium">Developer First</p>
-                  <p className="text-sm text-primary-foreground/60">Clean, typed codebase</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom — quote */}
-          <div className="relative z-10">
-            <blockquote className="border-l-2 border-primary-foreground/20 pl-4">
-              <p className="text-sm text-primary-foreground/70 italic">
-                "The best developer experience I've encountered. Everything just works."
-              </p>
-              <footer className="mt-2 text-sm text-primary-foreground/50">
-                — Happy Developer
-              </footer>
-            </blockquote>
-          </div>
-        </div>
-
-        {/* Right panel — login form */}
-        <div className="flex flex-col relative overflow-hidden">
-          {/* Background */}
-          <div className="absolute inset-0 bg-gradient-to-b from-muted/30 via-background to-background" />
-          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-
-          {/* Mobile back link */}
-          <div className="relative z-10 p-6 lg:hidden">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/">
-                <ArrowLeft className="size-4 mr-2" />
-                Back
-              </Link>
-            </Button>
-          </div>
-
-          {/* Form centered */}
-          <div className="flex-1 flex items-center justify-center p-6 relative z-10">
-            <div className="w-full max-w-sm space-y-8">
-              {/* Mobile branding */}
-              <div className="text-center lg:hidden space-y-2">
-                <div className="inline-flex items-center gap-2 text-primary mb-2">
-                  <Sparkles className="size-5" />
-                </div>
-                <h1 className="text-2xl font-bold">{config.VITE_APP_TITLE}</h1>
-                <p className="text-sm text-muted-foreground">{config.VITE_APP_SLOGAN}</p>
-              </div>
-
-              {/* Desktop heading */}
-              <div className="hidden lg:block space-y-2 text-center">
-                <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-                <p className="text-muted-foreground">Sign in to your account to continue</p>
-              </div>
-
-              {/* Login card */}
-              <Card className="shadow-lg">
-                <CardSection>
-                  <hanko-auth />
-                </CardSection>
-              </Card>
-
-              {/* Footer */}
-              <p className="text-center text-xs text-muted-foreground">
-                By continuing, you agree to our terms of service and privacy policy.
-              </p>
+            <div className="grid gap-px border border-[var(--border-inverse)] bg-[var(--border-inverse)]">
+              <PortalItem
+                icon={<Building2 />}
+                label="Funds and commitments"
+                description="Current exposure and fund-level context."
+              />
+              <PortalItem
+                icon={<ArrowUpRight />}
+                label="Capital activity"
+                description="Capital calls, distributions, and payment status."
+              />
+              <PortalItem
+                icon={<FileText />}
+                label="Documents and letters"
+                description="Investor materials organized by date and fund."
+              />
             </div>
           </div>
         </div>
+
+        <main className="flex min-h-svh items-center justify-center px-5 py-10 md:px-8">
+          <div className="w-full max-w-[440px]">
+            <div className="mb-8 lg:hidden">
+              <div className="mb-7 flex items-center gap-3">
+                <span
+                  aria-hidden
+                  className="flex size-9 items-center justify-center border border-[var(--border-default)] text-conifer-700"
+                >
+                  <Landmark strokeWidth={1.5} className="size-5" />
+                </span>
+                <span className="font-sans text-[18px] font-semibold tracking-tight">
+                  {config.VITE_APP_TITLE}
+                </span>
+              </div>
+              <p className="es-eyebrow mb-4">Investor portal</p>
+              <h1 className="font-display text-[42px] font-medium leading-[1.02] text-ink-900 text-balance">
+                Secure access for limited partners.
+              </h1>
+            </div>
+
+            <div className="mb-7 hidden lg:block">
+              <p className="es-eyebrow mb-4">Secure sign in</p>
+              <h2 className="font-display text-[44px] font-medium leading-[1.04] text-ink-900">
+                Welcome back.
+              </h2>
+              <p className="mt-3 max-w-sm font-sans text-[15px] leading-[1.6] text-ink-700">
+                Continue to the NewTaven portal with your verified email or
+                passkey.
+              </p>
+            </div>
+
+            <Card className="bg-surface">
+              <CardSection className="space-y-6">
+                <div className="flex items-start gap-3 border-b border-[var(--border-hairline)] pb-5">
+                  <span
+                    aria-hidden
+                    className="mt-0.5 flex size-8 shrink-0 items-center justify-center bg-parchment-100 text-conifer-700"
+                  >
+                    <LockKeyhole strokeWidth={1.5} className="size-4" />
+                  </span>
+                  <div>
+                    <h2 className="font-sans text-[16px] font-semibold tracking-tight text-ink-900">
+                      Sign in to your account
+                    </h2>
+                    <p className="mt-1 font-sans text-[13px] leading-[1.55] text-ink-500">
+                      Access is restricted to invited investors and authorized
+                      fund team members.
+                    </p>
+                  </div>
+                </div>
+
+                <hanko-auth className="block" />
+              </CardSection>
+            </Card>
+
+            <p className="mt-6 border-t border-[var(--border-hairline)] pt-5 font-sans text-[12px] leading-[1.6] text-ink-500">
+              Need access? Contact your NewTaven administrator using the email
+              address associated with your invitation.
+            </p>
+          </div>
+        </main>
       </div>
     </>
+  )
+}
+
+interface PortalItemProps {
+  icon: React.ReactNode
+  label: string
+  description: string
+}
+
+function PortalItem({ icon, label, description }: PortalItemProps) {
+  return (
+    <div className="flex gap-4 bg-conifer-700 p-5">
+      <span
+        aria-hidden
+        className="mt-0.5 text-brass-300 [&_svg]:size-5 [&_svg]:stroke-[1.5]"
+      >
+        {icon}
+      </span>
+      <div>
+        <p className="font-sans text-[14px] font-semibold tracking-tight text-parchment-50">
+          {label}
+        </p>
+        <p className="mt-1 font-sans text-[13px] leading-[1.55] text-parchment-100/70">
+          {description}
+        </p>
+      </div>
+    </div>
   )
 }
