@@ -38,6 +38,14 @@ Two-service monorepo: Python FastAPI backend under `backend/` and a React/Vite f
 - **Auth**: `app/core/auth.py` validates Hanko-issued JWTs using a cached `PyJWKClient` against `{HANKO_API_URL}/.well-known/jwks.json`, algorithm `RS256`, audience = `HANKO_API_URL`. `get_current_user` returns the decoded payload dict; there is no local user session.
 - **Background jobs**: arq worker defined in `app/worker.py` (`WorkerSettings`); the queue name is `settings.APP_DOMAIN`. Enqueue helpers live in `app/tasks.py` — `enqueue_task` opens and closes a fresh pool per call. Register new task functions in `WorkerSettings.functions`.
 
+#### Coding rules
+
+- All models that have primary keys should have a `pydantic.UUID4` primary key field.
+- Use repository pattern for business logic in routers and services.
+- Worker and Task functions should use repository pattern.
+- After creating new repository, schema, model, service, task - update app/*/__init__.py file with new imports.
+- Define dependencies for router in router file itself, not in main.py file.
+
 ### Frontend (`apps/frontend/src/`)
 
 - **Stack**: React 18 + Vite 7 + TypeScript, Tailwind CSS v4 (via `@tailwindcss/vite`), React Router v6, TanStack Query, Radix UI primitives, shadcn-style components in `components/ui/`.
