@@ -37,9 +37,10 @@ function formatTimestamp(value: string | null) {
 
 interface LetterDetailProps {
   letterId: string
+  canSend: boolean
 }
 
-export function LetterDetail({ letterId }: LetterDetailProps) {
+export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
   const queryClient = useQueryClient()
 
   const letterQuery = useApiQuery("/communications/{communication_id}", {
@@ -109,7 +110,7 @@ export function LetterDetail({ letterId }: LetterDetailProps) {
   const deliveredCount = recipients.filter((r) => r.delivered_at !== null).length
   const readPct = recipients.length > 0 ? readCount / recipients.length : 0
   const isDraft = letter.sent_at === null
-  const canSend = isDraft
+  const showSend = isDraft && canSend
 
   function recipientLabel(
     recipient: components["schemas"]["CommunicationRecipientRead"],
@@ -230,7 +231,7 @@ export function LetterDetail({ letterId }: LetterDetailProps) {
         </div>
       </div>
 
-      {canSend && (
+      {showSend && (
         <div className="sticky bottom-0 z-10 border-t border-[color:var(--border-hairline)] bg-surface px-6 py-3">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button

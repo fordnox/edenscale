@@ -25,6 +25,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { config } from "@/lib/config"
 import { formatDate, titleCase } from "@/lib/format"
@@ -49,6 +50,12 @@ const TYPE_TONE: Record<
 }
 
 export default function LettersPage() {
+  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const canWriteLetters =
+    isSuperadmin ||
+    activeMembership?.role === "admin" ||
+    activeMembership?.role === "fund_manager"
+
   const [composeOpen, setComposeOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [fundFilter, setFundFilter] = useState<"all" | string>("all")
@@ -82,13 +89,15 @@ export default function LettersPage() {
         title="What we are thinking, written down."
         description="Quarterly letters and bulletins to limited partners. Read receipts log the moment each recipient opens a note."
         actions={
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setComposeOpen(true)}
-          >
-            New letter
-          </Button>
+          canWriteLetters && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setComposeOpen(true)}
+            >
+              New letter
+            </Button>
+          )
         }
       />
 
@@ -147,13 +156,15 @@ export default function LettersPage() {
                 title="No letters yet"
                 body="Draft a quarterly letter or a quick note to limited partners. Once sent, the read receipts appear here."
                 action={
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setComposeOpen(true)}
-                  >
-                    Draft letter
-                  </Button>
+                  canWriteLetters && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setComposeOpen(true)}
+                    >
+                      Draft letter
+                    </Button>
+                  )
                 }
               />
             ) : (
@@ -260,7 +271,11 @@ export default function LettersPage() {
             letter.
           </SheetDescription>
           {selectedId !== null && (
-            <LetterDetail key={selectedId} letterId={selectedId} />
+            <LetterDetail
+              key={selectedId}
+              letterId={selectedId}
+              canSend={canWriteLetters}
+            />
           )}
         </SheetContent>
       </Sheet>

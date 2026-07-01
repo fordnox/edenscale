@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { StatusPill } from "@/components/ui/StatusPill"
 import { ProgressBar } from "@/components/ui/progress"
 import { DataTable, TH, TR, TD } from "@/components/ui/table"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import api from "@/lib/api"
 import { config } from "@/lib/config"
 import {
@@ -30,6 +31,11 @@ function parseDecimal(value: string | null | undefined) {
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const canWriteLetters =
+    isSuperadmin ||
+    activeMembership?.role === "admin" ||
+    activeMembership?.role === "fund_manager"
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["dashboard", "overview"],
@@ -58,9 +64,11 @@ export default function DashboardPage() {
             <Button variant="secondary" size="sm" onClick={() => navigate("/calls")}>
               View capital calls
             </Button>
-            <Button variant="primary" size="sm" onClick={() => navigate("/letters")}>
-              Draft quarterly letter
-            </Button>
+            {canWriteLetters && (
+              <Button variant="primary" size="sm" onClick={() => navigate("/letters")}>
+                Draft quarterly letter
+              </Button>
+            )}
           </>
         }
       />
