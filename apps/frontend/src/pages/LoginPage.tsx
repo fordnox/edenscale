@@ -135,17 +135,6 @@ export default function LoginPage() {
         <main className="flex min-h-svh items-center justify-center px-5 py-10 md:px-8">
           <div className="w-full max-w-[440px]">
             <div className="mb-8 lg:hidden">
-              <div className="mb-7 flex items-center gap-3">
-                <span
-                  aria-hidden
-                  className="flex size-9 items-center justify-center border border-[var(--border-default)] text-conifer-700"
-                >
-                  <Landmark strokeWidth={1.5} className="size-5" />
-                </span>
-                <span className="font-sans text-[18px] font-semibold tracking-tight">
-                  {config.VITE_APP_TITLE}
-                </span>
-              </div>
               <p className="es-eyebrow mb-4">Investor portal</p>
               <h1 className="font-display text-[42px] font-medium leading-[1.02] text-ink-900 text-balance">
                 Secure access for limited partners.
@@ -153,14 +142,10 @@ export default function LoginPage() {
             </div>
 
             <div className="mb-7 hidden lg:block">
-              <p className="es-eyebrow mb-4">Secure sign in</p>
+              <p className="es-eyebrow mb-4">Investor portal</p>
               <h2 className="font-display text-[44px] font-medium leading-[1.04] text-ink-900">
-                Welcome back.
+                Secure access for limited partners.
               </h2>
-              <p className="mt-3 max-w-sm font-sans text-[15px] leading-[1.6] text-ink-700">
-                Continue to the NewTaven portal with your verified email or
-                passkey.
-              </p>
             </div>
 
             <Card className="bg-surface">
@@ -168,11 +153,6 @@ export default function LoginPage() {
                 <hanko-auth className="block" />
               </CardSection>
             </Card>
-
-            <p className="mt-6 border-t border-[var(--border-hairline)] pt-5 font-sans text-[12px] leading-[1.6] text-ink-500">
-              Need access? Contact your NewTaven administrator using the email
-              address associated with your invitation.
-            </p>
           </div>
         </main>
       </div>
