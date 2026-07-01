@@ -20,6 +20,7 @@ behind `Depends(get_current_user)` (JWT only) plus per-route
 """
 
 import uuid
+from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
@@ -79,7 +80,7 @@ def _seed_org(
 ) -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, type=type_, is_active=is_active)
+        org = Organization(name=name, slug=slugify(name), type=type_, is_active=is_active)
         db.add(org)
         db.commit()
         return str(org.id)

@@ -8,6 +8,7 @@ mirroring ``test_rbac.py``.
 
 import pytest
 from fastapi import HTTPException
+from app.core.slugs import slugify
 
 from app.core.database import Base, SessionLocal, engine
 from app.core.rbac import get_active_membership, require_membership_roles
@@ -37,7 +38,7 @@ def db():
 
 
 def _seed_org(db, name: str = "NewTaven Capital") -> Organization:
-    org = Organization(name=name, type=OrganizationType.fund_manager_firm)
+    org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
     db.add(org)
     db.commit()
     db.refresh(org)

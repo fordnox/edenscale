@@ -42,6 +42,7 @@ class FundRead(BaseModel):
     organization_id: UUID4
     fund_group_id: UUID4 | None
     name: str
+    slug: str
     legal_name: str | None
     vintage_year: int | None
     strategy: str | None
@@ -64,6 +65,7 @@ class FundListItem(BaseModel):
     organization_id: UUID4
     fund_group_id: UUID4 | None
     name: str
+    slug: str
     currency_code: str
     target_size: Decimal | None
     current_size: Decimal

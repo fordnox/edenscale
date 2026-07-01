@@ -25,6 +25,7 @@ so no HTTP traffic leaves the test process.
 import uuid
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
+from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
@@ -74,7 +75,7 @@ def hanko_email_mock():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, type=OrganizationType.fund_manager_firm)
+        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
         db.add(org)
         db.commit()
         return org.id

@@ -2,6 +2,7 @@
 
 import pytest
 from fastapi.testclient import TestClient
+from app.core.slugs import slugify
 
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
@@ -47,7 +48,7 @@ def _seed_user(
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, type=OrganizationType.fund_manager_firm)
+        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
         db.add(org)
         db.commit()
         return str(org.id)
@@ -73,6 +74,7 @@ class TestCreateOrganization:
         assert created["name"] == "Adminco"
         assert created["type"] == "fund_manager_firm"
         assert created["is_active"] is True
+        assert created["slug"] == "adminco"
 
         get_response = client.get(f"/organizations/{created['id']}")
         assert get_response.status_code == 200
@@ -113,6 +115,7 @@ class TestSelfServeCreateOrganization:
         assert body["role"] == "admin"
         assert body["organization"]["name"] == "Newcomer Capital"
         assert body["organization"]["type"] == "fund_manager_firm"
+        assert body["organization"]["slug"] == "newcomer-capital"
 
         memberships_response = client.get("/users/me/memberships")
         assert memberships_response.status_code == 200

@@ -4,6 +4,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Query, Session
 
+from app.core.slugs import generate_unique_slug
 from app.models.commitment import Commitment
 from app.models.enums import FundStatus, UserRole
 from app.models.fund import Fund
@@ -77,7 +78,19 @@ class FundRepository:
         )
 
     def create(self, data: FundCreate) -> tuple[Fund, Decimal]:
-        fund = Fund(**data.model_dump())
+        assert data.organization_id is not None
+        organization_id = data.organization_id
+        slug = generate_unique_slug(
+            data.name,
+            exists=lambda candidate: self.db.query(Fund.id)
+            .filter(
+                Fund.organization_id == organization_id,
+                Fund.slug == candidate,
+            )
+            .first()
+            is not None,
+        )
+        fund = Fund(**data.model_dump(), slug=slug)
         self.db.add(fund)
         self.db.commit()
         self.db.refresh(fund)

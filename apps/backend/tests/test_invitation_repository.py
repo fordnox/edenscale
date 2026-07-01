@@ -6,6 +6,7 @@ must be idempotent and must not flip already-accepted or already-revoked rows.
 
 import uuid
 from datetime import datetime, timedelta, timezone
+from app.core.slugs import slugify
 
 import pytest
 
@@ -40,7 +41,7 @@ def db():
 
 
 def _seed_org(db, name: str = "NewTaven Capital") -> int:
-    org = Organization(name=name, type=OrganizationType.fund_manager_firm)
+    org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
     db.add(org)
     db.commit()
     db.refresh(org)

@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core.slugs import generate_unique_slug
 from app.models.enums import UserRole
 from app.models.organization import Organization
 from app.models.user import User
@@ -13,6 +14,15 @@ from app.schemas.organization import OrganizationCreate, OrganizationUpdate
 class OrganizationRepository:
     def __init__(self, db: Session):
         self.db = db
+
+    def _generate_slug(self, name: str) -> str:
+        return generate_unique_slug(
+            name,
+            exists=lambda candidate: self.db.query(Organization.id)
+            .filter(Organization.slug == candidate)
+            .first()
+            is not None,
+        )
 
     def list_with_member_counts(self) -> list[tuple[Organization, int]]:
         return (
@@ -53,7 +63,9 @@ class OrganizationRepository:
         )
 
     def create(self, data: OrganizationCreate) -> Organization:
-        organization = Organization(**data.model_dump())
+        organization = Organization(
+            **data.model_dump(), slug=self._generate_slug(data.name)
+        )
         self.db.add(organization)
         self.db.commit()
         self.db.refresh(organization)
@@ -96,7 +108,9 @@ class OrganizationRepository:
         land together so a superadmin org-creation call never leaves an org
         with no admin.
         """
-        organization = Organization(**data.model_dump())
+        organization = Organization(
+            **data.model_dump(), slug=self._generate_slug(data.name)
+        )
         self.db.add(organization)
         self.db.flush()
         membership = UserOrganizationMembership(

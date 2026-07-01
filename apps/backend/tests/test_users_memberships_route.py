@@ -8,6 +8,7 @@ payload and the per-org role (which may differ from ``User.role``).
 
 import pytest
 from fastapi.testclient import TestClient
+from app.core.slugs import slugify
 
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
@@ -35,7 +36,7 @@ def client():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, type=OrganizationType.fund_manager_firm)
+        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
         db.add(org)
         db.commit()
         return str(org.id)

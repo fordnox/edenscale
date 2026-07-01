@@ -42,6 +42,7 @@ class OrganizationRead(BaseModel):
     id: UUID4
     type: OrganizationType
     name: str
+    slug: str
     legal_name: str | None
     tax_id: str | None
     website: str | None

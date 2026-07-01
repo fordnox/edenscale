@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import (CapitalCall, CapitalCallStatus, Commitment,
                         CommitmentStatus, Communication, CommunicationRecipient,
@@ -39,7 +40,9 @@ def _create_org_user(
     """Insert one Organization + linked User + matching membership."""
     db = SessionLocal()
     try:
-        org = Organization(name=org_name, type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=org_name, slug=slugify(org_name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.flush()
         user = User(
@@ -163,13 +166,14 @@ class TestDashboardOverview:
     def test_aggregates_filtered_to_user_organization(self, client, override_user):
         org_id, _ = _create_org_user("hanko-1")
         # Foreign org — its data must not leak into the response
-        other_org_id, _ = _create_org_user("hanko-other")
+        other_org_id, _ = _create_org_user("hanko-other", org_name="Foreign Org")
 
         db = SessionLocal()
         try:
             active_fund = Fund(
                 organization_id=org_id,
                 name="NewTaven Growth I",
+                slug=slugify("NewTaven Growth I"),
                 vintage_year=2024,
                 strategy="Growth",
                 currency_code="USD",
@@ -178,6 +182,7 @@ class TestDashboardOverview:
             closed_fund = Fund(
                 organization_id=org_id,
                 name="NewTaven Legacy",
+                slug=slugify("NewTaven Legacy"),
                 vintage_year=2018,
                 strategy="Buyout",
                 currency_code="USD",
@@ -186,6 +191,7 @@ class TestDashboardOverview:
             other_fund = Fund(
                 organization_id=other_org_id,
                 name="Foreign Fund",
+                slug=slugify("Foreign Fund"),
                 currency_code="USD",
                 status=FundStatus.active,
             )
@@ -326,12 +332,14 @@ class TestDashboardOverview:
             fund_a = Fund(
                 organization_id=org_a,
                 name="Fund A",
+                slug=slugify("Fund A"),
                 currency_code="USD",
                 status=FundStatus.active,
             )
             fund_b = Fund(
                 organization_id=org_b,
                 name="Fund B",
+                slug=slugify("Fund B"),
                 currency_code="USD",
                 status=FundStatus.active,
             )
@@ -394,12 +402,14 @@ class TestDashboardOverview:
             visible_fund = Fund(
                 organization_id=org_id,
                 name="Visible Fund",
+                slug=slugify("Visible Fund"),
                 currency_code="USD",
                 status=FundStatus.active,
             )
             hidden_fund = Fund(
                 organization_id=org_id,
                 name="Hidden Fund",
+                slug=slugify("Hidden Fund"),
                 currency_code="USD",
                 status=FundStatus.active,
             )
@@ -542,6 +552,7 @@ class TestDashboardActivityAggregates:
             fund = Fund(
                 organization_id=org_id,
                 name="NewTaven Fund",
+                slug=slugify("NewTaven Fund"),
                 currency_code="USD",
                 status=FundStatus.active,
             )
@@ -645,6 +656,7 @@ class TestDashboardActivityAggregates:
             fund = Fund(
                 organization_id=org_id,
                 name="Visible Fund",
+                slug=slugify("Visible Fund"),
                 currency_code="USD",
                 status=FundStatus.active,
             )

@@ -6,6 +6,7 @@ of audited models), the ``record_audit`` helper, and the admin-only
 """
 
 import json
+from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
@@ -51,7 +52,7 @@ def client():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, type=OrganizationType.fund_manager_firm)
+        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
         db.add(org)
         db.commit()
         return str(org.id)
@@ -146,7 +147,7 @@ class TestEventListeners:
         fund_id_holder: dict[str, int] = {}
         db = SessionLocal()
         try:
-            fund = Fund(organization_id=org_id, name="Doomed Fund")
+            fund = Fund(organization_id=org_id, name="Doomed Fund", slug=slugify("Doomed Fund"))
             db.add(fund)
             db.commit()
             fund_id_holder["id"] = fund.id
@@ -165,7 +166,7 @@ class TestEventListeners:
         set_audit_context(user_id=user_id, ip_address="10.0.0.1")
         db = SessionLocal()
         try:
-            fund = Fund(organization_id=org_id, name="Audited Fund")
+            fund = Fund(organization_id=org_id, name="Audited Fund", slug=slugify("Audited Fund"))
             db.add(fund)
             db.commit()
         finally:
@@ -219,7 +220,7 @@ class TestAuditLogRoute:
         org_id = _seed_org("NewTaven")
         db = SessionLocal()
         try:
-            fund = Fund(organization_id=org_id, name="Filter Fund")
+            fund = Fund(organization_id=org_id, name="Filter Fund", slug=slugify("Filter Fund"))
             db.add(fund)
             db.commit()
             fund_id = str(fund.id)

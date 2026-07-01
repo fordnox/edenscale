@@ -13,6 +13,7 @@ class Organization(Base):
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     type = Column(Enum(OrganizationType, name="organization_type"), nullable=False)
     name = Column(String(255), nullable=False)
+    slug = Column(String(255), nullable=False, unique=True, index=True)
     legal_name = Column(String(255), nullable=True)
     tax_id = Column(String(100), nullable=True)
     website = Column(String(255), nullable=True)

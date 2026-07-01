@@ -3,6 +3,7 @@
 import uuid
 from datetime import date
 from decimal import Decimal
+from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
@@ -39,7 +40,7 @@ def client():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, type=OrganizationType.fund_manager_firm)
+        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
         db.add(org)
         db.commit()
         return str(org.id)
@@ -88,7 +89,7 @@ def _seed_fund(
 ) -> int:
     db = SessionLocal()
     try:
-        fund = Fund(organization_id=organization_id, name=name, status=status)
+        fund = Fund(organization_id=organization_id, name=name, slug=slugify(name), status=status)
         db.add(fund)
         db.commit()
         return str(fund.id)
@@ -147,6 +148,7 @@ class TestCreateFund:
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Growth Fund I"
+        assert data["slug"] == "growth-fund-i"
         assert data["organization_id"] == org_id
         assert data["status"] == "draft"
         assert Decimal(data["current_size"]) == Decimal("0")

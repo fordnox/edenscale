@@ -9,6 +9,7 @@ FastAPI client needed.
 
 import pytest
 from fastapi import HTTPException
+from app.core.slugs import slugify
 
 from app.core.auth import _extract_email_from_hanko_payload
 from app.core.database import Base, SessionLocal, engine
@@ -92,7 +93,7 @@ def test_auto_provision_derives_name_when_claims_missing(db):
 
 
 def test_existing_user_is_returned_unchanged(db):
-    org = Organization(name="NewTaven Capital", type=OrganizationType.fund_manager_firm)
+    org = Organization(name="NewTaven Capital", slug=slugify("NewTaven Capital"), type=OrganizationType.fund_manager_firm)
     db.add(org)
     db.flush()
     existing = User(
@@ -125,7 +126,7 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
     First Hanko sign-in with the matching email claim should bind the row by
     setting `hanko_subject_id`, not create a duplicate `lp` user.
     """
-    org = Organization(name="NewTaven Capital", type=OrganizationType.fund_manager_firm)
+    org = Organization(name="NewTaven Capital", slug=slugify("NewTaven Capital"), type=OrganizationType.fund_manager_firm)
     db.add(org)
     db.flush()
     seeded = User(
@@ -160,7 +161,7 @@ def test_seed_claim_refuses_when_email_already_linked(db):
     must NOT 500 on the unique-email constraint when provisioning a duplicate.
     The repository raises `ValueError` (mapped to a 401 by auth) instead.
     """
-    org = Organization(name="NewTaven Capital", type=OrganizationType.fund_manager_firm)
+    org = Organization(name="NewTaven Capital", slug=slugify("NewTaven Capital"), type=OrganizationType.fund_manager_firm)
     db.add(org)
     db.flush()
     existing = User(

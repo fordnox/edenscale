@@ -9,6 +9,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.models import (
     Organization,
     OrganizationType,
@@ -32,7 +33,9 @@ def _seed_user_and_org(
 ) -> tuple[int, int]:
     db = SessionLocal()
     try:
-        org = Organization(name=org_name, type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=org_name, slug=slugify(org_name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.flush()
         user = User(
@@ -84,7 +87,9 @@ class TestMembershipRelationships:
         db = SessionLocal()
         try:
             second_org = Organization(
-                name="Second Capital", type=OrganizationType.fund_manager_firm
+                name="Second Capital",
+                slug=slugify("Second Capital"),
+                type=OrganizationType.fund_manager_firm,
             )
             db.add(second_org)
             db.flush()

@@ -7,6 +7,7 @@ duplicate rows.
 """
 
 import uuid
+from app.core.slugs import slugify
 
 import pytest
 
@@ -33,7 +34,7 @@ def setup_database():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, type=OrganizationType.fund_manager_firm)
+        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
         db.add(org)
         db.commit()
         return org.id

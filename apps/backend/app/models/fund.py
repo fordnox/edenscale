@@ -10,6 +10,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
     Uuid,
     func,
 )
@@ -21,6 +22,11 @@ from app.models.enums import FundStatus
 
 class Fund(Base):
     __tablename__ = "funds"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id", "slug", name="uq_funds_organization_id_slug"
+        ),
+    )
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(
@@ -30,6 +36,7 @@ class Fund(Base):
         Uuid(as_uuid=True), ForeignKey("fund_groups.id"), nullable=True, index=True
     )
     name = Column(String(255), nullable=False)
+    slug = Column(String(255), nullable=False, index=True)
     legal_name = Column(String(255), nullable=True)
     vintage_year = Column(Integer, nullable=True)
     strategy = Column(String(255), nullable=True)
