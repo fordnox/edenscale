@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
-import { Loader2, Plus, Star } from "lucide-react"
+import { Loader2, Pencil, Plus, Star } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHero } from "@/components/layout/PageHero"
 import { InvestorCreateDialog } from "@/components/investors/InvestorCreateDialog"
+import { InvestorEditDialog } from "@/components/investors/InvestorEditDialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardSection } from "@/components/ui/card"
@@ -83,6 +84,8 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
   const commitments = commitmentsQuery.data ?? []
   const investor = investorQuery.data
 
+  const [editOpen, setEditOpen] = useState(false)
+
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
@@ -132,10 +135,24 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-[color:var(--border-hairline)] px-6 py-5">
-        <Eyebrow>Investor</Eyebrow>
-        <h2 className="es-display mt-2 text-[28px] leading-tight">
-          {investor?.name ?? "Loading…"}
-        </h2>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Eyebrow>Investor</Eyebrow>
+            <h2 className="es-display mt-2 text-[28px] leading-tight">
+              {investor?.name ?? "Loading…"}
+            </h2>
+          </div>
+          {investor && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil strokeWidth={1.5} className="size-4" />
+              Edit
+            </Button>
+          )}
+        </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 font-sans text-[12px] text-ink-500">
           {investor?.investor_code && (
             <span className="es-numeric">{investor.investor_code}</span>
@@ -148,6 +165,14 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
           )}
         </div>
       </div>
+
+      {investor && (
+        <InvestorEditDialog
+          investor={investor}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
+      )}
 
       <Tabs defaultValue="contacts" className="flex-1 gap-0">
         <div className="px-6 pt-4">
