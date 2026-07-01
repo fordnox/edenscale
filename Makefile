@@ -69,6 +69,9 @@ kamal-deploy: kamal-check ## Deploy backend with Kamal — pulls fixed :latest i
 kamal-logs: kamal-check ## Tail logs
 	kamal app logs -f
 
+wrangler-deploy:
+	cd apps/gateway && VITE_APP_TITLE=NewTaven VITE_API_URL=https://api.newtaven.com VITE_HANKO_API_URL=https://400bf941-ad5d-4497-8aa0-b3e2aeb420e3.hanko.io pnpm run build && pnpm run deploy
+
 .PHONY: help
 .DEFAULT_GOAL := help
 
