@@ -78,7 +78,6 @@ const LP_ITEMS: NavItem[] = [
   DOCUMENTS,
   LETTERS,
   NOTIFICATIONS,
-  AUDIT_LOG,
 ]
 
 export function navItemsForRole(role: UserRole | null | undefined): NavItem[] {
