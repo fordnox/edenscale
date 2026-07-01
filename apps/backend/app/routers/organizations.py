@@ -45,19 +45,15 @@ async def create_organization_self_serve(
     waiting on an invitation.
     """
     repo = OrganizationRepository(db)
-    organization = repo.create(
+    _organization, membership = repo.create_with_admin(
         OrganizationCreate(
             type=OrganizationType.fund_manager_firm,
             name=data.name,
             legal_name=data.legal_name,
             website=data.website,
             description=data.description,
-        )
-    )
-    membership = UserOrganizationMembershipRepository(db).create(
-        user_id=current_user.id,  # type: ignore[invalid-argument-type]
-        organization_id=organization.id,  # type: ignore[invalid-argument-type]
-        role=UserRole.admin,
+        ),
+        admin=current_user,
     )
     return membership
 
