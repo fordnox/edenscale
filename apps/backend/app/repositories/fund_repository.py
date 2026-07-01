@@ -8,8 +8,8 @@ from app.core.slugs import generate_unique_slug
 from app.models.commitment import Commitment
 from app.models.enums import FundStatus, UserRole
 from app.models.fund import Fund
-from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
+from app.repositories.lp_scope import lp_visible_investor_ids
 from app.schemas.fund import FundCreate, FundUpdate
 
 _ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
@@ -40,17 +40,12 @@ class FundRepository:
         skip: int = 0,
         limit: int = 100,
     ) -> list[tuple[Fund, Decimal]]:
-        query = self._base_query()
-        if membership.role in _ORG_VISIBLE_ROLES:
-            query = query.filter(Fund.organization_id == membership.organization_id)
-        else:
-            visible_fund_ids = (
-                select(Commitment.fund_id)
-                .join(
-                    InvestorContact,
-                    InvestorContact.investor_id == Commitment.investor_id,
-                )
-                .where(InvestorContact.user_id == membership.user_id)
+        query = self._base_query().filter(
+            Fund.organization_id == membership.organization_id
+        )
+        if membership.role not in _ORG_VISIBLE_ROLES:
+            visible_fund_ids = select(Commitment.fund_id).where(
+                Commitment.investor_id.in_(lp_visible_investor_ids(membership))
             )
             query = query.filter(Fund.id.in_(visible_fund_ids))
         return query.order_by(Fund.created_at, Fund.id).offset(skip).limit(limit).all()
@@ -61,17 +56,15 @@ class FundRepository:
     def membership_can_view(
         self, membership: UserOrganizationMembership, fund: Fund
     ) -> bool:
+        if fund.organization_id != membership.organization_id:
+            return False
         if membership.role in _ORG_VISIBLE_ROLES:
-            return bool(fund.organization_id == membership.organization_id)
+            return True
         return (
             self.db.query(Commitment.id)
-            .join(
-                InvestorContact,
-                InvestorContact.investor_id == Commitment.investor_id,
-            )
             .filter(
                 Commitment.fund_id == fund.id,
-                InvestorContact.user_id == membership.user_id,
+                Commitment.investor_id.in_(lp_visible_investor_ids(membership)),
             )
             .first()
             is not None

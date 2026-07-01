@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.models.investor import Investor
 from app.models.investor_contact import InvestorContact
-from app.repositories.user_repository import UserRepository
+from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.schemas.investor_contact import (
     InvestorContactCreate,
     InvestorContactUpdate,
@@ -16,11 +17,38 @@ class InvestorContactRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def _resolve_user_id_by_email(self, email: str | None) -> uuid.UUID | None:
-        if not email:
+    def _organization_id_for_investor(self, investor_id: uuid.UUID) -> uuid.UUID | None:
+        row = (
+            self.db.query(Investor.organization_id)
+            .filter(Investor.id == investor_id)
+            .first()
+        )
+        return row[0] if row is not None else None
+
+    def _resolve_user_id_by_email(
+        self, email: str | None, organization_id: uuid.UUID | None
+    ) -> uuid.UUID | None:
+        """Match an existing user by email (case-insensitive), but only bind
+        when that user already holds a membership in the investor's
+        organization — linking anyone else must go through the consent-gated
+        invitation flow (see ``link_unclaimed_by_email``)."""
+        if not email or organization_id is None:
             return None
-        user = UserRepository(self.db).get_by_email(email)
-        return user.id if user is not None else None  # type: ignore[return-value]
+        user = (
+            self.db.query(User).filter(func.lower(User.email) == email.lower()).first()
+        )
+        if user is None:
+            return None
+        has_membership = (
+            self.db.query(UserOrganizationMembership.id)
+            .filter(
+                UserOrganizationMembership.user_id == user.id,
+                UserOrganizationMembership.organization_id == organization_id,
+            )
+            .first()
+            is not None
+        )
+        return user.id if has_membership else None  # type: ignore[return-value]
 
     def list_for_investor(
         self,
@@ -77,7 +105,10 @@ class InvestorContactRepository:
         payload = data.model_dump()
         is_primary = bool(payload.get("is_primary"))
         if payload.get("user_id") is None:
-            payload["user_id"] = self._resolve_user_id_by_email(payload.get("email"))
+            payload["user_id"] = self._resolve_user_id_by_email(
+                payload.get("email"),
+                self._organization_id_for_investor(investor_id),
+            )
         contact = InvestorContact(investor_id=investor_id, **payload)
         self.db.add(contact)
         self.db.flush()
@@ -100,7 +131,10 @@ class InvestorContactRepository:
         for key, value in updates.items():
             setattr(contact, key, value)
         if contact.user_id is None and "user_id" not in updates:
-            contact.user_id = self._resolve_user_id_by_email(contact.email)  # type: ignore[assignment]
+            contact.user_id = self._resolve_user_id_by_email(
+                contact.email,  # type: ignore[invalid-argument-type]
+                self._organization_id_for_investor(contact.investor_id),  # type: ignore[invalid-argument-type]
+            )
         if updates.get("is_primary") is True:
             self._clear_other_primaries(
                 contact.investor_id, except_contact_id=contact.id  # type: ignore[invalid-argument-type]

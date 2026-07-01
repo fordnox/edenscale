@@ -10,9 +10,9 @@ from app.models.capital_call_item import CapitalCallItem
 from app.models.commitment import Commitment
 from app.models.enums import CapitalCallStatus, UserRole
 from app.models.fund import Fund
-from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.commitment_repository import CommitmentRepository
+from app.repositories.lp_scope import lp_visible_investor_ids
 from app.schemas.capital_call import CapitalCallCreate, CapitalCallUpdate
 
 _ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
@@ -76,16 +76,13 @@ class CapitalCallRepository:
                 Fund.organization_id == membership.organization_id
             )
         else:
-            visible_investor_ids = select(InvestorContact.investor_id).where(
-                InvestorContact.user_id == membership.user_id
-            )
             visible_call_ids = (
                 select(CapitalCallItem.capital_call_id)
                 .join(
                     Commitment,
                     Commitment.id == CapitalCallItem.commitment_id,
                 )
-                .where(Commitment.investor_id.in_(visible_investor_ids))
+                .where(Commitment.investor_id.in_(lp_visible_investor_ids(membership)))
             )
             query = query.filter(CapitalCall.id.in_(visible_call_ids))
         if fund_id is not None:
@@ -113,13 +110,9 @@ class CapitalCallRepository:
         return (
             self.db.query(CapitalCallItem.id)
             .join(Commitment, Commitment.id == CapitalCallItem.commitment_id)
-            .join(
-                InvestorContact,
-                InvestorContact.investor_id == Commitment.investor_id,
-            )
             .filter(
                 CapitalCallItem.capital_call_id == call.id,
-                InvestorContact.user_id == membership.user_id,
+                Commitment.investor_id.in_(lp_visible_investor_ids(membership)),
             )
             .first()
             is not None

@@ -1,8 +1,9 @@
 """Integration tests for the audit-log machinery.
 
 Covers the SQLAlchemy event listeners (auto-emitted on insert/update/delete
-of audited models), the ``record_audit`` helper, and the admin-only
-``GET /audit-logs`` route.
+of audited models), the ``record_audit`` helper, and the membership-scoped
+``GET /audit-logs`` route (org-visible roles see the org's events, everyone
+else only their own).
 """
 
 import json
@@ -27,6 +28,7 @@ from app.models import (
     User,
     UserRole,
 )
+from app.models.user_organization_membership import UserOrganizationMembership
 
 
 @pytest.fixture(autouse=True)
@@ -78,6 +80,15 @@ def _seed_user(
             hanko_subject_id=subject_id,
         )
         db.add(user)
+        db.flush()
+        if organization_id is not None:
+            db.add(
+                UserOrganizationMembership(
+                    user_id=user.id,
+                    organization_id=organization_id,
+                    role=role,
+                )
+            )
         db.commit()
         return str(user.id)
     finally:
@@ -204,9 +215,9 @@ class TestRecordAuditHelper:
 
 class TestAuditLogRoute:
     def test_admin_can_list(self, client, override_user):
-        admin_id = _seed_user("hanko-admin", UserRole.admin)
         # Trigger one audited write.
-        _seed_org("Visible Org")
+        org_id = _seed_org("Visible Org")
+        admin_id = _seed_user("hanko-admin", UserRole.admin, organization_id=org_id)
         override_user("hanko-admin")
         resp = client.get("/audit-logs")
         assert resp.status_code == 200
@@ -216,8 +227,8 @@ class TestAuditLogRoute:
         assert admin_id is not None
 
     def test_filter_by_entity(self, client, override_user):
-        _seed_user("hanko-admin", UserRole.admin)
         org_id = _seed_org("NewTaven")
+        _seed_user("hanko-admin", UserRole.admin, organization_id=org_id)
         db = SessionLocal()
         try:
             fund = Fund(organization_id=org_id, name="Filter Fund", slug=slugify("Filter Fund"))
@@ -240,13 +251,20 @@ class TestAuditLogRoute:
     def test_filter_by_date_range(self, client, override_user):
         from datetime import datetime, timedelta, timezone
 
-        _seed_user("hanko-admin", UserRole.admin)
-        # Two audited writes; backdate the first one so the date filter excludes it.
+        # Two audited writes in the same org; backdate the first one so the
+        # date filter excludes it.
         org_id = _seed_org("Old Org")
-        _seed_org("New Org")
+        _seed_user("hanko-admin", UserRole.admin, organization_id=org_id)
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         db = SessionLocal()
         try:
+            fund = Fund(
+                organization_id=org_id,
+                name="Recent Fund",
+                slug=slugify("Recent Fund"),
+            )
+            db.add(fund)
+            db.commit()
             old_row = (
                 db.query(AuditLog)
                 .filter(AuditLog.entity_type == "organization")
@@ -277,17 +295,22 @@ class TestAuditLogRoute:
         rows = resp.json()
         assert any(row["id"] == old_row_id for row in rows)
 
-    def test_non_admin_forbidden(self, client, override_user):
-        _seed_user("hanko-fm", UserRole.fund_manager)
+    def test_fund_manager_can_list_org_events(self, client, override_user):
+        org_id = _seed_org("FM Org")
+        _seed_user("hanko-fm", UserRole.fund_manager, organization_id=org_id)
         override_user("hanko-fm")
         resp = client.get("/audit-logs")
-        assert resp.status_code == 403
+        assert resp.status_code == 200
+        assert any(r["entity_type"] == "organization" for r in resp.json())
 
-    def test_lp_forbidden(self, client, override_user):
-        _seed_user("hanko-lp", UserRole.lp)
+    def test_lp_sees_only_own_events(self, client, override_user):
+        org_id = _seed_org("LP Org")
+        _seed_user("hanko-lp", UserRole.lp, organization_id=org_id)
         override_user("hanko-lp")
         resp = client.get("/audit-logs")
-        assert resp.status_code == 403
+        assert resp.status_code == 200
+        # The seeded writes weren't caused by the LP, so nothing is visible.
+        assert resp.json() == []
 
 
 def test_audit_context_default_is_empty():

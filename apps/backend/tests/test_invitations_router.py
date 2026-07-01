@@ -360,9 +360,9 @@ class TestListInvitations:
         response = client.get("/invitations")
         assert response.status_code == 200
         ids = [row["id"] for row in response.json()]
-        # Repository returns desc by id (a UUID, so not insertion order) —
-        # assert it contains exactly these two rows in that order.
-        assert ids == sorted([str(first), str(second)], reverse=True)
+        # Ordering is (created_at, id) desc and covered by the repository
+        # tests — here just assert the org's rows are all present.
+        assert set(ids) == {str(first), str(second)}
 
     def test_non_admin_gets_403(self, client, override_user, hanko_email_mock):
         org_id = _seed_org()

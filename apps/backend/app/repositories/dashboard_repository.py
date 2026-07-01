@@ -15,7 +15,6 @@ from app.models import (
     Fund,
     FundStatus,
     Investor,
-    InvestorContact,
     Notification,
     NotificationStatus,
     Task,
@@ -25,6 +24,7 @@ from app.models import (
 )
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.communication_repository import CommunicationRepository
+from app.repositories.lp_scope import lp_visible_investor_ids
 from app.repositories.user_organization_membership_repository import (
     UserOrganizationMembershipRepository,
 )
@@ -108,12 +108,8 @@ class DashboardRepository:
             return select(Fund.id).where(
                 Fund.organization_id == membership.organization_id
             )
-        return (
-            select(Commitment.fund_id)
-            .join(
-                InvestorContact, InvestorContact.investor_id == Commitment.investor_id
-            )
-            .where(InvestorContact.user_id == membership.user_id)
+        return select(Commitment.fund_id).where(
+            Commitment.investor_id.in_(lp_visible_investor_ids(membership))
         )
 
     def _visible_investor_ids(self, membership: UserOrganizationMembership) -> Select:
@@ -122,9 +118,7 @@ class DashboardRepository:
             return select(Investor.id).where(
                 Investor.organization_id == membership.organization_id
             )
-        return select(InvestorContact.investor_id).where(
-            InvestorContact.user_id == membership.user_id
-        )
+        return lp_visible_investor_ids(membership)
 
     def _scope_by_fund(
         self, query: Query, fund_id_column, fund_filter: Select

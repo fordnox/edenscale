@@ -91,6 +91,9 @@ def _build_diff(target: Any) -> dict[str, dict[str, Any]]:
 
 def _organization_id_for(target: Any) -> uuid.UUID | None:
     """Best-effort organization id for the affected row."""
+    if isinstance(target, Organization):
+        # Events on the organization itself belong to that organization.
+        return target.id
     return getattr(target, "organization_id", None)
 
 

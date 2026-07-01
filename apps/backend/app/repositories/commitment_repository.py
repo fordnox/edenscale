@@ -1,7 +1,7 @@
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import func
 from sqlalchemy.orm import Query, Session
 
 from app.models.capital_call_item import CapitalCallItem
@@ -9,8 +9,8 @@ from app.models.commitment import Commitment
 from app.models.distribution_item import DistributionItem
 from app.models.enums import CommitmentStatus, UserRole
 from app.models.fund import Fund
-from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
+from app.repositories.lp_scope import lp_visible_investor_ids
 from app.schemas.commitment import CommitmentCreate, CommitmentUpdate
 
 _ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
@@ -38,10 +38,9 @@ class CommitmentRepository:
                 Fund.organization_id == membership.organization_id
             )
         else:
-            visible_investor_ids = select(InvestorContact.investor_id).where(
-                InvestorContact.user_id == membership.user_id
+            query = query.filter(
+                Commitment.investor_id.in_(lp_visible_investor_ids(membership))
             )
-            query = query.filter(Commitment.investor_id.in_(visible_investor_ids))
         if fund_id is not None:
             query = query.filter(Commitment.fund_id == fund_id)
         if investor_id is not None:
@@ -77,10 +76,10 @@ class CommitmentRepository:
                 return False
             return bool(fund.organization_id == membership.organization_id)
         return (
-            self.db.query(InvestorContact.id)
+            self.db.query(Commitment.id)
             .filter(
-                InvestorContact.investor_id == commitment.investor_id,
-                InvestorContact.user_id == membership.user_id,
+                Commitment.id == commitment.id,
+                Commitment.investor_id.in_(lp_visible_investor_ids(membership)),
             )
             .first()
             is not None

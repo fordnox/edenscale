@@ -10,6 +10,10 @@ from app.repositories.fund_repository import FundRepository
 from app.repositories.fund_team_member_repository import FundTeamMemberRepository
 from app.repositories.investor_contact_repository import InvestorContactRepository
 from app.repositories.investor_repository import InvestorRepository
+from app.repositories.lp_scope import (
+    lp_visible_contact_ids,
+    lp_visible_investor_ids,
+)
 from app.repositories.notification_repository import NotificationRepository
 from app.repositories.organization_invitation_repository import (
     OrganizationInvitationRepository,
@@ -40,4 +44,6 @@ __all__ = [
     "TaskRepository",
     "UserOrganizationMembershipRepository",
     "UserRepository",
+    "lp_visible_contact_ids",
+    "lp_visible_investor_ids",
 ]

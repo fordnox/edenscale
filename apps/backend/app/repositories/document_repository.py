@@ -9,6 +9,7 @@ from app.models.enums import DocumentType, UserRole
 from app.models.fund import Fund
 from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
+from app.repositories.lp_scope import lp_visible_investor_ids
 from app.schemas.document import DocumentCreate, DocumentUpdate
 
 _ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
@@ -36,16 +37,9 @@ class DocumentRepository:
             )
         # LP: only docs scoped to investors they're a contact for, plus
         # non-confidential docs on funds they hold a commitment in.
-        visible_investor_ids = select(InvestorContact.investor_id).where(
-            InvestorContact.user_id == membership.user_id
-        )
-        visible_fund_ids = (
-            select(Commitment.fund_id)
-            .join(
-                InvestorContact,
-                InvestorContact.investor_id == Commitment.investor_id,
-            )
-            .where(InvestorContact.user_id == membership.user_id)
+        visible_investor_ids = lp_visible_investor_ids(membership)
+        visible_fund_ids = select(Commitment.fund_id).where(
+            Commitment.investor_id.in_(lp_visible_investor_ids(membership))
         )
         return query.filter(
             or_(
@@ -111,7 +105,9 @@ class DocumentRepository:
                 self.db.query(InvestorContact.id)
                 .filter(
                     InvestorContact.investor_id == document.investor_id,
-                    InvestorContact.user_id == membership.user_id,
+                    InvestorContact.investor_id.in_(
+                        lp_visible_investor_ids(membership)
+                    ),
                 )
                 .first()
                 is not None
@@ -119,13 +115,9 @@ class DocumentRepository:
         if not document.is_confidential and document.fund_id is not None:
             return (
                 self.db.query(Commitment.id)
-                .join(
-                    InvestorContact,
-                    InvestorContact.investor_id == Commitment.investor_id,
-                )
                 .filter(
                     Commitment.fund_id == document.fund_id,
-                    InvestorContact.user_id == membership.user_id,
+                    Commitment.investor_id.in_(lp_visible_investor_ids(membership)),
                 )
                 .first()
                 is not None

@@ -162,10 +162,11 @@ class TestLists:
         )
 
         rows = repo.list_for_organization(org_a)
-        # Repository returns desc by id (a UUID, so creation order no
-        # longer determines ordering) — assert it contains exactly these
-        # two rows, ordered consistently with ``id`` descending.
-        assert [r.id for r in rows] == sorted([a1.id, a2.id], reverse=True)
+        # Contains exactly org A's rows, ordered by (created_at, id) desc.
+        assert {r.id for r in rows} == {a1.id, a2.id}
+        assert [(r.created_at, r.id) for r in rows] == sorted(
+            ((r.created_at, r.id) for r in rows), reverse=True
+        )
 
     def test_list_for_organization_with_status_filter(self, db):
         org_id = _seed_org(db)

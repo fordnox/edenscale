@@ -10,9 +10,9 @@ from app.models.distribution import Distribution
 from app.models.distribution_item import DistributionItem
 from app.models.enums import DistributionStatus, UserRole
 from app.models.fund import Fund
-from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.commitment_repository import CommitmentRepository
+from app.repositories.lp_scope import lp_visible_investor_ids
 from app.schemas.distribution import DistributionCreate, DistributionUpdate
 
 _ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
@@ -69,16 +69,13 @@ class DistributionRepository:
                 Fund.organization_id == membership.organization_id
             )
         else:
-            visible_investor_ids = select(InvestorContact.investor_id).where(
-                InvestorContact.user_id == membership.user_id
-            )
             visible_distribution_ids = (
                 select(DistributionItem.distribution_id)
                 .join(
                     Commitment,
                     Commitment.id == DistributionItem.commitment_id,
                 )
-                .where(Commitment.investor_id.in_(visible_investor_ids))
+                .where(Commitment.investor_id.in_(lp_visible_investor_ids(membership)))
             )
             query = query.filter(Distribution.id.in_(visible_distribution_ids))
         if fund_id is not None:
@@ -106,13 +103,9 @@ class DistributionRepository:
         return (
             self.db.query(DistributionItem.id)
             .join(Commitment, Commitment.id == DistributionItem.commitment_id)
-            .join(
-                InvestorContact,
-                InvestorContact.investor_id == Commitment.investor_id,
-            )
             .filter(
                 DistributionItem.distribution_id == distribution.id,
-                InvestorContact.user_id == membership.user_id,
+                Commitment.investor_id.in_(lp_visible_investor_ids(membership)),
             )
             .first()
             is not None

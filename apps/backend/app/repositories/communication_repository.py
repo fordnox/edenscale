@@ -11,6 +11,7 @@ from app.models.enums import CommitmentStatus, CommunicationType, UserRole
 from app.models.fund import Fund
 from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
+from app.repositories.lp_scope import lp_visible_contact_ids
 from app.schemas.communication import (
     CommunicationCreate,
     CommunicationRecipientRef,
@@ -56,9 +57,7 @@ class CommunicationRepository:
                 or_(
                     CommunicationRecipient.user_id == membership.user_id,
                     CommunicationRecipient.investor_contact_id.in_(
-                        select(InvestorContact.id).where(
-                            InvestorContact.user_id == membership.user_id
-                        )
+                        lp_visible_contact_ids(membership)
                     ),
                 )
             )
@@ -106,9 +105,7 @@ class CommunicationRepository:
                 or_(
                     CommunicationRecipient.user_id == membership.user_id,
                     CommunicationRecipient.investor_contact_id.in_(
-                        select(InvestorContact.id).where(
-                            InvestorContact.user_id == membership.user_id
-                        )
+                        lp_visible_contact_ids(membership)
                     ),
                 )
             )
@@ -141,9 +138,7 @@ class CommunicationRepository:
                 fund is not None and fund.organization_id == membership.organization_id
             )
         # LP: visible if they are a recipient (directly or via investor contact).
-        own_contact_ids = select(InvestorContact.id).where(
-            InvestorContact.user_id == membership.user_id
-        )
+        own_contact_ids = lp_visible_contact_ids(membership)
         return (
             self.db.query(CommunicationRecipient.id)
             .filter(

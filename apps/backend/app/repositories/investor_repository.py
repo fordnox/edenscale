@@ -1,7 +1,7 @@
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import func
 from sqlalchemy.orm import Query, Session
 
 from app.models.commitment import Commitment
@@ -9,6 +9,7 @@ from app.models.enums import UserRole
 from app.models.investor import Investor
 from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
+from app.repositories.lp_scope import lp_visible_investor_ids
 from app.schemas.investor import InvestorCreate, InvestorUpdate
 
 _ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
@@ -42,14 +43,11 @@ class InvestorRepository:
         skip: int = 0,
         limit: int = 100,
     ) -> list[tuple[Investor, Decimal, int]]:
-        query = self._base_query()
-        if membership.role in _ORG_VISIBLE_ROLES:
-            query = query.filter(Investor.organization_id == membership.organization_id)
-        else:
-            visible_investor_ids = select(InvestorContact.investor_id).where(
-                InvestorContact.user_id == membership.user_id
-            )
-            query = query.filter(Investor.id.in_(visible_investor_ids))
+        query = self._base_query().filter(
+            Investor.organization_id == membership.organization_id
+        )
+        if membership.role not in _ORG_VISIBLE_ROLES:
+            query = query.filter(Investor.id.in_(lp_visible_investor_ids(membership)))
         return (
             query.order_by(Investor.created_at, Investor.id)
             .offset(skip)
@@ -63,8 +61,10 @@ class InvestorRepository:
     def membership_can_view(
         self, membership: UserOrganizationMembership, investor: Investor
     ) -> bool:
+        if investor.organization_id != membership.organization_id:
+            return False
         if membership.role in _ORG_VISIBLE_ROLES:
-            return bool(investor.organization_id == membership.organization_id)
+            return True
         return (
             self.db.query(InvestorContact.id)
             .filter(
