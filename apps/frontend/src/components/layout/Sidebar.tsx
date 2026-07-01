@@ -7,6 +7,7 @@ import { deriveInitials } from "@/lib/userDisplay"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { useAuth } from "@/hooks/useAuth"
 import { useNavItems } from "@/hooks/useNavItems"
+import { OrganizationSwitcher } from "@/components/layout/Topbar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,25 +65,8 @@ function SidebarBody({ onOpenSearch, onCloseSheet }: SidebarBodyProps) {
 
   return (
     <>
-      <div className="flex items-center gap-3 px-6 pt-7 pb-6">
-        <span className="inline-flex size-7 items-center justify-center text-conifer-700">
-          <svg viewBox="0 0 64 64" className="size-7" aria-hidden="true">
-            <path
-              fill="currentColor"
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M32 4 C 18 12, 10 24, 10 36 C 10 49, 20 60, 32 60 C 44 60, 54 49, 54 36 C 54 24, 46 12, 32 4 Z M32 50 L 32 30 L 26 30 L 32 22 L 38 30 L 32 30 L 32 50 Z"
-            />
-          </svg>
-        </span>
-        <div className="flex flex-col leading-tight">
-          <span className="font-sans text-[16px] font-semibold tracking-[-0.04em] text-ink-900">
-            NewTaven
-          </span>
-          <span className="font-sans text-[11px] tracking-[0.04em] text-ink-500">
-            LP portal · {tagline}
-          </span>
-        </div>
+      <div className="px-6 pt-7 pb-6">
+        <OrganizationSwitcher />
       </div>
 
       <hr className="es-rule mx-6" />

@@ -31,10 +31,6 @@ export default function AppShell() {
             emphasize={memberships.length === 0}
           />
         )}
-        <Topbar
-          onOpenSidebar={() => setSidebarOpen(true)}
-          onOpenSearch={() => setPaletteOpen(true)}
-        />
         <main className="flex flex-1 flex-col">
           <Outlet />
         </main>
