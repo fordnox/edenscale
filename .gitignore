@@ -209,4 +209,5 @@ __marimo__/
 .env
 apps/emails/node_modules/
 apps/frontend/node_modules/
+apps/gateway/node_modules/
 database.db

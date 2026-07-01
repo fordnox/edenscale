@@ -1,0 +1,198 @@
+@import "./tokens.css";
+
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+::selection {
+  background: rgba(184, 145, 92, 0.28);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.nt-link {
+  position: relative;
+}
+.nt-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  height: 1px;
+  width: 0;
+  background: var(--brass-500);
+  transition: width var(--motion-fast) var(--ease-standard);
+}
+.nt-link:hover::after {
+  width: 100%;
+}
+
+.nt-btn-primary {
+  background: var(--conifer-700);
+  color: var(--fg-inverse);
+  border: 1px solid var(--conifer-700);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-sans);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+.nt-btn-primary:hover {
+  background: var(--conifer-800);
+}
+.nt-btn-primary:active {
+  background: var(--conifer-900);
+}
+
+.nt-btn-sec {
+  background: transparent;
+  color: var(--fg-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-sans);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+.nt-btn-sec:hover {
+  background: var(--parchment-200);
+}
+
+.nt-card {
+  transition: border-color var(--motion-fast) var(--ease-standard);
+}
+.nt-card:hover {
+  border-color: var(--border-default);
+}
+
+.nt-input {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--fg-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xs);
+  outline: none;
+  transition: border-color var(--motion-fast) var(--ease-standard);
+}
+.nt-input:focus {
+  border-color: var(--conifer-700);
+  box-shadow: 0 0 0 3px rgba(31, 61, 46, 0.1);
+}
+
+.nt-mono {
+  font-family: var(--font-mono);
+}
+
+.nt-shell {
+  position: relative;
+  overflow-x: hidden;
+  --gut: clamp(24px, 6vw, 80px);
+  /* Guide lines sit further from center than content — a quiet 24px gap so
+     bordered content (cards, the try-it frame) never touches the rule. */
+  --gut-line: max(0px, calc(var(--gut) - 24px));
+}
+
+.nt-guides {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+.nt-guides > div {
+  width: 100%;
+  max-width: 1280px;
+  height: 100%;
+  padding: 0 var(--gut-line);
+  box-sizing: border-box;
+}
+.nt-guides > div > div {
+  height: 100%;
+  border-left: 1px solid rgba(26, 26, 24, 0.11);
+  border-right: 1px solid rgba(26, 26, 24, 0.11);
+}
+
+.nt-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--gut);
+}
+
+.nt-divider {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--gut);
+  position: relative;
+}
+.nt-divider hr {
+  border: 0;
+  border-top: 1px solid var(--border-hairline);
+  margin: 0;
+}
+.nt-divider .nt-tick {
+  position: absolute;
+  top: -4.5px;
+  line-height: 0;
+  color: var(--border-strong);
+}
+.nt-divider .nt-tick--left {
+  left: calc(var(--gut) - 4.5px);
+}
+.nt-divider .nt-tick--right {
+  right: calc(var(--gut) - 4.5px);
+}
+.nt-divider--dark .nt-tick {
+  color: rgba(251, 249, 244, 0.45);
+  z-index: 2;
+}
+
+.nt-2col {
+  display: grid;
+}
+@media (max-width: 900px) {
+  .nt-2col {
+    grid-template-columns: 1fr !important;
+    gap: 40px !important;
+  }
+  .nt-tryit-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .nt-tryit-left {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--border-hairline) !important;
+  }
+}
+@media (max-width: 1040px) {
+  .nt-3col {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 640px) {
+  .nt-3col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--motion-slow) var(--ease-standard), transform var(--motion-slow) var(--ease-standard);
+}
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}

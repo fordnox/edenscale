@@ -1,0 +1,962 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+import Divider from "../components/Divider.astro";
+import Mark from "../components/Mark.astro";
+
+const problems = [
+  {
+    n: "01",
+    title: "Capital calls live in your inbox.",
+    body: "Amounts, wire dates, and confirmations scattered across threads. No single view of who has funded and who hasn't.",
+  },
+  {
+    n: "02",
+    title: "LP records drift out of date.",
+    body: "A commitment changes, a contact leaves, an entity is restructured — and the spreadsheet quietly stops matching reality.",
+  },
+  {
+    n: "03",
+    title: "Follow-ups depend on remembering.",
+    body: "The polite second nudge is the one that gets the wire in. It is also the first thing to fall off a busy week.",
+  },
+];
+
+const steps = [
+  {
+    n: "STEP 01",
+    title: "Bring your LPs in",
+    body: "Import commitments, contacts, and entities. NewTaven becomes the register of record for the whole fund.",
+  },
+  {
+    n: "STEP 02",
+    title: "Issue a call",
+    body: "Draft a capital call once. Each LP receives their exact figure, wire details, and due date — no mail merge.",
+  },
+  {
+    n: "STEP 03",
+    title: "Let the cadence run",
+    body: "Wires reconcile against the register. Anyone outstanding gets a measured follow-up on schedule — in your voice.",
+  },
+];
+
+const cadenceCards = [
+  {
+    label: "DRAFT · T+72h",
+    tone: "Gentle",
+    subject: "A quick note on the Fund II call",
+    body: "The Fund II call is at 68% funded. A reminder that your portion — $900,000 — is due by the 30th. Wire details are unchanged, and attached again for convenience.",
+  },
+  {
+    label: "DRAFT · T+7d",
+    tone: "Warm",
+    subject: "Following up on the Fund II call",
+    body: "One week out. We are holding your allocation. If the timing is tight on your end, reply here and we will work with your team on the date.",
+  },
+  {
+    label: "DRAFT · T+14d",
+    tone: "Direct",
+    subject: "Final reminder — Fund II",
+    body: "The call closes Friday. Please confirm your wire, or let us know if anything has changed on your end. We would rather adjust than assume.",
+  },
+];
+
+const features = [
+  {
+    title: "LP register",
+    body: "A single record of every commitment, contact, and entity — always current, always exportable.",
+    icon: "M3 4h18v16H3zM3 9.5h18M3 15h18M9 4v16",
+  },
+  {
+    title: "Capital calls & distributions",
+    body: "Issue a call once; each LP gets their exact figure and wire instructions. Distributions run the same way, in reverse.",
+    icon: "M12 3v10M8 9l4 4 4-4M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3",
+  },
+  {
+    title: "Automated cadence",
+    body: "Measured follow-ups on outstanding wires — 72h, 7d, 14d — sent in your fund's voice, only until the wire clears.",
+    icon: "M19 13a7 7 0 1 1-7-7M12 10v3l2 1.5M9 2h6",
+  },
+  {
+    title: "Investor portal",
+    body: "Each LP sees their commitments, calls, distributions, and documents — without another login you have to support.",
+    icon: "M4 10h16v11H4zM8 10V7a4 4 0 0 1 8 0v3",
+  },
+  {
+    title: "Quarterly letters",
+    body: "Compose the letter once; NewTaven personalizes and delivers it on the fifteenth, with read receipts by LP.",
+    icon: "M3 5h18v14H3zM3 6l9 7 9-7",
+  },
+  {
+    title: "Wire reconciliation",
+    body: "Incoming wires match against the register automatically. What clears is marked funded; what doesn't enters the cadence.",
+    icon: "M3 12a9 9 0 1 1 9 9M3 12v5h5M9 12l2 2 4-4",
+  },
+];
+
+const presets = [
+  {
+    label: "Delay in a distribution",
+    input: "There will be a short delay in the Q2 distribution while we finalize a portfolio company's audit.",
+    output:
+      "Subject: A short delay on the Q2 distribution\n\nThe Q2 distribution will be a few weeks later than planned while we finalize a portfolio company's audit. The amount is unchanged. We will confirm the new date as soon as the audit closes.\n\nWe appreciate your patience.",
+  },
+  {
+    label: "New portfolio company",
+    input: "We've completed a new investment — a control position in a founder-led logistics business — and want to introduce it.",
+    output:
+      "Subject: A new addition to the portfolio\n\nWe have completed a control investment in a founder-led logistics business. The founder remains in an operating role, and we are supporting the next phase of growth alongside the existing team.\n\nMore detail will follow in the next quarterly letter.",
+  },
+  {
+    label: "Quarterly update is live",
+    input: "Our Q2 quarterly letter is now live in the investor portal.",
+    output:
+      "Subject: Q2 letter is now available\n\nThe Q2 quarterly letter is live in the investor portal, along with updated capital account statements. Please let us know if anything is unclear.\n\nAs always, we are glad to schedule a call to walk through it.",
+  },
+];
+
+const defaultOutput =
+  "Subject: A note for our limited partners\n\nThank you for the context. Here is a short, plain draft based on what you described — ready to review, edit, and send from NewTaven.\n\nWe will follow up directly if anything changes.";
+---
+
+<Layout>
+  <Header />
+
+  <main id="top">
+    <!-- 01 HERO -->
+    <section class="hero nt-container">
+      <div class="hero-eyebrow">
+        <Mark size={24} />
+        <span class="nt-mono">01 // NewTaven</span>
+      </div>
+      <div class="nt-2col hero-grid">
+        <div>
+          <h1 class="es-display-xl hero-title">Manage your LPs like the deals depend on it.</h1>
+          <p class="es-body-l hero-sub">
+            NewTaven keeps your limited partners, capital calls, and quarterly communications in one calm place — so
+            nothing slips between the fund and the founders you back.
+          </p>
+          <div class="hero-actions">
+            <a href="#pricing" class="nt-btn-primary hero-cta">Request access</a>
+            <a href="#how" class="nt-link hero-secondary">See how it works →</a>
+          </div>
+        </div>
+
+        <div class="nt-card hero-card">
+          <div class="hero-card-head">
+            <span class="hero-card-name">Fund II — Capital Call 03</span>
+            <span class="nt-mono hero-card-pct">68% FUNDED</span>
+          </div>
+          <div class="hero-card-bar">
+            <div class="hero-card-bar-fill"></div>
+          </div>
+          <div class="hero-card-rows">
+            <div class="hero-card-row">
+              <span>Meridian Family Office</span>
+              <span class="hero-card-row-right">
+                <span class="es-numeric">$2,500,000</span>
+                <span class="pill pill-positive">Wired</span>
+              </span>
+            </div>
+            <div class="hero-card-row">
+              <span>Alderman Endowment</span>
+              <span class="hero-card-row-right">
+                <span class="es-numeric">$1,750,000</span>
+                <span class="pill pill-positive">Wired</span>
+              </span>
+            </div>
+            <div class="hero-card-row">
+              <span>Kessler Capital</span>
+              <span class="hero-card-row-right">
+                <span class="es-numeric">$900,000</span>
+                <span class="pill pill-warning">Follow-up T+7d</span>
+              </span>
+            </div>
+            <div class="hero-card-row">
+              <span>Novak &amp; Sons</span>
+              <span class="hero-card-row-right">
+                <span class="es-numeric">$600,000</span>
+                <span class="pill pill-warning">Follow-up T+72h</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <Divider />
+
+    <!-- 02 THE PROBLEM -->
+    <section id="problem" class="section nt-container">
+      <div data-reveal class="nt-2col section-head-split">
+        <span class="nt-mono eyebrow">02 // The problem</span>
+        <h2 class="es-display-m section-head-title">Managers run funds on memory and spreadsheets.</h2>
+      </div>
+      <div data-reveal class="nt-3col grid-3 grid-bordered">
+        {problems.map((p) => (
+          <div class="grid-cell">
+            <span class="nt-mono cell-index">{p.n}</span>
+            <h3 class="es-h3 cell-title">{p.title}</h3>
+            <p class="es-body cell-body">{p.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <Divider />
+
+    <!-- 03 HOW IT WORKS -->
+    <section id="how" class="section nt-container">
+      <div data-reveal class="section-intro">
+        <span class="nt-mono eyebrow eyebrow-block">03 // How it works</span>
+        <h2 class="es-display-m">Three steps, then it runs itself.</h2>
+        <p class="es-body-l section-intro-body">
+          Bring your fund in once. From there, NewTaven handles the mechanics you would otherwise do by hand.
+        </p>
+      </div>
+      <div data-reveal class="nt-3col grid-3 steps-grid">
+        {steps.map((s) => (
+          <div class="step-cell">
+            <span class="nt-mono step-index">{s.n}</span>
+            <h3 class="step-title">{s.title}</h3>
+            <p class="es-body">{s.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- 04 THE CADENCE -->
+    <section id="cadence" class="cadence">
+      <span class="nt-tick nt-tick--left cadence-tick" aria-hidden="true">
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg>
+      </span>
+      <span class="nt-tick nt-tick--right cadence-tick" aria-hidden="true">
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg>
+      </span>
+      <div class="nt-container cadence-inner" id="cadence-inner">
+        <div class="cadence-intro">
+          <span class="nt-mono eyebrow eyebrow-block cadence-eyebrow">04 // The cadence</span>
+          <h2 class="es-display-m cadence-title">The follow-ups you'd never get around to.</h2>
+          <p class="es-body-l cadence-sub">
+            When a wire is still outstanding, NewTaven sends a measured reminder — at 72 hours, 7 days, and 14 days.
+            Considerate, never pushy. You approve the voice once.
+          </p>
+        </div>
+
+        <svg viewBox="0 0 1120 96" width="100%" class="cadence-timeline" aria-hidden="true">
+          <line x1="8" y1="48" x2="1112" y2="48" stroke="rgba(251,249,244,0.14)" stroke-width="1"></line>
+          <path id="cadence-line" d="M8 48 H 1112" fill="none" stroke="var(--brass-500)" stroke-width="2"></path>
+          <g>
+            <circle data-marker cx="200" cy="48" r="7" fill="var(--brass-500)" class="cadence-marker"></circle>
+            <circle cx="200" cy="48" r="7" fill="none" stroke="rgba(251,249,244,0.25)" stroke-width="1"></circle>
+          </g>
+          <g>
+            <circle data-marker cx="560" cy="48" r="7" fill="var(--brass-500)" class="cadence-marker"></circle>
+            <circle cx="560" cy="48" r="7" fill="none" stroke="rgba(251,249,244,0.25)" stroke-width="1"></circle>
+          </g>
+          <g>
+            <circle data-marker cx="920" cy="48" r="7" fill="var(--brass-500)" class="cadence-marker"></circle>
+            <circle cx="920" cy="48" r="7" fill="none" stroke="rgba(251,249,244,0.25)" stroke-width="1"></circle>
+          </g>
+          <text x="200" y="82" text-anchor="middle" fill="rgba(251,249,244,0.62)" class="cadence-tag">T+72h</text>
+          <text x="560" y="82" text-anchor="middle" fill="rgba(251,249,244,0.62)" class="cadence-tag">T+7d</text>
+          <text x="920" y="82" text-anchor="middle" fill="rgba(251,249,244,0.62)" class="cadence-tag">T+14d</text>
+        </svg>
+
+        <div class="nt-3col grid-3 cadence-cards">
+          {cadenceCards.map((c) => (
+            <div data-cadence-card class="cadence-card">
+              <div class="cadence-card-head">
+                <span class="nt-mono cadence-card-label">{c.label}</span>
+                <span class="nt-mono cadence-card-tone">{c.tone}</span>
+              </div>
+              <div class="cadence-card-subject">{c.subject}</div>
+              <p class="es-body-s cadence-card-body">{c.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 FEATURES -->
+    <section id="features" class="section nt-container">
+      <div data-reveal class="section-intro">
+        <span class="nt-mono eyebrow eyebrow-block">05 // Features</span>
+        <h2 class="es-display-m">Everything the fund needs. Nothing it doesn't.</h2>
+      </div>
+      <div data-reveal class="nt-3col grid-3 grid-bordered">
+        {features.map((f) => (
+          <div class="nt-card grid-cell">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--conifer-700)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d={f.icon}></path>
+            </svg>
+            <h3 class="es-h3 feature-title">{f.title}</h3>
+            <p class="es-body cell-body">{f.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <Divider />
+
+    <!-- 06 TRY IT -->
+    <section class="section nt-container">
+      <div class="tryit-frame">
+        <div class="nt-tryit-grid tryit-grid">
+          <div data-reveal class="nt-tryit-left tryit-left">
+            <span class="nt-mono eyebrow eyebrow-block">06 // Try it</span>
+            <h2 class="es-display-s tryit-title">Draft an LP note in NewTaven's voice.</h2>
+            <p class="es-body tryit-body">
+              Describe the situation. NewTaven writes a short, plain email you could send to your limited partners —
+              no puffery, no exclamation marks.
+            </p>
+            <div class="tryit-form">
+              <label class="nt-mono tryit-label" for="tryit-input">What do you need to say?</label>
+              <textarea
+                id="tryit-input"
+                class="nt-input tryit-textarea"
+                rows="4"
+                placeholder="e.g. Fund II is closing next month and we're at 82% of target."></textarea>
+              <div class="tryit-presets">
+                {presets.map((p, i) => (
+                  <button type="button" class="nt-btn-sec tryit-preset" data-preset-index={i}>{p.label}</button>
+                ))}
+              </div>
+              <button type="button" id="tryit-draft" class="nt-btn-primary tryit-submit">Draft the note</button>
+              <span id="tryit-error" class="tryit-error" hidden></span>
+            </div>
+          </div>
+          <div class="tryit-preview">
+            <div class="tryit-preview-head">
+              <span class="nt-mono tryit-preview-label">DRAFT PREVIEW</span>
+              <span class="nt-mono tryit-preview-to">to: limited partners</span>
+            </div>
+            <div id="tryit-loading" class="tryit-loading" hidden>
+              <span class="tryit-dot"></span>Drafting a note…
+            </div>
+            <div id="tryit-result" class="tryit-result" hidden></div>
+            <div id="tryit-placeholder" class="tryit-placeholder">
+              Your drafted note will appear here — ready to review, edit, and send from NewTaven.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <Divider />
+
+    <!-- 07 PRICING -->
+    <section id="pricing" class="section nt-container">
+      <div data-reveal class="nt-2col pricing-grid">
+        <div>
+          <span class="nt-mono eyebrow eyebrow-block">07 // Pricing</span>
+          <h2 class="es-display-m">Pricing is a conversation.</h2>
+        </div>
+        <div>
+          <p class="es-body-l pricing-body">
+            Every fund is a different size, at a different stage, with a different LP base. We would rather understand
+            yours than post a number that fits no one. A short call, a fair quote, no obligation.
+          </p>
+          <div class="hero-actions">
+            <a href="mailto:hello@newtaven.com" class="nt-btn-primary hero-cta">Contact us for pricing</a>
+            <a href="mailto:hello@newtaven.com" class="nt-link hero-secondary">hello@newtaven.com</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 08 FOOTER CTA -->
+    <section class="footer-cta">
+      <span class="nt-tick nt-tick--left cadence-tick" aria-hidden="true">
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg>
+      </span>
+      <span class="nt-tick nt-tick--right cadence-tick" aria-hidden="true">
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg>
+      </span>
+      <div class="nt-container footer-cta-inner">
+        <div class="footer-cta-top">
+          <h2 class="es-display-l footer-cta-title">Give your fund the back office it never had time to build.</h2>
+          <a href="#pricing" class="nt-btn-primary footer-cta-btn">Request access</a>
+        </div>
+        <hr class="footer-cta-rule" />
+        <div class="footer-cta-bottom">
+          <div class="footer-cta-brand">
+            <Mark size={20} color="var(--brass-300)" />
+            <span>NewTaven</span>
+          </div>
+          <span class="nt-mono footer-cta-copy">© 2026 NewTaven — Fund administration for small managers</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  /* ---------- Hero ---------- */
+  .hero {
+    padding-top: clamp(96px, 14vw, 168px);
+    padding-bottom: clamp(64px, 10vw, 112px);
+  }
+  .hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .hero-eyebrow span {
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--brass-700);
+  }
+  .hero-grid {
+    grid-template-columns: 7fr 5fr;
+    gap: clamp(40px, 6vw, 88px);
+    align-items: center;
+  }
+  .hero-title {
+    margin: 0 0 28px;
+    max-width: 12ch;
+  }
+  .hero-sub {
+    max-width: 46ch;
+    margin: 0 0 36px;
+    color: var(--fg-secondary);
+  }
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .hero-cta {
+    font-size: 15px;
+    padding: 14px 26px;
+  }
+  .hero-secondary {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--fg-primary);
+    border-bottom: 1px solid var(--brass-500);
+    padding-bottom: 2px;
+  }
+  .hero-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-hairline);
+    padding: 24px;
+  }
+  .hero-card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .hero-card-name {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--fg-primary);
+  }
+  .hero-card-pct {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--brass-700);
+  }
+  .hero-card-bar {
+    height: 3px;
+    background: var(--parchment-200);
+    margin: 12px 0 20px;
+    overflow: hidden;
+  }
+  .hero-card-bar-fill {
+    width: 68%;
+    height: 100%;
+    background: var(--conifer-600);
+  }
+  .hero-card-rows {
+    display: flex;
+    flex-direction: column;
+  }
+  .hero-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-top: 1px solid var(--border-hairline);
+    font-size: 14px;
+    color: var(--fg-primary);
+  }
+  .hero-card-row-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hero-card-row-right .es-numeric {
+    font-size: 14px;
+    color: var(--fg-secondary);
+  }
+  .pill {
+    font-size: 11px;
+    padding: 2px 10px;
+    border-radius: var(--radius-pill);
+  }
+  .pill-positive {
+    background: rgba(74, 122, 79, 0.12);
+    color: var(--status-positive);
+  }
+  .pill-warning {
+    background: rgba(184, 145, 92, 0.16);
+    color: var(--brass-700);
+  }
+
+  /* ---------- Shared section rhythm ---------- */
+  .section {
+    padding-top: clamp(64px, 12vw, 128px);
+    padding-bottom: clamp(64px, 12vw, 128px);
+  }
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--brass-700);
+  }
+  .eyebrow-block {
+    display: block;
+    margin-bottom: 24px;
+  }
+  .section-head-split {
+    grid-template-columns: 5fr 7fr;
+    gap: clamp(32px, 5vw, 72px);
+    align-items: end;
+    margin-bottom: 64px;
+  }
+  .section-head-title {
+    margin: 0;
+    max-width: 18ch;
+  }
+  .section-intro {
+    margin-bottom: 64px;
+    max-width: 720px;
+  }
+  .section-intro-body {
+    margin: 0;
+    color: var(--fg-secondary);
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .grid-bordered {
+    gap: 1px;
+    background: var(--border-hairline);
+    border: 1px solid var(--border-hairline);
+  }
+  .grid-cell {
+    background: var(--bg-page);
+    padding: 32px;
+  }
+  .cell-index {
+    font-size: 12px;
+    color: var(--brass-700);
+  }
+  .cell-title {
+    margin: 16px 0 10px;
+  }
+  .cell-body {
+    margin: 0;
+  }
+  .feature-title {
+    margin: 20px 0 10px;
+  }
+
+  /* ---------- How it works ---------- */
+  .steps-grid {
+    gap: clamp(24px, 4vw, 56px);
+  }
+  .step-cell {
+    border-top: 1px solid var(--border-default);
+    padding-top: 24px;
+  }
+  .step-index {
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--brass-700);
+  }
+  .step-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: var(--fs-h2);
+    margin: 16px 0 12px;
+    color: var(--fg-primary);
+  }
+
+  /* ---------- Cadence ---------- */
+  .cadence {
+    background: var(--conifer-700);
+    color: var(--fg-inverse);
+    position: relative;
+  }
+  .cadence-tick {
+    position: absolute;
+    top: -4.5px;
+    line-height: 0;
+  }
+  .cadence-inner {
+    padding-top: clamp(72px, 12vw, 128px);
+    padding-bottom: clamp(72px, 12vw, 128px);
+    position: relative;
+    z-index: 1;
+  }
+  .cadence-intro {
+    max-width: 640px;
+    margin-bottom: 56px;
+  }
+  .cadence-eyebrow {
+    color: var(--brass-300);
+  }
+  .cadence-title {
+    margin: 0 0 20px;
+    color: var(--fg-inverse);
+  }
+  .cadence-sub {
+    margin: 0;
+    color: rgba(251, 249, 244, 0.72);
+  }
+  .cadence-timeline {
+    display: block;
+    overflow: visible;
+    margin-bottom: 8px;
+  }
+  .cadence-marker {
+    transform: scale(0);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .cadence-marker.is-active {
+    transition: transform 150ms var(--ease-standard);
+    transform: scale(1);
+  }
+  .cadence-tag {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+  }
+  .cadence-cards {
+    gap: clamp(16px, 2.5vw, 32px);
+    margin-top: 40px;
+  }
+  .cadence-card {
+    opacity: 0;
+    transform: translateX(24px);
+    background: var(--parchment-50);
+    color: var(--fg-primary);
+    border: 1px solid rgba(251, 249, 244, 0.12);
+    padding: 22px;
+  }
+  .cadence-card.is-visible {
+    transition: opacity 150ms var(--ease-standard), transform 150ms var(--ease-standard);
+    opacity: 1;
+    transform: none;
+  }
+  .cadence-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .cadence-card-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--brass-700);
+  }
+  .cadence-card-tone {
+    font-size: 11px;
+    color: var(--fg-tertiary);
+  }
+  .cadence-card-subject {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+  .cadence-card-body {
+    margin: 0;
+  }
+
+  /* ---------- Try it ---------- */
+  .tryit-frame {
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface);
+  }
+  .tryit-grid {
+    display: grid;
+    grid-template-columns: 5fr 7fr;
+  }
+  .tryit-left {
+    padding: clamp(32px, 4vw, 56px);
+    border-right: 1px solid var(--border-hairline);
+  }
+  .tryit-title {
+    margin: 0 0 16px;
+  }
+  .tryit-body {
+    margin: 0 0 28px;
+    color: var(--fg-secondary);
+  }
+  .tryit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .tryit-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg-tertiary);
+  }
+  .tryit-textarea {
+    padding: 12px 14px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+  .tryit-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 2px;
+  }
+  .tryit-preset {
+    font-size: 12px;
+    padding: 7px 12px;
+  }
+  .tryit-submit {
+    font-size: 15px;
+    padding: 13px 24px;
+    margin-top: 8px;
+    align-self: flex-start;
+  }
+  .tryit-error {
+    font-size: 13px;
+    color: var(--status-negative);
+  }
+  .tryit-preview {
+    padding: clamp(32px, 4vw, 56px);
+    background: var(--parchment-50);
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+  }
+  .tryit-preview-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-hairline);
+  }
+  .tryit-preview-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--brass-700);
+  }
+  .tryit-preview-to {
+    font-size: 11px;
+    color: var(--fg-tertiary);
+  }
+  .tryit-loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--fg-tertiary);
+    font-size: 14px;
+  }
+  .tryit-loading[hidden] {
+    display: none;
+  }
+  .tryit-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-pill);
+    background: var(--brass-500);
+  }
+  .tryit-result {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--fg-primary);
+    white-space: pre-wrap;
+  }
+  .tryit-placeholder {
+    color: var(--fg-muted);
+    font-size: 15px;
+    line-height: 1.6;
+    font-style: italic;
+    font-family: var(--font-display);
+  }
+
+  /* ---------- Pricing ---------- */
+  .pricing-grid {
+    grid-template-columns: 5fr 7fr;
+    gap: clamp(32px, 5vw, 72px);
+    align-items: center;
+  }
+  .pricing-body {
+    margin: 0 0 28px;
+    color: var(--fg-secondary);
+    max-width: 46ch;
+  }
+
+  /* ---------- Footer CTA ---------- */
+  .footer-cta {
+    background: var(--conifer-700);
+    color: var(--fg-inverse);
+    position: relative;
+  }
+  .footer-cta-inner {
+    position: relative;
+    z-index: 1;
+    padding-top: clamp(80px, 12vw, 144px);
+    padding-bottom: clamp(40px, 6vw, 64px);
+  }
+  .footer-cta-top {
+    max-width: 680px;
+    margin-bottom: 48px;
+  }
+  .footer-cta-title {
+    margin: 0 0 28px;
+    color: var(--fg-inverse);
+    max-width: 13ch;
+  }
+  .footer-cta-btn {
+    background: var(--parchment-50);
+    color: var(--conifer-800);
+    border-color: var(--parchment-50);
+    font-size: 15px;
+    padding: 14px 28px;
+  }
+  .footer-cta-rule {
+    border: 0;
+    border-top: 1px solid rgba(251, 249, 244, 0.16);
+    margin: 0 0 32px;
+  }
+  .footer-cta-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .footer-cta-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--fg-inverse);
+  }
+  .footer-cta-copy {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: rgba(251, 249, 244, 0.5);
+  }
+</style>
+
+<script define:vars={{ presets, defaultOutput }}>
+  // Scroll reveals — opacity 0 -> 1 + translateY, once
+  const revealObs = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          revealObs.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.15 }
+  );
+  document.querySelectorAll("[data-reveal]").forEach((el) => revealObs.observe(el));
+
+  // Cadence — draw timeline + activate markers + slide in cards
+  const cadenceSection = document.getElementById("cadence-inner");
+  const runCadence = () => {
+    const line = document.getElementById("cadence-line");
+    if (line && line.getTotalLength) {
+      const len = line.getTotalLength();
+      line.style.transition = "none";
+      line.style.strokeDasharray = String(len);
+      line.style.strokeDashoffset = String(len);
+      line.getBoundingClientRect();
+      line.style.transition = "stroke-dashoffset 1100ms cubic-bezier(0.4,0,0.2,1)";
+      line.style.strokeDashoffset = "0";
+    }
+    const markers = document.querySelectorAll("[data-marker]");
+    const cards = document.querySelectorAll("[data-cadence-card]");
+    const delays = [420, 820, 1220];
+    markers.forEach((marker, i) => {
+      setTimeout(() => {
+        marker.classList.add("is-active");
+        const card = cards[i];
+        if (card) card.classList.add("is-visible");
+      }, delays[i]);
+    });
+  };
+  if (cadenceSection) {
+    const cadObs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            runCadence();
+            cadObs.disconnect();
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+    cadObs.observe(cadenceSection);
+  }
+
+  // Try it — client-side demo draft (no backend call)
+  const input = document.getElementById("tryit-input");
+  const draftBtn = document.getElementById("tryit-draft");
+  const errorEl = document.getElementById("tryit-error");
+  const loadingEl = document.getElementById("tryit-loading");
+  const resultEl = document.getElementById("tryit-result");
+  const placeholderEl = document.getElementById("tryit-placeholder");
+
+  const showState = (state) => {
+    loadingEl.hidden = state !== "loading";
+    resultEl.hidden = state !== "result";
+    placeholderEl.hidden = state !== "placeholder";
+  };
+  showState("placeholder");
+
+  const draft = () => {
+    const value = (input.value || "").trim();
+    errorEl.hidden = true;
+    if (!value) {
+      errorEl.hidden = false;
+      errorEl.textContent = "Tell us what you need to say first.";
+      return;
+    }
+    showState("loading");
+    const match = presets.find((p) => p.input === value);
+    setTimeout(() => {
+      resultEl.textContent = match ? match.output : defaultOutput;
+      showState("result");
+    }, 500);
+  };
+
+  if (draftBtn) draftBtn.addEventListener("click", draft);
+
+  document.querySelectorAll(".tryit-preset").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const i = Number(btn.getAttribute("data-preset-index"));
+      const preset = presets[i];
+      if (!preset) return;
+      input.value = preset.input;
+      draft();
+    });
+  });
+</script>

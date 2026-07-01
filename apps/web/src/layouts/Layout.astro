@@ -1,0 +1,33 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "NewTaven — Fund administration for small managers",
+  description = "NewTaven keeps your limited partners, capital calls, and quarterly communications in one calm place.",
+} = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body class="es-page">
+    <div class="nt-shell">
+      <div class="nt-guides" aria-hidden="true">
+        <div><div></div></div>
+      </div>
+      <slot />
+    </div>
+  </body>
+</html>

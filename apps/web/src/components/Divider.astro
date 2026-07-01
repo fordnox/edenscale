@@ -1,0 +1,20 @@
+---
+interface Props {
+  dark?: boolean;
+}
+const { dark = false } = Astro.props;
+---
+
+<div class={`nt-divider ${dark ? "nt-divider--dark" : ""}`}>
+  <hr />
+  <span class="nt-tick nt-tick--left" aria-hidden="true">
+    <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1">
+      <path d="M5 0V10M0 5H10"></path>
+    </svg>
+  </span>
+  <span class="nt-tick nt-tick--right" aria-hidden="true">
+    <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1">
+      <path d="M5 0V10M0 5H10"></path>
+    </svg>
+  </span>
+</div>

@@ -1,0 +1,22 @@
+---
+interface Props {
+  size?: number;
+  color?: string;
+}
+const { size = 20, color = "var(--conifer-700)" } = Astro.props;
+---
+
+<svg
+  viewBox="0 0 64 64"
+  width={size}
+  height={size}
+  style={`color: ${color};`}
+  aria-hidden="true"
+>
+  <path
+    fill="currentColor"
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M32 4 C 18 12, 10 24, 10 36 C 10 49, 20 60, 32 60 C 44 60, 54 49, 54 36 C 54 24, 46 12, 32 4 Z M32 50 L 32 30 L 26 30 L 32 22 L 38 30 L 32 30 L 32 50 Z"
+  ></path>
+</svg>
