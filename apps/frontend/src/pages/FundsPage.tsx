@@ -11,6 +11,7 @@ import { Eyebrow } from "@/components/ui/eyebrow"
 import { ProgressBar } from "@/components/ui/progress"
 import { StatusPill } from "@/components/ui/StatusPill"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { config } from "@/lib/config"
 import { formatCurrency, formatPercent } from "@/lib/format"
@@ -33,6 +34,12 @@ function parseDecimal(value: string | null | undefined) {
 }
 
 export default function FundsPage() {
+  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const canCreateFund =
+    isSuperadmin ||
+    activeMembership?.role === "admin" ||
+    activeMembership?.role === "fund_manager"
+
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["id"]>("all")
   const [createOpen, setCreateOpen] = useState(false)
   const navigate = useNavigate()
@@ -57,9 +64,11 @@ export default function FundsPage() {
         title="Funds and vintages."
         description="A history of NewTaven capital. Each line is a fund, each fund a small list of holdings."
         actions={
-          <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
-            New fund
-          </Button>
+          canCreateFund && (
+            <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
+              New fund
+            </Button>
+          )
         }
       />
 
@@ -89,9 +98,11 @@ export default function FundsPage() {
                 Once your firm sets up its first fund, it will appear here with committed and
                 called capital figures.
               </p>
-              <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
-                New fund
-              </Button>
+              {canCreateFund && (
+                <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
+                  New fund
+                </Button>
+              )}
             </CardSection>
           </Card>
         )}
