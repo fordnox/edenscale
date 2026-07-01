@@ -72,16 +72,46 @@ export function OrganizationSwitcher() {
   }
 
   if (memberships.length === 1 && !isSuperadmin) {
+    const membership = activeMembership ?? memberships[0]
+    const canManage =
+      membership.role === "admin" || membership.role === "fund_manager"
+    const content = (
+      <>
+        <span className="truncate font-sans text-[13px] font-medium text-ink-900">
+          {triggerLabel}
+        </span>
+        <span className="truncate font-sans text-[11px] tracking-[0.04em] text-ink-500">
+          {ROLE_LABELS[membership.role]}
+        </span>
+      </>
+    )
+
+    if (!canManage) {
+      return (
+        <span
+          className="inline-flex max-w-[200px] flex-col justify-center gap-0.5 rounded-xs border border-transparent px-3 py-1.5"
+          title={triggerLabel}
+        >
+          {content}
+        </span>
+      )
+    }
+
     return (
-      <span
-        className={cn(
-          "inline-flex h-9 max-w-[200px] items-center rounded-xs border border-transparent px-3",
-          "font-sans text-[13px] font-medium text-ink-900",
-        )}
+      <button
+        type="button"
+        onClick={() => navigate("/settings/organization")}
         title={triggerLabel}
+        aria-label="Manage organization"
+        className={cn(
+          "inline-flex max-w-[200px] flex-col justify-center gap-0.5 rounded-xs border border-transparent px-3 py-1.5 text-left",
+          "transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+          "hover:border-[color:var(--border-hairline)] hover:bg-parchment-100",
+          "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
+        )}
       >
-        <span className="truncate">{triggerLabel}</span>
-      </span>
+        {content}
+      </button>
     )
   }
 
