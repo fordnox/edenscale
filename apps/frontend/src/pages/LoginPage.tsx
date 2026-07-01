@@ -165,24 +165,6 @@ export default function LoginPage() {
 
             <Card className="bg-surface">
               <CardSection className="space-y-6">
-                <div className="flex items-start gap-3 border-b border-[var(--border-hairline)] pb-5">
-                  <span
-                    aria-hidden
-                    className="mt-0.5 flex size-8 shrink-0 items-center justify-center bg-parchment-100 text-conifer-700"
-                  >
-                    <LockKeyhole strokeWidth={1.5} className="size-4" />
-                  </span>
-                  <div>
-                    <h2 className="font-sans text-[16px] font-semibold tracking-tight text-ink-900">
-                      Sign in to your account
-                    </h2>
-                    <p className="mt-1 font-sans text-[13px] leading-[1.55] text-ink-500">
-                      Access is restricted to invited investors and authorized
-                      fund team members.
-                    </p>
-                  </div>
-                </div>
-
                 <hanko-auth className="block" />
               </CardSection>
             </Card>

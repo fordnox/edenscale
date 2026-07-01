@@ -326,43 +326,45 @@ function AuditLogContent() {
               />
             ) : (
               <>
-                <DataTable>
-                  <thead>
-                    <tr>
-                      <TH>When</TH>
-                      <TH>Actor</TH>
-                      <TH>Action</TH>
-                      <TH>Entity</TH>
-                      <TH>IP address</TH>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => {
-                      const isExpanded = expandedId === row.id
-                      const actor =
-                        row.user_id !== null
-                          ? userById.get(row.user_id)
-                          : undefined
-                      return (
-                        <AuditRow
-                          key={row.id}
-                          row={row}
-                          actorName={
-                            row.user_id === null
-                              ? "System"
-                              : actor
-                                ? fullName(actor)
-                                : `User #${row.user_id}`
-                          }
-                          isExpanded={isExpanded}
-                          onToggle={() =>
-                            setExpandedId(isExpanded ? null : row.id)
-                          }
-                        />
-                      )
-                    })}
-                  </tbody>
-                </DataTable>
+                <CardSection className="pt-2 pb-0">
+                  <DataTable>
+                    <thead>
+                      <tr>
+                        <TH>When</TH>
+                        <TH>Actor</TH>
+                        <TH>Action</TH>
+                        <TH>Entity</TH>
+                        <TH>IP address</TH>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row) => {
+                        const isExpanded = expandedId === row.id
+                        const actor =
+                          row.user_id !== null
+                            ? userById.get(row.user_id)
+                            : undefined
+                        return (
+                          <AuditRow
+                            key={row.id}
+                            row={row}
+                            actorName={
+                              row.user_id === null
+                                ? "System"
+                                : actor
+                                  ? fullName(actor)
+                                  : `User #${row.user_id.slice(0, 4)}`
+                            }
+                            isExpanded={isExpanded}
+                            onToggle={() =>
+                              setExpandedId(isExpanded ? null : row.id)
+                            }
+                          />
+                        )
+                      })}
+                    </tbody>
+                  </DataTable>
+                </CardSection>
 
                 <div className="flex items-center justify-between gap-4 border-t border-[color:var(--border-hairline)] px-6 py-4 md:px-8">
                   <p className="font-sans text-[12px] text-ink-500">
@@ -448,7 +450,12 @@ function AuditRow({ row, actorName, isExpanded, onToggle }: AuditRowProps) {
       {isExpanded && (
         <tr className="border-b border-[color:var(--border-hairline)] bg-parchment-100">
           <td colSpan={5} className="px-4 pb-6 pt-2 first:pl-0 last:pr-0">
-            <div className="flex flex-col gap-2">
+            <div
+              className={cn(
+                "flex flex-col gap-2",
+                !metadataPretty && "items-center text-center",
+              )}
+            >
               <Eyebrow>Metadata</Eyebrow>
               {metadataPretty ? (
                 <pre
@@ -461,7 +468,7 @@ function AuditRow({ row, actorName, isExpanded, onToggle }: AuditRowProps) {
                   {metadataPretty}
                 </pre>
               ) : (
-                <p className="font-sans text-[13px] text-ink-500">
+                <p className="flex min-h-[80px] items-center justify-center text-center font-sans text-[13px] text-ink-500">
                   No metadata recorded for this entry.
                 </p>
               )}
