@@ -16,6 +16,7 @@ import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { useAuth } from "@/hooks/useAuth"
+import { orgPath } from "@/lib/appRoutes"
 import { config } from "@/lib/config"
 import { titleCase } from "@/lib/format"
 import type { components } from "@/lib/schema"
@@ -284,9 +285,9 @@ export default function ProfilePage() {
                           </span>
                         )}
                     </div>
-                    {canManageOrg && (
+                    {canManageOrg && activeMembership && (
                       <Link
-                        to="/settings/organization"
+                        to={orgPath(activeMembership.organization.slug, "settings")}
                         className="inline-flex w-fit items-center gap-1 font-sans text-[13px] text-conifer-700 underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
                       >
                         Manage organization settings

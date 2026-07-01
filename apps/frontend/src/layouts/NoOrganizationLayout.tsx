@@ -84,7 +84,7 @@ export default function NoOrganizationLayout() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="min-h-11 md:min-h-0"
-                  onSelect={() => navigate("/profile")}
+                  onSelect={() => navigate("/app/profile")}
                 >
                   <UserIcon strokeWidth={1.5} />
                   <span>Profile</span>

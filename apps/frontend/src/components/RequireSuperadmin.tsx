@@ -5,7 +5,9 @@ import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { EmptyState } from "@/components/ui/EmptyState"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@/hooks/useApiQuery"
+import { orgPath } from "@/lib/appRoutes"
 
 interface RequireSuperadminProps {
   children: ReactNode
@@ -19,6 +21,7 @@ export function RequireSuperadmin({
   const meQuery = useApiQuery("/users/me", undefined, {
     staleTime: 5 * 60 * 1000,
   })
+  const { activeMembership } = useActiveOrganization()
 
   if (meQuery.isLoading) {
     return (
@@ -38,7 +41,15 @@ export function RequireSuperadmin({
             body="This area is reserved for superadmins. Contact a superadmin if you need access."
             action={
               <Button asChild variant="secondary" size="sm">
-                <Link to="/">Back to dashboard</Link>
+                <Link
+                  to={
+                    activeMembership
+                      ? orgPath(activeMembership.organization.slug)
+                      : "/app"
+                  }
+                >
+                  Back to dashboard
+                </Link>
               </Button>
             }
           />

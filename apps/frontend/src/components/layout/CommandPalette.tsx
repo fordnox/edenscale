@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import {
   FileText,
   Layers,
@@ -9,8 +9,10 @@ import {
 } from "lucide-react"
 
 import { useApiQuery } from "@/hooks/useApiQuery"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useAuth } from "@/hooks/useAuth"
 import { useNavItems } from "@/hooks/useNavItems"
+import { fundPath, orgPath } from "@/lib/appRoutes"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   CommandDialog,
@@ -43,6 +45,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const { items: navItems } = useNavItems()
+  const { activeMembership } = useActiveOrganization()
+  const { orgSlug: orgSlugParam } = useParams<{ orgSlug?: string }>()
+  const orgSlug = orgSlugParam ?? activeMembership?.organization.slug ?? null
 
   const fundsQuery = useApiQuery("/funds", undefined, {
     enabled: open,
@@ -104,7 +109,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             ))}
           <CommandItem
             value="profile account"
-            onSelect={run(() => navigate("/profile"))}
+            onSelect={run(() => navigate("/app/profile"))}
           >
             <UserIcon strokeWidth={1.5} />
             <span>Go to Profile</span>
@@ -136,7 +141,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 <CommandItem
                   key={`fund-${fund.id}`}
                   value={`fund ${fund.name} ${fund.vintage_year ?? ""}`}
-                  onSelect={run(() => navigate(`/funds/${fund.id}`))}
+                  onSelect={run(() => {
+                    if (orgSlug) navigate(fundPath(orgSlug, fund.slug))
+                  })}
                 >
                   <Layers strokeWidth={1.5} />
                   <span className="truncate">{fund.name}</span>
@@ -157,7 +164,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 <CommandItem
                   key={`investor-${investor.id}`}
                   value={`investor ${investor.name} ${investor.investor_code ?? ""}`}
-                  onSelect={run(() => navigate("/investors"))}
+                  onSelect={run(() => {
+                    if (orgSlug) navigate(orgPath(orgSlug, "investors"))
+                  })}
                 >
                   <Users strokeWidth={1.5} />
                   <span className="truncate">{investor.name}</span>
@@ -183,7 +192,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   <CommandItem
                     key={`doc-${doc.id}`}
                     value={`document ${doc.title} ${doc.file_name} ${typeLabel}`}
-                    onSelect={run(() => navigate("/documents"))}
+                    onSelect={run(() => {
+                      if (orgSlug) navigate(orgPath(orgSlug, "documents"))
+                    })}
                   >
                     <Icon strokeWidth={1.5} />
                     <span className="truncate">{doc.title}</span>

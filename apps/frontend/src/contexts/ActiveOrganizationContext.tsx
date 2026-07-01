@@ -1,7 +1,6 @@
 import {
   createContext,
   useCallback,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -56,30 +55,11 @@ export function ActiveOrganizationProvider({
   )
   const isSuperadmin = meQuery.data?.role === "superadmin"
 
-  useEffect(() => {
-    if (membershipsQuery.isLoading || !membershipsQuery.data) {
-      return
-    }
-    if (memberships.length === 0) {
-      if (activeOrganizationId !== null) {
-        setActiveOrganizationIdState(null)
-        setStoredActiveOrganizationId(null)
-      }
-      return
-    }
-    const matches =
-      activeOrganizationId !== null &&
-      memberships.some((m) => m.organization_id === activeOrganizationId)
-    if (matches) return
-    const fallback = memberships[0].organization_id
-    setActiveOrganizationIdState(fallback)
-    setStoredActiveOrganizationId(fallback)
-  }, [
-    activeOrganizationId,
-    memberships,
-    membershipsQuery.data,
-    membershipsQuery.isLoading,
-  ])
+  // No auto-heal effect here by design: once inside /app/:orgSlug, the URL
+  // (resolved by OrgScopeLayout) is the source of truth for which org is
+  // active, not this stored id. Falling back to memberships[0] here would
+  // race OrgScopeLayout's own resolution and could stomp the URL's choice.
+  // The localStorage-seeded initial state above is only a pre-mount guess.
 
   const setActiveOrganizationId = useCallback(
     (id: string | null) => {

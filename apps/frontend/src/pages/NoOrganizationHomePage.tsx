@@ -25,7 +25,7 @@ export default function NoOrganizationHomePage() {
               <Button
                 variant="primary"
                 size="md"
-                onClick={() => navigate("/onboarding")}
+                onClick={() => navigate("/app/onboarding")}
               >
                 <Landmark strokeWidth={1.5} className="size-4" />
                 Create your firm

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { orgPath } from "@/lib/appRoutes"
 import type { components } from "@/lib/schema"
 
 type UserRole = components["schemas"]["UserRole"]
@@ -38,7 +39,15 @@ export function RequireRole({ allowed, children, fallback }: RequireRoleProps) {
             body="This area is reserved for administrators and fund managers. Contact your administrator if you need access."
             action={
               <Button asChild variant="secondary" size="sm">
-                <Link to="/">Back to dashboard</Link>
+                <Link
+                  to={
+                    activeMembership
+                      ? orgPath(activeMembership.organization.slug)
+                      : "/app"
+                  }
+                >
+                  Back to dashboard
+                </Link>
               </Button>
             }
           />

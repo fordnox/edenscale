@@ -6,6 +6,7 @@ import { Loader2, Mail, Pencil, Plus, Star } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHero } from "@/components/layout/PageHero"
+import { CommitmentCreateDialog } from "@/components/commitments/CommitmentCreateDialog"
 import { InvestorCreateDialog } from "@/components/investors/InvestorCreateDialog"
 import { InvestorEditDialog } from "@/components/investors/InvestorEditDialog"
 import { InviteContactDialog } from "@/components/investors/InviteContactDialog"
@@ -21,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import { useApiQuery } from "@/hooks/useApiQuery"
+import { fundPath } from "@/lib/appRoutes"
 import { config } from "@/lib/config"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -90,10 +92,17 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
   const investor = investorQuery.data
 
   const { activeMembership } = useActiveOrganization()
+  const fundsQuery = useApiQuery("/funds")
+  const funds = fundsQuery.data ?? []
   const canInvite =
     activeMembership?.role === "admin" || activeMembership?.role === "superadmin"
+  const canManageCommitments =
+    activeMembership?.role === "admin" ||
+    activeMembership?.role === "fund_manager" ||
+    activeMembership?.role === "superadmin"
 
   const [editOpen, setEditOpen] = useState(false)
+  const [commitmentCreateOpen, setCommitmentCreateOpen] = useState(false)
   const [inviteContact, setInviteContact] = useState<InvestorContactRead | null>(
     null,
   )
@@ -183,6 +192,19 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
           investor={investor}
           open={editOpen}
           onOpenChange={setEditOpen}
+        />
+      )}
+
+      {investor && (
+        <CommitmentCreateDialog
+          open={commitmentCreateOpen}
+          onOpenChange={setCommitmentCreateOpen}
+          context={{
+            kind: "investor",
+            investorId: investor.id,
+            investorName: investor.name,
+            existingFundIds: commitments.map((c) => c.fund.id),
+          }}
         />
       )}
 
@@ -374,6 +396,17 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
         </TabsContent>
 
         <TabsContent value="commitments" className="px-6 py-5">
+          {canManageCommitments && commitments.length > 0 && (
+            <div className="mb-3 flex justify-end">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setCommitmentCreateOpen(true)}
+              >
+                New commitment
+              </Button>
+            </div>
+          )}
           {commitmentsQuery.isLoading ? (
             <div className="flex min-h-[120px] items-center justify-center text-ink-500">
               <Loader2 strokeWidth={1.5} className="size-5 animate-spin" />
@@ -384,6 +417,16 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
               <p className="font-sans text-[13px] text-ink-700">
                 Subscriptions to funds will appear here after they are recorded.
               </p>
+              {canManageCommitments && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => setCommitmentCreateOpen(true)}
+                >
+                  Record a commitment
+                </Button>
+              )}
             </div>
           ) : (
             <DataTable>
@@ -397,15 +440,21 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
                 </tr>
               </thead>
               <tbody>
-                {commitments.map((c) => (
+                {commitments.map((c) => {
+                  const fundSlug = funds.find((f) => f.id === c.fund.id)?.slug
+                  return (
                   <TR key={c.id}>
                     <TD primary>
-                      <Link
-                        to={`/funds/${c.fund.id}`}
-                        className="text-ink-900 hover:text-conifer-700"
-                      >
-                        {c.fund.name}
-                      </Link>
+                      {activeMembership && fundSlug ? (
+                        <Link
+                          to={fundPath(activeMembership.organization.slug, fundSlug)}
+                          className="text-ink-900 hover:text-conifer-700"
+                        >
+                          {c.fund.name}
+                        </Link>
+                      ) : (
+                        <span>{c.fund.name}</span>
+                      )}
                     </TD>
                     <TD>{formatDate(c.commitment_date)}</TD>
                     <TD align="right" primary>
@@ -426,7 +475,8 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
                       <StatusPill kind="commitment" value={c.status} />
                     </TD>
                   </TR>
-                ))}
+                  )
+                })}
               </tbody>
             </DataTable>
           )}

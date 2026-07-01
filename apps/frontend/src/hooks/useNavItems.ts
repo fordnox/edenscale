@@ -1,6 +1,8 @@
 import { useMemo } from "react"
+import { useParams } from "react-router-dom"
 import {
   ArrowDownToLine,
+  ArrowLeft,
   ArrowUpFromLine,
   Bell,
   Building2,
@@ -10,11 +12,13 @@ import {
   Layers,
   LayoutDashboard,
   Mail,
+  UserCog,
   Users,
 } from "lucide-react"
 
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@/hooks/useApiQuery"
+import { fundPath, fundTabPath, orgPath } from "@/lib/appRoutes"
 import type { components } from "@/lib/schema"
 
 type UserRole = components["schemas"]["UserRole"]
@@ -38,51 +42,68 @@ export interface NavDivider {
 
 export type NavEntry = NavItem | NavSection | NavDivider
 
-const OVERVIEW: NavItem = { to: "/", label: "Overview", icon: LayoutDashboard, end: true }
-const FUNDS: NavItem = { to: "/funds", label: "Funds", icon: Layers }
-const INVESTORS: NavItem = { to: "/investors", label: "Investors", icon: Users }
-const CALLS: NavItem = { to: "/calls", label: "Capital Calls", icon: ArrowDownToLine }
-const DISTRIBUTIONS: NavItem = {
-  to: "/distributions",
-  label: "Distributions",
-  icon: ArrowUpFromLine,
-}
-const DOCUMENTS: NavItem = { to: "/documents", label: "Documents", icon: FileText }
-const LETTERS: NavItem = { to: "/letters", label: "Letters", icon: Mail }
-const TASKS: NavItem = { to: "/tasks", label: "Tasks", icon: ClipboardCheck }
-const NOTIFICATIONS: NavItem = { to: "/notifications", label: "Notifications", icon: Bell }
-const AUDIT_LOG: NavItem = { to: "/audit-log", label: "Audit Log", icon: History }
+const SUPERADMIN_ORGANIZATIONS_PATH = "/app/superadmin/organizations"
 
-const SUPERADMIN_ORGANIZATIONS: NavItem = {
-  to: "/superadmin/organizations",
-  label: "Organizations",
-  icon: Building2,
-}
+function orgItemsForRole(role: UserRole | null | undefined, orgSlug: string): NavItem[] {
+  const overview: NavItem = {
+    to: orgPath(orgSlug),
+    label: "Overview",
+    icon: LayoutDashboard,
+    end: true,
+  }
+  const funds: NavItem = { to: orgPath(orgSlug, "funds"), label: "Funds", icon: Layers }
+  const investors: NavItem = {
+    to: orgPath(orgSlug, "investors"),
+    label: "Investors",
+    icon: Users,
+  }
+  const calls: NavItem = {
+    to: orgPath(orgSlug, "calls"),
+    label: "Capital Calls",
+    icon: ArrowDownToLine,
+  }
+  const distributions: NavItem = {
+    to: orgPath(orgSlug, "distributions"),
+    label: "Distributions",
+    icon: ArrowUpFromLine,
+  }
+  const documents: NavItem = {
+    to: orgPath(orgSlug, "documents"),
+    label: "Documents",
+    icon: FileText,
+  }
+  const letters: NavItem = { to: orgPath(orgSlug, "letters"), label: "Letters", icon: Mail }
+  const tasks: NavItem = {
+    to: orgPath(orgSlug, "tasks"),
+    label: "Tasks",
+    icon: ClipboardCheck,
+  }
+  const notifications: NavItem = {
+    to: orgPath(orgSlug, "notifications"),
+    label: "Notifications",
+    icon: Bell,
+  }
+  const auditLog: NavItem = {
+    to: orgPath(orgSlug, "audit-log"),
+    label: "Audit Log",
+    icon: History,
+  }
 
-const FULL_ITEMS: NavItem[] = [
-  OVERVIEW,
-  FUNDS,
-  INVESTORS,
-  CALLS,
-  DISTRIBUTIONS,
-  DOCUMENTS,
-  LETTERS,
-  TASKS,
-  NOTIFICATIONS,
-]
-
-const LP_ITEMS: NavItem[] = [
-  OVERVIEW,
-  FUNDS,
-  INVESTORS,
-  DOCUMENTS,
-  LETTERS,
-  NOTIFICATIONS,
-]
-
-export function navItemsForRole(role: UserRole | null | undefined): NavItem[] {
-  if (role === "lp") return LP_ITEMS
-  return [...FULL_ITEMS, AUDIT_LOG]
+  if (role === "lp") {
+    return [overview, funds, investors, documents, letters, notifications]
+  }
+  return [
+    overview,
+    funds,
+    investors,
+    calls,
+    distributions,
+    documents,
+    letters,
+    tasks,
+    notifications,
+    auditLog,
+  ]
 }
 
 interface UseNavItemsResult {
@@ -91,30 +112,86 @@ interface UseNavItemsResult {
   isLoading: boolean
 }
 
-export function useNavItems(): UseNavItemsResult {
+/** Nav items for the organization-level workspace (/app/:orgSlug/...). */
+export function useOrgNavItems(): UseNavItemsResult {
   const { activeMembership, isLoading } = useActiveOrganization()
+  const params = useParams<{ orgSlug?: string }>()
   const meQuery = useApiQuery("/users/me", undefined, {
     staleTime: 5 * 60 * 1000,
   })
   const isSuperadmin = meQuery.data?.role === "superadmin"
 
   const role = activeMembership?.role ?? null
+  const orgSlug = params.orgSlug ?? activeMembership?.organization.slug ?? null
 
   const items = useMemo<NavEntry[]>(() => {
-    const tenantItems = navItemsForRole(role)
+    const tenantItems = orgSlug ? orgItemsForRole(role, orgSlug) : []
     if (!isSuperadmin) return tenantItems
 
     const superadminEntries: NavEntry[] = [
       { kind: "section", label: "Superadmin" },
-      SUPERADMIN_ORGANIZATIONS,
+      {
+        to: SUPERADMIN_ORGANIZATIONS_PATH,
+        label: "Organizations",
+        icon: Building2,
+      },
     ]
     if (tenantItems.length === 0) return superadminEntries
-    return [
-      ...superadminEntries,
-      { kind: "divider" },
-      ...tenantItems,
-    ]
-  }, [role, isSuperadmin])
+    return [...superadminEntries, { kind: "divider" }, ...tenantItems]
+  }, [role, isSuperadmin, orgSlug])
 
   return { items, role, isLoading }
+}
+
+/** Nav items for the fund workspace (/app/:orgSlug/:fundSlug) — links set
+ * the ?tab= query param on the existing fund detail page rather than
+ * navigating to separate routes. */
+export function useFundNavItems(): UseNavItemsResult {
+  const { activeMembership, isLoading } = useActiveOrganization()
+  const params = useParams<{ orgSlug: string; fundSlug: string }>()
+  const role = activeMembership?.role ?? null
+
+  const items = useMemo<NavEntry[]>(() => {
+    const { orgSlug, fundSlug } = params
+    if (!orgSlug || !fundSlug) return []
+
+    const tabItem = (
+      tab: "commitments" | "calls" | "distributions" | "team" | "letters",
+      label: string,
+      icon: NavItem["icon"],
+    ): NavItem => ({ to: fundTabPath(orgSlug, fundSlug, tab), label, icon })
+
+    return [
+      {
+        to: fundPath(orgSlug, fundSlug),
+        label: "Overview",
+        icon: LayoutDashboard,
+        end: true,
+      },
+      tabItem("commitments", "Commitments", Users),
+      tabItem("calls", "Capital Calls", ArrowDownToLine),
+      tabItem("distributions", "Distributions", ArrowUpFromLine),
+      tabItem("team", "Team", UserCog),
+      tabItem("letters", "Letters", Mail),
+      { kind: "divider" },
+      {
+        to: orgPath(orgSlug),
+        label: `Back to ${activeMembership?.organization.name ?? "organization"}`,
+        icon: ArrowLeft,
+      },
+    ]
+  }, [params, activeMembership])
+
+  return { items, role, isLoading }
+}
+
+/** Dispatches between org- and fund-scoped nav based on the actually
+ * matched route — `fundSlug` is only populated when the :fundSlug child
+ * route genuinely matched (route specificity ranking means a static
+ * sibling like /funds never resolves there). */
+export function useNavItems(): UseNavItemsResult {
+  const { fundSlug } = useParams<{ fundSlug?: string }>()
+  const orgItems = useOrgNavItems()
+  const fundItems = useFundNavItems()
+  return fundSlug ? fundItems : orgItems
 }

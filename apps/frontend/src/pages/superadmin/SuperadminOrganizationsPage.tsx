@@ -103,7 +103,7 @@ function SuperadminOrganizationsContent() {
                       key={org.id}
                       className="cursor-pointer"
                       onClick={() =>
-                        navigate(`/superadmin/organizations/${org.id}`)
+                        navigate(`/app/superadmin/organizations/${org.id}`)
                       }
                     >
                       <TD primary>{org.name}</TD>

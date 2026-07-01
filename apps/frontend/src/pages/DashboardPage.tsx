@@ -13,6 +13,7 @@ import { ProgressBar } from "@/components/ui/progress"
 import { DataTable, TH, TR, TD } from "@/components/ui/table"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import api from "@/lib/api"
+import { orgPath } from "@/lib/appRoutes"
 import { config } from "@/lib/config"
 import {
   formatCurrency,
@@ -61,11 +62,11 @@ export default function DashboardPage() {
         description="A snapshot of activity across your funds, limited partners, and capital movements."
         actions={
           <>
-            <Button variant="secondary" size="sm" onClick={() => navigate("/calls")}>
+            <Button variant="secondary" size="sm" onClick={() => navigate(orgPath(activeMembership?.organization.slug ?? "", "calls"))}>
               View capital calls
             </Button>
             {canWriteLetters && (
-              <Button variant="primary" size="sm" onClick={() => navigate("/letters")}>
+              <Button variant="primary" size="sm" onClick={() => navigate(orgPath(activeMembership?.organization.slug ?? "", "letters"))}>
                 Draft quarterly letter
               </Button>
             )}
@@ -138,7 +139,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     className="font-sans text-[13px] font-medium text-ink-900 border-b border-brass-500 pb-0.5 hover:text-conifer-700 transition-colors"
-                    onClick={() => navigate("/calls")}
+                    onClick={() => navigate(orgPath(activeMembership?.organization.slug ?? "", "calls"))}
                   >
                     Open all →
                   </button>
@@ -207,7 +208,7 @@ export default function DashboardPage() {
                     Programmes in flight.
                   </h2>
                 </div>
-                <Button variant="link" size="sm" onClick={() => navigate("/funds")}>
+                <Button variant="link" size="sm" onClick={() => navigate(orgPath(activeMembership?.organization.slug ?? "", "funds"))}>
                   All funds →
                 </Button>
               </div>

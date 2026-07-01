@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { Helmet } from "react-helmet-async"
-import { Link, useParams, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import { ChevronLeft, Loader2 } from "lucide-react"
 
 import { PageHero } from "@/components/layout/PageHero"
+import { CommitmentCreateDialog } from "@/components/commitments/CommitmentCreateDialog"
 import { FundEditDialog } from "@/components/funds/FundEditDialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardSection } from "@/components/ui/card"
@@ -13,8 +14,10 @@ import { Stat } from "@/components/ui/stat"
 import { StatusPill } from "@/components/ui/StatusPill"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { useTabParam } from "@/hooks/useTabParam"
+import { orgPath } from "@/lib/appRoutes"
 import { config } from "@/lib/config"
 import {
   formatCurrency,
@@ -40,8 +43,16 @@ const FUND_DETAIL_TABS = [
 
 function FundDetailPageContent({ fundId }: { fundId: string }) {
   const navigate = useNavigate()
+  const { orgSlug } = useParams<{ orgSlug: string }>()
+  const { activeMembership } = useActiveOrganization()
   const [editOpen, setEditOpen] = useState(false)
+  const [commitmentCreateOpen, setCommitmentCreateOpen] = useState(false)
   const [activeTab, setActiveTab] = useTabParam(FUND_DETAIL_TABS, "commitments")
+
+  const canManageCommitments =
+    activeMembership?.role === "admin" ||
+    activeMembership?.role === "fund_manager" ||
+    activeMembership?.role === "superadmin"
 
   const fundQuery = useApiQuery("/funds/{fund_id}", {
     params: { path: { fund_id: fundId } },
@@ -81,7 +92,7 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
           title="Fund not found."
           description="We were unable to load this fund. It may have been archived or the link is incorrect."
           actions={
-            <Button variant="secondary" size="sm" onClick={() => navigate("/funds")}>
+            <Button variant="secondary" size="sm" onClick={() => navigate(orgPath(orgSlug ?? "", "funds"))}>
               <ChevronLeft strokeWidth={1.5} className="size-4" />
               All funds
             </Button>
@@ -123,7 +134,7 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
         description={fund.description ?? undefined}
         actions={
           <>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/funds")}>
+            <Button variant="ghost" size="sm" onClick={() => navigate(orgPath(orgSlug ?? "", "funds"))}>
               <ChevronLeft strokeWidth={1.5} className="size-4" />
               All funds
             </Button>
@@ -265,6 +276,17 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
             </TabsList>
 
             <TabsContent value="commitments">
+              {canManageCommitments && (
+                <div className="mb-3 flex justify-end">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setCommitmentCreateOpen(true)}
+                  >
+                    New commitment
+                  </Button>
+                </div>
+              )}
               <Card>
                 <CardSection className="pt-2 pb-0">
                   {commitmentsQuery.isLoading ? (
@@ -277,6 +299,16 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
                       <p className="font-sans text-[14px] text-ink-700">
                         Investor commitments to this fund will appear here once subscriptions are recorded.
                       </p>
+                      {canManageCommitments && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => setCommitmentCreateOpen(true)}
+                        >
+                          Record a commitment
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <DataTable>
@@ -455,7 +487,7 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
                         Quarterly letters and other communications sent against this fund will be listed here.
                       </p>
                       <Link
-                        to="/letters"
+                        to={orgPath(orgSlug ?? "", "letters")}
                         className="font-sans text-[13px] font-medium text-ink-900 border-b border-brass-500 pb-0.5 hover:text-conifer-700"
                       >
                         Drafting space →
@@ -500,22 +532,20 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
       </div>
 
       <FundEditDialog fund={fund} open={editOpen} onOpenChange={setEditOpen} />
+      <CommitmentCreateDialog
+        open={commitmentCreateOpen}
+        onOpenChange={setCommitmentCreateOpen}
+        context={{
+          kind: "fund",
+          fundId,
+          fundName: fund.name,
+          existingInvestorIds: commitments.map((c) => c.investor_id),
+        }}
+      />
     </>
   )
 }
 
-export default function FundDetailPage() {
-  const { fundId } = useParams<{ fundId: string }>()
-
-  if (!fundId) {
-    return (
-      <PageHero
-        eyebrow="Programmes"
-        title="Fund not found."
-        description="The fund identifier in this URL is not valid."
-      />
-    )
-  }
-
+export default function FundDetailPage({ fundId }: { fundId: string }) {
   return <FundDetailPageContent fundId={fundId} />
 }

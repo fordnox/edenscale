@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@/hooks/useApiMutation"
+import { fundPath, orgPath } from "@/lib/appRoutes"
 import { config } from "@/lib/config"
 
 export default function OnboardingPage() {
@@ -22,6 +23,7 @@ export default function OnboardingPage() {
   const [firmName, setFirmName] = useState("")
   const [legalName, setLegalName] = useState("")
   const [organizationId, setOrganizationId] = useState<string | null>(null)
+  const [organizationSlug, setOrganizationSlug] = useState<string | null>(null)
 
   const [fundName, setFundName] = useState("")
   const [vintageYear, setVintageYear] = useState("")
@@ -33,6 +35,7 @@ export default function OnboardingPage() {
       onSuccess: (data) => {
         setActiveOrganizationId(data.organization_id)
         setOrganizationId(data.organization_id)
+        setOrganizationSlug(data.organization.slug)
         setStep("fund")
       },
     },
@@ -42,7 +45,9 @@ export default function OnboardingPage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/funds"] })
       toast.success(`${data.name} is ready.`)
-      navigate(`/funds/${data.id}`)
+      if (organizationSlug) {
+        navigate(fundPath(organizationSlug, data.slug))
+      }
     },
   })
 
@@ -201,7 +206,9 @@ export default function OnboardingPage() {
                         variant="ghost"
                         size="md"
                         disabled={createFund.isPending}
-                        onClick={() => navigate("/")}
+                        onClick={() =>
+                          navigate(organizationSlug ? orgPath(organizationSlug) : "/app")
+                        }
                       >
                         Skip for now
                       </Button>

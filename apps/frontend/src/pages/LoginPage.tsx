@@ -15,9 +15,9 @@ import { config } from "@/lib/config"
 import { hanko } from "@/lib/hanko"
 
 function safeNextPath(raw: string | null): string {
-  if (!raw) return "/"
+  if (!raw) return "/app"
   // Only allow same-origin relative paths; reject protocol-relative and absolute URLs.
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/"
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/app"
   return raw
 }
 

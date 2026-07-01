@@ -26,9 +26,9 @@ const myMiddleware: Middleware = {
       if (
         response.status === 403 &&
         errorData?.detail === "Not a member of this organization" &&
-        window.location.pathname !== "/onboarding"
+        window.location.pathname !== "/app"
       ) {
-        window.location.href = "/onboarding"
+        window.location.href = "/app"
         return response
       }
 

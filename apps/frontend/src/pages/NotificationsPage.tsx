@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { Eyebrow } from "@/components/ui/eyebrow"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import { useApiQuery } from "@/hooks/useApiQuery"
+import { orgPath } from "@/lib/appRoutes"
 import { config } from "@/lib/config"
 import { formatDate, titleCase } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -52,25 +54,33 @@ function groupForDate(value: string | null, today: Date): GroupId {
 function relatedLink(
   related_type: string | null,
   related_id: string | null,
+  orgSlug: string | null,
+  fundSlugById: Map<string, string>,
 ): { to: string; label: string } | null {
-  if (!related_type || related_id === null) return null
+  if (!related_type || related_id === null || !orgSlug) return null
   const focus = `?focus=${related_id}`
   switch (related_type) {
     case "capital_call":
-      return { to: `/calls${focus}`, label: "View capital call" }
+      return { to: `${orgPath(orgSlug, "calls")}${focus}`, label: "View capital call" }
     case "distribution":
-      return { to: `/distributions${focus}`, label: "View distribution" }
+      return {
+        to: `${orgPath(orgSlug, "distributions")}${focus}`,
+        label: "View distribution",
+      }
     case "investor":
-      return { to: `/investors${focus}`, label: "View investor" }
+      return { to: `${orgPath(orgSlug, "investors")}${focus}`, label: "View investor" }
     case "document":
-      return { to: `/documents${focus}`, label: "View document" }
+      return { to: `${orgPath(orgSlug, "documents")}${focus}`, label: "View document" }
     case "communication":
     case "letter":
-      return { to: `/letters${focus}`, label: "View letter" }
+      return { to: `${orgPath(orgSlug, "letters")}${focus}`, label: "View letter" }
     case "task":
-      return { to: `/tasks${focus}`, label: "View task" }
-    case "fund":
-      return { to: `/funds/${related_id}`, label: "View fund" }
+      return { to: `${orgPath(orgSlug, "tasks")}${focus}`, label: "View task" }
+    case "fund": {
+      const fundSlug = fundSlugById.get(related_id)
+      if (!fundSlug) return null
+      return { to: `/app/${orgSlug}/${fundSlug}`, label: "View fund" }
+    }
     default:
       return null
   }
@@ -78,6 +88,14 @@ function relatedLink(
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient()
+  const { activeMembership } = useActiveOrganization()
+  const orgSlug = activeMembership?.organization.slug ?? null
+
+  const fundsQuery = useApiQuery("/funds")
+  const fundSlugById = useMemo(
+    () => new Map((fundsQuery.data ?? []).map((f) => [f.id, f.slug])),
+    [fundsQuery.data],
+  )
 
   const notificationsQuery = useApiQuery("/notifications", {
     params: { query: { limit: 200 } },
@@ -219,7 +237,12 @@ export default function NotificationsPage() {
                   <Card>
                     <ul className="divide-y divide-[color:var(--border-hairline)]">
                       {items.map((n) => {
-                        const link = relatedLink(n.related_type, n.related_id)
+                        const link = relatedLink(
+                          n.related_type,
+                          n.related_id,
+                          orgSlug,
+                          fundSlugById,
+                        )
                         const isUnread = n.status === "unread"
                         return (
                           <li

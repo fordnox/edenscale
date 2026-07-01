@@ -13,6 +13,7 @@ import { StatusPill } from "@/components/ui/StatusPill"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@/hooks/useApiQuery"
+import { fundPath } from "@/lib/appRoutes"
 import { config } from "@/lib/config"
 import { formatCurrency, formatPercent } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -159,11 +160,21 @@ export default function FundsPage() {
                           <TR
                             key={fund.id}
                             className="cursor-pointer"
-                            onClick={() => navigate(`/funds/${fund.id}`)}
+                            onClick={() => {
+                              if (activeMembership) {
+                                navigate(
+                                  fundPath(activeMembership.organization.slug, fund.slug),
+                                )
+                              }
+                            }}
                           >
                             <TD primary>
                               <Link
-                                to={`/funds/${fund.id}`}
+                                to={
+                                  activeMembership
+                                    ? fundPath(activeMembership.organization.slug, fund.slug)
+                                    : "#"
+                                }
                                 onClick={(event) => event.stopPropagation()}
                                 className="text-ink-900 hover:text-conifer-700"
                               >

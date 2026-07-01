@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import { useAuth } from "@/hooks/useAuth"
+import { orgPath } from "@/lib/appRoutes"
 import { config } from "@/lib/config"
 
 export default function InvitationAcceptPage() {
@@ -34,7 +35,7 @@ export default function InvitationAcceptPage() {
     onSuccess: (data) => {
       setActiveOrganizationId(data.organization_id)
       toast.success(`Welcome to ${data.organization.name}.`)
-      navigate("/")
+      navigate(orgPath(data.organization.slug))
     },
     onError: (error) => {
       const detail = (error as { detail?: unknown } | null)?.detail
@@ -72,7 +73,7 @@ export default function InvitationAcceptPage() {
             body="This link looks malformed. Please open the most recent invitation email from your administrator."
             action={
               <Button asChild variant="secondary" size="sm">
-                <Link to="/">
+                <Link to="/app">
                   <ArrowLeft strokeWidth={1.5} className="size-4" />
                   Back to home
                 </Link>
@@ -94,7 +95,7 @@ export default function InvitationAcceptPage() {
             body={errorMessage}
             action={
               <Button asChild variant="secondary" size="sm">
-                <Link to="/">
+                <Link to="/app">
                   <ArrowLeft strokeWidth={1.5} className="size-4" />
                   Back to home
                 </Link>
@@ -138,7 +139,7 @@ export default function InvitationAcceptPage() {
                 Accept invitation
               </Button>
               <Button asChild variant="ghost" size="md">
-                <Link to="/">Not now</Link>
+                <Link to="/app">Not now</Link>
               </Button>
             </div>
           </div>

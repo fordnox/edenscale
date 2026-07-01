@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom"
 import { ChevronDown, Menu } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { orgPath } from "@/lib/appRoutes"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import {
   DropdownMenu,
@@ -48,12 +49,8 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
 
 export function OrganizationSwitcher() {
   const navigate = useNavigate()
-  const {
-    memberships,
-    activeMembership,
-    setActiveOrganizationId,
-    isSuperadmin,
-  } = useActiveOrganization()
+  const { memberships, activeMembership, isSuperadmin } =
+    useActiveOrganization()
 
   if (memberships.length === 0 && !isSuperadmin) {
     return null
@@ -63,12 +60,14 @@ export function OrganizationSwitcher() {
     activeMembership?.organization.name ??
     (isSuperadmin ? "All organizations" : "—")
 
-  const handleSelect = (organizationId: string) => {
-    setActiveOrganizationId(organizationId)
+  // Only navigate here — OrgScopeLayout is the single place that calls
+  // setActiveOrganizationId, triggered by the resulting route change.
+  const handleSelect = (orgSlug: string) => {
+    navigate(orgPath(orgSlug))
   }
 
   const handleViewAll = () => {
-    navigate("/superadmin/organizations")
+    navigate("/app/superadmin/organizations")
   }
 
   if (memberships.length === 1 && !isSuperadmin) {
@@ -100,7 +99,7 @@ export function OrganizationSwitcher() {
     return (
       <button
         type="button"
-        onClick={() => navigate("/settings/organization")}
+        onClick={() => navigate(orgPath(membership.organization.slug, "settings"))}
         title={triggerLabel}
         aria-label="Manage organization"
         className={cn(
@@ -144,7 +143,7 @@ export function OrganizationSwitcher() {
               return (
                 <DropdownMenuItem
                   key={m.id}
-                  onSelect={() => handleSelect(m.organization_id)}
+                  onSelect={() => handleSelect(m.organization.slug)}
                   className={cn(
                     "min-h-11 md:min-h-0 gap-3",
                     isActive && "bg-parchment-200",

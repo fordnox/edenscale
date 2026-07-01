@@ -3,7 +3,9 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { LogOut, Search, Settings, User as UserIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { orgPath } from "@/lib/appRoutes"
 import { deriveInitials } from "@/lib/userDisplay"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { useAuth } from "@/hooks/useAuth"
 import { useNavItems } from "@/hooks/useNavItems"
@@ -39,6 +41,7 @@ function SidebarBody({ onOpenSearch, onCloseSheet }: SidebarBodyProps) {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const { items, role } = useNavItems()
+  const { activeMembership } = useActiveOrganization()
   const tagline = (role && ROLE_TAGLINES[role]) ?? "Manager view"
 
   const handleSearchClick = () => {
@@ -188,15 +191,17 @@ function SidebarBody({ onOpenSearch, onCloseSheet }: SidebarBodyProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="min-h-11 md:min-h-0"
-              onSelect={() => navigate("/profile")}
+              onSelect={() => navigate("/app/profile")}
             >
               <UserIcon strokeWidth={1.5} />
               <span>Profile</span>
             </DropdownMenuItem>
-            {role === "admin" && (
+            {role === "admin" && activeMembership && (
               <DropdownMenuItem
                 className="min-h-11 md:min-h-0"
-                onSelect={() => navigate("/settings/organization")}
+                onSelect={() =>
+                  navigate(orgPath(activeMembership.organization.slug, "settings"))
+                }
               >
                 <Settings strokeWidth={1.5} />
                 <span>Organization settings</span>

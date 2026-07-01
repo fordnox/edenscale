@@ -57,7 +57,7 @@ function SuperadminOrganizationDetailContent() {
             body="The URL does not include a valid organization id."
             action={
               <Button asChild variant="secondary" size="sm">
-                <Link to="/superadmin/organizations">Back to organizations</Link>
+                <Link to="/app/superadmin/organizations">Back to organizations</Link>
               </Button>
             }
           />
@@ -147,7 +147,7 @@ function OrganizationDetail({ organizationId }: OrganizationDetailProps) {
 
       <div className="px-4 pt-6 sm:px-6 md:px-8">
         <Button asChild variant="ghost" size="sm" className="-ml-2">
-          <Link to="/superadmin/organizations">
+          <Link to="/app/superadmin/organizations">
             <ChevronLeft strokeWidth={1.5} className="size-4" />
             All organizations
           </Link>
@@ -191,7 +191,7 @@ function OrganizationDetail({ organizationId }: OrganizationDetailProps) {
               body="This organization may have been removed."
               action={
                 <Button asChild variant="secondary" size="sm">
-                  <Link to="/superadmin/organizations">
+                  <Link to="/app/superadmin/organizations">
                     Back to organizations
                   </Link>
                 </Button>

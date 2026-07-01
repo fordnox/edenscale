@@ -2043,6 +2043,8 @@ export interface components {
             fund_group_id: string | null;
             /** Name */
             name: string;
+            /** Slug */
+            slug: string;
             /** Currency Code */
             currency_code: string;
             /** Target Size */
@@ -2089,6 +2091,8 @@ export interface components {
             fund_group_id: string | null;
             /** Name */
             name: string;
+            /** Slug */
+            slug: string;
             /** Legal Name */
             legal_name: string | null;
             /** Vintage Year */
@@ -2589,6 +2593,8 @@ export interface components {
             type: components["schemas"]["OrganizationType"];
             /** Name */
             name: string;
+            /** Slug */
+            slug: string;
             /** Legal Name */
             legal_name: string | null;
             /** Tax Id */
