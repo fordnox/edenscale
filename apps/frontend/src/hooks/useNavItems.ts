@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { useParams } from "react-router-dom"
+import { useLocation, useParams } from "react-router-dom"
 import {
   ArrowDownToLine,
   ArrowLeft,
@@ -18,7 +18,7 @@ import {
 
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@/hooks/useApiQuery"
-import { fundPath, fundTabPath, orgPath } from "@/lib/appRoutes"
+import { fundPath, fundSlugFromPath, fundTabPath, orgPath } from "@/lib/appRoutes"
 import type { components } from "@/lib/schema"
 
 type UserRole = components["schemas"]["UserRole"]
@@ -148,11 +148,16 @@ export function useOrgNavItems(): UseNavItemsResult {
  * navigating to separate routes. */
 export function useFundNavItems(): UseNavItemsResult {
   const { activeMembership, isLoading } = useActiveOrganization()
-  const params = useParams<{ orgSlug: string; fundSlug: string }>()
+  const params = useParams<{ orgSlug?: string }>()
+  const { pathname } = useLocation()
   const role = activeMembership?.role ?? null
 
+  // The Sidebar renders at the /app/:orgSlug route level, so useParams never
+  // exposes the deeper :fundSlug — derive it from the URL instead.
+  const orgSlug = params.orgSlug ?? activeMembership?.organization.slug
+  const fundSlug = fundSlugFromPath(pathname)
+
   const items = useMemo<NavEntry[]>(() => {
-    const { orgSlug, fundSlug } = params
     if (!orgSlug || !fundSlug) return []
 
     const tabItem = (
@@ -180,18 +185,18 @@ export function useFundNavItems(): UseNavItemsResult {
         icon: ArrowLeft,
       },
     ]
-  }, [params, activeMembership])
+  }, [orgSlug, fundSlug, activeMembership])
 
   return { items, role, isLoading }
 }
 
-/** Dispatches between org- and fund-scoped nav based on the actually
- * matched route — `fundSlug` is only populated when the :fundSlug child
- * route genuinely matched (route specificity ranking means a static
- * sibling like /funds never resolves there). */
+/** Dispatches between org- and fund-scoped nav based on the URL: a third
+ * path segment that isn't a static org route (see fundSlugFromPath) means a
+ * fund page is open. The Sidebar renders above the :fundSlug route, so we
+ * read the path rather than useParams (which wouldn't expose fundSlug). */
 export function useNavItems(): UseNavItemsResult {
-  const { fundSlug } = useParams<{ fundSlug?: string }>()
+  const { pathname } = useLocation()
   const orgItems = useOrgNavItems()
   const fundItems = useFundNavItems()
-  return fundSlug ? fundItems : orgItems
+  return fundSlugFromPath(pathname) ? fundItems : orgItems
 }

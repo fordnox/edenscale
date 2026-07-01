@@ -7,9 +7,16 @@ import { useApiQuery } from "@/hooks/useApiQuery"
 
 export default function FundScopeLayout() {
   const { fundSlug } = useParams<{ fundSlug: string }>()
-  const fundsQuery = useApiQuery("/funds")
+  // Resolve the fund directly by slug (O(1) on the backend) rather than
+  // scanning the paginated /funds list, which would miss funds past the
+  // default page size.
+  const fundQuery = useApiQuery(
+    "/funds/by-slug/{slug}",
+    { params: { path: { slug: fundSlug ?? "" } } },
+    { enabled: Boolean(fundSlug), retry: false },
+  )
 
-  if (fundsQuery.isLoading) {
+  if (fundQuery.isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center text-ink-500">
         <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
@@ -17,7 +24,7 @@ export default function FundScopeLayout() {
     )
   }
 
-  const fund = fundsQuery.data?.find((f) => f.slug === fundSlug)
+  const fund = fundQuery.data
 
   if (!fund) {
     return (

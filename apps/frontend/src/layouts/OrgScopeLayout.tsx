@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { Link, useParams } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card"
 import { EmptyState } from "@/components/ui/EmptyState"
 import AppShell from "@/layouts/AppShell"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useApiQuery } from "@/hooks/useApiQuery"
 import { RESERVED_ORG_SLUGS } from "@/lib/appRoutes"
 import { setLastVisitedOrgSlug } from "@/lib/activeOrg"
 
@@ -22,27 +23,53 @@ function LoadingState() {
 
 export default function OrgScopeLayout() {
   const { orgSlug } = useParams<{ orgSlug: string }>()
-  const { memberships, isLoading, activeOrganizationId, setActiveOrganizationId } =
-    useActiveOrganization()
+  const {
+    memberships,
+    isLoading,
+    isSuperadmin,
+    activeOrganizationId,
+    setActiveOrganizationId,
+  } = useActiveOrganization()
 
-  const membership =
-    orgSlug && !RESERVED_ORG_SLUGS.has(orgSlug)
-      ? (memberships.find((m) => m.organization.slug === orgSlug) ?? null)
-      : null
+  const isResolvableSlug = Boolean(orgSlug) && !RESERVED_ORG_SLUGS.has(orgSlug!)
+
+  const membership = isResolvableSlug
+    ? (memberships.find((m) => m.organization.slug === orgSlug) ?? null)
+    : null
+
+  // A superadmin can act on any org even without a tenant membership row (the
+  // backend synthesizes a transient superadmin membership for the header).
+  // Resolve the slug to an org id via the superadmin org list so we can set
+  // the active-org header; only needed when no real membership matched.
+  const needsSuperadminResolve =
+    isResolvableSlug && !membership && isSuperadmin
+  const superadminOrgsQuery = useApiQuery("/superadmin/organizations", undefined, {
+    enabled: needsSuperadminResolve,
+  })
+  const superadminOrg = useMemo(
+    () =>
+      needsSuperadminResolve
+        ? (superadminOrgsQuery.data?.find((o) => o.slug === orgSlug) ?? null)
+        : null,
+    [needsSuperadminResolve, superadminOrgsQuery.data, orgSlug],
+  )
+
+  const resolvedOrgId = membership?.organization_id ?? superadminOrg?.id ?? null
+  const resolvedSlug = membership?.organization.slug ?? superadminOrg?.slug ?? null
 
   useEffect(() => {
-    if (!membership) return
-    if (activeOrganizationId !== membership.organization_id) {
-      setActiveOrganizationId(membership.organization_id)
+    if (!resolvedOrgId || !resolvedSlug) return
+    if (activeOrganizationId !== resolvedOrgId) {
+      setActiveOrganizationId(resolvedOrgId)
     }
-    setLastVisitedOrgSlug(membership.organization.slug)
-  }, [membership, activeOrganizationId, setActiveOrganizationId])
+    setLastVisitedOrgSlug(resolvedSlug)
+  }, [resolvedOrgId, resolvedSlug, activeOrganizationId, setActiveOrganizationId])
 
-  if (isLoading) {
+  if (isLoading || (needsSuperadminResolve && superadminOrgsQuery.isLoading)) {
     return <LoadingState />
   }
 
-  if (!membership) {
+  if (!resolvedOrgId) {
     return (
       <div className="flex min-h-svh items-center justify-center px-8 py-16">
         <Card className="w-full max-w-xl">
@@ -60,7 +87,7 @@ export default function OrgScopeLayout() {
     )
   }
 
-  if (activeOrganizationId !== membership.organization_id) {
+  if (activeOrganizationId !== resolvedOrgId) {
     // Still syncing the active-org header — hold off on rendering the shell
     // (and its data-fetching children) until requests carry the right org.
     return <LoadingState />

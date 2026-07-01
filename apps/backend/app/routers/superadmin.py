@@ -74,6 +74,7 @@ async def list_all_organizations(
             id=org.id,  # type: ignore[invalid-argument-type]
             type=org.type,  # type: ignore[invalid-argument-type]
             name=org.name,  # type: ignore[invalid-argument-type]
+            slug=org.slug,  # type: ignore[invalid-argument-type]
             is_active=org.is_active,  # type: ignore[invalid-argument-type]
             member_count=int(member_count or 0),
             created_at=org.created_at,  # type: ignore[invalid-argument-type]

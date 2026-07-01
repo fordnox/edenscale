@@ -53,6 +53,17 @@ class FundRepository:
     def get(self, fund_id: uuid.UUID) -> tuple[Fund, Decimal] | None:
         return self._base_query().filter(Fund.id == fund_id).first()
 
+    def get_by_slug(
+        self, organization_id: uuid.UUID, slug: str
+    ) -> tuple[Fund, Decimal] | None:
+        """Resolve a fund by its per-organization-unique slug. O(1) lookup so
+        slug-based routing doesn't depend on paging the full fund list."""
+        return (
+            self._base_query()
+            .filter(Fund.organization_id == organization_id, Fund.slug == slug)
+            .first()
+        )
+
     def membership_can_view(
         self, membership: UserOrganizationMembership, fund: Fund
     ) -> bool:

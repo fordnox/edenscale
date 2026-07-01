@@ -72,6 +72,32 @@ async def list_funds(
     return [_to_list_item(fund, current_size) for fund, current_size in rows]
 
 
+@router.get("/by-slug/{slug}", response_model=FundRead)
+async def get_fund_by_slug(
+    slug: str,
+    db: Session = Depends(get_db),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
+):
+    """Resolve a fund from its slug within the caller's active organization.
+
+    Declared before ``/{fund_id}`` so the literal ``by-slug`` prefix wins the
+    route match instead of being parsed as a fund UUID.
+    """
+    repo = FundRepository(db)
+    row = repo.get_by_slug(membership.organization_id, slug)  # type: ignore[invalid-argument-type]
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
+    fund, current_size = row
+    if not repo.membership_can_view(membership, fund):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot view this fund",
+        )
+    return _to_read_dict(fund, current_size)
+
+
 @router.get("/{fund_id}", response_model=FundRead)
 async def get_fund(
     fund_id: uuid.UUID,

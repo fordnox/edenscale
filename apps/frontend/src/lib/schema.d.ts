@@ -405,6 +405,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/funds/by-slug/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fund By Slug
+         * @description Resolve a fund from its slug within the caller's active organization.
+         *
+         *     Declared before ``/{fund_id}`` so the literal ``by-slug`` prefix wins the
+         *     route match instead of being parsed as a fund UUID.
+         */
+        get: operations["get_fund_by_slug_funds_by_slug__slug__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/funds/{fund_id}": {
         parameters: {
             query?: never;
@@ -2679,6 +2702,8 @@ export interface components {
             type: components["schemas"]["OrganizationType"];
             /** Name */
             name: string;
+            /** Slug */
+            slug: string;
             /** Is Active */
             is_active: boolean;
             /** Member Count */
@@ -3894,6 +3919,39 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_fund_by_slug_funds_by_slug__slug__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

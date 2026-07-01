@@ -29,6 +29,7 @@ class SuperadminOrganizationRead(BaseModel):
     id: UUID4
     type: OrganizationType
     name: str
+    slug: str
     is_active: bool
     member_count: int
     created_at: datetime | None

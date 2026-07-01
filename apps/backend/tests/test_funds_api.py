@@ -232,6 +232,69 @@ class TestListFunds:
         assert ids == [own_fund]
 
 
+class TestGetFundBySlug:
+    def test_resolves_fund_in_active_org(self, client, override_user):
+        org_id = _seed_org()
+        fund_id = _seed_fund(org_id, name="Growth Fund I")
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+
+        response = client.get("/funds/by-slug/growth-fund-i")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == fund_id
+        assert data["slug"] == "growth-fund-i"
+
+    def test_unknown_slug_returns_404(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+
+        response = client.get("/funds/by-slug/nope")
+        assert response.status_code == 404
+
+    def test_slug_from_other_org_not_resolvable(self, client, override_user):
+        """A slug that only exists in another org must 404, not leak across
+        tenants — the lookup is scoped to the active membership's org."""
+        own_org = _seed_org("Own")
+        other_org = _seed_org("Other")
+        _seed_fund(other_org, name="Secret Fund")
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=own_org,
+        )
+        override_user("hanko-fm")
+
+        response = client.get("/funds/by-slug/secret-fund")
+        assert response.status_code == 404
+
+    def test_lp_without_commitment_forbidden(self, client, override_user):
+        org_id = _seed_org()
+        _seed_fund(org_id, name="Growth Fund I")
+        _seed_user(
+            "hanko-lp",
+            UserRole.lp,
+            email="lp@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-lp")
+
+        response = client.get("/funds/by-slug/growth-fund-i")
+        assert response.status_code == 403
+
+
 class TestCrossOrgScopingViaHeader:
     """A multi-org admin must use ``X-Organization-Id`` to pick which org to
     act through, and must only see / act on funds from that org. Asserts the
