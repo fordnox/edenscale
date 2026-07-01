@@ -1,0 +1,7 @@
+{
+  "name": "newtaven-design-system",
+  "version": "0.0.0",
+  "private": true,
+  "main": ".design-sync/synth-entry.mjs",
+  "description": "Tokens-only design system (no packaged components) synced via /design-sync."
+}

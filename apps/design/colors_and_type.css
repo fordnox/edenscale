@@ -63,6 +63,14 @@
   src: url("fonts/InterTight-700.woff2") format("woff2");
 }
 
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/JetBrainsMono-400.woff2") format("woff2");
+}
+
 /* ============================================================
    COLOR TOKENS
    ============================================================ */

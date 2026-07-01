@@ -1,0 +1,9 @@
+{
+  "projectId": "019dd9f5-184c-7e6e-b4c7-7423adcc7fc5",
+  "pkg": "newtaven-design-system",
+  "globalName": "NewTaven",
+  "shape": "package",
+  "cssEntry": "colors_and_type.css",
+  "guidelinesGlob": [],
+  "readmeHeader": ".design-sync/conventions.md"
+}
