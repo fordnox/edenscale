@@ -19,7 +19,7 @@ export default function OnboardingPage() {
   const queryClient = useQueryClient()
   const { setActiveOrganizationId } = useActiveOrganization()
 
-  const [step, setStep] = useState<"firm" | "fund">("firm")
+  const [step, setStep] = useState<"firm" | "fund" | "investor">("firm")
   const [firmName, setFirmName] = useState("")
   const [legalName, setLegalName] = useState("")
   const [organizationId, setOrganizationId] = useState<string | null>(null)
@@ -27,6 +27,10 @@ export default function OnboardingPage() {
 
   const [fundName, setFundName] = useState("")
   const [vintageYear, setVintageYear] = useState("")
+  const [fundSlug, setFundSlug] = useState<string | null>(null)
+
+  const [investorName, setInvestorName] = useState("")
+  const [investorType, setInvestorType] = useState("")
 
   const createOrganization = useApiMutation(
     "post",
@@ -45,11 +49,27 @@ export default function OnboardingPage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/funds"] })
       toast.success(`${data.name} is ready.`)
-      if (organizationSlug) {
-        navigate(fundPath(organizationSlug, data.slug))
-      }
+      setFundSlug(data.slug)
+      setStep("investor")
     },
   })
+
+  const createInvestor = useApiMutation("post", "/investors", {
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/investors"] })
+      queryClient.invalidateQueries({ queryKey: ["/dashboard"] })
+      toast.success("Investor created", { description: data.name })
+      finishOnboarding()
+    },
+  })
+
+  function finishOnboarding() {
+    if (organizationSlug && fundSlug) {
+      navigate(fundPath(organizationSlug, fundSlug))
+    } else {
+      navigate(organizationSlug ? orgPath(organizationSlug) : "/app")
+    }
+  }
 
   function handleFirmSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -73,6 +93,18 @@ export default function OnboardingPage() {
         vintage_year: yearNumber && Number.isFinite(yearNumber) ? yearNumber : null,
         currency_code: "USD",
         status: "draft",
+      },
+    })
+  }
+
+  function handleInvestorSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!investorName.trim() || !organizationId || createInvestor.isPending) return
+    createInvestor.mutate({
+      body: {
+        name: investorName.trim(),
+        investor_type: investorType.trim() || null,
+        accredited: false,
       },
     })
   }
@@ -105,7 +137,7 @@ export default function OnboardingPage() {
                         administrator.
                       </p>
                     </>
-                  ) : (
+                  ) : step === "fund" ? (
                     <>
                       <h1 className="font-display text-[28px] leading-[1.1] font-medium tracking-[-0.015em] text-ink-900">
                         Create your first fund.
@@ -113,6 +145,16 @@ export default function OnboardingPage() {
                       <p className="max-w-md font-sans text-[14px] leading-[1.6] text-ink-700">
                         {firmName.trim()} is ready. Add a fund now, or skip and
                         do it later from the Funds page.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h1 className="font-display text-[28px] leading-[1.1] font-medium tracking-[-0.015em] text-ink-900">
+                        Add your first investor.
+                      </h1>
+                      <p className="max-w-md font-sans text-[14px] leading-[1.6] text-ink-700">
+                        Add a limited partner to the register now, or skip and
+                        do it later from the Investors page.
                       </p>
                     </>
                   )}
@@ -158,7 +200,7 @@ export default function OnboardingPage() {
                       Continue
                     </Button>
                   </form>
-                ) : (
+                ) : step === "fund" ? (
                   <form
                     onSubmit={handleFundSubmit}
                     className="flex flex-col gap-4"
@@ -206,9 +248,59 @@ export default function OnboardingPage() {
                         variant="ghost"
                         size="md"
                         disabled={createFund.isPending}
-                        onClick={() =>
-                          navigate(organizationSlug ? orgPath(organizationSlug) : "/app")
-                        }
+                        onClick={() => setStep("investor")}
+                      >
+                        Skip for now
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <form
+                    onSubmit={handleInvestorSubmit}
+                    className="flex flex-col gap-4"
+                  >
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="onboarding-investor-name">
+                        Investor name
+                      </Label>
+                      <Input
+                        id="onboarding-investor-name"
+                        value={investorName}
+                        onChange={(event) => setInvestorName(event.target.value)}
+                        placeholder="Beacon Family Office"
+                        autoFocus
+                        required
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="onboarding-investor-type">
+                        Investor type (optional)
+                      </Label>
+                      <Input
+                        id="onboarding-investor-type"
+                        value={investorType}
+                        onChange={(event) => setInvestorType(event.target.value)}
+                        placeholder="Family office"
+                      />
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        size="md"
+                        disabled={createInvestor.isPending || !investorName.trim()}
+                      >
+                        {createInvestor.isPending && (
+                          <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+                        )}
+                        Add investor
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="md"
+                        disabled={createInvestor.isPending}
+                        onClick={finishOnboarding}
                       >
                         Skip for now
                       </Button>
