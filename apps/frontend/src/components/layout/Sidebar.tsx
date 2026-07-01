@@ -73,26 +73,6 @@ function SidebarBody({ onOpenSearch, onCloseSheet }: SidebarBodyProps) {
 
       <nav className="flex-1 px-3 py-5">
         <ul className="flex flex-col gap-0.5">
-          <li>
-            <button
-              type="button"
-              onClick={handleSearchClick}
-              className={cn(
-                "group flex w-full min-h-11 md:min-h-0 items-center gap-3 rounded-xs px-3 py-3 md:py-2.5 text-left",
-                "transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
-                "font-sans text-[14px] text-ink-700 hover:bg-parchment-100 hover:text-ink-900",
-                "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
-              )}
-              aria-label="Open search"
-            >
-              <Search
-                className="size-[18px] shrink-0 text-ink-500"
-                strokeWidth={1.5}
-              />
-              <span className="flex-1">Search</span>
-              <Kbd className="bg-parchment-200 text-ink-700">⌘K</Kbd>
-            </button>
-          </li>
           {items.map((entry, index) => {
             if (entry.kind === "section") {
               return (
@@ -146,6 +126,26 @@ function SidebarBody({ onOpenSearch, onCloseSheet }: SidebarBodyProps) {
               </li>
             )
           })}
+          <li>
+            <button
+              type="button"
+              onClick={handleSearchClick}
+              className={cn(
+                "group flex w-full min-h-11 md:min-h-0 items-center gap-3 rounded-xs px-3 py-3 md:py-2.5 text-left",
+                "transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+                "font-sans text-[14px] text-ink-700 hover:bg-parchment-100 hover:text-ink-900",
+                "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
+              )}
+              aria-label="Open search"
+            >
+              <Search
+                className="size-[18px] shrink-0 text-ink-500"
+                strokeWidth={1.5}
+              />
+              <span className="flex-1">Search</span>
+              <Kbd className="bg-parchment-200 text-ink-700">⌘K</Kbd>
+            </button>
+          </li>
         </ul>
       </nav>
 

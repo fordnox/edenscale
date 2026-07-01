@@ -24,6 +24,7 @@ export default function AppShell() {
         onOpenSearch={() => setPaletteOpen(true)}
       />
       <div className="flex min-w-0 flex-1 flex-col">
+        <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
         {showBanner && (
           <PendingInvitationsBanner
             invitations={visibleInvitations}
