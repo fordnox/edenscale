@@ -61,7 +61,7 @@ function SuperadminOrganizationsContent() {
         }
       />
 
-      <div className="px-8 pb-16">
+      <div className="px-4 pb-16 sm:px-6 md:px-8">
         <Card>
           {orgsQuery.isLoading ? (
             <CardSection>

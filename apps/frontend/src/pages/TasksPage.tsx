@@ -174,7 +174,7 @@ export default function TasksPage() {
         }
       />
 
-      <div className="px-8 pb-16">
+      <div className="px-4 pb-16 sm:px-6 md:px-8">
         {canManage && (
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <Eyebrow>View</Eyebrow>

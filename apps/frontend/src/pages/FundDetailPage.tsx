@@ -134,7 +134,7 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
         }
       />
 
-      <div className="px-8 pb-16">
+      <div className="px-4 pb-16 sm:px-6 md:px-8">
         <div className="mb-2 flex flex-wrap items-center gap-3">
           <StatusPill kind="fund" value={fund.status} />
           {fund.legal_name && (

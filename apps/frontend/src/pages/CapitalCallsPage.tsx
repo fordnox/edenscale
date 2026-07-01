@@ -123,7 +123,7 @@ export default function CapitalCallsPage() {
         }
       />
 
-      <div className="px-8 pb-16">
+      <div className="px-4 pb-16 sm:px-6 md:px-8">
         <Card>
           <div className="grid grid-cols-2 md:grid-cols-4">
             <CardSection className="border-r border-b border-[color:var(--border-hairline)] md:border-b-0">

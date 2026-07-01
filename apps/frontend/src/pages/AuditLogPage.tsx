@@ -204,7 +204,7 @@ function AuditLogContent() {
         description="Every create, update, and delete recorded across the workspace, with the responsible actor and the diff."
       />
 
-      <div className="px-8 pb-16">
+      <div className="px-4 pb-16 sm:px-6 md:px-8">
         <div className="flex flex-col gap-6">
           <Card>
             <CardSection>

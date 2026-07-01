@@ -10,7 +10,7 @@ export function ComingSoon({ page }: { page: string }) {
         title={`${page} is on its way.`}
         description="This area of NewTaven is being prepared. Check back soon — the data and workflows for this section are landing in a future release."
       />
-      <div className="px-8 pb-16">
+      <div className="px-4 pb-16 sm:px-6 md:px-8">
         <Card>
           <CardSection className="flex flex-col gap-3">
             <Eyebrow>In progress</Eyebrow>

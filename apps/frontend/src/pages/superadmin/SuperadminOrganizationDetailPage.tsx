@@ -50,7 +50,7 @@ function SuperadminOrganizationDetailContent() {
 
   if (!orgId) {
     return (
-      <div className="px-8 py-16">
+      <div className="px-4 py-16 sm:px-6 md:px-8">
         <Card>
           <EmptyState
             title="Organization not found"
@@ -145,7 +145,7 @@ function OrganizationDetail({ organizationId }: OrganizationDetailProps) {
         </title>
       </Helmet>
 
-      <div className="px-8 pt-6">
+      <div className="px-4 pt-6 sm:px-6 md:px-8">
         <Button asChild variant="ghost" size="sm" className="-ml-2">
           <Link to="/superadmin/organizations">
             <ChevronLeft strokeWidth={1.5} className="size-4" />
@@ -175,7 +175,7 @@ function OrganizationDetail({ organizationId }: OrganizationDetailProps) {
         }
       />
 
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-8 pb-16">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-16 sm:px-6 md:px-8">
         {orgQuery.isLoading ? (
           <Card>
             <CardSection>

@@ -132,7 +132,7 @@ export default function ProfilePage() {
         description="Update your contact details. Roles and organization membership are managed by your administrator."
       />
 
-      <div className="px-8 pb-16">
+      <div className="px-4 pb-16 sm:px-6 md:px-8">
         {meQuery.isLoading ? (
           <div className="flex min-h-[280px] items-center justify-center text-ink-500">
             <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
