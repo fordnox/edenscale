@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/edenscale-design-system-019dd9f5-184c-7e6e-b4c7-7423adcc7fc5/colors_and_type.css">
+<link rel="stylesheet" href="_ds/edenscale-design-system-019dd9f5-184c-7e6e-b4c7-7423adcc7fc5/preview/_base.css">
+<script src="_ds/edenscale-design-system-019dd9f5-184c-7e6e-b4c7-7423adcc7fc5/_ds_bundle.js"></script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { margin: 0; }
+  ::selection { background: rgba(184,145,92,0.28); }
+  a { color: inherit; text-decoration: none; }
+  .nt-link { position: relative; }
+  .nt-link::after { content: ""; position: absolute; left: 0; bottom: -3px; height: 1px; width: 0; background: var(--brass-500); transition: width 140ms cubic-bezier(0.4,0,0.2,1); }
+  .nt-link:hover::after { width: 100%; }
+  .nt-btn-primary { background: var(--conifer-700); color: var(--fg-inverse); border: 1px solid var(--conifer-700); border-radius: 2px; font-family: var(--font-sans); font-weight: 500; letter-spacing: 0.01em; cursor: pointer; transition: background 140ms cubic-bezier(0.4,0,0.2,1); }
+  .nt-btn-primary:hover { background: var(--conifer-800); }
+  .nt-btn-primary:active { background: var(--conifer-900); }
+  .nt-btn-sec { background: transparent; color: var(--fg-primary); border: 1px solid var(--border-default); border-radius: 2px; font-family: var(--font-sans); font-weight: 500; cursor: pointer; transition: background 140ms cubic-bezier(0.4,0,0.2,1); }
+  .nt-btn-sec:hover { background: var(--parchment-200); }
+  .nt-card { transition: border-color 140ms cubic-bezier(0.4,0,0.2,1); }
+  .nt-card:hover { border-color: var(--border-default); }
+  .nt-input { font-family: var(--font-sans); font-size: 15px; color: var(--fg-primary); background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 2px; outline: none; transition: border-color 140ms cubic-bezier(0.4,0,0.2,1); }
+  .nt-input:focus { border-color: var(--conifer-700); box-shadow: 0 0 0 3px rgba(31,61,46,0.10); }
+  .nt-mono { font-family: var(--font-mono); }
+  @media (max-width: 900px) {
+    .nt-2col { grid-template-columns: 1fr !important; gap: 40px !important; }
+    .nt-tryit-grid { grid-template-columns: 1fr !important; }
+    .nt-tryit-left { border-right: 0 !important; border-bottom: 1px solid var(--border-hairline) !important; }
+  }
+  @media (max-width: 1040px) { .nt-3col { grid-template-columns: repeat(2, 1fr) !important; } }
+  @media (max-width: 640px) { .nt-3col { grid-template-columns: 1fr !important; } }
+</style>
+</helmet>
+
+<div ref="{{ rootRef }}" class="es-page" style="position: relative; overflow-x: hidden; --gut: clamp(24px, 6vw, 80px);">
+
+  <div style="position: fixed; inset: 0; z-index: 0; pointer-events: none; display: flex; justify-content: center;">
+    <div style="width: 100%; max-width: 1280px; height: 100%; padding: 0 var(--gut); box-sizing: border-box;">
+      <div style="height: 100%; border-left: 1px solid rgba(26,26,24,0.11); border-right: 1px solid rgba(26,26,24,0.11);"></div>
+    </div>
+  </div>
+
+  <svg data-noise="page" data-tone="ink" data-base="0.05" aria-hidden="true" style="position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0;"></svg>
+
+  <nav ref="{{ navRef }}" style="position: fixed; top: 0; left: 0; right: 0; z-index: 50; opacity: 0; pointer-events: none; transition: opacity 220ms cubic-bezier(0.4,0,0.2,1); background: var(--parchment-50); border-bottom: 1px solid var(--border-hairline); box-shadow: var(--shadow-xs);">
+    <div style="max-width: 1280px; margin: 0 auto; padding: 0 var(--gut); height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+      <a href="#top" style="display: flex; align-items: center; gap: 10px;">
+        <svg viewBox="0 0 64 64" width="20" height="20" style="color: var(--conifer-700);" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M32 4 C 18 12, 10 24, 10 36 C 10 49, 20 60, 32 60 C 44 60, 54 49, 54 36 C 54 24, 46 12, 32 4 Z M32 50 L 32 30 L 26 30 L 32 22 L 38 30 L 32 30 L 32 50 Z"></path></svg>
+        <span style="font-family: var(--font-sans); font-weight: 600; font-size: 16px; letter-spacing: -0.01em; color: var(--fg-primary);">NewTaven</span>
+      </a>
+      <div style="display: flex; align-items: center; gap: 28px;">
+        <a href="#problem" class="nt-link nt-mono" style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-secondary);">Problem</a>
+        <a href="#how" class="nt-link nt-mono" style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-secondary);">How it works</a>
+        <a href="#cadence" class="nt-link nt-mono" style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-secondary);">Cadence</a>
+        <a href="#features" class="nt-link nt-mono" style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-secondary);">Features</a>
+        <a href="#pricing" class="nt-link nt-mono" style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-secondary);">Pricing</a>
+        <button class="nt-btn-primary" onClick="{{ onRequest }}" style="font-size: 13px; padding: 9px 18px;">Request access</button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="top" style="position: relative; z-index: 1;">
+
+    <!-- ============ 01 HERO ============ -->
+    <section style="max-width: 1280px; margin: 0 auto; padding: clamp(96px, 14vw, 168px) var(--gut) clamp(64px, 10vw, 112px);">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 28px;">
+        <svg viewBox="0 0 64 64" width="24" height="24" style="color: var(--conifer-700);" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M32 4 C 18 12, 10 24, 10 36 C 10 49, 20 60, 32 60 C 44 60, 54 49, 54 36 C 54 24, 46 12, 32 4 Z M32 50 L 32 30 L 26 30 L 32 22 L 38 30 L 32 30 L 32 50 Z"></path></svg>
+        <span class="nt-mono" style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brass-700);">01 // NewTaven</span>
+      </div>
+      <div class="nt-2col" style="display: grid; grid-template-columns: 7fr 5fr; gap: clamp(40px, 6vw, 88px); align-items: center;">
+        <div>
+          <h1 class="es-display-xl" style="margin: 0 0 28px; max-width: 12ch;">Manage your LPs like the deals depend on it.</h1>
+          <p class="es-body-l" style="max-width: 46ch; margin: 0 0 36px; color: var(--fg-secondary);">NewTaven keeps your limited partners, capital calls, and quarterly communications in one calm place — so nothing slips between the fund and the founders you back.</p>
+          <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <button class="nt-btn-primary" onClick="{{ onRequest }}" style="font-size: 15px; padding: 14px 26px;">Request access</button>
+            <a href="#how" class="nt-link" style="font-family: var(--font-sans); font-weight: 500; font-size: 15px; color: var(--fg-primary); border-bottom: 1px solid var(--brass-500); padding-bottom: 2px;">See how it works →</a>
+          </div>
+        </div>
+
+        <!-- product mock: capital call ledger -->
+        <div class="nt-card" style="background: var(--bg-surface); border: 1px solid var(--border-hairline); padding: 24px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-family: var(--font-sans); font-weight: 600; font-size: 15px; color: var(--fg-primary);">Fund II — Capital Call 03</span>
+            <span class="nt-mono" style="font-size: 11px; letter-spacing: 0.08em; color: var(--brass-700);">68% FUNDED</span>
+          </div>
+          <div style="height: 3px; background: var(--parchment-200); margin: 12px 0 20px; overflow: hidden;">
+            <div style="width: 68%; height: 100%; background: var(--conifer-600);"></div>
+          </div>
+          <div style="display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--border-hairline);">
+              <span style="font-size: 14px; color: var(--fg-primary);">Meridian Family Office</span>
+              <span style="display: flex; align-items: center; gap: 12px;"><span class="es-numeric" style="font-size: 14px; color: var(--fg-secondary);">$2,500,000</span><span style="font-size: 11px; padding: 2px 10px; border-radius: 999px; background: rgba(74,122,79,0.12); color: var(--status-positive);">Wired</span></span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--border-hairline);">
+              <span style="font-size: 14px; color: var(--fg-primary);">Alderman Endowment</span>
+              <span style="display: flex; align-items: center; gap: 12px;"><span class="es-numeric" style="font-size: 14px; color: var(--fg-secondary);">$1,750,000</span><span style="font-size: 11px; padding: 2px 10px; border-radius: 999px; background: rgba(74,122,79,0.12); color: var(--status-positive);">Wired</span></span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--border-hairline);">
+              <span style="font-size: 14px; color: var(--fg-primary);">Kessler Capital</span>
+              <span style="display: flex; align-items: center; gap: 12px;"><span class="es-numeric" style="font-size: 14px; color: var(--fg-secondary);">$900,000</span><span style="font-size: 11px; padding: 2px 10px; border-radius: 999px; background: rgba(184,145,92,0.16); color: var(--brass-700);">Follow-up T+7d</span></span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--border-hairline);">
+              <span style="font-size: 14px; color: var(--fg-primary);">Novak & Sons</span>
+              <span style="display: flex; align-items: center; gap: 12px;"><span class="es-numeric" style="font-size: 14px; color: var(--fg-secondary);">$600,000</span><span style="font-size: 11px; padding: 2px 10px; border-radius: 999px; background: rgba(184,145,92,0.16); color: var(--brass-700);">Follow-up T+72h</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div style="max-width: 1280px; margin: 0 auto; padding: 0 var(--gut); position: relative;"><hr style="border: 0; border-top: 1px solid var(--border-hairline); margin: 0;"><span style="position: absolute; top: -4.5px; left: calc(var(--gut) - 4.5px); line-height: 0; color: var(--border-strong);"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg></span><span style="position: absolute; top: -4.5px; right: calc(var(--gut) - 4.5px); line-height: 0; color: var(--border-strong);"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg></span></div>
+
+    <!-- ============ 02 THE PROBLEM ============ -->
+    <section id="problem" style="max-width: 1280px; margin: 0 auto; padding: clamp(64px, 12vw, 128px) var(--gut);">
+      <div data-reveal class="nt-2col" style="display: grid; grid-template-columns: 5fr 7fr; gap: clamp(32px, 5vw, 72px); align-items: end; margin-bottom: 64px;">
+        <span class="nt-mono" style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brass-700);">02 // The problem</span>
+        <h2 class="es-display-m" style="margin: 0; max-width: 18ch;">Small funds run on memory and spreadsheets.</h2>
+      </div>
+      <div data-reveal class="nt-3col" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border-hairline); border: 1px solid var(--border-hairline);">
+        <div style="background: var(--bg-page); padding: 32px;">
+          <span class="nt-mono" style="font-size: 12px; color: var(--brass-700);">01</span>
+          <h3 class="es-h3" style="margin: 16px 0 10px;">Capital calls live in your inbox.</h3>
+          <p class="es-body" style="margin: 0;">Amounts, wire dates, and confirmations scattered across threads. No single view of who has funded and who hasn't.</p>
+        </div>
+        <div style="background: var(--bg-page); padding: 32px;">
+          <span class="nt-mono" style="font-size: 12px; color: var(--brass-700);">02</span>
+          <h3 class="es-h3" style="margin: 16px 0 10px;">LP records drift out of date.</h3>
+          <p class="es-body" style="margin: 0;">A commitment changes, a contact leaves, an entity is restructured — and the spreadsheet quietly stops matching reality.</p>
+        </div>
+        <div style="background: var(--bg-page); padding: 32px;">
+          <span class="nt-mono" style="font-size: 12px; color: var(--brass-700);">03</span>
+          <h3 class="es-h3" style="margin: 16px 0 10px;">Follow-ups depend on remembering.</h3>
+          <p class="es-body" style="margin: 0;">The polite second nudge is the one that gets the wire in. It is also the first thing to fall off a busy week.</p>
+        </div>
+      </div>
+    </section>
+
+    <div style="max-width: 1280px; margin: 0 auto; padding: 0 var(--gut); position: relative;"><hr style="border: 0; border-top: 1px solid var(--border-hairline); margin: 0;"><span style="position: absolute; top: -4.5px; left: calc(var(--gut) - 4.5px); line-height: 0; color: var(--border-strong);"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg></span><span style="position: absolute; top: -4.5px; right: calc(var(--gut) - 4.5px); line-height: 0; color: var(--border-strong);"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg></span></div>
+
+    <!-- ============ 03 HOW IT WORKS ============ -->
+    <section id="how" style="max-width: 1280px; margin: 0 auto; padding: clamp(64px, 12vw, 128px) var(--gut);">
+      <div data-reveal style="margin-bottom: 64px; max-width: 720px;">
+        <span class="nt-mono" style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brass-700); display: block; margin-bottom: 24px;">03 // How it works</span>
+        <h2 class="es-display-m" style="margin: 0 0 20px;">Three steps, then it runs itself.</h2>
+        <p class="es-body-l" style="margin: 0; color: var(--fg-secondary);">Bring your fund in once. From there, NewTaven handles the mechanics you would otherwise do by hand.</p>
+      </div>
+      <div data-reveal class="nt-3col" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(24px, 4vw, 56px);">
+        <div style="border-top: 1px solid var(--border-default); padding-top: 24px;">
+          <span class="nt-mono" style="font-size: 13px; letter-spacing: 0.08em; color: var(--brass-700);">STEP 01</span>
+          <h3 class="es-h2" style="font-family: var(--font-display); font-weight: 500; margin: 16px 0 12px;">Bring your LPs in</h3>
+          <p class="es-body" style="margin: 0;">Import commitments, contacts, and entities. NewTaven becomes the register of record for the whole fund.</p>
+        </div>
+        <div style="border-top: 1px solid var(--border-default); padding-top: 24px;">
+          <span class="nt-mono" style="font-size: 13px; letter-spacing: 0.08em; color: var(--brass-700);">STEP 02</span>
+          <h3 class="es-h2" style="font-family: var(--font-display); font-weight: 500; margin: 16px 0 12px;">Issue a call</h3>
+          <p class="es-body" style="margin: 0;">Draft a capital call once. Each LP receives their exact figure, wire details, and due date — no mail merge.</p>
+        </div>
+        <div style="border-top: 1px solid var(--border-default); padding-top: 24px;">
+          <span class="nt-mono" style="font-size: 13px; letter-spacing: 0.08em; color: var(--brass-700);">STEP 03</span>
+          <h3 class="es-h2" style="font-family: var(--font-display); font-weight: 500; margin: 16px 0 12px;">Let the cadence run</h3>
+          <p class="es-body" style="margin: 0;">Wires reconcile against the register. Anyone outstanding gets a measured follow-up on schedule — in your voice.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 04 THE CADENCE (dark, scroll-animated) ============ -->
+    <section id="cadence" style="background: var(--conifer-700); color: var(--fg-inverse); position: relative;">
+      <span style="position: absolute; top: -4.5px; left: calc(var(--gut) - 4.5px); line-height: 0; color: rgba(251,249,244,0.45); z-index: 2;"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg></span><span style="position: absolute; top: -4.5px; right: calc(var(--gut) - 4.5px); line-height: 0; color: rgba(251,249,244,0.45); z-index: 2;"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg></span>
+      <svg data-noise="dark" data-tone="parchment" data-base="0.10" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0;"></svg>
+      <div ref="{{ cadenceRef }}" style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: clamp(72px, 12vw, 128px) var(--gut);">
+        <div style="max-width: 640px; margin-bottom: 56px;">
+          <span class="nt-mono" style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brass-300); display: block; margin-bottom: 24px;">04 // The cadence</span>
+          <h2 class="es-display-m" style="margin: 0 0 20px; color: var(--fg-inverse);">The follow-ups you'd never get around to.</h2>
+          <p class="es-body-l" style="margin: 0; color: rgba(251,249,244,0.72);">When a wire is still outstanding, NewTaven sends a measured reminder — at 72 hours, 7 days, and 14 days. Considerate, never pushy. You approve the voice once.</p>
+        </div>
+
+        <!-- timeline -->
+        <svg viewBox="0 0 1120 96" width="100%" style="display: block; overflow: visible; margin-bottom: 8px;" aria-hidden="true">
+          <line x1="8" y1="48" x2="1112" y2="48" stroke="rgba(251,249,244,0.14)" stroke-width="1"></line>
+          <path id="cadence-line" d="M8 48 H 1112" fill="none" stroke="var(--brass-500)" stroke-width="2"></path>
+          <g>
+            <circle data-marker cx="200" cy="48" r="7" fill="var(--brass-500)" style="transform: scale(0); transform-box: fill-box; transform-origin: center;"></circle>
+            <circle cx="200" cy="48" r="7" fill="none" stroke="rgba(251,249,244,0.25)" stroke-width="1"></circle>
+          </g>
+          <g>
+            <circle data-marker cx="560" cy="48" r="7" fill="var(--brass-500)" style="transform: scale(0); transform-box: fill-box; transform-origin: center;"></circle>
+            <circle cx="560" cy="48" r="7" fill="none" stroke="rgba(251,249,244,0.25)" stroke-width="1"></circle>
+          </g>
+          <g>
+            <circle data-marker cx="920" cy="48" r="7" fill="var(--brass-500)" style="transform: scale(0); transform-box: fill-box; transform-origin: center;"></circle>
+            <circle cx="920" cy="48" r="7" fill="none" stroke="rgba(251,249,244,0.25)" stroke-width="1"></circle>
+          </g>
+          <text x="200" y="82" text-anchor="middle" fill="rgba(251,249,244,0.62)" style="font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.06em;">T+72h</text>
+          <text x="560" y="82" text-anchor="middle" fill="rgba(251,249,244,0.62)" style="font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.06em;">T+7d</text>
+          <text x="920" y="82" text-anchor="middle" fill="rgba(251,249,244,0.62)" style="font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.06em;">T+14d</text>
+        </svg>
+
+        <!-- email preview cards -->
+        <div class="nt-3col" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2.5vw, 32px); margin-top: 40px;">
+          <div data-cadence-card style="opacity: 0; transform: translateX(24px); background: var(--parchment-50); color: var(--fg-primary); border: 1px solid rgba(251,249,244,0.12); padding: 22px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;"><span class="nt-mono" style="font-size: 11px; letter-spacing: 0.08em; color: var(--brass-700);">DRAFT · T+72h</span><span class="nt-mono" style="font-size: 11px; color: var(--fg-tertiary);">Gentle</span></div>
+            <div style="font-family: var(--font-sans); font-weight: 600; font-size: 15px; margin-bottom: 10px;">A quick note on the Fund II call</div>
+            <p class="es-body-s" style="margin: 0;">The Fund II call is at 68% funded. A reminder that your portion — $900,000 — is due by the 30th. Wire details are unchanged, and attached again for convenience.</p>
+          </div>
+          <div data-cadence-card style="opacity: 0; transform: translateX(24px); background: var(--parchment-50); color: var(--fg-primary); border: 1px solid rgba(251,249,244,0.12); padding: 22px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;"><span class="nt-mono" style="font-size: 11px; letter-spacing: 0.08em; color: var(--brass-700);">DRAFT · T+7d</span><span class="nt-mono" style="font-size: 11px; color: var(--fg-tertiary);">Warm</span></div>
+            <div style="font-family: var(--font-sans); font-weight: 600; font-size: 15px; margin-bottom: 10px;">Following up on the Fund II call</div>
+            <p class="es-body-s" style="margin: 0;">One week out. We are holding your allocation. If the timing is tight on your end, reply here and we will work with your team on the date.</p>
+          </div>
+          <div data-cadence-card style="opacity: 0; transform: translateX(24px); background: var(--parchment-50); color: var(--fg-primary); border: 1px solid rgba(251,249,244,0.12); padding: 22px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;"><span class="nt-mono" style="font-size: 11px; letter-spacing: 0.08em; color: var(--brass-700);">DRAFT · T+14d</span><span class="nt-mono" style="font-size: 11px; color: var(--fg-tertiary);">Direct</span></div>
+            <div style="font-family: var(--font-sans); font-weight: 600; font-size: 15px; margin-bottom: 10px;">Final reminder — Fund II</div>
+            <p class="es-body-s" style="margin: 0;">The call closes Friday. Please confirm your wire, or let us know if anything has changed on your end. We would rather adjust than assume.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 05 FEATURES ============ -->
+    <section id="features" style="max-width: 1280px; margin: 0 auto; padding: clamp(64px, 12vw, 128px) var(--gut);">
+      <div data-reveal style="margin-bottom: 64px; max-width: 720px;">
+        <span class="nt-mono" style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brass-700); display: block; margin-bottom: 24px;">05 // Features</span>
+        <h2 class="es-display-m" style="margin: 0;">Everything the fund needs. Nothing it doesn't.</h2>
+      </div>
+      <div data-reveal class="nt-3col" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border-hairline); border: 1px solid var(--border-hairline);">
+        <div class="nt-card" style="background: var(--bg-page); padding: 32px;">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--conifer-700)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16"></rect><line x1="3" y1="9.5" x2="21" y2="9.5"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="4" x2="9" y2="20"></line></svg>
+          <h3 class="es-h3" style="margin: 20px 0 10px;">LP register</h3>
+          <p class="es-body" style="margin: 0;">A single record of every commitment, contact, and entity — always current, always exportable.</p>
+        </div>
+        <div class="nt-card" style="background: var(--bg-page); padding: 32px;">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--conifer-700)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v10"></path><path d="M8 9l4 4 4-4"></path><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path></svg>
+          <h3 class="es-h3" style="margin: 20px 0 10px;">Capital calls & distributions</h3>
+          <p class="es-body" style="margin: 0;">Issue a call once; each LP gets their exact figure and wire instructions. Distributions run the same way, in reverse.</p>
+        </div>
+        <div class="nt-card" style="background: var(--bg-page); padding: 32px;">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--conifer-700)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="7"></circle><path d="M12 10v3l2 1.5"></path><path d="M9 2h6"></path></svg>
+          <h3 class="es-h3" style="margin: 20px 0 10px;">Automated cadence</h3>
+          <p class="es-body" style="margin: 0;">Measured follow-ups on outstanding wires — 72h, 7d, 14d — sent in your fund's voice, only until the wire clears.</p>
+        </div>
+        <div class="nt-card" style="background: var(--bg-page); padding: 32px;">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--conifer-700)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path><circle cx="12" cy="15.5" r="1.2"></circle></svg>
+          <h3 class="es-h3" style="margin: 20px 0 10px;">Investor portal</h3>
+          <p class="es-body" style="margin: 0;">Each LP sees their commitments, calls, distributions, and documents — without another login you have to support.</p>
+        </div>
+        <div class="nt-card" style="background: var(--bg-page); padding: 32px;">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--conifer-700)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14"></rect><path d="M3 6l9 7 9-7"></path></svg>
+          <h3 class="es-h3" style="margin: 20px 0 10px;">Quarterly letters</h3>
+          <p class="es-body" style="margin: 0;">Compose the letter once; NewTaven personalizes and delivers it on the fifteenth, with read receipts by LP.</p>
+        </div>
+        <div class="nt-card" style="background: var(--bg-page); padding: 32px;">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--conifer-700)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 1 9 9"></path><path d="M3 12v5h5"></path><path d="M9 12l2 2 4-4"></path></svg>
+          <h3 class="es-h3" style="margin: 20px 0 10px;">Wire reconciliation</h3>
+          <p class="es-body" style="margin: 0;">Incoming wires match against the register automatically. What clears is marked funded; what doesn't enters the cadence.</p>
+        </div>
+      </div>
+    </section>
+
+    <div style="max-width: 1280px; margin: 0 auto; padding: 0 var(--gut); position: relative;"><hr style="border: 0; border-top: 1px solid var(--border-hairline); margin: 0;"><span style="position: absolute; top: -4.5px; left: calc(var(--gut) - 4.5px); line-height: 0; color: var(--border-strong);"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg></span><span style="position: absolute; top: -4.5px; right: calc(var(--gut) - 4.5px); line-height: 0; color: var(--border-strong);"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg></span></div>
+
+    <!-- ============ 06 TRY IT ============ -->
+    <section style="max-width: 1280px; margin: 0 auto; padding: clamp(64px, 12vw, 128px) var(--gut);">
+      <div style="border: 1px solid var(--border-default); background: var(--bg-surface);">
+        <div class="nt-tryit-grid" style="display: grid; grid-template-columns: 5fr 7fr;">
+          <div data-reveal class="nt-tryit-left" style="padding: clamp(32px, 4vw, 56px); border-right: 1px solid var(--border-hairline);">
+            <span class="nt-mono" style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brass-700); display: block; margin-bottom: 24px;">06 // Try it</span>
+            <h2 class="es-display-s" style="margin: 0 0 16px;">Draft an LP note in NewTaven's voice.</h2>
+            <p class="es-body" style="margin: 0 0 28px; color: var(--fg-secondary);">Describe the situation. NewTaven writes a short, plain email you could send to your limited partners — no puffery, no exclamation marks.</p>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <label class="nt-mono" style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-tertiary);">What do you need to say?</label>
+              <textarea class="nt-input" onChange="{{ onInput }}" onInput="{{ onInput }}" value="{{ tryInput }}" rows="4" placeholder="e.g. Fund II is closing next month and we're at 82% of target." style="padding: 12px 14px; resize: vertical; line-height: 1.5;"></textarea>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px;">
+                <button class="nt-btn-sec" onClick="{{ onPreset1 }}" style="font-size: 12px; padding: 7px 12px;">Delay in a distribution</button>
+                <button class="nt-btn-sec" onClick="{{ onPreset2 }}" style="font-size: 12px; padding: 7px 12px;">New portfolio company</button>
+                <button class="nt-btn-sec" onClick="{{ onPreset3 }}" style="font-size: 12px; padding: 7px 12px;">Quarterly update is live</button>
+              </div>
+              <button class="nt-btn-primary" onClick="{{ onDraft }}" style="font-size: 15px; padding: 13px 24px; margin-top: 8px; align-self: flex-start;">{{ draftLabel }}</button>
+              <sc-if value="{{ tryError }}" hint-placeholder-val="">
+                <span style="font-size: 13px; color: var(--status-negative);">{{ tryError }}</span>
+              </sc-if>
+            </div>
+          </div>
+          <div style="padding: clamp(32px, 4vw, 56px); background: var(--parchment-50); min-height: 320px; display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+              <span class="nt-mono" style="font-size: 11px; letter-spacing: 0.08em; color: var(--brass-700);">DRAFT PREVIEW</span>
+              <span class="nt-mono" style="font-size: 11px; color: var(--fg-tertiary);">to: limited partners</span>
+            </div>
+            <sc-if value="{{ tryLoading }}" hint-placeholder-val="">
+              <div style="display: flex; align-items: center; gap: 12px; color: var(--fg-tertiary); font-size: 14px;">
+                <span style="width: 8px; height: 8px; border-radius: 999px; background: var(--brass-500);"></span>Drafting a note…
+              </div>
+            </sc-if>
+            <sc-if value="{{ hasResult }}" hint-placeholder-val="">
+              <div style="font-family: var(--font-sans); font-size: 15px; line-height: 1.6; color: var(--fg-primary); white-space: pre-wrap;">{{ tryResult }}</div>
+            </sc-if>
+            <sc-if value="{{ showPlaceholder }}" hint-placeholder-val="{{ true }}">
+              <div style="color: var(--fg-muted); font-size: 15px; line-height: 1.6; font-style: italic; font-family: var(--font-display);">Your drafted note will appear here — ready to review, edit, and send from NewTaven.</div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div style="max-width: 1280px; margin: 0 auto; padding: 0 var(--gut); position: relative;"><hr style="border: 0; border-top: 1px solid var(--border-hairline); margin: 0;"><span style="position: absolute; top: -4.5px; left: calc(var(--gut) - 4.5px); line-height: 0; color: var(--border-strong);"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg></span><span style="position: absolute; top: -4.5px; right: calc(var(--gut) - 4.5px); line-height: 0; color: var(--border-strong);"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg></span></div>
+
+    <!-- ============ 07 PRICING ============ -->
+    <section id="pricing" style="max-width: 1280px; margin: 0 auto; padding: clamp(64px, 12vw, 128px) var(--gut);">
+      <div data-reveal class="nt-2col" style="display: grid; grid-template-columns: 5fr 7fr; gap: clamp(32px, 5vw, 72px); align-items: center;">
+        <div>
+          <span class="nt-mono" style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brass-700); display: block; margin-bottom: 24px;">07 // Pricing</span>
+          <h2 class="es-display-m" style="margin: 0;">Pricing is a conversation.</h2>
+        </div>
+        <div>
+          <p class="es-body-l" style="margin: 0 0 28px; color: var(--fg-secondary); max-width: 46ch;">Every fund is a different size, at a different stage, with a different LP base. We would rather understand yours than post a number that fits no one. A short call, a fair quote, no obligation.</p>
+          <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <button class="nt-btn-primary" onClick="{{ onRequest }}" style="font-size: 15px; padding: 14px 26px;">Contact us for pricing</button>
+            <a href="/cdn-cgi/l/email-protection#1969786b6d777c6b6a59777c6e6d786f7c77377a7674" class="nt-link" style="font-family: var(--font-sans); font-weight: 500; font-size: 15px; color: var(--fg-primary); border-bottom: 1px solid var(--brass-500); padding-bottom: 2px;"><span class="__cf_email__" data-cfemail="1969786b6d777c6b6a59777c6e6d786f7c77377a7674">[email&#160;protected]</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 08 FOOTER CTA ============ -->
+    <section style="background: var(--conifer-700); color: var(--fg-inverse); position: relative;">
+      <span style="position: absolute; top: -4.5px; left: calc(var(--gut) - 4.5px); line-height: 0; color: rgba(251,249,244,0.45); z-index: 2;"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg></span><span style="position: absolute; top: -4.5px; right: calc(var(--gut) - 4.5px); line-height: 0; color: rgba(251,249,244,0.45); z-index: 2;"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg></span>
+      <svg data-noise="dark" data-tone="parchment" data-base="0.10" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0;"></svg>
+      <div style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: clamp(80px, 12vw, 144px) var(--gut) clamp(40px, 6vw, 64px);">
+        <div style="max-width: 680px; margin-bottom: 48px;">
+          <h2 class="es-display-l" style="margin: 0 0 28px; color: var(--fg-inverse); max-width: 13ch;">Give your fund the back office it never had time to build.</h2>
+          <button class="nt-btn-primary" onClick="{{ onRequest }}" style="background: var(--parchment-50); color: var(--conifer-800); border-color: var(--parchment-50); font-size: 15px; padding: 14px 28px;">Request access</button>
+        </div>
+        <hr style="border: 0; border-top: 1px solid rgba(251,249,244,0.16); margin: 0 0 32px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg viewBox="0 0 64 64" width="20" height="20" style="color: var(--brass-300);" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M32 4 C 18 12, 10 24, 10 36 C 10 49, 20 60, 32 60 C 44 60, 54 49, 54 36 C 54 24, 46 12, 32 4 Z M32 50 L 32 30 L 26 30 L 32 22 L 38 30 L 32 30 L 32 50 Z"></path></svg>
+            <span style="font-family: var(--font-sans); font-weight: 600; font-size: 15px; color: var(--fg-inverse);">NewTaven</span>
+          </div>
+          <span class="nt-mono" style="font-size: 11px; letter-spacing: 0.08em; color: rgba(251,249,244,0.5);">© 2026 NewTaven — Fund administration for small managers</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+</x-dc>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;showNoise&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Noise texture&quot;},&quot;noisePattern&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;lines&quot;,&quot;dots&quot;],&quot;default&quot;:&quot;lines&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Noise texture&quot;},&quot;noiseIntensity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0,&quot;max&quot;:1,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Noise texture&quot;}}">
+class Component extends DCLogic {
+  state = { tryInput: "", tryLoading: false, tryResult: "", tryError: "" };
+
+  componentDidMount() {
+    // Sticky nav fade-in after 600px
+    this.onScroll = () => {
+      if (!this.nav) return;
+      const show = window.scrollY > 600;
+      this.nav.style.opacity = show ? "1" : "0";
+      this.nav.style.pointerEvents = show ? "auto" : "none";
+    };
+    window.addEventListener("scroll", this.onScroll, { passive: true });
+    this.onScroll();
+
+    // Scroll reveals — opacity 0->1 + 8px translateY, once
+    if (this.root) {
+      const revealObs = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.style.opacity = "1";
+            e.target.style.transform = "none";
+            revealObs.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.15 });
+      this.root.querySelectorAll("[data-reveal]").forEach((n) => {
+        n.style.opacity = "0";
+        n.style.transform = "translateY(8px)";
+        n.style.transition = "opacity 400ms cubic-bezier(0.4,0,0.2,1), transform 400ms cubic-bezier(0.4,0,0.2,1)";
+        revealObs.observe(n);
+      });
+
+      // Cadence — draw timeline + activate markers + slide in cards, threshold 0.3
+      if (this.cadence) {
+        const cadObs = new IntersectionObserver((entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) { this.runCadence(); cadObs.disconnect(); }
+          });
+        }, { threshold: 0.3 });
+        cadObs.observe(this.cadence);
+      }
+    }
+
+    // Generative noise grain — subtle paper texture across the site
+    import("./noise-field.js").then((mod) => {
+      this._noise = mod;
+      this.buildNoise();
+      this.startReactive();
+    }).catch(() => {});
+    let rt;
+    this._onResize = () => { clearTimeout(rt); rt = setTimeout(() => this.buildNoise(), 200); };
+    window.addEventListener("resize", this._onResize);
+  }
+
+  componentDidUpdate(prevProps) {
+    const p = prevProps || {};
+    if (p.noisePattern !== this.props.noisePattern ||
+        p.noiseIntensity !== this.props.noiseIntensity ||
+        p.showNoise !== this.props.showNoise) {
+      this.buildNoise();
+    }
+  }
+
+  buildNoise() {
+    if (!this._noise || !this.root) return;
+    const show = this.props.showNoise ?? true;
+    const pattern = this.props.noisePattern ?? "lines";
+    const intensity = this.props.noiseIntensity ?? 0.5;
+    const mult = 0.35 + intensity * 1.3;
+    this._fields = [];
+    this.root.querySelectorAll("[data-noise]").forEach((svg) => {
+      if (!show) { svg.innerHTML = ""; svg.style.opacity = "0"; return; }
+      const kind = svg.getAttribute("data-noise");
+      const rect = svg.getBoundingClientRect();
+      const w = Math.ceil(rect.width) || window.innerWidth;
+      const h = Math.ceil(rect.height) || window.innerHeight;
+      if (w < 2 || h < 2) return;
+      const color = svg.getAttribute("data-tone") === "parchment" ? "#FBF9F4" : "#1A1A18";
+      const base = parseFloat(svg.getAttribute("data-base")) || 0.05;
+      const res = kind === "page" ? 34 : 26;
+      svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+      svg.setAttribute("preserveAspectRatio", "none");
+      svg.innerHTML = this._noise.renderNoiseField({ width: w, height: h, res: res, mode: pattern, color: color });
+      svg.style.opacity = String(Math.min(0.24, base * mult));
+
+      // Collect marks for mouse-reactive flow field
+      const marks = [];
+      if (pattern === "dots") {
+        svg.querySelectorAll("circle").forEach((el) => {
+          marks.push({ el: el, cx: +el.getAttribute("cx"), cy: +el.getAttribute("cy"), base: +el.getAttribute("r"), type: "dot", active: false });
+        });
+      } else {
+        svg.querySelectorAll("line").forEach((el) => {
+          const m = (el.getAttribute("transform") || "").match(/rotate\(([-0-9.]+) ([-0-9.]+) ([-0-9.]+)\)/);
+          if (m) marks.push({ el: el, base: +m[1], cx: +m[2], cy: +m[3], type: "line", active: false });
+        });
+      }
+      this._fields.push({ svg: svg, marks: marks });
+    });
+  }
+
+  startReactive() {
+    if (this._reactive) return;
+    this._reactive = true;
+    this._tx = window.innerWidth / 2; this._ty = window.innerHeight / 2;
+    this._cx = this._tx; this._cy = this._ty; this._hasMouse = false;
+    this._onMove = (e) => { this._tx = e.clientX; this._ty = e.clientY; this._hasMouse = true; };
+    this._onOut = (e) => { if (!e.relatedTarget && !e.toElement) this._hasMouse = false; };
+    window.addEventListener("mousemove", this._onMove, { passive: true });
+    window.addEventListener("mouseout", this._onOut, { passive: true });
+    const R = 190;
+    const smooth = (t) => t * t * (3 - 2 * t);
+    const tick = () => {
+      this._raf = requestAnimationFrame(tick);
+      this._cx += (this._tx - this._cx) * 0.16;
+      this._cy += (this._ty - this._cy) * 0.16;
+      const fields = this._fields || [];
+      const active = this._hasMouse;
+      for (let f = 0; f < fields.length; f++) {
+        const field = fields[f];
+        const rect = field.svg.getBoundingClientRect();
+        if (rect.width < 2) continue;
+        const mx = this._cx - rect.left, my = this._cy - rect.top;
+        const marks = field.marks;
+        for (let k = 0; k < marks.length; k++) {
+          const m = marks[k];
+          const dx = mx - m.cx, dy = my - m.cy;
+          const d2 = dx * dx + dy * dy;
+          if (active && d2 < R * R) {
+            const d = Math.sqrt(d2) || 0.001;
+            const inf = smooth(1 - d / R);
+            const ox = (-dx / d) * inf * 8;
+            const oy = (-dy / d) * inf * 8;
+            if (m.type === "line") {
+              const tan = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+              let diff = ((tan - m.base + 540) % 360) - 180;
+              const a = m.base + diff * inf;
+              m.el.setAttribute("transform", "translate(" + ox.toFixed(1) + " " + oy.toFixed(1) + ") rotate(" + a.toFixed(1) + " " + m.cx + " " + m.cy + ")");
+            } else {
+              m.el.setAttribute("transform", "translate(" + ox.toFixed(1) + " " + oy.toFixed(1) + ")");
+              m.el.setAttribute("r", (m.base * (1 + inf * 1.6)).toFixed(2));
+            }
+            m.active = true;
+          } else if (m.active) {
+            if (m.type === "line") {
+              m.el.setAttribute("transform", "rotate(" + m.base + " " + m.cx + " " + m.cy + ")");
+            } else {
+              m.el.removeAttribute("transform");
+              m.el.setAttribute("r", m.base);
+            }
+            m.active = false;
+          }
+        }
+      }
+    };
+    this._raf = requestAnimationFrame(tick);
+  }
+
+  componentWillUnmount() {
+    if (this.onScroll) window.removeEventListener("scroll", this.onScroll);
+    if (this._onResize) window.removeEventListener("resize", this._onResize);
+    if (this._raf) cancelAnimationFrame(this._raf);
+    if (this._onMove) window.removeEventListener("mousemove", this._onMove);
+    if (this._onOut) window.removeEventListener("mouseout", this._onOut);
+  }
+
+  runCadence() {
+    const root = this.cadence || this.root;
+    if (!root) return;
+    const line = root.querySelector("#cadence-line");
+    if (line && line.getTotalLength) {
+      const len = line.getTotalLength();
+      line.style.transition = "none";
+      line.style.strokeDasharray = len;
+      line.style.strokeDashoffset = len;
+      line.getBoundingClientRect();
+      line.style.transition = "stroke-dashoffset 1100ms cubic-bezier(0.4,0,0.2,1)";
+      line.style.strokeDashoffset = "0";
+    }
+    const markers = [...root.querySelectorAll("[data-marker]")];
+    const cards = [...root.querySelectorAll("[data-cadence-card]")];
+    const delays = [420, 820, 1220];
+    markers.forEach((m, i) => {
+      setTimeout(() => {
+        m.style.transition = "transform 150ms cubic-bezier(0.4,0,0.2,1)";
+        m.style.transform = "scale(1)";
+        const c = cards[i];
+        if (c) {
+          c.style.transition = "opacity 150ms cubic-bezier(0.4,0,0.2,1), transform 150ms cubic-bezier(0.4,0,0.2,1)";
+          c.style.opacity = "1";
+          c.style.transform = "none";
+        }
+      }, delays[i]);
+    });
+  }
+
+  draft() {
+    const input = (this.state.tryInput || "").trim();
+    if (!input) { this.setState({ tryError: "Tell us what you need to say first." }); return; }
+    if (!(window.claude && window.claude.complete)) {
+      this.setState({ tryError: "Drafting is available in the live preview." });
+      return;
+    }
+    this.setState({ tryLoading: true, tryError: "", tryResult: "" });
+    const system = "You are NewTaven's drafting assistant, writing on behalf of a small fund manager to their limited partners. Write one short email: a Subject line, then the body. Voice: plain, considered, quietly confident, evidence-led. Sentence case. No marketing puffery, no superlatives, no emoji, no exclamation marks. Sign off simply. Keep it under 120 words. Return only the email text.";
+    window.claude.complete({
+      system,
+      messages: [{ role: "user", content: "Draft the note. Situation: " + input }],
+      max_tokens: 500,
+    }).then((t) => {
+      this.setState({ tryLoading: false, tryResult: (t || "").trim() });
+    }).catch(() => {
+      this.setState({ tryLoading: false, tryError: "We weren't able to draft that. Try again." });
+    });
+  }
+
+  renderVals() {
+    const scrollTo = () => {
+      const el = this.root && this.root.querySelector("#pricing");
+      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 40, behavior: "smooth" });
+    };
+    const preset = (text) => this.setState({ tryInput: text }, () => this.draft());
+    return {
+      rootRef: (el) => { this.root = el; },
+      navRef: (el) => { this.nav = el; },
+      cadenceRef: (el) => { this.cadence = el; },
+      tryInput: this.state.tryInput ?? "",
+      tryLoading: this.state.tryLoading,
+      tryResult: this.state.tryResult,
+      hasResult: !this.state.tryLoading && !!this.state.tryResult,
+      showPlaceholder: !this.state.tryLoading && !this.state.tryResult,
+      tryError: this.state.tryError,
+      draftLabel: this.state.tryLoading ? "Drafting…" : "Draft the note",
+      onInput: (e) => this.setState({ tryInput: e.target.value, tryError: "" }),
+      onDraft: () => this.draft(),
+      onPreset1: () => preset("There will be a short delay in the Q2 distribution while we finalize a portfolio company's audit."),
+      onPreset2: () => preset("We've completed a new investment — a control position in a founder-led logistics business — and want to introduce it."),
+      onPreset3: () => preset("Our Q2 quarterly letter is now live in the investor portal."),
+      onRequest: scrollTo,
+    };
+  }
+}
+</script>
+</body>
+</html>
