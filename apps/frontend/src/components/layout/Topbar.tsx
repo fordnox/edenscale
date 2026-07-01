@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { ChevronDown, Menu, Search } from "lucide-react"
 
@@ -79,7 +78,6 @@ export function Topbar({ onOpenSidebar, onOpenSearch }: TopbarProps) {
 
 function OrganizationSwitcher() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const {
     memberships,
     activeMembership,
@@ -96,9 +94,7 @@ function OrganizationSwitcher() {
     (isSuperadmin ? "All organizations" : "—")
 
   const handleSelect = (organizationId: string) => {
-    if (organizationId === activeMembership?.organization_id) return
     setActiveOrganizationId(organizationId)
-    queryClient.invalidateQueries()
   }
 
   const handleViewAll = () => {

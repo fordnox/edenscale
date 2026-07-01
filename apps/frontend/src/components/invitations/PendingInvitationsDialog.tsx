@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query"
 import { Loader2, MailCheck } from "lucide-react"
 import { toast } from "sonner"
 
@@ -38,15 +37,11 @@ export function PendingInvitationsDialog({
   onOpenChange,
   invitations,
 }: PendingInvitationsDialogProps) {
-  const queryClient = useQueryClient()
   const { setActiveOrganizationId } = useActiveOrganization()
   const { decline } = usePendingInvitationsBanner()
 
   const acceptMutation = useApiMutation("post", "/invitations/accept", {
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/users/me/memberships"] })
-      queryClient.invalidateQueries({ queryKey: ["/users/me"] })
-      queryClient.invalidateQueries({ queryKey: ["/invitations/pending-for-me"] })
       setActiveOrganizationId(data.organization_id)
       toast.success(`Welcome to ${data.organization.name}.`)
     },

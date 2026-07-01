@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import { useQueryClient } from "@tanstack/react-query"
 import { AlertCircle, ArrowLeft, Loader2, MailCheck } from "lucide-react"
 import { toast } from "sonner"
 
@@ -17,7 +16,6 @@ export default function InvitationAcceptPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const token = searchParams.get("token")
-  const queryClient = useQueryClient()
 
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   const { setActiveOrganizationId } = useActiveOrganization()
@@ -34,8 +32,6 @@ export default function InvitationAcceptPage() {
 
   const acceptMutation = useApiMutation("post", "/invitations/accept", {
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/users/me/memberships"] })
-      queryClient.invalidateQueries({ queryKey: ["/users/me"] })
       setActiveOrganizationId(data.organization_id)
       toast.success(`Welcome to ${data.organization.name}.`)
       navigate("/")

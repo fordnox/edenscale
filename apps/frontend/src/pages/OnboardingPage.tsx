@@ -31,7 +31,6 @@ export default function OnboardingPage() {
     "/organizations/self-serve",
     {
       onSuccess: (data) => {
-        queryClient.invalidateQueries({ queryKey: ["/users/me/memberships"] })
         setActiveOrganizationId(data.organization_id)
         setOrganizationId(data.organization_id)
         setStep("fund")

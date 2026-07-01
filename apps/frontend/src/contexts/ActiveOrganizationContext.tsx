@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { useApiQuery } from "@/hooks/useApiQuery"
 import {
@@ -37,6 +38,7 @@ interface ActiveOrganizationProviderProps {
 export function ActiveOrganizationProvider({
   children,
 }: ActiveOrganizationProviderProps) {
+  const queryClient = useQueryClient()
   const meQuery = useApiQuery("/users/me", undefined, {
     staleTime: 5 * 60 * 1000,
   })
@@ -79,10 +81,17 @@ export function ActiveOrganizationProvider({
     membershipsQuery.isLoading,
   ])
 
-  const setActiveOrganizationId = useCallback((id: string | null) => {
-    setActiveOrganizationIdState(id)
-    setStoredActiveOrganizationId(id)
-  }, [])
+  const setActiveOrganizationId = useCallback(
+    (id: string | null) => {
+      const changed = id !== activeOrganizationId
+      setActiveOrganizationIdState(id)
+      setStoredActiveOrganizationId(id)
+      if (changed) {
+        queryClient.invalidateQueries()
+      }
+    },
+    [activeOrganizationId, queryClient],
+  )
 
   const activeMembership = useMemo<MembershipRead | null>(
     () =>
