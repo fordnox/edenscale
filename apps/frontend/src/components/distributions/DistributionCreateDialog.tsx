@@ -28,8 +28,8 @@ import { useApiQuery } from "@/hooks/useApiQuery"
 interface DistributionCreateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  defaultFundId?: number
-  onCreated?: (distributionId: number) => void
+  defaultFundId?: string
+  onCreated?: (distributionId: string) => void
 }
 
 export function DistributionCreateDialog({
@@ -38,9 +38,7 @@ export function DistributionCreateDialog({
   defaultFundId,
   onCreated,
 }: DistributionCreateDialogProps) {
-  const [fundId, setFundId] = useState<string>(
-    defaultFundId ? String(defaultFundId) : "",
-  )
+  const [fundId, setFundId] = useState<string>(defaultFundId ?? "")
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [distributionDate, setDistributionDate] = useState("")
@@ -60,7 +58,7 @@ export function DistributionCreateDialog({
   const submitting = createDistribution.isPending || allocateProRata.isPending
 
   function reset() {
-    setFundId(defaultFundId ? String(defaultFundId) : "")
+    setFundId(defaultFundId ?? "")
     setTitle("")
     setDescription("")
     setDistributionDate("")
@@ -80,14 +78,12 @@ export function DistributionCreateDialog({
     if (submitting) return
     const trimmedTitle = title.trim()
     const trimmedAmount = amount.trim()
-    const numericFundId = Number(fundId)
-    if (!trimmedTitle || !trimmedAmount || !distributionDate || !numericFundId)
-      return
+    if (!trimmedTitle || !trimmedAmount || !distributionDate || !fundId) return
 
     try {
       const created = await createDistribution.mutateAsync({
         body: {
-          fund_id: numericFundId,
+          fund_id: fundId,
           title: trimmedTitle,
           description: description.trim() || null,
           distribution_date: distributionDate,
@@ -120,19 +116,19 @@ export function DistributionCreateDialog({
       queryClient.invalidateQueries({
         queryKey: [
           "/funds/{fund_id}/distributions",
-          { params: { path: { fund_id: numericFundId } } },
+          { params: { path: { fund_id: fundId } } },
         ],
       })
       queryClient.invalidateQueries({
         queryKey: [
           "/funds/{fund_id}",
-          { params: { path: { fund_id: numericFundId } } },
+          { params: { path: { fund_id: fundId } } },
         ],
       })
       queryClient.invalidateQueries({
         queryKey: [
           "/funds/{fund_id}/overview",
-          { params: { path: { fund_id: numericFundId } } },
+          { params: { path: { fund_id: fundId } } },
         ],
       })
       queryClient.invalidateQueries({ queryKey: ["/dashboard"] })

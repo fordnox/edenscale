@@ -124,12 +124,12 @@ function toIsoOrEmpty(localValue: string): string | null {
 function AuditLogContent() {
   const [filters, setFilters] = useState<AuditFilters>(EMPTY_FILTERS)
   const [page, setPage] = useState(0)
-  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const usersQuery = useApiQuery("/users")
 
   const userById = useMemo(() => {
-    const map = new Map<number, UserRead>()
+    const map = new Map<string, UserRead>()
     for (const u of usersQuery.data ?? []) map.set(u.id, u)
     return map
   }, [usersQuery.data])
@@ -148,9 +148,7 @@ function AuditLogContent() {
           ? { entity_type: filters.entity_type }
           : {}),
         ...(filters.action !== "all" ? { action: filters.action } : {}),
-        ...(filters.user_id !== "all"
-          ? { user_id: Number(filters.user_id) }
-          : {}),
+        ...(filters.user_id !== "all" ? { user_id: filters.user_id } : {}),
         ...(dateFromIso ? { date_from: dateFromIso } : {}),
         ...(dateToIso ? { date_to: dateToIso } : {}),
         skip: page * PAGE_SIZE,

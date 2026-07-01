@@ -21,8 +21,8 @@ type MembershipRead = components["schemas"]["MembershipRead"]
 export interface ActiveOrganizationContextValue {
   memberships: MembershipRead[]
   activeMembership: MembershipRead | null
-  activeOrganizationId: number | null
-  setActiveOrganizationId: (id: number | null) => void
+  activeOrganizationId: string | null
+  setActiveOrganizationId: (id: string | null) => void
   isSuperadmin: boolean
   isLoading: boolean
 }
@@ -45,7 +45,7 @@ export function ActiveOrganizationProvider({
   })
 
   const [activeOrganizationId, setActiveOrganizationIdState] = useState<
-    number | null
+    string | null
   >(() => getActiveOrganizationId())
 
   const memberships = useMemo<MembershipRead[]>(
@@ -79,7 +79,7 @@ export function ActiveOrganizationProvider({
     membershipsQuery.isLoading,
   ])
 
-  const setActiveOrganizationId = useCallback((id: number | null) => {
+  const setActiveOrganizationId = useCallback((id: string | null) => {
     setActiveOrganizationIdState(id)
     setStoredActiveOrganizationId(id)
   }, [])

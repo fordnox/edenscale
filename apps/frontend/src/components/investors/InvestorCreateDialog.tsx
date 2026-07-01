@@ -20,7 +20,7 @@ import { useApiMutation } from "@/hooks/useApiMutation"
 interface InvestorCreateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreated?: (investorId: number) => void
+  onCreated?: (investorId: string) => void
 }
 
 export function InvestorCreateDialog({

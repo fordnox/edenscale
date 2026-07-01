@@ -103,7 +103,7 @@ function OrganizationSettingsContent() {
 
   const orgQuery = useApiQuery(
     "/organizations/{organization_id}",
-    { params: { path: { organization_id: orgId ?? 0 } } },
+    { params: { path: { organization_id: orgId ?? "" } } },
     { enabled: orgId !== null },
   )
 
@@ -238,7 +238,7 @@ function OrganizationSettingsContent() {
   }, [usersQuery.data])
 
   const userById = useMemo(() => {
-    const map = new Map<number, UserRead>()
+    const map = new Map<string, UserRead>()
     for (const user of usersQuery.data ?? []) map.set(user.id, user)
     return map
   }, [usersQuery.data])
@@ -648,7 +648,7 @@ const INVITABLE_ROLES: readonly InvitableRole[] = [
 interface InviteUserDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  defaultOrganizationId: number | null
+  defaultOrganizationId: string | null
   isSuperadmin: boolean
 }
 
@@ -663,13 +663,11 @@ function InviteUserDialog({
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<InvitableRole>("fund_manager")
   const [organizationId, setOrganizationId] = useState<string>(
-    defaultOrganizationId !== null ? String(defaultOrganizationId) : "",
+    defaultOrganizationId ?? "",
   )
 
   useEffect(() => {
-    setOrganizationId(
-      defaultOrganizationId !== null ? String(defaultOrganizationId) : "",
-    )
+    setOrganizationId(defaultOrganizationId ?? "")
   }, [defaultOrganizationId])
 
   const orgsQuery = useApiQuery("/organizations", undefined, {
@@ -690,9 +688,7 @@ function InviteUserDialog({
   function reset() {
     setEmail("")
     setRole("fund_manager")
-    setOrganizationId(
-      defaultOrganizationId !== null ? String(defaultOrganizationId) : "",
-    )
+    setOrganizationId(defaultOrganizationId ?? "")
   }
 
   function handleOpenChange(next: boolean) {
@@ -710,9 +706,7 @@ function InviteUserDialog({
     }
 
     const orgIdValue = isSuperadmin
-      ? organizationId
-        ? Number(organizationId)
-        : null
+      ? organizationId || null
       : defaultOrganizationId
 
     if (orgIdValue === null) {

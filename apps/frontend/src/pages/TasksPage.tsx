@@ -88,14 +88,14 @@ export default function TasksPage() {
   const tasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data])
 
   const fundNameById = useMemo(() => {
-    const map = new Map<number, string>()
+    const map = new Map<string, string>()
     for (const f of fundsQuery.data ?? []) map.set(f.id, f.name)
     return map
   }, [fundsQuery.data])
 
   const userById = useMemo(() => {
     const map = new Map<
-      number,
+      string,
       { name: string; email: string; first: string | null; last: string | null }
     >()
     const list = usersQuery.data ?? (meQuery.data ? [meQuery.data] : [])

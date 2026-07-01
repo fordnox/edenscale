@@ -46,9 +46,9 @@ export default function SuperadminOrganizationDetailPage() {
 
 function SuperadminOrganizationDetailContent() {
   const params = useParams<{ organizationId: string }>()
-  const orgId = params.organizationId ? Number(params.organizationId) : NaN
+  const orgId = params.organizationId ?? null
 
-  if (!Number.isFinite(orgId)) {
+  if (!orgId) {
     return (
       <div className="px-8 py-16">
         <Card>
@@ -70,7 +70,7 @@ function SuperadminOrganizationDetailContent() {
 }
 
 interface OrganizationDetailProps {
-  organizationId: number
+  organizationId: string
 }
 
 function OrganizationDetail({ organizationId }: OrganizationDetailProps) {

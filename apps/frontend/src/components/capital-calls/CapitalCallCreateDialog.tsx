@@ -28,8 +28,8 @@ import { useApiQuery } from "@/hooks/useApiQuery"
 interface CapitalCallCreateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  defaultFundId?: number
-  onCreated?: (callId: number) => void
+  defaultFundId?: string
+  onCreated?: (callId: string) => void
 }
 
 export function CapitalCallCreateDialog({
@@ -38,9 +38,7 @@ export function CapitalCallCreateDialog({
   defaultFundId,
   onCreated,
 }: CapitalCallCreateDialogProps) {
-  const [fundId, setFundId] = useState<string>(
-    defaultFundId ? String(defaultFundId) : "",
-  )
+  const [fundId, setFundId] = useState<string>(defaultFundId ?? "")
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [dueDate, setDueDate] = useState("")
@@ -60,7 +58,7 @@ export function CapitalCallCreateDialog({
   const submitting = createCall.isPending || allocateProRata.isPending
 
   function reset() {
-    setFundId(defaultFundId ? String(defaultFundId) : "")
+    setFundId(defaultFundId ?? "")
     setTitle("")
     setDescription("")
     setDueDate("")
@@ -80,13 +78,12 @@ export function CapitalCallCreateDialog({
     if (submitting) return
     const trimmedTitle = title.trim()
     const trimmedAmount = amount.trim()
-    const numericFundId = Number(fundId)
-    if (!trimmedTitle || !trimmedAmount || !dueDate || !numericFundId) return
+    if (!trimmedTitle || !trimmedAmount || !dueDate || !fundId) return
 
     try {
       const created = await createCall.mutateAsync({
         body: {
-          fund_id: numericFundId,
+          fund_id: fundId,
           title: trimmedTitle,
           description: description.trim() || null,
           due_date: dueDate,
@@ -119,19 +116,19 @@ export function CapitalCallCreateDialog({
       queryClient.invalidateQueries({
         queryKey: [
           "/funds/{fund_id}/capital-calls",
-          { params: { path: { fund_id: numericFundId } } },
+          { params: { path: { fund_id: fundId } } },
         ],
       })
       queryClient.invalidateQueries({
         queryKey: [
           "/funds/{fund_id}",
-          { params: { path: { fund_id: numericFundId } } },
+          { params: { path: { fund_id: fundId } } },
         ],
       })
       queryClient.invalidateQueries({
         queryKey: [
           "/funds/{fund_id}/overview",
-          { params: { path: { fund_id: numericFundId } } },
+          { params: { path: { fund_id: fundId } } },
         ],
       })
       queryClient.invalidateQueries({ queryKey: ["/dashboard"] })

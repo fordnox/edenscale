@@ -51,7 +51,7 @@ function parseDecimal(value: string | null | undefined) {
 
 export default function CapitalCallsPage() {
   const [createOpen, setCreateOpen] = useState(false)
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [fundFilter, setFundFilter] = useState<"all" | string>("all")
   const [statusFilter, setStatusFilter] = useState<"all" | CapitalCallStatus>(
     "all",
@@ -61,7 +61,7 @@ export default function CapitalCallsPage() {
   const callsQuery = useApiQuery("/capital-calls", {
     params: {
       query: {
-        ...(fundFilter !== "all" ? { fund_id: Number(fundFilter) } : {}),
+        ...(fundFilter !== "all" ? { fund_id: fundFilter } : {}),
         ...(statusFilter !== "all" ? { status_filter: statusFilter } : {}),
       },
     },

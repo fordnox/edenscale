@@ -38,7 +38,7 @@ const FUND_DETAIL_TABS = [
   "letters",
 ] as const
 
-function FundDetailPageContent({ fundId }: { fundId: number }) {
+function FundDetailPageContent({ fundId }: { fundId: string }) {
   const navigate = useNavigate()
   const [editOpen, setEditOpen] = useState(false)
   const [activeTab, setActiveTab] = useTabParam(FUND_DETAIL_TABS, "commitments")
@@ -505,10 +505,9 @@ function FundDetailPageContent({ fundId }: { fundId: number }) {
 }
 
 export default function FundDetailPage() {
-  const { fundId: rawFundId } = useParams<{ fundId: string }>()
-  const fundId = Number(rawFundId)
+  const { fundId } = useParams<{ fundId: string }>()
 
-  if (!rawFundId || !Number.isFinite(fundId) || fundId <= 0) {
+  if (!fundId) {
     return (
       <PageHero
         eyebrow="Programmes"

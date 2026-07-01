@@ -21,7 +21,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<"firm" | "fund">("firm")
   const [firmName, setFirmName] = useState("")
   const [legalName, setLegalName] = useState("")
-  const [organizationId, setOrganizationId] = useState<number | null>(null)
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
 
   const [fundName, setFundName] = useState("")
   const [vintageYear, setVintageYear] = useState("")

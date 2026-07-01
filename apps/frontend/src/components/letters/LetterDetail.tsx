@@ -36,7 +36,7 @@ function formatTimestamp(value: string | null) {
 }
 
 interface LetterDetailProps {
-  letterId: number
+  letterId: string
 }
 
 export function LetterDetail({ letterId }: LetterDetailProps) {
@@ -56,7 +56,7 @@ export function LetterDetail({ letterId }: LetterDetailProps) {
   }, [letterQuery.data?.fund_id, fundsQuery.data])
 
   const userById = useMemo(() => {
-    const map = new Map<number, { name: string; email: string }>()
+    const map = new Map<string, { name: string; email: string }>()
     for (const u of usersQuery.data ?? []) {
       const name = `${u.first_name} ${u.last_name}`.trim() || u.email
       map.set(u.id, { name, email: u.email })

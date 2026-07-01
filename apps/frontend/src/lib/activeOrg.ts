@@ -1,17 +1,14 @@
 const STORAGE_KEY = "newtaven.active_org_id"
 
-export function getActiveOrganizationId(): number | null {
+export function getActiveOrganizationId(): string | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const parsed = Number.parseInt(raw, 10)
-    return Number.isFinite(parsed) ? parsed : null
+    return localStorage.getItem(STORAGE_KEY)
   } catch {
     return null
   }
 }
 
-export function setStoredActiveOrganizationId(id: number | null): void {
+export function setStoredActiveOrganizationId(id: string | null): void {
   try {
     if (id === null) {
       localStorage.removeItem(STORAGE_KEY)

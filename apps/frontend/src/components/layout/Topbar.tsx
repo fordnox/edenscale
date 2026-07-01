@@ -95,7 +95,7 @@ function OrganizationSwitcher() {
     activeMembership?.organization.name ??
     (isSuperadmin ? "All organizations" : "—")
 
-  const handleSelect = (organizationId: number) => {
+  const handleSelect = (organizationId: string) => {
     if (organizationId === activeMembership?.organization_id) return
     setActiveOrganizationId(organizationId)
     queryClient.invalidateQueries()

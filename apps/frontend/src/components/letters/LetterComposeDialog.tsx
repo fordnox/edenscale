@@ -37,8 +37,8 @@ const TYPE_OPTIONS: Array<{ value: CommunicationType; label: string }> = [
 interface LetterComposeDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  defaultFundId?: number
-  onCreated?: (letterId: number) => void
+  defaultFundId?: string
+  onCreated?: (letterId: string) => void
 }
 
 export function LetterComposeDialog({
@@ -78,7 +78,7 @@ export function LetterComposeDialog({
     onOpenChange(next)
   }
 
-  function invalidate(letterId?: number) {
+  function invalidate(letterId?: string) {
     queryClient.invalidateQueries({ queryKey: ["/communications"] })
     if (letterId !== undefined) {
       queryClient.invalidateQueries({
@@ -92,14 +92,14 @@ export function LetterComposeDialog({
       queryClient.invalidateQueries({
         queryKey: [
           "/funds/{fund_id}/communications",
-          { params: { path: { fund_id: Number(fundId) } } },
+          { params: { path: { fund_id: fundId } } },
         ],
       })
     }
     queryClient.invalidateQueries({ queryKey: ["/dashboard"] })
   }
 
-  async function createDraft(): Promise<number | null> {
+  async function createDraft(): Promise<string | null> {
     const trimmedSubject = subject.trim()
     const trimmedBody = body.trim()
     if (!trimmedSubject || !trimmedBody) return null
@@ -108,7 +108,7 @@ export function LetterComposeDialog({
         subject: trimmedSubject,
         body: trimmedBody,
         type,
-        fund_id: fundId !== "none" ? Number(fundId) : null,
+        fund_id: fundId !== "none" ? fundId : null,
       },
     })
     return created.id

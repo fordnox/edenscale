@@ -51,7 +51,7 @@ export default function ProfilePage() {
   const orgQuery = useApiQuery(
     "/organizations/{organization_id}",
     {
-      params: { path: { organization_id: orgId ?? 0 } },
+      params: { path: { organization_id: orgId ?? "" } },
     },
     { enabled: orgId !== null, staleTime: 5 * 60 * 1000 },
   )

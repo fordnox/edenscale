@@ -28,7 +28,7 @@ function parseDecimal(value: string | null | undefined) {
   return Number.isFinite(n) ? n : 0
 }
 
-function InvestorDetailPanel({ investorId }: { investorId: number }) {
+function InvestorDetailPanel({ investorId }: { investorId: string }) {
   const queryClient = useQueryClient()
   const contactsQuery = useApiQuery("/investors/{investor_id}/contacts", {
     params: { path: { investor_id: investorId } },
@@ -120,7 +120,7 @@ function InvestorDetailPanel({ investorId }: { investorId: number }) {
     )
   }
 
-  function togglePrimary(contactId: number, currentlyPrimary: boolean) {
+  function togglePrimary(contactId: string, currentlyPrimary: boolean) {
     updateContact.mutate({
       params: {
         path: { investor_id: investorId, contact_id: contactId },
@@ -371,7 +371,7 @@ function InvestorDetailPanel({ investorId }: { investorId: number }) {
 
 export default function InvestorsPage() {
   const [createOpen, setCreateOpen] = useState(false)
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const { data, isLoading, isError } = useApiQuery("/investors")
   const investors = useMemo(() => data ?? [], [data])

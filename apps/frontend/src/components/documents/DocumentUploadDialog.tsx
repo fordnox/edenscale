@@ -40,9 +40,9 @@ const DOCUMENT_TYPES: Array<{ value: DocumentType; label: string }> = [
 interface DocumentUploadDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  defaultFundId?: number
-  defaultInvestorId?: number
-  onCreated?: (documentId: number) => void
+  defaultFundId?: string
+  defaultInvestorId?: string
+  onCreated?: (documentId: string) => void
 }
 
 export function DocumentUploadDialog({
@@ -55,11 +55,9 @@ export function DocumentUploadDialog({
   const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState("")
   const [documentType, setDocumentType] = useState<DocumentType>("report")
-  const [fundId, setFundId] = useState<string>(
-    defaultFundId ? String(defaultFundId) : "none",
-  )
+  const [fundId, setFundId] = useState<string>(defaultFundId ?? "none")
   const [investorId, setInvestorId] = useState<string>(
-    defaultInvestorId ? String(defaultInvestorId) : "none",
+    defaultInvestorId ?? "none",
   )
   const [isConfidential, setIsConfidential] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
@@ -79,8 +77,8 @@ export function DocumentUploadDialog({
     setFile(null)
     setTitle("")
     setDocumentType("report")
-    setFundId(defaultFundId ? String(defaultFundId) : "none")
-    setInvestorId(defaultInvestorId ? String(defaultInvestorId) : "none")
+    setFundId(defaultFundId ?? "none")
+    setInvestorId(defaultInvestorId ?? "none")
     setIsConfidential(true)
     setIsUploading(false)
     if (fileInputRef.current) fileInputRef.current.value = ""
@@ -145,8 +143,8 @@ export function DocumentUploadDialog({
           mime_type: file.type || null,
           file_size: file.size,
           is_confidential: isConfidential,
-          fund_id: fundId !== "none" ? Number(fundId) : null,
-          investor_id: investorId !== "none" ? Number(investorId) : null,
+          fund_id: fundId !== "none" ? fundId : null,
+          investor_id: investorId !== "none" ? investorId : null,
         },
       })
 

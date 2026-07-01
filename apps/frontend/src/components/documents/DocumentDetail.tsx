@@ -12,7 +12,7 @@ function formatBytes(n: number | null | undefined) {
 }
 
 interface DocumentDetailProps {
-  documentId: number
+  documentId: string
 }
 
 export function DocumentDetail({ documentId }: DocumentDetailProps) {

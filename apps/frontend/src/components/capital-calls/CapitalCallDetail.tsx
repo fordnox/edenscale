@@ -21,7 +21,7 @@ function parseDecimal(value: string | null | undefined) {
 }
 
 interface CapitalCallDetailProps {
-  callId: number
+  callId: string
 }
 
 export function CapitalCallDetail({ callId }: CapitalCallDetailProps) {
@@ -36,12 +36,12 @@ export function CapitalCallDetail({ callId }: CapitalCallDetailProps) {
     "/funds/{fund_id}/commitments",
     fundId !== null
       ? { params: { path: { fund_id: fundId } } }
-      : ({ params: { path: { fund_id: 0 } } } as never),
+      : ({ params: { path: { fund_id: "" } } } as never),
     { enabled: fundId !== null },
   )
 
   const investorByCommitment = useMemo(() => {
-    const map = new Map<number, { id: number; name: string }>()
+    const map = new Map<string, { id: string; name: string }>()
     for (const c of commitmentsQuery.data ?? []) {
       map.set(c.id, { id: c.investor.id, name: c.investor.name })
     }
@@ -102,7 +102,7 @@ export function CapitalCallDetail({ callId }: CapitalCallDetailProps) {
     },
   )
 
-  const [paymentDrafts, setPaymentDrafts] = useState<Record<number, string>>({})
+  const [paymentDrafts, setPaymentDrafts] = useState<Record<string, string>>({})
 
   if (callQuery.isLoading || !callQuery.data) {
     return (
@@ -123,7 +123,7 @@ export function CapitalCallDetail({ callId }: CapitalCallDetailProps) {
   const canSend = call.status === "draft" || call.status === "scheduled"
   const canCancel = !["paid", "cancelled"].includes(call.status)
 
-  function handleRecordPayment(itemId: number) {
+  function handleRecordPayment(itemId: string) {
     const draft = paymentDrafts[itemId]
     if (draft === undefined || draft.trim() === "") return
     const numeric = Number(draft)

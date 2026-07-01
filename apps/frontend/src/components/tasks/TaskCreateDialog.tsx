@@ -28,8 +28,8 @@ import { useApiQuery } from "@/hooks/useApiQuery"
 interface TaskCreateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  defaultFundId?: number
-  onCreated?: (taskId: number) => void
+  defaultFundId?: string
+  onCreated?: (taskId: string) => void
 }
 
 export function TaskCreateDialog({
@@ -78,9 +78,8 @@ export function TaskCreateDialog({
         body: {
           title: trimmedTitle,
           description: description.trim() ? description.trim() : null,
-          fund_id: fundId !== "none" ? Number(fundId) : null,
-          assigned_to_user_id:
-            assigneeId !== "none" ? Number(assigneeId) : null,
+          fund_id: fundId !== "none" ? fundId : null,
+          assigned_to_user_id: assigneeId !== "none" ? assigneeId : null,
           due_date: dueDate ? dueDate : null,
           status: "open",
         },

@@ -36,7 +36,7 @@ function fullName(user: UserRead) {
 interface AssignAdminDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  organizationId: number
+  organizationId: string
   existingUsers: UserRead[]
 }
 
@@ -107,7 +107,7 @@ export function AssignAdminDialog({
       }
       assignAdmin.mutate({
         params: { path: { organization_id: organizationId } },
-        body: { user_id: Number(userId) },
+        body: { user_id: userId },
       })
       return
     }

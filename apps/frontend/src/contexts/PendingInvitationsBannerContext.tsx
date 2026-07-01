@@ -10,8 +10,8 @@ import {
 export interface PendingInvitationsBannerContextValue {
   bannerDismissed: boolean
   dismissBanner: () => void
-  declinedIds: ReadonlySet<number>
-  decline: (invitationId: number) => void
+  declinedIds: ReadonlySet<string>
+  decline: (invitationId: string) => void
 }
 
 const PendingInvitationsBannerContext =
@@ -23,13 +23,13 @@ interface ProviderProps {
 
 export function PendingInvitationsBannerProvider({ children }: ProviderProps) {
   const [bannerDismissed, setBannerDismissed] = useState(false)
-  const [declinedIds, setDeclinedIds] = useState<Set<number>>(() => new Set())
+  const [declinedIds, setDeclinedIds] = useState<Set<string>>(() => new Set())
 
   const dismissBanner = useCallback(() => {
     setBannerDismissed(true)
   }, [])
 
-  const decline = useCallback((invitationId: number) => {
+  const decline = useCallback((invitationId: string) => {
     setDeclinedIds((prev) => {
       if (prev.has(invitationId)) return prev
       const next = new Set(prev)

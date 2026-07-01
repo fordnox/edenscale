@@ -48,7 +48,7 @@ function formatBytes(n: number | null | undefined) {
 
 export default function DocumentsPage() {
   const [uploadOpen, setUploadOpen] = useState(false)
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState<"all" | DocumentType>("all")
   const [fundFilter, setFundFilter] = useState<"all" | string>("all")
   const [investorFilter, setInvestorFilter] = useState<"all" | string>("all")
@@ -60,9 +60,9 @@ export default function DocumentsPage() {
     params: {
       query: {
         ...(typeFilter !== "all" ? { document_type: typeFilter } : {}),
-        ...(fundFilter !== "all" ? { fund_id: Number(fundFilter) } : {}),
+        ...(fundFilter !== "all" ? { fund_id: fundFilter } : {}),
         ...(investorFilter !== "all"
-          ? { investor_id: Number(investorFilter) }
+          ? { investor_id: investorFilter }
           : {}),
       },
     },
@@ -74,13 +74,13 @@ export default function DocumentsPage() {
   )
 
   const fundNameById = useMemo(() => {
-    const map = new Map<number, string>()
+    const map = new Map<string, string>()
     for (const f of fundsQuery.data ?? []) map.set(f.id, f.name)
     return map
   }, [fundsQuery.data])
 
   const investorNameById = useMemo(() => {
-    const map = new Map<number, string>()
+    const map = new Map<string, string>()
     for (const i of investorsQuery.data ?? []) map.set(i.id, i.name)
     return map
   }, [investorsQuery.data])

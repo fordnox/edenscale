@@ -51,7 +51,7 @@ function groupForDate(value: string | null, today: Date): GroupId {
 
 function relatedLink(
   related_type: string | null,
-  related_id: number | null,
+  related_id: string | null,
 ): { to: string; label: string } | null {
   if (!related_type || related_id === null) return null
   const focus = `?focus=${related_id}`
@@ -126,7 +126,7 @@ export default function NotificationsPage() {
     queryClient.invalidateQueries({ queryKey: ["/dashboard/overview"] })
   }
 
-  async function handleMarkRead(notificationId: number) {
+  async function handleMarkRead(notificationId: string) {
     try {
       await markRead.mutateAsync({
         params: { path: { notification_id: notificationId } },
@@ -137,7 +137,7 @@ export default function NotificationsPage() {
     }
   }
 
-  async function handleArchive(notificationId: number) {
+  async function handleArchive(notificationId: string) {
     try {
       await archive.mutateAsync({
         params: { path: { notification_id: notificationId } },
