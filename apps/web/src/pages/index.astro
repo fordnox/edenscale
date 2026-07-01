@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import Header from "../components/Header.astro";
 import Divider from "../components/Divider.astro";
 import Mark from "../components/Mark.astro";
+import CtaButton from "../components/CtaButton.astro";
 
 const problems = [
   {
@@ -137,7 +138,7 @@ const defaultOutput =
             nothing slips between the fund and the founders you back.
           </p>
           <div class="hero-actions">
-            <a href="#pricing" class="nt-btn-primary hero-cta">Request access</a>
+            <CtaButton class="hero-cta" />
             <a href="#how" class="nt-link hero-secondary">See how it works →</a>
           </div>
         </div>
@@ -376,7 +377,7 @@ const defaultOutput =
       <div class="nt-container footer-cta-inner">
         <div class="footer-cta-top">
           <h2 class="es-display-l footer-cta-title">Give your fund the back office it never had time to build.</h2>
-          <a href="#pricing" class="nt-btn-primary footer-cta-btn">Request access</a>
+          <CtaButton class="footer-cta-btn" />
         </div>
         <hr class="footer-cta-rule" />
         <div class="footer-cta-bottom">
@@ -428,10 +429,6 @@ const defaultOutput =
     align-items: center;
     gap: 20px;
     flex-wrap: wrap;
-  }
-  .hero-cta {
-    font-size: 15px;
-    padding: 14px 26px;
   }
   .hero-secondary {
     font-family: var(--font-sans);
@@ -827,13 +824,6 @@ const defaultOutput =
     margin: 0 0 28px;
     color: var(--fg-inverse);
     max-width: 13ch;
-  }
-  .footer-cta-btn {
-    background: var(--parchment-50);
-    color: var(--conifer-800);
-    border-color: var(--parchment-50);
-    font-size: 15px;
-    padding: 14px 28px;
   }
   .footer-cta-rule {
     border: 0;

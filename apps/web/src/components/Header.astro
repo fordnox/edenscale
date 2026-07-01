@@ -1,5 +1,6 @@
 ---
 import Mark from "./Mark.astro";
+import CtaButton from "./CtaButton.astro";
 ---
 
 <nav id="nt-nav" class="nt-nav">
@@ -14,7 +15,7 @@ import Mark from "./Mark.astro";
       <a href="#cadence" class="nt-link nt-mono">Cadence</a>
       <a href="#features" class="nt-link nt-mono">Features</a>
       <a href="#pricing" class="nt-link nt-mono">Pricing</a>
-      <a href="#pricing" class="nt-btn-primary nt-nav-cta">Request access</a>
+      <CtaButton class="nt-nav-cta" />
     </div>
   </div>
 </nav>
@@ -67,10 +68,6 @@ import Mark from "./Mark.astro";
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--fg-secondary);
-  }
-  .nt-nav-cta {
-    font-size: 13px;
-    padding: 9px 18px;
   }
   @media (max-width: 760px) {
     .nt-nav-links a.nt-link {

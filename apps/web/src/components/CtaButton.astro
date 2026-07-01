@@ -1,0 +1,9 @@
+---
+interface Props {
+  class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+---
+
+<a href="/app" class={`nt-btn-primary ${className}`.trim()}>Sign Up</a>

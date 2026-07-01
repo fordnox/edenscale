@@ -56,6 +56,24 @@ a {
   background: var(--conifer-900);
 }
 
+/* CtaButton size/color variants — kept global since the button is shared
+   across components and Astro scopes <style> blocks per-file. */
+.nt-nav-cta {
+  font-size: 13px;
+  padding: 9px 18px;
+}
+.hero-cta {
+  font-size: 15px;
+  padding: 14px 26px;
+}
+.footer-cta-btn {
+  background: var(--parchment-50);
+  color: var(--conifer-800);
+  border-color: var(--parchment-50);
+  font-size: 15px;
+  padding: 14px 28px;
+}
+
 .nt-btn-sec {
   background: transparent;
   color: var(--fg-primary);
