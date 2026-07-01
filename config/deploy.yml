@@ -54,7 +54,7 @@ env:
   clear:
     # Accessory containers below share the "kamal" docker network and are
     # reachable by name: <service>-<accessory>.
-    REDIS_URL: redis://newtaven-redis:6379
+    REDIS_URL: redis://newtaven-redis-taven:6379
   secret:
     - APP_DOMAIN
     - APP_DATA_PATH
@@ -66,10 +66,10 @@ env:
 
 # Persisted local services on the server (managed by Kamal, not the proxy).
 accessories:
-  redis:
+  redis-taven:
     image: redis:7-alpine
     host: 46.224.143.162
-    port: "127.0.0.1:6379:6379"
+    port: "127.0.0.1:6380:6379"
     cmd: redis-server --appendonly yes
     directories:
       - redis-data:/data
