@@ -32,6 +32,7 @@ from app.core.rbac import (
 from app.models.enums import InvitationStatus, UserRole
 from app.models.user import User
 from app.models.user_organization_membership import UserOrganizationMembership
+from app.repositories.investor_contact_repository import InvestorContactRepository
 from app.repositories.organization_invitation_repository import (
     OrganizationInvitationRepository,
 )
@@ -207,6 +208,11 @@ async def accept_invitation(
         )
 
     repo.mark_accepted(invitation.id)  # type: ignore[invalid-argument-type]
+    InvestorContactRepository(db).link_unclaimed_by_email(
+        invitation.organization_id,  # type: ignore[invalid-argument-type]
+        user_email,  # type: ignore[invalid-argument-type]
+        current_user.id,  # type: ignore[invalid-argument-type]
+    )
     return MembershipRead.model_validate(new_membership)
 
 

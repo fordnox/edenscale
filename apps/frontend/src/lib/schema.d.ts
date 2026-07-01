@@ -1206,7 +1206,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Audit Logs */
+        /**
+         * List Audit Logs
+         * @description List audit events visible to the caller's active membership.
+         *
+         *     Admins/fund managers/superadmins see every event in the org; everyone
+         *     else only sees events they caused themselves.
+         */
         get: operations["list_audit_logs_audit_logs_get"];
         put?: never;
         post?: never;
@@ -6273,7 +6279,9 @@ export interface operations {
                 skip?: number;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };

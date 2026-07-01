@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
-from app.core.rbac import require_membership_roles
+from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import UserRole
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.fund_group_repository import FundGroupRepository
@@ -23,28 +23,17 @@ async def list_fund_groups(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
-    ),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = FundGroupRepository(db)
-    return repo.list(
-        skip=skip, limit=limit, organization_id=membership.organization_id  # type: ignore[invalid-argument-type]
-    )
+    return repo.list_for_membership(membership, skip=skip, limit=limit)
 
 
 @router.get("/{fund_group_id}", response_model=FundGroupRead)
 async def get_fund_group(
     fund_group_id: uuid.UUID,
     db: Session = Depends(get_db),
-    # TODO: scope to LP commitments — for now restrict reads to fund_manager+admin.
-    membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
-    ),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = FundGroupRepository(db)
     fund_group = repo.get(fund_group_id)
@@ -52,7 +41,7 @@ async def get_fund_group(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund group not found"
         )
-    if fund_group.organization_id != membership.organization_id:
+    if not repo.membership_can_view(membership, fund_group):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view fund groups outside your organization",
