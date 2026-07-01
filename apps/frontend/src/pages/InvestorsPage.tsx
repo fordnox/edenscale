@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
-import { Loader2, Pencil, Plus, Star } from "lucide-react"
+import { Loader2, Mail, Pencil, Plus, Star } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHero } from "@/components/layout/PageHero"
 import { InvestorCreateDialog } from "@/components/investors/InvestorCreateDialog"
 import { InvestorEditDialog } from "@/components/investors/InvestorEditDialog"
+import { InviteContactDialog } from "@/components/investors/InviteContactDialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardSection } from "@/components/ui/card"
@@ -17,11 +18,15 @@ import { Label } from "@/components/ui/label"
 import { StatusPill } from "@/components/ui/StatusPill"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { config } from "@/lib/config"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import type { components } from "@/lib/schema"
+
+type InvestorContactRead = components["schemas"]["InvestorContactRead"]
 
 function parseDecimal(value: string | null | undefined) {
   if (value === null || value === undefined || value === "") return 0
@@ -84,7 +89,14 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
   const commitments = commitmentsQuery.data ?? []
   const investor = investorQuery.data
 
+  const { activeMembership } = useActiveOrganization()
+  const canInvite =
+    activeMembership?.role === "admin" || activeMembership?.role === "superadmin"
+
   const [editOpen, setEditOpen] = useState(false)
+  const [inviteContact, setInviteContact] = useState<InvestorContactRead | null>(
+    null,
+  )
 
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -174,6 +186,17 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
         />
       )}
 
+      {investor && inviteContact && (
+        <InviteContactDialog
+          contact={inviteContact}
+          organizationId={investor.organization_id}
+          open={inviteContact !== null}
+          onOpenChange={(next) => {
+            if (!next) setInviteContact(null)
+          }}
+        />
+      )}
+
       <Tabs defaultValue="contacts" className="flex-1 gap-0">
         <div className="px-6 pt-4">
           <TabsList className="bg-parchment-100">
@@ -209,11 +232,13 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
                   <TH>Title</TH>
                   <TH>Email</TH>
                   <TH>Phone</TH>
+                  <TH>Access</TH>
                 </tr>
               </thead>
               <tbody>
                 {contacts.map((contact) => {
                   const isPrimary = contact.is_primary === true
+                  const isLinked = contact.user_id !== null
                   return (
                     <TR key={contact.id}>
                       <TD>
@@ -245,6 +270,23 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
                       <TD>{contact.title ?? "—"}</TD>
                       <TD>{contact.email ?? "—"}</TD>
                       <TD>{contact.phone ?? "—"}</TD>
+                      <TD>
+                        {isLinked ? (
+                          <Badge tone="active">Linked</Badge>
+                        ) : canInvite && contact.email ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setInviteContact(contact)}
+                          >
+                            <Mail strokeWidth={1.5} className="size-4" />
+                            Invite
+                          </Button>
+                        ) : (
+                          <span className="text-ink-500">—</span>
+                        )}
+                      </TD>
                     </TR>
                   )
                 })}
