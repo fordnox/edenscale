@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { LogOut, Search, Settings, User as UserIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { deriveInitials } from "@/lib/userDisplay"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { useAuth } from "@/hooks/useAuth"
 import { useNavItems } from "@/hooks/useNavItems"
@@ -21,21 +22,6 @@ import {
   DrawerDescription,
 } from "@/components/ui/drawer"
 import { Kbd } from "@/components/ui/kbd"
-
-function deriveInitials(
-  first?: string | null,
-  last?: string | null,
-  email?: string | null,
-) {
-  const f = (first ?? "").trim()
-  const l = (last ?? "").trim()
-  if (f && l) return (f[0] + l[0]).toUpperCase()
-  if (f.length >= 2) return f.slice(0, 2).toUpperCase()
-  const local = (email ?? "").split("@")[0] ?? ""
-  const parts = local.split(/[._-]+/).filter(Boolean)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return (local.slice(0, 2) || "ES").toUpperCase()
-}
 
 const ROLE_TAGLINES: Record<string, string> = {
   admin: "Administrator view",

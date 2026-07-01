@@ -23,6 +23,15 @@ const myMiddleware: Middleware = {
       const message =
         errorData?.detail || errorData?.message || `Error ${response.status}: ${response.statusText}`
 
+      if (
+        response.status === 403 &&
+        errorData?.detail === "Not a member of this organization" &&
+        window.location.pathname !== "/onboarding"
+      ) {
+        window.location.href = "/onboarding"
+        return response
+      }
+
       toast.error("Request failed", {
         description: message,
       })
