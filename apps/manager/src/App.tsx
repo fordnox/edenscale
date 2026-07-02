@@ -2,10 +2,10 @@ import { Navigate, Routes, Route, Outlet } from 'react-router-dom'
 import { ActiveOrganizationProvider } from '@edenscale/shared/contexts/ActiveOrganizationContext'
 import { PendingInvitationsBannerProvider } from '@edenscale/shared/contexts/PendingInvitationsBannerContext'
 import { useActiveOrganization } from './hooks/useActiveOrganization'
-import DashboardShell from './layouts/DashboardShell'
 import ProtectedLayout from './layouts/ProtectedLayout'
-import OrgScopeLayout from './layouts/OrgScopeLayout'
-import FundScopeLayout from './layouts/FundScopeLayout'
+import AccountLayout from './layouts/AccountLayout'
+import OrgLayout from './layouts/OrgLayout'
+import FundLayout from './layouts/FundLayout'
 import DashboardPage from './pages/DashboardPage'
 import UserDashboardPage from './pages/UserDashboardPage'
 import NoOrganizationHomePage from './pages/NoOrganizationHomePage'
@@ -70,7 +70,7 @@ function App() {
           {/* Reserved top-level /manager/* paths — declared as static siblings
               of /manager/:orgSlug below so they always win the route match
               regardless of an org happening to share the segment name. */}
-          <Route element={<DashboardShell />}>
+          <Route element={<AccountLayout />}>
             <Route path="/manager" element={<AppRootRoute />} />
             <Route path="/manager/profile" element={<ProfilePage />} />
             <Route
@@ -84,7 +84,7 @@ function App() {
           </Route>
 
           {/* Organization workspace */}
-          <Route path="/manager/:orgSlug" element={<OrgScopeLayout />}>
+          <Route path="/manager/:orgSlug" element={<OrgLayout />}>
             <Route index element={<DashboardPage />} />
             <Route path="funds" element={<FundsPage />} />
             {/* LPs may open this page too — the backend scopes the register
@@ -114,7 +114,7 @@ function App() {
             />
 
             {/* Fund workspace */}
-            <Route path=":fundSlug" element={<FundScopeLayout />} />
+            <Route path=":fundSlug" element={<FundLayout />} />
           </Route>
         </Route>
       </Route>

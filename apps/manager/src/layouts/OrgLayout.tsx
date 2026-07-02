@@ -1,13 +1,18 @@
-import { useEffect, useMemo } from "react"
-import { Link, useParams } from "react-router-dom"
+import { useEffect, useMemo, useState } from "react"
+import { Link, Outlet, useParams } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@edenscale/ui/button"
 import { Card } from "@edenscale/ui/card"
 import { EmptyState } from "@edenscale/ui/EmptyState"
-import AppShell from "@/layouts/AppShell"
+import { PendingInvitationsBanner } from "@edenscale/ui/invitations/PendingInvitationsBanner"
+import { CommandPalette } from "@/components/layout/CommandPalette"
+import { Sidebar } from "@/components/layout/Sidebar"
+import { Topbar } from "@/components/layout/Topbar"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useCommandPalette } from "@/hooks/useCommandPalette"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
+import { usePendingInvitations } from "@edenscale/shared/hooks/usePendingInvitations"
 import { RESERVED_ORG_SLUGS } from "@/lib/managerRoutes"
 import { setLastVisitedOrgSlug } from "@edenscale/shared/active-org"
 
@@ -31,7 +36,44 @@ function LoadingState() {
   )
 }
 
-export default function OrgScopeLayout() {
+// The full application shell — sidebar, topbar, command palette — shown once an
+// organization slug has resolved to an org the current user can act on.
+function OrgShell() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette()
+  const { memberships } = useActiveOrganization()
+  const { visibleInvitations, showBanner, dismissBanner } =
+    usePendingInvitations()
+
+  return (
+    <div className="flex min-h-svh bg-page text-ink-900">
+      <Sidebar
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+        onOpenSearch={() => setPaletteOpen(true)}
+      />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
+        {showBanner && (
+          <PendingInvitationsBanner
+            invitations={visibleInvitations}
+            onDismiss={dismissBanner}
+            emphasize={memberships.length === 0}
+          />
+        )}
+        <main className="flex flex-1 flex-col">
+          <Outlet />
+        </main>
+      </div>
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+    </div>
+  )
+}
+
+// Org view: resolves the :orgSlug param to an organization, syncs it as the
+// active org (so requests carry the right X-Organization-Id header), redirects
+// LPs to the investor app, and then renders the application shell.
+export default function OrgLayout() {
   const { orgSlug } = useParams<{ orgSlug: string }>()
   const {
     memberships,
@@ -107,5 +149,5 @@ export default function OrgScopeLayout() {
     return <LoadingState />
   }
 
-  return <AppShell />
+  return <OrgShell />
 }

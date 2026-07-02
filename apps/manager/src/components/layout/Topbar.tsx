@@ -60,7 +60,7 @@ export function OrganizationSwitcher() {
     activeMembership?.organization.name ??
     (memberships.length > 1 || isSuperadmin ? "All organizations" : "—")
 
-  // Only navigate here — OrgScopeLayout is the single place that calls
+  // Only navigate here — OrgLayout is the single place that calls
   // setActiveOrganizationId, triggered by the resulting route change.
   const handleSelect = (orgSlug: string) => {
     navigate(orgPath(orgSlug))
