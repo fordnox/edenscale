@@ -7,6 +7,7 @@ import ProtectedLayout from './layouts/ProtectedLayout'
 import OrgScopeLayout from './layouts/OrgScopeLayout'
 import FundScopeLayout from './layouts/FundScopeLayout'
 import DashboardPage from './pages/DashboardPage'
+import UserDashboardPage from './pages/UserDashboardPage'
 import NoOrganizationHomePage from './pages/NoOrganizationHomePage'
 import FundsPage from './pages/FundsPage'
 import InvestorsPage from './pages/InvestorsPage'
@@ -25,8 +26,6 @@ import InvitationAcceptPage from './pages/InvitationAcceptPage'
 import OnboardingPage from './pages/OnboardingPage'
 import LoginPage from './pages/LoginPage'
 import { RequireRole } from './components/RequireRole'
-import { orgPath } from './lib/appRoutes'
-import { getLastVisitedOrgSlug } from './lib/activeOrg'
 
 const MANAGER_ROLES = ['admin', 'fund_manager', 'superadmin'] as const
 
@@ -50,14 +49,7 @@ function AppRootRoute() {
   const hasOrgAccess = memberships.length > 0 || isSuperadmin
   if (!hasOrgAccess) return <NoOrganizationHomePage />
 
-  const lastSlug = getLastVisitedOrgSlug()
-  const target =
-    memberships.find((m) => m.organization.slug === lastSlug) ?? memberships[0]
-  if (!target) {
-    // Pure superadmin with zero tenant memberships — nothing to land on.
-    return <Navigate to="/app/superadmin/organizations" replace />
-  }
-  return <Navigate to={orgPath(target.organization.slug)} replace />
+  return <UserDashboardPage />
 }
 
 function App() {

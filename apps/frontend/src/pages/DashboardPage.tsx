@@ -1,5 +1,16 @@
 import { useQuery } from "@tanstack/react-query"
-import { Loader2, ArrowDownToLine } from "lucide-react"
+import {
+  ArrowDownToLine,
+  Bell,
+  Building2,
+  CheckCircle2,
+  Circle,
+  ClipboardList,
+  Landmark,
+  Loader2,
+  MailOpen,
+  Users,
+} from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { Helmet } from "react-helmet-async"
 
@@ -20,6 +31,7 @@ import {
   formatDate,
   formatPercent,
   formatRelativeDays,
+  titleCase,
 } from "@/lib/format"
 
 const TODAY = new Date()
@@ -30,9 +42,20 @@ function parseDecimal(value: string | null | undefined) {
   return Number.isFinite(n) ? n : 0
 }
 
+function StepStatusIcon({ done }: { done: boolean }) {
+  const Icon = done ? CheckCircle2 : Circle
+  return (
+    <Icon
+      aria-hidden
+      strokeWidth={1.5}
+      className={done ? "size-5 text-conifer-700" : "size-5 text-ink-400"}
+    />
+  )
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const { activeMembership, memberships, isSuperadmin } = useActiveOrganization()
   const isLp = !isSuperadmin && activeMembership?.role === "lp"
   const canWriteLetters =
     isSuperadmin ||
@@ -51,6 +74,93 @@ export default function DashboardPage() {
   const overview = data
   const totalCommitted = parseDecimal(overview?.commitments_total_amount)
   const distributionsYtd = parseDecimal(overview?.distributions_ytd_amount)
+  const activeOrgSlug = activeMembership?.organization.slug ?? ""
+  const hasFunds = (overview?.funds_active ?? 0) > 0
+  const hasInvestors = (overview?.investors_total ?? 0) > 0
+  const hasCommitments = totalCommitted > 0
+  const hasCapitalCalls =
+    (overview?.capital_calls_outstanding ?? 0) > 0 ||
+    (overview?.upcoming_capital_calls.length ?? 0) > 0
+  const hasCommunications = (overview?.recent_communications.length ?? 0) > 0
+  const onboardingSteps = isLp
+    ? [
+        {
+          label: "Join organization",
+          caption: activeMembership?.organization.name ?? "Organization access confirmed",
+          done: Boolean(activeMembership),
+          actionLabel: "View organizations",
+          to: "/app",
+        },
+        {
+          label: "Review fund access",
+          caption: "Confirm the funds tied to your commitments.",
+          done: hasFunds,
+          actionLabel: "Open funds",
+          to: orgPath(activeOrgSlug, "funds"),
+        },
+        {
+          label: "Track capital calls",
+          caption: "Open calls appear as soon as they are scheduled or sent.",
+          done: hasCapitalCalls,
+          actionLabel: "View calls",
+          to: orgPath(activeOrgSlug, "calls"),
+        },
+        {
+          label: "Read investor updates",
+          caption: "Quarterly letters and notices will be listed here.",
+          done: hasCommunications,
+          actionLabel: "Open letters",
+          to: orgPath(activeOrgSlug, "letters"),
+        },
+      ]
+    : [
+        {
+          label: "Create firm",
+          caption: activeMembership?.organization.name ?? "Firm workspace is ready.",
+          done: Boolean(activeMembership),
+          actionLabel: "Settings",
+          to: orgPath(activeOrgSlug, "settings"),
+        },
+        {
+          label: "Create fund",
+          caption: "Add the first vehicle, vintage year, and reporting currency.",
+          done: hasFunds,
+          actionLabel: "Open funds",
+          to: orgPath(activeOrgSlug, "funds"),
+        },
+        {
+          label: "Create investors",
+          caption: "Build the limited partner register for this organization.",
+          done: hasInvestors,
+          actionLabel: "Open investors",
+          to: orgPath(activeOrgSlug, "investors"),
+        },
+        {
+          label: "Record commitments",
+          caption: "Commitments make called capital and ownership visible.",
+          done: hasCommitments,
+          actionLabel: "Review funds",
+          to: orgPath(activeOrgSlug, "funds"),
+        },
+        {
+          label: "Create capital call",
+          caption: "Prepare the first notice once investors and commitments exist.",
+          done: hasCapitalCalls,
+          actionLabel: "Open calls",
+          to: orgPath(activeOrgSlug, "calls"),
+        },
+        {
+          label: "Send investor update",
+          caption: "Draft a letter or notice for limited partners.",
+          done: hasCommunications,
+          actionLabel: "Open letters",
+          to: orgPath(activeOrgSlug, "letters"),
+        },
+      ]
+  const completedSteps = onboardingSteps.filter((step) => step.done).length
+  const onboardingProgress = completedSteps / onboardingSteps.length
+  const nextStep = onboardingSteps.find((step) => !step.done)
+  const primaryNextPath = nextStep?.to ?? orgPath(activeOrgSlug, "funds")
 
   return (
     <>
@@ -67,11 +177,11 @@ export default function DashboardPage() {
         }
         actions={
           <>
-            <Button variant="secondary" size="sm" onClick={() => navigate(orgPath(activeMembership?.organization.slug ?? "", "calls"))}>
+            <Button variant="secondary" size="sm" onClick={() => navigate(orgPath(activeOrgSlug, "calls"))}>
               View capital calls
             </Button>
             {canWriteLetters && (
-              <Button variant="primary" size="sm" onClick={() => navigate(orgPath(activeMembership?.organization.slug ?? "", "letters"))}>
+              <Button variant="primary" size="sm" onClick={() => navigate(orgPath(activeOrgSlug, "letters"))}>
                 Draft quarterly letter
               </Button>
             )}
@@ -144,6 +254,182 @@ export default function DashboardPage() {
               </div>
             </Card>
 
+            <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
+              <Card>
+                <div className="flex flex-col gap-5 px-6 pt-7 md:px-8 md:pt-8">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div className="flex flex-col gap-2">
+                      <Eyebrow>Onboarding progress</Eyebrow>
+                      <h2 className="es-display text-[28px]">
+                        {nextStep
+                          ? `${nextStep.label} is next.`
+                          : "Core setup is complete."}
+                      </h2>
+                      <p className="max-w-2xl font-sans text-[14px] leading-[1.6] text-ink-700">
+                        {nextStep
+                          ? nextStep.caption
+                          : "Your firm has the main operating pieces in place. Keep the register, calls, and letters current as activity develops."}
+                      </p>
+                    </div>
+                    <Button
+                      variant={nextStep ? "primary" : "secondary"}
+                      size="sm"
+                      onClick={() => navigate(primaryNextPath)}
+                    >
+                      {nextStep ? nextStep.actionLabel : "Review funds"}
+                    </Button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between font-sans text-[12px] text-ink-500">
+                      <span>
+                        {completedSteps} of {onboardingSteps.length} complete
+                      </span>
+                      <span className="es-numeric">
+                        {formatPercent(onboardingProgress, 0)}
+                      </span>
+                    </div>
+                    <ProgressBar value={onboardingProgress} tone="brass" />
+                  </div>
+                </div>
+
+                <CardSection className="pt-6">
+                  <div className="grid grid-cols-1 gap-0 border border-[color:var(--border-hairline)] md:grid-cols-2">
+                    {onboardingSteps.map((step, index) => (
+                      <button
+                        key={step.label}
+                        type="button"
+                        onClick={() => navigate(step.to)}
+                        className="group flex min-h-[112px] items-start gap-4 border-b border-[color:var(--border-hairline)] p-5 text-left transition-colors duration-[140ms] hover:bg-parchment-100 md:[&:nth-child(odd)]:border-r md:[&:nth-last-child(-n+2)]:border-b-0"
+                      >
+                        <StepStatusIcon done={step.done} />
+                        <span className="flex min-w-0 flex-1 flex-col gap-1">
+                          <span className="font-sans text-[14px] font-semibold text-ink-900">
+                            {index + 1}. {step.label}
+                          </span>
+                          <span className="font-sans text-[13px] leading-[1.5] text-ink-500">
+                            {step.caption}
+                          </span>
+                          <span className="mt-1 font-sans text-[12px] font-medium text-conifer-700 group-hover:border-b group-hover:border-brass-500">
+                            {step.done ? "Review" : step.actionLabel}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </CardSection>
+              </Card>
+
+              <Card>
+                <CardSection className="flex flex-col gap-6">
+                  <div className="flex flex-col gap-2">
+                    <Eyebrow>Your organizations</Eyebrow>
+                    <h2 className="es-display text-[28px]">Workspaces you belong to.</h2>
+                  </div>
+                  <div className="flex flex-col border-y border-[color:var(--border-hairline)]">
+                    {memberships.map((membership) => {
+                      const isActive =
+                        membership.organization_id === activeMembership?.organization_id
+                      return (
+                        <button
+                          key={membership.id}
+                          type="button"
+                          onClick={() => navigate(orgPath(membership.organization.slug))}
+                          className="flex min-h-[68px] items-center gap-3 border-b border-[color:var(--border-hairline)] py-4 text-left last:border-b-0"
+                        >
+                          <span className="inline-flex size-10 shrink-0 items-center justify-center border border-[color:var(--border-hairline)] text-conifer-700">
+                            <Building2 strokeWidth={1.5} className="size-4" />
+                          </span>
+                          <span className="flex min-w-0 flex-1 flex-col gap-1">
+                            <span className="truncate font-sans text-[14px] font-semibold text-ink-900">
+                              {membership.organization.name}
+                            </span>
+                            <span className="font-sans text-[11px] uppercase tracking-[0.08em] text-ink-500">
+                              {titleCase(membership.role)}
+                            </span>
+                          </span>
+                          {isActive && (
+                            <span className="shrink-0 font-sans text-[11px] font-medium text-conifer-700">
+                              Active
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                    {memberships.length === 0 && (
+                      <div className="py-6 font-sans text-[14px] text-ink-700">
+                        No organization memberships are attached to this account.
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-ink-500">
+                        Memberships
+                      </span>
+                      <span className="es-numeric font-display text-[34px] leading-none text-ink-900">
+                        {memberships.length}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-ink-500">
+                        Active role
+                      </span>
+                      <span className="font-sans text-[15px] font-semibold text-ink-900">
+                        {activeMembership ? titleCase(activeMembership.role) : "—"}
+                      </span>
+                    </div>
+                  </div>
+                </CardSection>
+              </Card>
+            </div>
+
+            <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+              <Card>
+                <CardSection className="flex flex-col gap-4">
+                  <Bell strokeWidth={1.5} className="size-5 text-brass-700" />
+                  <Stat
+                    label="Unread notifications"
+                    value={overview.unread_notifications_count}
+                    caption="Items waiting in your inbox"
+                  />
+                </CardSection>
+              </Card>
+              <Card>
+                <CardSection className="flex flex-col gap-4">
+                  <ClipboardList strokeWidth={1.5} className="size-5 text-brass-700" />
+                  <Stat
+                    label="Open tasks"
+                    value={overview.open_tasks_count}
+                    caption={isLp ? "Assigned portal actions" : "Operational follow-ups"}
+                  />
+                </CardSection>
+              </Card>
+              <Card>
+                <CardSection className="flex flex-col gap-4">
+                  <Users strokeWidth={1.5} className="size-5 text-brass-700" />
+                  <Stat
+                    label={isLp ? "Linked investors" : "Investor records"}
+                    value={overview.investors_total}
+                    caption={isLp ? "Entities tied to your access" : "Limited partners in scope"}
+                  />
+                </CardSection>
+              </Card>
+              <Card>
+                <CardSection className="flex flex-col gap-4">
+                  {isLp ? (
+                    <MailOpen strokeWidth={1.5} className="size-5 text-brass-700" />
+                  ) : (
+                    <Landmark strokeWidth={1.5} className="size-5 text-brass-700" />
+                  )}
+                  <Stat
+                    label={isLp ? "Recent updates" : "Recent letters"}
+                    value={overview.recent_communications.length}
+                    caption={isLp ? "Letters and notices" : "Communications in the dashboard feed"}
+                  />
+                </CardSection>
+              </Card>
+            </div>
+
             <div className="mt-8">
               <Card>
                 <div className="flex items-end justify-between gap-4 px-6 pt-7 md:px-8 md:pt-8">
@@ -156,7 +442,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     className="font-sans text-[13px] font-medium text-ink-900 border-b border-brass-500 pb-0.5 hover:text-conifer-700 transition-colors"
-                    onClick={() => navigate(orgPath(activeMembership?.organization.slug ?? "", "calls"))}
+                    onClick={() => navigate(orgPath(activeOrgSlug, "calls"))}
                   >
                     Open all →
                   </button>
@@ -225,7 +511,7 @@ export default function DashboardPage() {
                     Programmes in flight.
                   </h2>
                 </div>
-                <Button variant="link" size="sm" onClick={() => navigate(orgPath(activeMembership?.organization.slug ?? "", "funds"))}>
+                <Button variant="link" size="sm" onClick={() => navigate(orgPath(activeOrgSlug, "funds"))}>
                   All funds →
                 </Button>
               </div>

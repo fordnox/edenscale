@@ -58,7 +58,7 @@ export function OrganizationSwitcher() {
 
   const triggerLabel =
     activeMembership?.organization.name ??
-    (isSuperadmin ? "All organizations" : "—")
+    (memberships.length > 1 || isSuperadmin ? "All organizations" : "—")
 
   // Only navigate here — OrgScopeLayout is the single place that calls
   // setActiveOrganizationId, triggered by the resulting route change.

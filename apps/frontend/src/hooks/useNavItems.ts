@@ -137,10 +137,20 @@ export function useOrgNavItems(): UseNavItemsResult {
   const orgSlug = params.orgSlug ?? activeMembership?.organization.slug ?? null
 
   const items = useMemo<NavEntry[]>(() => {
+    const homeItem: NavItem = {
+      to: "/app",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      end: true,
+    }
     const tenantItems = orgSlug ? orgItemsForRole(role, orgSlug) : []
-    if (!isSuperadmin) return tenantItems
+    if (!isSuperadmin) {
+      return orgSlug ? [homeItem, { kind: "divider" }, ...tenantItems] : [homeItem]
+    }
 
     const superadminEntries: NavEntry[] = [
+      homeItem,
+      { kind: "divider" },
       { kind: "section", label: "Superadmin" },
       {
         to: SUPERADMIN_ORGANIZATIONS_PATH,

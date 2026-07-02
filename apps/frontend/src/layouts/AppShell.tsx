@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Outlet } from "react-router-dom"
+import { Outlet, useLocation } from "react-router-dom"
 
 import { CommandPalette } from "@/components/layout/CommandPalette"
 import { Sidebar } from "@/components/layout/Sidebar"
@@ -10,21 +10,27 @@ import { useCommandPalette } from "@/hooks/useCommandPalette"
 import { usePendingInvitations } from "@/hooks/usePendingInvitations"
 
 export default function AppShell() {
+  const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette()
   const { memberships } = useActiveOrganization()
   const { visibleInvitations, showBanner, dismissBanner } =
     usePendingInvitations()
+  const isAccountDashboard = pathname === "/app"
 
   return (
     <div className="flex min-h-svh bg-page text-ink-900">
-      <Sidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        onOpenSearch={() => setPaletteOpen(true)}
-      />
+      {!isAccountDashboard && (
+        <Sidebar
+          open={sidebarOpen}
+          onOpenChange={setSidebarOpen}
+          onOpenSearch={() => setPaletteOpen(true)}
+        />
+      )}
       <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
+        {!isAccountDashboard && (
+          <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
+        )}
         {showBanner && (
           <PendingInvitationsBanner
             invitations={visibleInvitations}
