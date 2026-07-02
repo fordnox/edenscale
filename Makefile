@@ -75,7 +75,7 @@ kamal-logs: kamal-check ## Tail logs
 	kamal app logs -f
 
 wrangler-deploy:
-	VITE_APP_TITLE=NewTaven VITE_API_URL=https://api.newtaven.com VITE_HANKO_API_URL=https://400bf941-ad5d-4497-8aa0-b3e2aeb420e3.hanko.io pnpm turbo run build --filter=gateway
+	VITE_APP_TITLE=NewTaven VITE_HANKO_API_URL=https://400bf941-ad5d-4497-8aa0-b3e2aeb420e3.hanko.io pnpm turbo run build --filter=gateway
 	cd apps/gateway && pnpm run deploy
 
 .PHONY: help

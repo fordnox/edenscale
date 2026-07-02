@@ -26,12 +26,6 @@ export function SectionHero() {
 
       <div className="container relative z-10 mx-auto px-4 md:px-6 py-24 md:py-32">
         <div className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-8">
-          {/* Badge */}
-          <Badge className="px-4 py-1.5 text-sm font-medium gap-2 border-primary/20 bg-primary/5">
-            <Sparkles className="size-3.5 text-primary" />
-            {config.VITE_APP_SLOGAN}
-          </Badge>
-
           {/* Heading */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1]">
             Build smarter with{" "}
@@ -53,11 +47,6 @@ export function SectionHero() {
                 Get Started
                 <ArrowRight className="size-4" />
               </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="text-base px-8 h-12" asChild>
-              <a href={config.VITE_GITHUB_URL} target="_blank" rel="noopener noreferrer">
-                View on GitHub
-              </a>
             </Button>
           </div>
 

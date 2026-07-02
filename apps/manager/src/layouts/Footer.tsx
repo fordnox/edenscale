@@ -14,10 +14,6 @@ export function Footer() {
               </span>
             </div>
 
-            <p className="text-sm text-muted-foreground text-center">
-              {config.VITE_APP_SLOGAN}
-            </p>
-
             <div className="flex items-center gap-4">
               {getSection("Social")?.links.map((link) => (
                 <a

@@ -51,7 +51,7 @@ jobs:
         id: secrets
         run: |
           set -euo pipefail
-          for name in VITE_APP_TITLE VITE_API_URL VITE_HANKO_API_URL; do
+          for name in VITE_APP_TITLE VITE_HANKO_API_URL; do
             value="$(op read "op://Github/taven/VITE/$name")"
             echo "::add-mask::$value"
             echo "$name=$value" >> "$GITHUB_ENV"

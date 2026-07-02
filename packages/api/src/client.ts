@@ -1,6 +1,5 @@
 import createClient, { Middleware } from "openapi-fetch"
 import type { paths } from "@edenscale/api/schema"
-import { config } from "@edenscale/api/config"
 import { toast } from "sonner"
 
 const ACTIVE_ORG_ID_KEY = "newtaven.active_org_id"
@@ -67,7 +66,19 @@ const myMiddleware: Middleware = {
   },
 }
 
-const client = createClient<paths>({ baseUrl: config.VITE_API_URL })
+// The API is always served from the `api.` subdomain of whatever host the app
+// is loaded from (e.g. newtaven.com -> https://api.newtaven.com), so there is no
+// build-time config. Local dev is the only exception: the API runs on a
+// separate port, so a VITE_API_URL override is honored (default localhost:8000).
+function getApiBaseUrl(): string {
+  const { hostname, protocol } = window.location
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return import.meta.env.VITE_API_URL || "http://localhost:8000"
+  }
+  return `${protocol}//api.${hostname}`
+}
+
+const client = createClient<paths>({ baseUrl: getApiBaseUrl() })
 client.use(myMiddleware)
 
 export default client
