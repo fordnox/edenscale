@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Scan this package's own components. Tailwind v4 auto-detection ignores
+   files resolved through node_modules, so when an app imports this stylesheet
+   via `@edenscale/ui/styles.css` the shared components (Dialog, Sheet, …) are
+   otherwise never scanned and their utility classes never get generated. */
+@source "../components";
+
 /* ============================================================
    NewTaven webfonts — self-hosted from /public/fonts
    ============================================================ */

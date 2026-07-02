@@ -233,6 +233,9 @@ importers:
 
   packages/api:
     dependencies:
+      '@edenscale/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@tanstack/react-query':
         specifier: ^5.101.2
         version: 5.101.2(react@19.2.7)
