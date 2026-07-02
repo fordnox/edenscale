@@ -187,6 +187,16 @@ const defaultOutput =
 ---
 
 <Layout>
+  <!-- Fixed background video — shows in the gutters around the content -->
+  <video
+    class="bg-video"
+    src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260329_050842_be71947f-f16e-4a14-810c-06e83d23ddb5.mp4"
+    autoplay
+    muted
+    loop
+    playsinline
+    aria-hidden="true"></video>
+
   <!-- Navbar + hero fill the first viewport -->
   <div class="screen" id="top">
     <nav class="navbar" aria-label="Primary">
@@ -237,6 +247,7 @@ const defaultOutput =
     </section>
   </div>
 
+  <div class="sheet">
   <main>
     <!-- The problem -->
     <section id="problem" class="sect">
@@ -547,6 +558,7 @@ const defaultOutput =
       <span class="footer-copy">© 2026 NewTaven — Fund administration for small managers</span>
     </div>
   </footer>
+  </div>
 </Layout>
 
 <style>
@@ -554,6 +566,30 @@ const defaultOutput =
   .container {
     max-width: 88rem;
     margin: 0 auto;
+  }
+
+  /* Fixed page-background video: 115% width/height, centered horizontally,
+     anchored to the top with a top focal point. It stays put while the
+     content scrolls over it; the sheet below limits it to the outer frame. */
+  .bg-video {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    width: 115%;
+    height: 115%;
+    transform: translateX(-50%);
+    object-fit: cover;
+    object-position: top;
+    pointer-events: none;
+  }
+
+  /* Everything below the hero rides on a light sheet, leaving gutters where
+     the fixed video shows through while scrolling. */
+  .sheet {
+    position: relative;
+    background: #f5f5f5;
+    border-radius: 24px;
+    margin: 0 24px 24px;
   }
 
   .sect {
@@ -1442,6 +1478,13 @@ const defaultOutput =
   // Cadence — draw timeline + activate markers + slide in cards
   const cadenceSection = document.getElementById("cadence-inner");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Background video is decorative — hold it still for reduced-motion users.
+  const bgVideo = document.querySelector(".bg-video");
+  if (bgVideo && reducedMotion) {
+    bgVideo.removeAttribute("autoplay");
+    bgVideo.pause();
+  }
   const runCadence = () => {
     if (reducedMotion) {
       document.querySelectorAll("[data-marker]").forEach((m) => m.classList.add("is-active"));
