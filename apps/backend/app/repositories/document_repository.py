@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy import or_, select
-from sqlalchemy.orm import Query, Session
+from sqlalchemy.orm import Query, Session, joinedload
 
 from app.models.commitment import Commitment
 from app.models.document import Document
@@ -20,7 +20,10 @@ class DocumentRepository:
         self.db = db
 
     def _base_query(self) -> Query:
-        return self.db.query(Document)
+        return self.db.query(Document).options(
+            joinedload(Document.fund),
+            joinedload(Document.investor),
+        )
 
     def _visibility_filter(
         self, query: Query, membership: UserOrganizationMembership
@@ -142,6 +145,37 @@ class DocumentRepository:
                 fund is not None and fund.organization_id == membership.organization_id
             )
         return False
+
+    def recipient_contacts(self, document: Document) -> list[InvestorContact]:
+        """Investor contacts covered by the document's LP visibility rule.
+
+        Investor-scoped documents are always visible to that investor, so all
+        of its contacts qualify. Fund-only documents are visible to LPs only
+        when non-confidential; recipients are the primary contacts of
+        investors holding a commitment in the fund. Callers project the piece
+        they need (``user_id`` for in-app notifications, ``email`` for mail).
+        """
+        if document.investor_id is not None:
+            return (
+                self.db.query(InvestorContact)
+                .filter(InvestorContact.investor_id == document.investor_id)
+                .all()
+            )
+        if document.fund_id is not None and not document.is_confidential:
+            return (
+                self.db.query(InvestorContact)
+                .join(
+                    Commitment,
+                    Commitment.investor_id == InvestorContact.investor_id,
+                )
+                .filter(
+                    Commitment.fund_id == document.fund_id,
+                    InvestorContact.is_primary.is_(True),
+                )
+                .distinct()
+                .all()
+            )
+        return []
 
     def create(
         self, data: DocumentCreate, *, uploaded_by_user_id: uuid.UUID | None = None

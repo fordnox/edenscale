@@ -8,6 +8,7 @@ a membership in another.
 
 from sqlalchemy import Select, select
 
+from app.models.commitment import Commitment
 from app.models.investor import Investor
 from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
@@ -23,6 +24,15 @@ def lp_visible_investor_ids(membership: UserOrganizationMembership) -> Select:
             InvestorContact.user_id == membership.user_id,
             Investor.organization_id == membership.organization_id,
         )
+    )
+
+
+def lp_visible_commitment_ids(membership: UserOrganizationMembership) -> Select:
+    """Commitment ids belonging to investors the membership's user is a
+    linked contact for. Used to strip other LPs' allocation items from
+    capital-call / distribution payloads."""
+    return select(Commitment.id).where(
+        Commitment.investor_id.in_(lp_visible_investor_ids(membership))
     )
 
 

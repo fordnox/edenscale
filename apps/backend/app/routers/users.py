@@ -18,7 +18,6 @@ from app.repositories.user_organization_membership_repository import (
 )
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import (
-    UserCreate,
     UserRead,
     UserRoleUpdate,
     UserSelfUpdate,
@@ -82,46 +81,6 @@ async def list_users(
         limit=limit,
         include_inactive=include_inactive,
     )
-
-
-@router.post(
-    "",
-    response_model=UserRead,
-    status_code=status.HTTP_201_CREATED,
-    deprecated=True,
-)
-async def invite_user(
-    data: UserCreate,
-    db: Session = Depends(get_db),
-    membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
-    ),
-):
-    """Deprecated: synchronously creates a `User` row in the inviter's org.
-
-    Replaced by token-based pending invitations under `POST /invitations`
-    (Phase 04). The frontend invite dialog at
-    `frontend/src/pages/OrganizationSettingsPage.tsx` is migrated in Phase 07,
-    after which this route will be removed.
-    """
-    if membership.role is UserRole.superadmin and membership.id is None:
-        # Synthesized superadmin membership — no real per-org row. Phase 04
-        # replaces this endpoint with POST /invitations.
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Use POST /invitations to invite users (Phase 04)",
-        )
-    payload = data.model_dump()
-    payload["organization_id"] = membership.organization_id
-    repo = UserRepository(db)
-    if repo.get_by_email(payload["email"]):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User with this email already exists",
-        )
-    return repo.create(UserCreate(**payload))
 
 
 @router.patch("/{user_id}", response_model=UserRead)

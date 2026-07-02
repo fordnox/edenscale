@@ -1,20 +1,45 @@
 import { useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ChevronLeft, Loader2 } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { ChevronLeft, Loader2, Pencil, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 
 import { PageHero } from "@/components/layout/PageHero"
+import { CapitalCallCreateDialog } from "@/components/capital-calls/CapitalCallCreateDialog"
+import { CapitalCallDetail } from "@/components/capital-calls/CapitalCallDetail"
 import { CommitmentCreateDialog } from "@/components/commitments/CommitmentCreateDialog"
+import { CommitmentEditDialog } from "@/components/commitments/CommitmentEditDialog"
+import { DistributionCreateDialog } from "@/components/distributions/DistributionCreateDialog"
+import { DistributionDetail } from "@/components/distributions/DistributionDetail"
 import { FundEditDialog } from "@/components/funds/FundEditDialog"
+import { FundOverviewTab } from "@/components/funds/FundOverviewTab"
+import { FundTeamMemberDialog } from "@/components/funds/FundTeamMemberDialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardSection } from "@/components/ui/card"
 import { Eyebrow } from "@/components/ui/eyebrow"
-import { ProgressBar } from "@/components/ui/progress"
 import { Stat } from "@/components/ui/stat"
 import { StatusPill } from "@/components/ui/StatusPill"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useApiMutation } from "@/hooks/useApiMutation"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { useTabParam } from "@/hooks/useTabParam"
 import { orgPath } from "@/lib/appRoutes"
@@ -22,10 +47,13 @@ import { config } from "@/lib/config"
 import {
   formatCurrency,
   formatDate,
-  formatDateLong,
   formatPercent,
   titleCase,
 } from "@/lib/format"
+import type { components } from "@/lib/schema"
+
+type CommitmentRead = components["schemas"]["CommitmentRead"]
+type FundTeamMemberRead = components["schemas"]["FundTeamMemberRead"]
 
 function parseDecimal(value: string | null | undefined) {
   if (value === null || value === undefined || value === "") return 0
@@ -34,6 +62,7 @@ function parseDecimal(value: string | null | undefined) {
 }
 
 const FUND_DETAIL_TABS = [
+  "overview",
   "commitments",
   "calls",
   "distributions",
@@ -41,15 +70,36 @@ const FUND_DETAIL_TABS = [
   "letters",
 ] as const
 
+function memberName(member: FundTeamMemberRead) {
+  const name = `${member.user.first_name} ${member.user.last_name}`.trim()
+  return name || member.user.email
+}
+
 function FundDetailPageContent({ fundId }: { fundId: string }) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { orgSlug } = useParams<{ orgSlug: string }>()
   const { activeMembership } = useActiveOrganization()
   const [editOpen, setEditOpen] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
   const [commitmentCreateOpen, setCommitmentCreateOpen] = useState(false)
-  const [activeTab, setActiveTab] = useTabParam(FUND_DETAIL_TABS, "commitments")
+  const [editingCommitment, setEditingCommitment] =
+    useState<CommitmentRead | null>(null)
+  const [callCreateOpen, setCallCreateOpen] = useState(false)
+  const [distributionCreateOpen, setDistributionCreateOpen] = useState(false)
+  const [selectedCallId, setSelectedCallId] = useState<string | null>(null)
+  const [selectedDistributionId, setSelectedDistributionId] = useState<
+    string | null
+  >(null)
+  const [teamDialogOpen, setTeamDialogOpen] = useState(false)
+  const [editingMember, setEditingMember] = useState<FundTeamMemberRead | null>(
+    null,
+  )
+  const [memberToRemove, setMemberToRemove] =
+    useState<FundTeamMemberRead | null>(null)
+  const [activeTab, setActiveTab] = useTabParam(FUND_DETAIL_TABS, "overview")
 
-  const canManageCommitments =
+  const canManage =
     activeMembership?.role === "admin" ||
     activeMembership?.role === "fund_manager" ||
     activeMembership?.role === "superadmin"
@@ -75,6 +125,33 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
   const lettersQuery = useApiQuery("/funds/{fund_id}/communications", {
     params: { path: { fund_id: fundId }, query: { limit: 5 } },
   })
+
+  const archiveFund = useApiMutation("post", "/funds/{fund_id}/archive", {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/funds"] })
+      queryClient.invalidateQueries({ queryKey: ["/funds/{fund_id}"] })
+      queryClient.invalidateQueries({ queryKey: ["/dashboard"] })
+      toast.success("Fund archived")
+      navigate(orgPath(orgSlug ?? "", "funds"))
+    },
+  })
+
+  const removeMember = useApiMutation(
+    "delete",
+    "/funds/{fund_id}/team/{member_id}",
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: [
+            "/funds/{fund_id}/team",
+            { params: { path: { fund_id: fundId } } },
+          ],
+        })
+        toast.success("Team member removed")
+        setMemberToRemove(null)
+      },
+    },
+  )
 
   if (fundQuery.isLoading || overviewQuery.isLoading) {
     return (
@@ -122,6 +199,8 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
     fund.currency_code,
   ].filter((part): part is string => Boolean(part))
 
+  const canArchive = canManage && fund.status !== "archived"
+
   return (
     <>
       <Helmet>
@@ -138,9 +217,20 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
               <ChevronLeft strokeWidth={1.5} className="size-4" />
               All funds
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
-              Edit fund
-            </Button>
+            {canManage && (
+              <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
+                Edit fund
+              </Button>
+            )}
+            {canArchive && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setArchiveOpen(true)}
+              >
+                Archive fund
+              </Button>
+            )}
           </>
         }
       />
@@ -160,7 +250,7 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
           )}
         </div>
 
-        {/* KPI strip */}
+        {/* KPI strip (global, above tabs) */}
         <Card className="mt-6">
           <div className="grid grid-cols-2 md:grid-cols-4">
             <CardSection className="border-r border-b md:border-b-0 border-[color:var(--border-hairline)]">
@@ -200,59 +290,11 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
           </div>
         </Card>
 
-        {/* Pacing + inception side cards */}
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Card>
-            <CardSection>
-              <Eyebrow>Pacing</Eyebrow>
-              <p className="mt-3 font-sans text-[14px] leading-[1.55] text-ink-700">
-                The fund has called {committed > 0 ? formatPercent(calledPct) : "—"} of committed
-                capital{targetSize > 0 ? ` against a ${formatCurrency(targetSize, fund.currency_code, { compact: true })} target` : ""}.
-              </p>
-              <div className="mt-5 flex flex-col gap-2">
-                <div className="flex justify-between font-sans text-[12px] text-ink-500">
-                  <span>Called</span>
-                  <span className="es-numeric">
-                    {formatCurrency(called, fund.currency_code, { compact: true })} ·{" "}
-                    {formatCurrency(committed, fund.currency_code, { compact: true })}
-                  </span>
-                </div>
-                <ProgressBar value={calledPct} />
-              </div>
-              {targetSize > 0 && (
-                <div className="mt-5 flex flex-col gap-2">
-                  <div className="flex justify-between font-sans text-[12px] text-ink-500">
-                    <span>Committed vs target</span>
-                    <span className="es-numeric">{formatPercent(targetPct)}</span>
-                  </div>
-                  <ProgressBar value={targetPct} tone="brass" />
-                </div>
-              )}
-            </CardSection>
-          </Card>
-
-          <Card raised>
-            <CardSection>
-              <Eyebrow>Inception</Eyebrow>
-              <p className="mt-3 font-sans text-[14px] leading-[1.55] text-ink-700">
-                {fund.inception_date
-                  ? `Held since ${formatDateLong(fund.inception_date)}.`
-                  : "Inception date not set."}{" "}
-                Fund operates in {fund.currency_code}.
-              </p>
-              {fund.close_date && (
-                <p className="mt-2 font-sans text-[13px] text-ink-500">
-                  Closes {formatDateLong(fund.close_date)}.
-                </p>
-              )}
-            </CardSection>
-          </Card>
-        </div>
-
         {/* Tabbed sections */}
         <div className="mt-12">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="gap-6">
             <TabsList className="bg-parchment-100">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="commitments">
                 Commitments
                 <span className="ml-1 text-ink-500">({commitments.length})</span>
@@ -275,8 +317,18 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
               </TabsTrigger>
             </TabsList>
 
+            <TabsContent value="overview">
+              <FundOverviewTab
+                fund={fund}
+                overview={overview}
+                calls={calls}
+                distributions={distributions}
+                commitments={commitments}
+              />
+            </TabsContent>
+
             <TabsContent value="commitments">
-              {canManageCommitments && (
+              {canManage && (
                 <div className="mb-3 flex justify-end">
                   <Button
                     variant="primary"
@@ -299,7 +351,7 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
                       <p className="font-sans text-[14px] text-ink-700">
                         Investor commitments to this fund will appear here once subscriptions are recorded.
                       </p>
-                      {canManageCommitments && (
+                      {canManage && (
                         <Button
                           variant="secondary"
                           size="sm"
@@ -319,6 +371,7 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
                           <TH align="right">Called</TH>
                           <TH align="right">Distributed</TH>
                           <TH align="right">Status</TH>
+                          {canManage && <TH align="right">Actions</TH>}
                         </tr>
                       </thead>
                       <tbody>
@@ -343,6 +396,18 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
                             <TD align="right">
                               <StatusPill kind="commitment" value={c.status} />
                             </TD>
+                            {canManage && (
+                              <TD align="right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditingCommitment(c)}
+                                >
+                                  <Pencil strokeWidth={1.5} className="size-4" />
+                                  Edit
+                                </Button>
+                              </TD>
+                            )}
                           </TR>
                         ))}
                       </tbody>
@@ -353,6 +418,17 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
             </TabsContent>
 
             <TabsContent value="calls">
+              {canManage && (
+                <div className="mb-3 flex justify-end">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setCallCreateOpen(true)}
+                  >
+                    New capital call
+                  </Button>
+                </div>
+              )}
               <Card>
                 <CardSection className="pt-4">
                   {callsQuery.isLoading ? (
@@ -365,13 +441,24 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
                       <p className="font-sans text-[14px] text-ink-700">
                         When you issue a capital call against this fund, it will appear here.
                       </p>
+                      {canManage && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => setCallCreateOpen(true)}
+                        >
+                          New capital call
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <ul className="divide-y divide-[color:var(--border-hairline)]">
                       {calls.map((c) => (
                         <li
                           key={c.id}
-                          className="flex items-start gap-4 py-4 first:pt-0 last:pb-0"
+                          className="flex cursor-pointer items-start gap-4 py-4 first:pt-0 last:pb-0"
+                          onClick={() => setSelectedCallId(c.id)}
                         >
                           <div className="flex flex-1 flex-col gap-1">
                             <span className="font-sans text-[14px] font-medium text-ink-900">
@@ -397,6 +484,17 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
             </TabsContent>
 
             <TabsContent value="distributions">
+              {canManage && (
+                <div className="mb-3 flex justify-end">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setDistributionCreateOpen(true)}
+                  >
+                    New distribution
+                  </Button>
+                </div>
+              )}
               <Card>
                 <CardSection className="pt-4">
                   {distributionsQuery.isLoading ? (
@@ -409,13 +507,24 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
                       <p className="font-sans text-[14px] text-ink-700">
                         Distributions issued to limited partners will appear here.
                       </p>
+                      {canManage && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => setDistributionCreateOpen(true)}
+                        >
+                          New distribution
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <ul className="divide-y divide-[color:var(--border-hairline)]">
                       {distributions.map((d) => (
                         <li
                           key={d.id}
-                          className="flex items-start gap-4 py-4 first:pt-0 last:pb-0"
+                          className="flex cursor-pointer items-start gap-4 py-4 first:pt-0 last:pb-0"
+                          onClick={() => setSelectedDistributionId(d.id)}
                         >
                           <div className="flex flex-1 flex-col gap-1">
                             <span className="font-sans text-[14px] font-medium text-ink-900">
@@ -441,33 +550,98 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
             </TabsContent>
 
             <TabsContent value="team">
+              {canManage && team.length > 0 && (
+                <div className="mb-3 flex justify-end">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      setEditingMember(null)
+                      setTeamDialogOpen(true)
+                    }}
+                  >
+                    Add team member
+                  </Button>
+                </div>
+              )}
               <Card>
-                <CardSection>
+                <CardSection className={team.length > 0 ? "pt-2 pb-0" : undefined}>
                   {teamQuery.isLoading ? (
                     <div className="flex min-h-[120px] items-center justify-center text-ink-500">
                       <Loader2 strokeWidth={1.5} className="size-5 animate-spin" />
                     </div>
                   ) : team.length === 0 ? (
-                    <div className="flex flex-col items-start gap-2 py-2">
+                    <div className="flex flex-col items-start gap-3 py-2">
                       <Eyebrow>No team members assigned</Eyebrow>
                       <p className="font-sans text-[14px] text-ink-700">
                         Assign analysts and partners to this fund to coordinate work.
                       </p>
+                      {canManage && (
+                        <div className="mt-1 flex flex-wrap items-center gap-4">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              setEditingMember(null)
+                              setTeamDialogOpen(true)
+                            }}
+                          >
+                            Add team member
+                          </Button>
+                          <Link
+                            to={orgPath(orgSlug ?? "", "settings")}
+                            className="font-sans text-[13px] font-medium text-ink-900 border-b border-brass-500 pb-0.5 hover:text-conifer-700"
+                          >
+                            Invite someone to the organization →
+                          </Link>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {team.map((member) => (
-                        <span
-                          key={member.id}
-                          className="inline-flex items-center gap-2 border border-[color:var(--border-hairline)] bg-parchment-100 px-3 py-1.5 font-sans text-[13px] text-ink-900"
-                        >
-                          <span className="font-medium">User #{member.user_id}</span>
-                          {member.title && (
-                            <span className="text-ink-500">· {member.title}</span>
-                          )}
-                        </span>
-                      ))}
-                    </div>
+                    <DataTable>
+                      <thead>
+                        <tr>
+                          <TH>Name</TH>
+                          <TH>Email</TH>
+                          <TH>Title</TH>
+                          {canManage && <TH align="right">Actions</TH>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {team.map((member) => (
+                          <TR key={member.id}>
+                            <TD primary>{memberName(member)}</TD>
+                            <TD>{member.user.email}</TD>
+                            <TD>{member.title ?? "—"}</TD>
+                            {canManage && (
+                              <TD align="right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditingMember(member)
+                                      setTeamDialogOpen(true)
+                                    }}
+                                  >
+                                    <Pencil strokeWidth={1.5} className="size-4" />
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setMemberToRemove(member)}
+                                  >
+                                    <Trash2 strokeWidth={1.5} className="size-4" />
+                                    Remove
+                                  </Button>
+                                </div>
+                              </TD>
+                            )}
+                          </TR>
+                        ))}
+                      </tbody>
+                    </DataTable>
                   )}
                 </CardSection>
               </Card>
@@ -532,6 +706,7 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
       </div>
 
       <FundEditDialog fund={fund} open={editOpen} onOpenChange={setEditOpen} />
+
       <CommitmentCreateDialog
         open={commitmentCreateOpen}
         onOpenChange={setCommitmentCreateOpen}
@@ -542,6 +717,155 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
           existingInvestorIds: commitments.map((c) => c.investor_id),
         }}
       />
+
+      {editingCommitment && (
+        <CommitmentEditDialog
+          open={editingCommitment !== null}
+          onOpenChange={(next) => {
+            if (!next) setEditingCommitment(null)
+          }}
+          commitment={editingCommitment}
+          fundId={fundId}
+        />
+      )}
+
+      <CapitalCallCreateDialog
+        open={callCreateOpen}
+        onOpenChange={setCallCreateOpen}
+        defaultFundId={fundId}
+        onCreated={(id) => setSelectedCallId(id)}
+      />
+
+      <DistributionCreateDialog
+        open={distributionCreateOpen}
+        onOpenChange={setDistributionCreateOpen}
+        defaultFundId={fundId}
+        onCreated={(id) => setSelectedDistributionId(id)}
+      />
+
+      <FundTeamMemberDialog
+        open={teamDialogOpen}
+        onOpenChange={(next) => {
+          setTeamDialogOpen(next)
+          if (!next) setEditingMember(null)
+        }}
+        fundId={fundId}
+        canManage={canManage}
+        member={editingMember}
+        existingUserIds={team.map((m) => m.user_id)}
+      />
+
+      <Sheet
+        open={selectedCallId !== null}
+        onOpenChange={(next) => {
+          if (!next) setSelectedCallId(null)
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-2xl flex flex-col gap-0 p-0"
+        >
+          <SheetTitle className="sr-only">Capital call detail</SheetTitle>
+          <SheetDescription className="sr-only">
+            Allocations and actions for the selected capital call.
+          </SheetDescription>
+          {selectedCallId !== null && (
+            <CapitalCallDetail key={selectedCallId} callId={selectedCallId} />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <Sheet
+        open={selectedDistributionId !== null}
+        onOpenChange={(next) => {
+          if (!next) setSelectedDistributionId(null)
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-2xl flex flex-col gap-0 p-0"
+        >
+          <SheetTitle className="sr-only">Distribution detail</SheetTitle>
+          <SheetDescription className="sr-only">
+            Allocations and actions for the selected distribution.
+          </SheetDescription>
+          {selectedDistributionId !== null && (
+            <DistributionDetail
+              key={selectedDistributionId}
+              distributionId={selectedDistributionId}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive this fund?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {fund.name} will be marked as archived and hidden from active
+              programme views. Existing commitments, calls, and distributions are
+              retained. You can still access it directly.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={archiveFund.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                archiveFund.mutate({ params: { path: { fund_id: fundId } } })
+              }
+              disabled={archiveFund.isPending}
+            >
+              {archiveFund.isPending && (
+                <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+              )}
+              Archive fund
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={memberToRemove !== null}
+        onOpenChange={(next) => {
+          if (!next) setMemberToRemove(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove team member?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {memberToRemove ? memberName(memberToRemove) : "This member"} will be
+              removed from this fund's roster. This does not affect their
+              organization access.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removeMember.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (memberToRemove) {
+                  removeMember.mutate({
+                    params: {
+                      path: { fund_id: fundId, member_id: memberToRemove.id },
+                    },
+                  })
+                }
+              }}
+              disabled={removeMember.isPending}
+            >
+              {removeMember.isPending && (
+                <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+              )}
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

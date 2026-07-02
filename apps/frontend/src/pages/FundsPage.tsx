@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 import type { components } from "@/lib/schema"
 
 type FundStatus = components["schemas"]["FundStatus"]
+type FundListItem = components["schemas"]["FundListItem"]
 
 const FILTERS: Array<{ id: "all" | FundStatus; label: string }> = [
   { id: "all", label: "All" },
@@ -46,6 +47,7 @@ export default function FundsPage() {
   const navigate = useNavigate()
 
   const { data, isLoading, isError } = useApiQuery("/funds")
+  const groupsQuery = useApiQuery("/fund-groups")
 
   const funds = data ?? []
   const filtered = useMemo(
@@ -53,7 +55,108 @@ export default function FundsPage() {
     [funds, filter],
   )
 
+  const hasGroups = useMemo(
+    () => filtered.some((f) => f.fund_group_id),
+    [filtered],
+  )
+
+  const groupedSections = useMemo(() => {
+    const sections: Array<{ key: string; name: string; funds: FundListItem[] }> =
+      []
+    const placed = new Set<string>()
+    for (const group of groupsQuery.data ?? []) {
+      const groupFunds = filtered.filter((f) => f.fund_group_id === group.id)
+      if (groupFunds.length > 0) {
+        sections.push({ key: group.id, name: group.name, funds: groupFunds })
+        for (const f of groupFunds) placed.add(f.id)
+      }
+    }
+    // Everything not placed above lands in "Other funds" — including funds
+    // whose group is unknown because /fund-groups is still loading or failed.
+    // No fund may ever be dropped from the page.
+    const leftover = filtered.filter((f) => !placed.has(f.id))
+    if (leftover.length > 0) {
+      sections.push({ key: "__other__", name: "Other funds", funds: leftover })
+    }
+    return sections
+  }, [filtered, groupsQuery.data])
+
   const showEmptyState = !isLoading && !isError && funds.length === 0
+
+  function renderFundsTable(list: FundListItem[]) {
+    return (
+      <Card>
+        <CardSection className="pt-2 pb-0">
+          <DataTable>
+            <thead>
+              <tr>
+                <TH>Fund</TH>
+                <TH align="right">Vintage</TH>
+                <TH align="right">Target</TH>
+                <TH align="right">Current</TH>
+                <TH align="right">Status</TH>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((fund) => {
+                const target = parseDecimal(fund.target_size)
+                const current = parseDecimal(fund.current_size)
+                const calledPct = target > 0 ? Math.min(current / target, 1) : 0
+                return (
+                  <TR
+                    key={fund.id}
+                    className="cursor-pointer"
+                    onClick={() => {
+                      if (activeMembership) {
+                        navigate(
+                          fundPath(activeMembership.organization.slug, fund.slug),
+                        )
+                      }
+                    }}
+                  >
+                    <TD primary>
+                      <Link
+                        to={
+                          activeMembership
+                            ? fundPath(activeMembership.organization.slug, fund.slug)
+                            : "#"
+                        }
+                        onClick={(event) => event.stopPropagation()}
+                        className="text-ink-900 hover:text-conifer-700"
+                      >
+                        {fund.name}
+                      </Link>
+                    </TD>
+                    <TD align="right">{fund.vintage_year ?? "—"}</TD>
+                    <TD align="right" primary>
+                      {target > 0
+                        ? formatCurrency(target, fund.currency_code, { compact: true })
+                        : "—"}
+                    </TD>
+                    <TD align="right">
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className="es-numeric text-[13px] text-ink-900">
+                          {target > 0
+                            ? formatPercent(calledPct)
+                            : formatCurrency(current, fund.currency_code, { compact: true })}
+                        </span>
+                        {target > 0 && (
+                          <ProgressBar value={calledPct} className="w-[72px]" />
+                        )}
+                      </div>
+                    </TD>
+                    <TD align="right">
+                      <StatusPill kind="fund" value={fund.status} />
+                    </TD>
+                  </TR>
+                )
+              })}
+            </tbody>
+          </DataTable>
+        </CardSection>
+      </Card>
+    )
+  }
 
   return (
     <>
@@ -131,85 +234,29 @@ export default function FundsPage() {
               </span>
             </div>
 
-            <Card>
-              <CardSection className="pt-2 pb-0">
-                {filtered.length === 0 ? (
+            {filtered.length === 0 ? (
+              <Card>
+                <CardSection className="pt-2 pb-0">
                   <div className="flex flex-col items-start gap-2 py-8">
                     <Eyebrow>Nothing matches this filter</Eyebrow>
                     <p className="font-sans text-[14px] text-ink-700">
                       Try a different status to see other programmes.
                     </p>
                   </div>
-                ) : (
-                  <DataTable>
-                    <thead>
-                      <tr>
-                        <TH>Fund</TH>
-                        <TH align="right">Vintage</TH>
-                        <TH align="right">Target</TH>
-                        <TH align="right">Current</TH>
-                        <TH align="right">Status</TH>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((fund) => {
-                        const target = parseDecimal(fund.target_size)
-                        const current = parseDecimal(fund.current_size)
-                        const calledPct = target > 0 ? Math.min(current / target, 1) : 0
-                        return (
-                          <TR
-                            key={fund.id}
-                            className="cursor-pointer"
-                            onClick={() => {
-                              if (activeMembership) {
-                                navigate(
-                                  fundPath(activeMembership.organization.slug, fund.slug),
-                                )
-                              }
-                            }}
-                          >
-                            <TD primary>
-                              <Link
-                                to={
-                                  activeMembership
-                                    ? fundPath(activeMembership.organization.slug, fund.slug)
-                                    : "#"
-                                }
-                                onClick={(event) => event.stopPropagation()}
-                                className="text-ink-900 hover:text-conifer-700"
-                              >
-                                {fund.name}
-                              </Link>
-                            </TD>
-                            <TD align="right">{fund.vintage_year ?? "—"}</TD>
-                            <TD align="right" primary>
-                              {target > 0
-                                ? formatCurrency(target, fund.currency_code, { compact: true })
-                                : "—"}
-                            </TD>
-                            <TD align="right">
-                              <div className="flex flex-col items-end gap-1.5">
-                                <span className="es-numeric text-[13px] text-ink-900">
-                                  {target > 0
-                                    ? formatPercent(calledPct)
-                                    : formatCurrency(current, fund.currency_code, { compact: true })}
-                                </span>
-                                {target > 0 && (
-                                  <ProgressBar value={calledPct} className="w-[72px]" />
-                                )}
-                              </div>
-                            </TD>
-                            <TD align="right">
-                              <StatusPill kind="fund" value={fund.status} />
-                            </TD>
-                          </TR>
-                        )
-                      })}
-                    </tbody>
-                  </DataTable>
-                )}
-              </CardSection>
-            </Card>
+                </CardSection>
+              </Card>
+            ) : hasGroups ? (
+              <div className="flex flex-col gap-8">
+                {groupedSections.map((section) => (
+                  <div key={section.key} className="flex flex-col gap-3">
+                    <Eyebrow>{section.name}</Eyebrow>
+                    {renderFundsTable(section.funds)}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              renderFundsTable(filtered)
+            )}
           </>
         )}
       </div>

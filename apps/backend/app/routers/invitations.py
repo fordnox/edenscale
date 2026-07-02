@@ -23,7 +23,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
-from app.core.config import settings
 from app.core.database import get_db
 from app.core.rbac import (
     get_current_user_record,
@@ -47,14 +46,11 @@ from app.schemas.organization_invitation import (
     InvitationRead,
 )
 from app.schemas.user_organization_membership import MembershipRead
-from app.services.hanko import send_invitation_email
+from app.services.hanko import ensure_hanko_user
+from app.services.notification_service import notify
+from app.tasks import enqueue_or_log
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
-
-
-def _build_accept_url(token: str) -> str:
-    base = settings.APP_DOMAIN_URL.rstrip("/")
-    return f"{base}/invitations/accept?token={token}"
 
 
 def _ensure_can_act_on_org(
@@ -107,11 +103,10 @@ async def create_invitation(
         invited_by_user_id=_inviter_user_id(membership),
     )
 
-    await send_invitation_email(
-        email=invitation.email,  # type: ignore[invalid-argument-type]
-        accept_url=_build_accept_url(invitation.token),  # type: ignore[invalid-argument-type]
-        organization_name=organization.name,  # type: ignore[invalid-argument-type]
-    )
+    # Pre-provision the Hanko account so the invitee can sign in from the
+    # invitation link; the email itself is delivered by the worker.
+    await ensure_hanko_user(invitation.email)  # type: ignore[invalid-argument-type]
+    await enqueue_or_log("task_send_invitation_email", str(invitation.id))
     return InvitationRead.model_validate(invitation)
 
 
@@ -213,6 +208,20 @@ async def accept_invitation(
         user_email,  # type: ignore[invalid-argument-type]
         current_user.id,  # type: ignore[invalid-argument-type]
     )
+    if invitation.invited_by_user_id is not None:
+        notify(
+            db,
+            user_id=invitation.invited_by_user_id,  # type: ignore[invalid-argument-type]
+            title="Invitation accepted",
+            message=f"{user_email} accepted your invitation.",
+            related_type="invitation",
+            related_id=invitation.id,  # type: ignore[invalid-argument-type]
+        )
+    await enqueue_or_log(
+        "task_send_welcome_email",
+        str(current_user.id),
+        str(invitation.organization_id),
+    )
     return MembershipRead.model_validate(new_membership)
 
 
@@ -274,9 +283,6 @@ async def resend_invitation(
     rotated = repo.rotate_token(invitation_id)
     assert rotated is not None
 
-    await send_invitation_email(
-        email=rotated.email,  # type: ignore[invalid-argument-type]
-        accept_url=_build_accept_url(rotated.token),  # type: ignore[invalid-argument-type]
-        organization_name=organization.name,  # type: ignore[invalid-argument-type]
-    )
+    await ensure_hanko_user(rotated.email)  # type: ignore[invalid-argument-type]
+    await enqueue_or_log("task_send_invitation_email", str(rotated.id))
     return InvitationRead.model_validate(rotated)

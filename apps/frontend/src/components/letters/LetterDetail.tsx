@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -47,7 +47,12 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
     params: { path: { communication_id: letterId } },
   })
   const fundsQuery = useApiQuery("/funds")
-  const usersQuery = useApiQuery("/users")
+  // The org user directory is manager-only on the backend; LPs resolve
+  // recipients to a generic label instead.
+  const usersQuery = useApiQuery("/users", undefined, { enabled: canSend })
+  const meQuery = useApiQuery("/users/me", undefined, {
+    staleTime: 5 * 60 * 1000,
+  })
 
   const fundName = useMemo(() => {
     const id = letterQuery.data?.fund_id
@@ -95,6 +100,40 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
       },
     },
   )
+  const markRead = useApiMutation(
+    "post",
+    "/communications/{communication_id}/recipients/{recipient_id}/read",
+    {
+      onSuccess: () => invalidate(),
+    },
+  )
+
+  // Record the reader's receipt the first time they open a sent letter.
+  const receiptFiredRef = useRef(false)
+  const myUnreadRecipientId = useMemo(() => {
+    const me = meQuery.data
+    const letter = letterQuery.data
+    if (!me || !letter || letter.sent_at === null) return null
+    const mine = (letter.recipients ?? []).find(
+      (r) => r.user_id === me.id && r.read_at === null,
+    )
+    return mine?.id ?? null
+  }, [meQuery.data, letterQuery.data])
+
+  useEffect(() => {
+    if (myUnreadRecipientId === null || receiptFiredRef.current) return
+    receiptFiredRef.current = true
+    markRead.mutate({
+      params: {
+        path: {
+          communication_id: letterId,
+          recipient_id: myUnreadRecipientId,
+        },
+      },
+    })
+    // markRead is stable enough for this fire-once effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myUnreadRecipientId, letterId])
 
   if (letterQuery.isLoading || !letterQuery.data) {
     return (
@@ -118,7 +157,7 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
     if (recipient.user_id !== null) {
       const u = userById.get(recipient.user_id)
       if (u) return { name: u.name, secondary: u.email }
-      return { name: `User #${recipient.user_id}`, secondary: null }
+      return { name: "Recipient", secondary: null }
     }
     if (recipient.investor_contact_id !== null) {
       return {
@@ -147,6 +186,7 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
+        {canSend && (
         <div className="grid grid-cols-3 gap-4 border-b border-[color:var(--border-hairline)] px-6 py-5">
           <div className="flex flex-col gap-1">
             <Eyebrow>Recipients</Eyebrow>
@@ -168,6 +208,7 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
             <ProgressBar value={readPct} tone="brand" />
           </div>
         </div>
+        )}
 
         <div className="border-b border-[color:var(--border-hairline)] px-6 py-5">
           <Eyebrow>Body</Eyebrow>
@@ -176,6 +217,7 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
           </p>
         </div>
 
+        {canSend && (
         <div className="px-6 pb-6 pt-5">
           <Eyebrow>Recipients</Eyebrow>
           {recipients.length === 0 ? (
@@ -229,6 +271,7 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
             </DataTable>
           )}
         </div>
+        )}
       </div>
 
       {showSend && (

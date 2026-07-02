@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.fund_team_member import FundTeamMember
 from app.schemas.fund_team_member import (
@@ -21,6 +21,7 @@ class FundTeamMemberRepository:
     ) -> list[FundTeamMember]:
         return (
             self.db.query(FundTeamMember)
+            .options(joinedload(FundTeamMember.user))
             .filter(FundTeamMember.fund_id == fund_id)
             .order_by(FundTeamMember.created_at, FundTeamMember.id)
             .offset(skip)
@@ -30,7 +31,10 @@ class FundTeamMemberRepository:
 
     def get(self, member_id: uuid.UUID) -> FundTeamMember | None:
         return (
-            self.db.query(FundTeamMember).filter(FundTeamMember.id == member_id).first()
+            self.db.query(FundTeamMember)
+            .options(joinedload(FundTeamMember.user))
+            .filter(FundTeamMember.id == member_id)
+            .first()
         )
 
     def get_by_fund_and_user(

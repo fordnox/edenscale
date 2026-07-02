@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
+from app.models.capital_call import CapitalCall
 from app.models.capital_call_item import CapitalCallItem
 from app.models.commitment import Commitment
 from app.models.enums import CapitalCallStatus, CommitmentStatus, UserRole
@@ -17,6 +18,7 @@ from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.capital_call_repository import CapitalCallRepository
 from app.repositories.fund_repository import FundRepository
+from app.repositories.lp_scope import lp_visible_commitment_ids
 from app.schemas.capital_call import (
     CapitalCallCreate,
     CapitalCallItemBulkCreate,
@@ -27,8 +29,31 @@ from app.schemas.capital_call import (
 )
 from app.services.allocation import allocate_pro_rata
 from app.services.notification_service import notify
+from app.tasks import enqueue_or_log
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
+
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+
+
+def _scope_items_for_membership(
+    db: Session,
+    membership: UserOrganizationMembership,
+    calls: list[CapitalCall],
+) -> list[CapitalCallRead]:
+    """Serialize calls, restricting LP payloads to their own allocation items.
+
+    An LP can view a call because at least one item is theirs, but the ORM
+    row carries every investor's items — filter the serialized copy instead
+    of mutating the collection.
+    """
+    reads = [CapitalCallRead.model_validate(call) for call in calls]
+    if membership.role in _ORG_VISIBLE_ROLES:
+        return reads
+    visible_ids = set(db.execute(lp_visible_commitment_ids(membership)).scalars().all())
+    for read in reads:
+        read.items = [item for item in read.items if item.commitment_id in visible_ids]
+    return reads
 
 
 def _load_fund(db: Session, fund_id: uuid.UUID) -> Fund | None:
@@ -54,13 +79,14 @@ async def list_capital_calls(
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     repo = CapitalCallRepository(db)
-    return repo.list_for_membership(
+    calls = repo.list_for_membership(
         membership,
         fund_id=fund_id,
         status=status_filter,
         skip=skip,
         limit=limit,
     )
+    return _scope_items_for_membership(db, membership, calls)
 
 
 @router.get("/{call_id}", response_model=CapitalCallRead)
@@ -80,7 +106,7 @@ async def get_capital_call(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view this capital call",
         )
-    return call
+    return _scope_items_for_membership(db, membership, [call])[0]
 
 
 @router.post("", response_model=CapitalCallRead, status_code=status.HTTP_201_CREATED)
@@ -287,6 +313,7 @@ async def send_capital_call(
             related_type="capital_call",
             related_id=sent.id,  # type: ignore[invalid-argument-type]
         )
+    await enqueue_or_log("task_send_capital_call_emails", str(sent.id))
     return sent
 
 
@@ -339,10 +366,11 @@ async def list_capital_calls_for_fund(
             status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
         )
     repo = CapitalCallRepository(db)
-    return repo.list_for_membership(
+    calls = repo.list_for_membership(
         membership,
         fund_id=fund_id,
         status=status_filter,
         skip=skip,
         limit=limit,
     )
+    return _scope_items_for_membership(db, membership, calls)

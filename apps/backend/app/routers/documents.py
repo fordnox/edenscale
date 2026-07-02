@@ -27,11 +27,13 @@ from app.schemas.document import (
     DocumentUploadInit,
     DocumentUploadInitResponse,
 )
+from app.services.notification_service import notify
 from app.services.storage import (
     LocalDevStorage,
     get_storage,
     key_from_file_url,
 )
+from app.tasks import enqueue_or_log
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -86,6 +88,16 @@ def _ensure_can_attach(
             )
 
 
+def _recipient_user_ids(db: Session, document) -> list[uuid.UUID]:
+    """Linked contact user ids to notify about a new document.
+
+    The visibility rule lives in ``DocumentRepository.recipient_contacts``
+    (shared with the email task); this projects the linked user ids.
+    """
+    contacts = DocumentRepository(db).recipient_contacts(document)
+    return list({c.user_id for c in contacts if c.user_id is not None})  # type: ignore[invalid-return-type]
+
+
 def _to_read(document) -> DocumentRead:
     storage = get_storage()
     download_url: str | None = None
@@ -98,7 +110,11 @@ def _to_read(document) -> DocumentRead:
         id=document.id,
         organization_id=document.organization_id,
         fund_id=document.fund_id,
+        fund_name=document.fund.name if document.fund is not None else None,
         investor_id=document.investor_id,
+        investor_name=(
+            document.investor.name if document.investor is not None else None
+        ),
         uploaded_by_user_id=document.uploaded_by_user_id,
         document_type=document.document_type,
         title=document.title,
@@ -149,6 +165,16 @@ async def create_document(
             )
     repo = DocumentRepository(db)
     document = repo.create(data, uploaded_by_user_id=membership.user_id)  # type: ignore[invalid-argument-type]
+    for user_id in _recipient_user_ids(db, document):
+        notify(
+            db,
+            user_id=user_id,
+            title=f"New document: {document.title}",
+            message=f"A new document '{document.title}' is available.",
+            related_type="document",
+            related_id=document.id,  # type: ignore[invalid-argument-type]
+        )
+    await enqueue_or_log("task_send_document_email", str(document.id))
     return _to_read(document)
 
 

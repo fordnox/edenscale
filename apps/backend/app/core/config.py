@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     HANKO_AUDIENCE: str = "localhost"
     STORAGE_BACKEND: str = "local"
     DEV_STORAGE_TOKEN: str = "dev-storage"
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_STARTTLS: bool = True
+    EMAIL_FROM: str = ""
+    EMAIL_ENABLED: bool = False
 
 
 settings = Settings()

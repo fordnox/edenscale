@@ -25,6 +25,7 @@ import {
 import { Stat } from "@/components/ui/stat"
 import { StatusPill } from "@/components/ui/StatusPill"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { config } from "@/lib/config"
 import { formatCurrency, formatDate } from "@/lib/format"
@@ -52,6 +53,12 @@ function parseDecimal(value: string | null | undefined) {
 }
 
 export default function DistributionsPage() {
+  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const canManage =
+    isSuperadmin ||
+    activeMembership?.role === "admin" ||
+    activeMembership?.role === "fund_manager"
+
   const [createOpen, setCreateOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [fundFilter, setFundFilter] = useState<"all" | string>("all")
@@ -85,7 +92,14 @@ export default function DistributionsPage() {
     let lifetimeTotal = 0
     let paidTotal = 0
     for (const d of allDistributions) {
-      const amount = parseDecimal(d.amount)
+      // LPs only receive their own allocation items, so their figures are
+      // their share of each distribution rather than the fund-level amount.
+      const amount = canManage
+        ? parseDecimal(d.amount)
+        : (d.items ?? []).reduce(
+            (acc, item) => acc + parseDecimal(item.amount_due),
+            0,
+          )
       lifetimeTotal += amount
       const itemsPaid = (d.items ?? []).reduce(
         (acc, item) => acc + parseDecimal(item.amount_paid),
@@ -104,7 +118,7 @@ export default function DistributionsPage() {
       paidTotal,
       paidPct: lifetimeTotal > 0 ? paidTotal / lifetimeTotal : 0,
     }
-  }, [allDistributions])
+  }, [allDistributions, canManage])
 
   return (
     <>
@@ -116,13 +130,15 @@ export default function DistributionsPage() {
         title="Returns to limited partners."
         description="Cash distributed across funds. Status updates as wires settle."
         actions={
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setCreateOpen(true)}
-          >
-            New distribution
-          </Button>
+          canManage ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setCreateOpen(true)}
+            >
+              New distribution
+            </Button>
+          ) : undefined
         }
       />
 
@@ -236,7 +252,12 @@ export default function DistributionsPage() {
                 </thead>
                 <tbody>
                   {distributions.map((distribution) => {
-                    const amount = parseDecimal(distribution.amount)
+                    const amount = canManage
+                      ? parseDecimal(distribution.amount)
+                      : (distribution.items ?? []).reduce(
+                          (acc, item) => acc + parseDecimal(item.amount_due),
+                          0,
+                        )
                     const paid = (distribution.items ?? []).reduce(
                       (acc, item) => acc + parseDecimal(item.amount_paid),
                       0,
@@ -253,8 +274,9 @@ export default function DistributionsPage() {
                           <div className="flex flex-col gap-1">
                             <span>{distribution.title}</span>
                             <span className="font-sans text-[11px] font-normal text-ink-500">
-                              {(distribution.items ?? []).length} limited
-                              partners
+                              {canManage
+                                ? `${(distribution.items ?? []).length} limited partners`
+                                : "Your share"}
                             </span>
                           </div>
                         </TD>

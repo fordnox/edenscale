@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from app.core.database import Base, SessionLocal, engine
 from app.core.slugs import slugify
 from app.main import app
-from app.models import (CapitalCall, CapitalCallStatus, Commitment,
+from app.models import (CapitalCall, CapitalCallItem, CapitalCallStatus, Commitment,
                         CommitmentStatus, Communication, CommunicationRecipient,
                         CommunicationType, Distribution, DistributionItem,
                         DistributionStatus, Fund, FundStatus, Investor,
@@ -312,6 +312,10 @@ class TestDashboardOverview:
         )
         assert Decimal(active_summary["committed_amount"]) == Decimal("1000000.00")
         assert Decimal(active_summary["called_amount"]) == Decimal("250000.00")
+        # Cashflow-derived summary metrics: DPI = distributed / called; TVPI
+        # is gone (no NAV data exists to support it).
+        assert "tvpi" not in active_summary
+        assert active_summary["dpi"] is not None
 
         assert len(data["upcoming_capital_calls"]) == 1
         upcoming = data["upcoming_capital_calls"][0]
@@ -430,40 +434,89 @@ class TestDashboardOverview:
                 )
             )
 
-            db.add_all(
-                [
-                    Commitment(
-                        fund_id=visible_fund.id,
-                        investor_id=visible_investor.id,
-                        committed_amount=Decimal("250000.00"),
-                        commitment_date=date(2024, 1, 1),
-                        status=CommitmentStatus.approved,
-                    ),
-                    Commitment(
-                        fund_id=hidden_fund.id,
-                        investor_id=other_investor.id,
-                        committed_amount=Decimal("999999.00"),
-                        commitment_date=date(2024, 2, 1),
-                        status=CommitmentStatus.approved,
-                    ),
-                ]
+            visible_commitment = Commitment(
+                fund_id=visible_fund.id,
+                investor_id=visible_investor.id,
+                committed_amount=Decimal("250000.00"),
+                commitment_date=date(2024, 1, 1),
+                status=CommitmentStatus.approved,
+            )
+            db.add(visible_commitment)
+            db.add(
+                Commitment(
+                    fund_id=hidden_fund.id,
+                    investor_id=other_investor.id,
+                    committed_amount=Decimal("999999.00"),
+                    commitment_date=date(2024, 2, 1),
+                    status=CommitmentStatus.approved,
+                )
+            )
+            db.flush()
+
+            visible_call = CapitalCall(
+                fund_id=visible_fund.id,
+                title="Visible call",
+                due_date=date(2026, 6, 1),
+                amount=Decimal("50000.00"),
+                status=CapitalCallStatus.scheduled,
+            )
+            db.add(visible_call)
+            db.add(
+                CapitalCall(
+                    fund_id=hidden_fund.id,
+                    title="Hidden call",
+                    due_date=date(2026, 5, 1),
+                    amount=Decimal("75000.00"),
+                    status=CapitalCallStatus.scheduled,
+                )
+            )
+            db.flush()
+            # LP capital-call visibility is item-based (matching the
+            # /capital-calls list endpoint): allocate the visible call to the
+            # LP's commitment.
+            db.add(
+                CapitalCallItem(
+                    capital_call_id=visible_call.id,
+                    commitment_id=visible_commitment.id,
+                    amount_due=Decimal("50000.00"),
+                )
             )
 
+            # Distributions YTD must be the LP's own receipts, not the
+            # fund-wide total: pay the LP 10k and another investor 990k in
+            # the same fund this year.
+            other_commitment_same_fund = Commitment(
+                fund_id=visible_fund.id,
+                investor_id=other_investor.id,
+                committed_amount=Decimal("500000.00"),
+                commitment_date=date(2024, 3, 1),
+                status=CommitmentStatus.approved,
+            )
+            db.add(other_commitment_same_fund)
+            distribution = Distribution(
+                fund_id=visible_fund.id,
+                title="Shared distribution",
+                distribution_date=date(date.today().year, 2, 1),
+                amount=Decimal("1000000.00"),
+                status=DistributionStatus.paid,
+            )
+            db.add(distribution)
+            db.flush()
             db.add_all(
                 [
-                    CapitalCall(
-                        fund_id=visible_fund.id,
-                        title="Visible call",
-                        due_date=date(2026, 6, 1),
-                        amount=Decimal("50000.00"),
-                        status=CapitalCallStatus.scheduled,
+                    DistributionItem(
+                        distribution_id=distribution.id,
+                        commitment_id=visible_commitment.id,
+                        amount_due=Decimal("10000.00"),
+                        amount_paid=Decimal("10000.00"),
+                        paid_at=datetime(date.today().year, 2, 1),
                     ),
-                    CapitalCall(
-                        fund_id=hidden_fund.id,
-                        title="Hidden call",
-                        due_date=date(2026, 5, 1),
-                        amount=Decimal("75000.00"),
-                        status=CapitalCallStatus.scheduled,
+                    DistributionItem(
+                        distribution_id=distribution.id,
+                        commitment_id=other_commitment_same_fund.id,
+                        amount_due=Decimal("990000.00"),
+                        amount_paid=Decimal("990000.00"),
+                        paid_at=datetime(date.today().year, 2, 1),
                     ),
                 ]
             )
@@ -480,6 +533,8 @@ class TestDashboardOverview:
         assert data["investors_total"] == 1
         assert Decimal(data["commitments_total_amount"]) == Decimal("250000.00")
         assert data["capital_calls_outstanding"] == 1
+        # Their own receipts only — not the fund-wide 1M.
+        assert Decimal(data["distributions_ytd_amount"]) == Decimal("10000.00")
 
         fund_names = {f["name"] for f in data["recent_funds"]}
         assert fund_names == {"Visible Fund"}

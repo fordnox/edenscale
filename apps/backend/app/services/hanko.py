@@ -1,15 +1,10 @@
-"""Hanko admin/public API client used by the invitation flow.
+"""Hanko admin API client used by the invitation flow.
 
-Hanko's API does not expose arbitrary transactional email sending — its only
-mail surface is the authentication passcode flow plus the ``email.send``
-webhook (which Hanko triggers when *Hanko* needs to send an auth email).
-
-The invitation flow therefore uses Hanko as a sign-in trigger: we ensure the
-invitee exists as a Hanko user (create via Admin API if missing), then
-initialize a passcode login so Hanko mails them an authentication code. After
-sign-in, the frontend reads ``/invitations/pending-for-me`` and surfaces the
-pending invite via banner; the ``accept_url`` is recorded on the invitation
-row for resend bookkeeping and for the future custom-email path.
+The invitation flow only needs Hanko for account pre-provisioning: we ensure
+the invitee exists as a Hanko user (create via Admin API if missing) so that
+the sign-in flow works when they follow the invitation link. The invitation
+email itself is delivered by our own email service (see ``app.services.email``
+and the ``task_send_invitation_email`` arq task).
 
 Failures never raise to the caller — they are logged so the admin can resend.
 """
@@ -30,10 +25,6 @@ class HankoServiceError(Exception):
 
 def _admin_base_url() -> str:
     return f"{settings.HANKO_API_URL.rstrip('/')}/admin"
-
-
-def _public_base_url() -> str:
-    return settings.HANKO_API_URL.rstrip("/")
 
 
 def _admin_headers() -> dict[str, str]:
@@ -73,51 +64,16 @@ async def _create_user(client: httpx.AsyncClient, email: str) -> dict[str, Any]:
     return response.json()
 
 
-def _extract_email_id(user: dict[str, Any], email: str) -> str | None:
-    for entry in user.get("emails") or []:
-        if (entry.get("address") or "").lower() == email.lower():
-            email_id = entry.get("id")
-            if isinstance(email_id, str):
-                return email_id
-    return None
-
-
-async def _send_passcode(
-    client: httpx.AsyncClient, user_id: str, email_id: str | None
-) -> None:
-    payload: dict[str, str] = {"user_id": user_id}
-    if email_id:
-        payload["email_id"] = email_id
-    response = await client.post(
-        f"{_public_base_url()}/passcode/login/initialize",
-        headers={"Content-Type": "application/json"},
-        json=payload,
-    )
-    response.raise_for_status()
-
-
-async def send_invitation_email(
-    email: str,
-    accept_url: str,
-    organization_name: str,
-    inviter_name: str | None = None,
-) -> bool:
-    """Trigger a Hanko sign-in email for an invitee.
-
-    Hanko cannot deliver arbitrary content, so the ``accept_url`` is recorded
-    for bookkeeping and surfaced via ``/invitations/pending-for-me`` after the
-    user signs in. The email Hanko sends contains the standard passcode.
+async def ensure_hanko_user(email: str) -> bool:
+    """Ensure a Hanko user exists for ``email`` (create via Admin API if missing).
 
     Returns ``True`` on success, ``False`` on any failure. Never raises.
     """
     if not settings.HANKO_API_URL or not settings.HANKO_API_KEY:
         logger.warning(
-            "Hanko invitation email skipped: HANKO_API_URL/HANKO_API_KEY not configured "
-            "(email=%s organization=%s accept_url=%s inviter=%s)",
+            "Hanko user provisioning skipped: HANKO_API_URL/HANKO_API_KEY "
+            "not configured (email=%s)",
             email,
-            organization_name,
-            accept_url,
-            inviter_name or "<unknown>",
         )
         return False
 
@@ -131,23 +87,8 @@ async def send_invitation_email(
             if not isinstance(user_id, str) or not user_id:
                 raise HankoServiceError("Hanko user record missing 'id'")
 
-            email_id = _extract_email_id(user, email)
-            await _send_passcode(client, user_id, email_id)
-
-        logger.info(
-            "Hanko invitation email triggered (email=%s organization=%s "
-            "accept_url=%s inviter=%s)",
-            email,
-            organization_name,
-            accept_url,
-            inviter_name or "<unknown>",
-        )
+        logger.info("Hanko user ensured (email=%s hanko_id=%s)", email, user_id)
         return True
     except (httpx.HTTPError, HankoServiceError) as exc:
-        logger.exception(
-            "Hanko invitation email failed (email=%s organization=%s): %s",
-            email,
-            organization_name,
-            exc,
-        )
+        logger.exception("Hanko user provisioning failed (email=%s): %s", email, exc)
         return False

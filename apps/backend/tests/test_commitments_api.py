@@ -17,6 +17,7 @@ from app.models import (
     Fund,
     Investor,
     InvestorContact,
+    Notification,
     Organization,
     OrganizationType,
     User,
@@ -247,6 +248,74 @@ class TestStatusTransitions:
         )
         assert response.status_code == 200
         assert response.json()["status"] == "approved"
+
+    def test_status_change_notifies_linked_lp_contacts(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        lp_user_id = _seed_user(
+            "hanko-lp",
+            UserRole.lp,
+            email="lp@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id)
+        _seed_contact(investor_id, lp_user_id)
+        commitment_id = _seed_commitment(fund_id, investor_id)
+
+        response = client.post(
+            f"/commitments/{commitment_id}/status",
+            json={"status": "approved"},
+        )
+        assert response.status_code == 200
+
+        db = SessionLocal()
+        try:
+            rows = (
+                db.query(Notification)
+                .filter(Notification.user_id == uuid.UUID(lp_user_id))
+                .all()
+            )
+            assert len(rows) == 1
+            assert rows[0].title == "Commitment approved"
+            assert "approved" in rows[0].message
+            assert rows[0].related_type == "commitment"
+            assert rows[0].related_id == uuid.UUID(commitment_id)
+        finally:
+            db.close()
+
+    def test_status_change_without_linked_contacts_creates_no_notifications(
+        self, client, override_user
+    ):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id)
+        commitment_id = _seed_commitment(fund_id, investor_id)
+
+        response = client.post(
+            f"/commitments/{commitment_id}/status",
+            json={"status": "approved"},
+        )
+        assert response.status_code == 200
+
+        db = SessionLocal()
+        try:
+            assert db.query(Notification).count() == 0
+        finally:
+            db.close()
 
     def test_terminal_declined_cannot_transition(self, client, override_user):
         org_id = _seed_org()

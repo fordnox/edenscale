@@ -66,17 +66,7 @@ export interface paths {
         /** List Users */
         get: operations["list_users_users_get"];
         put?: never;
-        /**
-         * Invite User
-         * @deprecated
-         * @description Deprecated: synchronously creates a `User` row in the inviter's org.
-         *
-         *     Replaced by token-based pending invitations under `POST /invitations`
-         *     (Phase 04). The frontend invite dialog at
-         *     `frontend/src/pages/OrganizationSettingsPage.tsx` is migrated in Phase 07,
-         *     after which this route will be removed.
-         */
-        post: operations["invite_user_users_post"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1909,8 +1899,12 @@ export interface components {
             organization_id: string | null;
             /** Fund Id */
             fund_id: string | null;
+            /** Fund Name */
+            fund_name?: string | null;
             /** Investor Id */
             investor_id: string | null;
+            /** Investor Name */
+            investor_name?: string | null;
             /** Uploaded By User Id */
             uploaded_by_user_id: string | null;
             document_type: components["schemas"]["DocumentType"];
@@ -2097,6 +2091,10 @@ export interface components {
             remaining_commitment: string;
             /** Irr */
             irr?: string | null;
+            /** Dpi */
+            dpi?: string | null;
+            /** Called Pct */
+            called_pct?: string | null;
         };
         /** FundRead */
         FundRead: {
@@ -2169,8 +2167,8 @@ export interface components {
             called_amount: string;
             /** Irr */
             irr?: string | null;
-            /** Tvpi */
-            tvpi?: string | null;
+            /** Dpi */
+            dpi?: string | null;
         };
         /** FundTeamMemberCreate */
         FundTeamMemberCreate: {
@@ -2205,6 +2203,7 @@ export interface components {
             title: string | null;
             /** Permissions */
             permissions: string | null;
+            user: components["schemas"]["FundTeamMemberUserSummary"];
             /** Created At */
             created_at: string | null;
             /** Updated At */
@@ -2216,6 +2215,20 @@ export interface components {
             title?: string | null;
             /** Permissions */
             permissions?: string | null;
+        };
+        /** FundTeamMemberUserSummary */
+        FundTeamMemberUserSummary: {
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Email */
+            email: string;
         };
         /** FundUpdate */
         FundUpdate: {
@@ -2772,27 +2785,6 @@ export interface components {
             /** Due Date */
             due_date?: string | null;
         };
-        /** UserCreate */
-        UserCreate: {
-            /** Organization Id */
-            organization_id?: string | null;
-            role: components["schemas"]["UserRole"];
-            /** First Name */
-            first_name: string;
-            /** Last Name */
-            last_name: string;
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /** Phone */
-            phone?: string | null;
-            /** Title */
-            title?: string | null;
-            /** Hanko Subject Id */
-            hanko_subject_id?: string | null;
-        };
         /** UserRead */
         UserRead: {
             /**
@@ -3010,41 +3002,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserRead"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    invite_user_users_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Organization-Id"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UserCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserRead"];
                 };
             };
             /** @description Validation Error */

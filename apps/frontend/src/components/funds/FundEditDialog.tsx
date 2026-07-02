@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { FundGroupField } from "@/components/funds/FundGroupField"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import type { components } from "@/lib/schema"
 
@@ -52,6 +53,7 @@ export function FundEditDialog({ fund, open, onOpenChange }: FundEditDialogProps
   const [targetSize, setTargetSize] = useState(fund.target_size ?? "")
   const [status, setStatus] = useState<FundStatus>(fund.status)
   const [description, setDescription] = useState(fund.description ?? "")
+  const [fundGroupId, setFundGroupId] = useState(fund.fund_group_id ?? "")
 
   const queryClient = useQueryClient()
 
@@ -66,6 +68,7 @@ export function FundEditDialog({ fund, open, onOpenChange }: FundEditDialogProps
       setTargetSize(fund.target_size ?? "")
       setStatus(fund.status)
       setDescription(fund.description ?? "")
+      setFundGroupId(fund.fund_group_id ?? "")
     }
   }, [open, fund])
 
@@ -103,6 +106,7 @@ export function FundEditDialog({ fund, open, onOpenChange }: FundEditDialogProps
         target_size: trimmedTarget ? trimmedTarget : null,
         status,
         description: description.trim() || null,
+        fund_group_id: fundGroupId || null,
       },
     })
   }
@@ -198,6 +202,11 @@ export function FundEditDialog({ fund, open, onOpenChange }: FundEditDialogProps
               </SelectContent>
             </Select>
           </div>
+          <FundGroupField
+            value={fundGroupId}
+            onValueChange={setFundGroupId}
+            enabled={open}
+          />
           <div className="flex flex-col gap-2">
             <Label htmlFor="edit-fund-description">Description</Label>
             <Textarea

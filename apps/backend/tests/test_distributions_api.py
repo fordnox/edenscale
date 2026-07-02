@@ -498,3 +498,69 @@ class TestNestedFundRoute:
         assert response.status_code == 200
         titles = sorted(row["title"] for row in response.json())
         assert titles == ["First", "Second"]
+
+
+class TestLpItemScoping:
+    """An LP who can view a distribution must not see other investors'
+    allocation items in the payload."""
+
+    def test_lp_sees_only_own_items(self, client, override_user):
+        org_id = _seed_org()
+        investor_a = _seed_investor(org_id, name="LP A")
+        investor_b = _seed_investor(org_id, name="LP B")
+        fund_id = _seed_fund(org_id)
+        commitment_a = _seed_commitment(fund_id, investor_a)
+        commitment_b = _seed_commitment(fund_id, investor_b)
+
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        distribution_id = client.post(
+            "/distributions",
+            json={
+                "fund_id": fund_id,
+                "title": "Shared Distribution",
+                "distribution_date": "2026-06-01",
+                "amount": "2000.00",
+            },
+        ).json()["id"]
+        client.post(
+            f"/distributions/{distribution_id}/items",
+            json={
+                "items": [
+                    {"commitment_id": commitment_a, "amount_due": "1000.00"},
+                    {"commitment_id": commitment_b, "amount_due": "1000.00"},
+                ]
+            },
+        )
+
+        gp_detail = client.get(f"/distributions/{distribution_id}")
+        assert gp_detail.status_code == 200
+        assert len(gp_detail.json()["items"]) == 2
+
+        lp_user_id = _seed_user(
+            "hanko-lp",
+            UserRole.lp,
+            email="lp@example.com",
+            organization_id=org_id,
+        )
+        _seed_contact(investor_a, lp_user_id)
+        override_user("hanko-lp")
+
+        lp_detail = client.get(f"/distributions/{distribution_id}")
+        assert lp_detail.status_code == 200
+        items = lp_detail.json()["items"]
+        assert len(items) == 1
+        assert items[0]["commitment_id"] == commitment_a
+
+        for url in ("/distributions", f"/funds/{fund_id}/distributions"):
+            resp = client.get(url)
+            assert resp.status_code == 200
+            rows = resp.json()
+            assert len(rows) == 1
+            assert len(rows[0]["items"]) == 1
+            assert rows[0]["items"][0]["commitment_id"] == commitment_a

@@ -1,11 +1,31 @@
 import { useEffect, useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { useQueryClient } from "@tanstack/react-query"
-import { Loader2, Mail, Plus, RotateCw, Users, X as XIcon } from "lucide-react"
+import {
+  Check,
+  Loader2,
+  Mail,
+  Pencil,
+  Plus,
+  RotateCw,
+  Trash2,
+  Users,
+  X as XIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { RequireRole } from "@/components/RequireRole"
 import { PageHero } from "@/components/layout/PageHero"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardSection } from "@/components/ui/card"
@@ -39,6 +59,7 @@ import type { components } from "@/lib/schema"
 
 type UserRole = components["schemas"]["UserRole"]
 type UserRead = components["schemas"]["UserRead"]
+type FundGroupRead = components["schemas"]["FundGroupRead"]
 type OrganizationType = components["schemas"]["OrganizationType"]
 type InvitationListItem = components["schemas"]["InvitationListItem"]
 type InvitationStatus = components["schemas"]["InvitationStatus"]
@@ -489,6 +510,8 @@ function OrganizationSettingsContent() {
               </CardSection>
             </Card>
 
+            {(isAdmin || isFundManager) && <FundGroupsCard />}
+
             {isAdmin && (
               <Card>
                 <div className="flex items-end justify-between gap-4 px-6 pt-6 md:px-8 md:pt-8">
@@ -814,5 +837,209 @@ function InviteUserDialog({
         </form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function FundGroupsCard() {
+  const queryClient = useQueryClient()
+  const groupsQuery = useApiQuery("/fund-groups")
+  const groups = groupsQuery.data ?? []
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState("")
+  const [groupToDelete, setGroupToDelete] = useState<FundGroupRead | null>(null)
+
+  const updateGroup = useApiMutation("patch", "/fund-groups/{fund_group_id}", {
+    onSuccess: () => {
+      toast.success("Fund group renamed")
+      queryClient.invalidateQueries({ queryKey: ["/fund-groups"] })
+      setEditingId(null)
+      setEditName("")
+    },
+  })
+
+  const deleteGroup = useApiMutation("delete", "/fund-groups/{fund_group_id}", {
+    onSuccess: () => {
+      toast.success("Fund group deleted")
+      queryClient.invalidateQueries({ queryKey: ["/fund-groups"] })
+      queryClient.invalidateQueries({ queryKey: ["/funds"] })
+      setGroupToDelete(null)
+    },
+  })
+
+  function startEdit(group: FundGroupRead) {
+    setEditingId(group.id)
+    setEditName(group.name)
+  }
+
+  function saveEdit(group: FundGroupRead) {
+    const trimmed = editName.trim()
+    if (!trimmed || updateGroup.isPending) return
+    updateGroup.mutate({
+      params: { path: { fund_group_id: group.id } },
+      body: { name: trimmed },
+    })
+  }
+
+  return (
+    <>
+      <Card>
+        <div className="flex items-end justify-between gap-4 px-6 pt-6 md:px-8 md:pt-8">
+          <div className="flex flex-col gap-1.5">
+            <Eyebrow>Fund groups</Eyebrow>
+            <p className="font-sans text-[13px] text-ink-700">
+              Organize funds into families or vintages. Create groups from the
+              fund dialog; rename or remove them here.
+            </p>
+          </div>
+        </div>
+        <CardSection className="pt-4">
+          {groupsQuery.isLoading ? (
+            <div className="flex min-h-[120px] items-center justify-center text-ink-500">
+              <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
+            </div>
+          ) : groups.length === 0 ? (
+            <EmptyState
+              icon={<Users strokeWidth={1.25} />}
+              title="No fund groups yet"
+              body="Create a group while adding or editing a fund to see it here."
+            />
+          ) : (
+            <DataTable>
+              <thead>
+                <tr>
+                  <TH>Name</TH>
+                  <TH align="right">Actions</TH>
+                </tr>
+              </thead>
+              <tbody>
+                {groups.map((group) => {
+                  const isEditing = editingId === group.id
+                  return (
+                    <TR key={group.id}>
+                      <TD primary>
+                        {isEditing ? (
+                          <Input
+                            value={editName}
+                            onChange={(event) => setEditName(event.target.value)}
+                            className="max-w-xs"
+                            autoFocus
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault()
+                                saveEdit(group)
+                              }
+                            }}
+                          />
+                        ) : (
+                          group.name
+                        )}
+                      </TD>
+                      <TD align="right">
+                        <div className="flex items-center justify-end gap-1">
+                          {isEditing ? (
+                            <>
+                              <Button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                onClick={() => saveEdit(group)}
+                                disabled={
+                                  !editName.trim() || updateGroup.isPending
+                                }
+                              >
+                                {updateGroup.isPending ? (
+                                  <Loader2
+                                    strokeWidth={1.5}
+                                    className="size-4 animate-spin"
+                                  />
+                                ) : (
+                                  <Check strokeWidth={1.5} className="size-4" />
+                                )}
+                                Save
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingId(null)
+                                  setEditName("")
+                                }}
+                                disabled={updateGroup.isPending}
+                              >
+                                Cancel
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEdit(group)}
+                              >
+                                <Pencil strokeWidth={1.5} className="size-4" />
+                                Rename
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setGroupToDelete(group)}
+                              >
+                                <Trash2 strokeWidth={1.5} className="size-4" />
+                                Delete
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TD>
+                    </TR>
+                  )
+                })}
+              </tbody>
+            </DataTable>
+          )}
+        </CardSection>
+      </Card>
+
+      <AlertDialog
+        open={groupToDelete !== null}
+        onOpenChange={(next) => {
+          if (!next) setGroupToDelete(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete fund group?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {groupToDelete ? `"${groupToDelete.name}"` : "This group"} will be
+              removed. Groups that still contain funds cannot be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteGroup.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (groupToDelete) {
+                  deleteGroup.mutate({
+                    params: { path: { fund_group_id: groupToDelete.id } },
+                  })
+                }
+              }}
+              disabled={deleteGroup.isPending}
+            >
+              {deleteGroup.isPending && (
+                <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+              )}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

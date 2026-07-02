@@ -25,6 +25,7 @@ import {
 import { Stat } from "@/components/ui/stat"
 import { StatusPill } from "@/components/ui/StatusPill"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { config } from "@/lib/config"
 import { formatCurrency, formatDate } from "@/lib/format"
@@ -50,6 +51,12 @@ function parseDecimal(value: string | null | undefined) {
 }
 
 export default function CapitalCallsPage() {
+  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const canManage =
+    isSuperadmin ||
+    activeMembership?.role === "admin" ||
+    activeMembership?.role === "fund_manager"
+
   const [createOpen, setCreateOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [fundFilter, setFundFilter] = useState<"all" | string>("all")
@@ -78,7 +85,14 @@ export default function CapitalCallsPage() {
     let lifetimeTotal = 0
     let paidTotal = 0
     for (const c of allCalls) {
-      const amount = parseDecimal(c.amount)
+      // LPs only receive their own allocation items, so their figures are
+      // their share of each call rather than the fund-level amount.
+      const amount = canManage
+        ? parseDecimal(c.amount)
+        : (c.items ?? []).reduce(
+            (acc, item) => acc + parseDecimal(item.amount_due),
+            0,
+          )
       lifetimeTotal += amount
       const itemsPaid = (c.items ?? []).reduce(
         (acc, item) => acc + parseDecimal(item.amount_paid),
@@ -101,7 +115,7 @@ export default function CapitalCallsPage() {
       paidTotal,
       paidPct: lifetimeTotal > 0 ? paidTotal / lifetimeTotal : 0,
     }
-  }, [allCalls])
+  }, [allCalls, canManage])
 
   return (
     <>
@@ -113,13 +127,15 @@ export default function CapitalCallsPage() {
         title="What we have called, and what awaits."
         description="Drawdowns issued across funds. Status updates as wires settle."
         actions={
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setCreateOpen(true)}
-          >
-            New capital call
-          </Button>
+          canManage ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setCreateOpen(true)}
+            >
+              New capital call
+            </Button>
+          ) : undefined
         }
       />
 
@@ -233,7 +249,12 @@ export default function CapitalCallsPage() {
                 </thead>
                 <tbody>
                   {calls.map((call) => {
-                    const amount = parseDecimal(call.amount)
+                    const amount = canManage
+                      ? parseDecimal(call.amount)
+                      : (call.items ?? []).reduce(
+                          (acc, item) => acc + parseDecimal(item.amount_due),
+                          0,
+                        )
                     const paid = (call.items ?? []).reduce(
                       (acc, item) => acc + parseDecimal(item.amount_paid),
                       0,
@@ -249,7 +270,9 @@ export default function CapitalCallsPage() {
                           <div className="flex flex-col gap-1">
                             <span>{call.title}</span>
                             <span className="font-sans text-[11px] font-normal text-ink-500">
-                              {(call.items ?? []).length} limited partners
+                              {canManage
+                                ? `${(call.items ?? []).length} limited partners`
+                                : "Your share"}
                             </span>
                           </div>
                         </TD>

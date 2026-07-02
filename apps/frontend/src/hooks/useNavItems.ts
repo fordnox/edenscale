@@ -90,7 +90,19 @@ function orgItemsForRole(role: UserRole | null | undefined, orgSlug: string): Na
   }
 
   if (role === "lp") {
-    return [overview, funds, investors, documents, letters, notifications]
+    // LPs see their own slice of everything: the funds they hold commitments
+    // in, their capital calls and distributions, and the investor record(s)
+    // they are a linked contact for (the backend scopes the register).
+    return [
+      overview,
+      funds,
+      investors,
+      calls,
+      distributions,
+      documents,
+      letters,
+      notifications,
+    ]
   }
   return [
     overview,

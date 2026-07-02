@@ -18,8 +18,11 @@ These tests cover:
   case and only returns pending rows.
 * ``GET /invitations`` — non-admin gets 403.
 
-The Hanko service is patched at ``app.routers.invitations.send_invitation_email``
-so no HTTP traffic leaves the test process.
+The Hanko service is patched at ``app.routers.invitations.ensure_hanko_user``
+so no HTTP traffic leaves the test process. The invitation email itself is
+delivered by the arq worker (``task_send_invitation_email``) — the router only
+enqueues, and ``enqueue_or_log`` swallows Redis failures, so these tests pass
+with or without a reachable Redis.
 """
 
 import uuid
@@ -41,6 +44,7 @@ from app.models import (
     UserRole,
 )
 from app.models.enums import InvitationStatus
+from app.models.notification import Notification
 
 
 @pytest.fixture(autouse=True)
@@ -57,16 +61,16 @@ def client():
 
 @pytest.fixture
 def hanko_email_mock():
-    """Patch the router-level ``send_invitation_email`` reference.
+    """Patch the router-level ``ensure_hanko_user`` reference.
 
     The router imports the function with ``from app.services.hanko import
-    send_invitation_email``, so we patch the binding in the router module.
+    ensure_hanko_user``, so we patch the binding in the router module.
     Returns ``True`` by default — individual tests can override the
     return value by setting ``mock.return_value`` (after re-wrapping with
     ``AsyncMock`` if they need an async side effect).
     """
     with patch(
-        "app.routers.invitations.send_invitation_email",
+        "app.routers.invitations.ensure_hanko_user",
         new=AsyncMock(return_value=True),
     ) as mock:
         yield mock
@@ -189,13 +193,9 @@ class TestCreateInvitation:
         assert body["organization_id"] == str(org_id)
         assert body["organization"]["id"] == str(org_id)
 
-        # Service called once with the persisted (lower-cased) email and a
-        # well-formed accept_url containing the token.
-        hanko_email_mock.assert_awaited_once()
-        kwargs = hanko_email_mock.await_args.kwargs
-        assert kwargs["email"] == "invitee@example.com"
-        assert body["token"] in kwargs["accept_url"]
-        assert kwargs["organization_name"] == "NewTaven Capital"
+        # Hanko pre-provisioning called once with the persisted
+        # (lower-cased) email; the email itself is sent by the worker task.
+        hanko_email_mock.assert_awaited_once_with("invitee@example.com")
 
         # Row exists with the inviter recorded.
         db = SessionLocal()
@@ -468,9 +468,9 @@ class TestResendInvitation:
         # Token must rotate so the prior email's link stops working.
         assert body["token"] != "t-original"
         assert body["status"] == "pending"
-        hanko_email_mock.assert_awaited_once()
-        kwargs = hanko_email_mock.await_args.kwargs
-        assert body["token"] in kwargs["accept_url"]
+        # Hanko pre-provisioning re-runs on resend; the rotated-token email
+        # is delivered by the worker task.
+        hanko_email_mock.assert_awaited_once_with("invitee@example.com")
 
     def test_resend_non_pending_returns_409(
         self, client, override_user, hanko_email_mock
@@ -526,6 +526,67 @@ class TestAcceptInvitation:
             )
             assert invitation.status is InvitationStatus.accepted
             assert invitation.accepted_at is not None
+        finally:
+            db.close()
+
+    def test_accept_notifies_the_inviter(
+        self, client, override_user, hanko_email_mock
+    ):
+        org_id = _seed_org()
+        inviter_id = _seed_user(
+            "hanko-admin",
+            UserRole.admin,
+            email="admin@example.com",
+            organization_id=org_id,
+        )
+        _seed_user("hanko-invitee", UserRole.lp, email="invitee@example.com")
+        invite_id = _seed_invitation(
+            org_id,
+            email="invitee@example.com",
+            token="t-notify",
+            invited_by_user_id=inviter_id,
+        )
+        override_user("hanko-invitee", email="invitee@example.com")
+
+        response = client.post("/invitations/accept", json={"token": "t-notify"})
+        assert response.status_code == 200
+
+        db = SessionLocal()
+        try:
+            rows = (
+                db.query(Notification)
+                .filter(Notification.user_id == inviter_id)
+                .all()
+            )
+            assert len(rows) == 1
+            assert rows[0].title == "Invitation accepted"
+            assert "invitee@example.com" in rows[0].message
+            assert rows[0].related_type == "invitation"
+            assert rows[0].related_id == invite_id
+        finally:
+            db.close()
+
+    def test_accept_without_recorded_inviter_creates_no_notification(
+        self, client, override_user, hanko_email_mock
+    ):
+        org_id = _seed_org()
+        _seed_user("hanko-invitee", UserRole.lp, email="invitee@example.com")
+        _seed_invitation(
+            org_id,
+            email="invitee@example.com",
+            token="t-no-inviter",
+            invited_by_user_id=None,
+        )
+        override_user("hanko-invitee", email="invitee@example.com")
+
+        response = client.post(
+            "/invitations/accept", json={"token": "t-no-inviter"}
+        )
+        assert response.status_code == 200
+
+        db = SessionLocal()
+        try:
+            assert db.query(Notification).count() == 0
         finally:
             db.close()
 

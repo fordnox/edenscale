@@ -23,6 +23,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { config } from "@/lib/config"
 import { formatDate, titleCase } from "@/lib/format"
@@ -47,6 +48,12 @@ function formatBytes(n: number | null | undefined) {
 }
 
 export default function DocumentsPage() {
+  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const canManage =
+    isSuperadmin ||
+    activeMembership?.role === "admin" ||
+    activeMembership?.role === "fund_manager"
+
   const [uploadOpen, setUploadOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState<"all" | DocumentType>("all")
@@ -95,13 +102,15 @@ export default function DocumentsPage() {
         title="Reports, notices, and counsel papers."
         description="Confidential by default. Releases to limited partners are logged on the audit ledger."
         actions={
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setUploadOpen(true)}
-          >
-            Upload document
-          </Button>
+          canManage ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setUploadOpen(true)}
+            >
+              Upload document
+            </Button>
+          ) : undefined
         }
       />
 
@@ -172,15 +181,21 @@ export default function DocumentsPage() {
               <EmptyState
                 icon={<FileText strokeWidth={1.25} />}
                 title="No documents match these filters"
-                body="Try clearing the filters above, or upload a new document to begin the library."
+                body={
+                  canManage
+                    ? "Try clearing the filters above, or upload a new document to begin the library."
+                    : "Try clearing the filters above. Documents shared with you will appear here."
+                }
                 action={
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setUploadOpen(true)}
-                  >
-                    Upload document
-                  </Button>
+                  canManage ? (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setUploadOpen(true)}
+                    >
+                      Upload document
+                    </Button>
+                  ) : undefined
                 }
               />
             ) : (
@@ -198,15 +213,15 @@ export default function DocumentsPage() {
                 <tbody>
                   {documents.map((doc) => {
                     const fundName =
-                      doc.fund_id !== null
-                        ? (fundNameById.get(doc.fund_id) ??
-                          `Fund #${doc.fund_id}`)
-                        : null
+                      doc.fund_name ??
+                      (doc.fund_id !== null
+                        ? (fundNameById.get(doc.fund_id) ?? null)
+                        : null)
                     const investorName =
-                      doc.investor_id !== null
-                        ? (investorNameById.get(doc.investor_id) ??
-                          `Investor #${doc.investor_id}`)
-                        : null
+                      doc.investor_name ??
+                      (doc.investor_id !== null
+                        ? (investorNameById.get(doc.investor_id) ?? null)
+                        : null)
                     const linkedTo = fundName ?? investorName ?? null
                     const downloadUrl = doc.download_url ?? doc.file_url
                     return (
@@ -295,7 +310,11 @@ export default function DocumentsPage() {
             Metadata and a fresh download link for the selected document.
           </SheetDescription>
           {selectedId !== null && (
-            <DocumentDetail key={selectedId} documentId={selectedId} />
+            <DocumentDetail
+              key={selectedId}
+              documentId={selectedId}
+              onDeleted={() => setSelectedId(null)}
+            />
           )}
         </SheetContent>
       </Sheet>

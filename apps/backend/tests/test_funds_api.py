@@ -462,7 +462,11 @@ class TestFundOverview:
         assert Decimal(data["called"]) == Decimal("350000.00")
         assert Decimal(data["distributed"]) == Decimal("100000.00")
         assert Decimal(data["remaining_commitment"]) == Decimal("650000.00")
+        # No dated cashflow items were seeded, so IRR is undefined; the
+        # ratio metrics derive from the commitment totals.
         assert data["irr"] is None
+        assert Decimal(data["dpi"]) == Decimal("0.2857")
+        assert Decimal(data["called_pct"]) == Decimal("0.35")
 
     def test_zero_commitments_returns_zeros(self, client, override_user):
         org_id = _seed_org()

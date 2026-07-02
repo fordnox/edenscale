@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -321,3 +321,28 @@ class CapitalCallRepository:
 
     def cancel(self, call_id: uuid.UUID) -> CapitalCall | None:
         return self.transition_status(call_id, CapitalCallStatus.cancelled)
+
+    def mark_overdue(self, today: date) -> int:
+        """Flip past-due calls to ``overdue`` and return how many changed.
+
+        Only statuses whose transition to ``overdue`` is legal per
+        ``_ALLOWED_TRANSITIONS`` (``sent`` and ``partially_paid``) are
+        considered; draft/scheduled/paid/cancelled calls are untouched.
+        """
+        eligible = [
+            status
+            for status, allowed in _ALLOWED_TRANSITIONS.items()
+            if CapitalCallStatus.overdue in allowed
+        ]
+        calls = (
+            self.db.query(CapitalCall)
+            .filter(
+                CapitalCall.status.in_(eligible),
+                CapitalCall.due_date < today,
+            )
+            .all()
+        )
+        for call in calls:
+            call.status = CapitalCallStatus.overdue
+        self.db.commit()
+        return len(calls)

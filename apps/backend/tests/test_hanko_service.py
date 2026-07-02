@@ -1,8 +1,8 @@
-"""Unit tests for the Hanko invitation email service.
+"""Unit tests for the Hanko user pre-provisioning service.
 
 The service must never raise; failures degrade to ``False`` and are logged so
-the admin can resend. We patch ``httpx.AsyncClient`` at the service-module
-boundary to avoid hitting the real Hanko API.
+the admin can resend the invitation. We patch ``httpx.AsyncClient`` at the
+service-module boundary to avoid hitting the real Hanko API.
 """
 
 import asyncio
@@ -76,77 +76,46 @@ def test_returns_false_when_unconfigured(monkeypatch, caplog):
     monkeypatch.setattr(hanko.settings, "HANKO_API_KEY", "")
 
     with caplog.at_level("WARNING"):
-        result = _run(
-            hanko.send_invitation_email(
-                email="invitee@example.com",
-                accept_url="https://app.example.com/invitations/accept?token=t",
-                organization_name="Acme",
-                inviter_name="Alice",
-            )
-        )
+        result = _run(hanko.ensure_hanko_user("invitee@example.com"))
 
     assert result is False
     assert any("not configured" in record.message for record in caplog.records)
 
 
-def test_existing_user_triggers_passcode(hanko_settings):
+def test_existing_user_is_found_without_create(hanko_settings):
     user = {
         "id": "user-uuid",
         "emails": [{"id": "email-uuid", "address": "Invitee@Example.com"}],
     }
-    fake = _FakeAsyncClient(
-        get_response=_FakeResponse(json_data=[user]),
-        post_responses=[_FakeResponse(json_data={"id": "passcode"})],
-    )
+    fake = _FakeAsyncClient(get_response=_FakeResponse(json_data=[user]))
 
     with patch.object(hanko.httpx, "AsyncClient", return_value=fake):
-        result = _run(
-            hanko.send_invitation_email(
-                email="invitee@example.com",
-                accept_url="https://app/invitations/accept?token=tok",
-                organization_name="Acme",
-            )
-        )
+        result = _run(hanko.ensure_hanko_user("invitee@example.com"))
 
     assert result is True
-    assert len(fake.post_calls) == 1
-    passcode_url, passcode_kwargs = fake.post_calls[0]
-    assert passcode_url == "https://tenant.hanko.io/passcode/login/initialize"
-    assert passcode_kwargs["json"] == {
-        "user_id": "user-uuid",
-        "email_id": "email-uuid",
-    }
+    # No POST — the user already exists, and no passcode is triggered anymore.
+    assert fake.post_calls == []
     get_url, get_kwargs = fake.get_calls[0]
     assert get_url == "https://tenant.hanko.io/admin/users"
     assert get_kwargs["params"] == {"email": "invitee@example.com", "per_page": 1}
     assert get_kwargs["headers"]["Authorization"] == "Bearer test-secret"
 
 
-def test_missing_user_is_created_then_passcode_sent(hanko_settings):
+def test_missing_user_is_created(hanko_settings):
     created_user = {
         "id": "new-user-uuid",
         "emails": [{"id": "new-email-uuid", "address": "new@example.com"}],
     }
     fake = _FakeAsyncClient(
         get_response=_FakeResponse(json_data=[]),
-        post_responses=[
-            _FakeResponse(status_code=200, json_data=created_user),
-            _FakeResponse(status_code=200, json_data={}),
-        ],
+        post_responses=[_FakeResponse(status_code=200, json_data=created_user)],
     )
 
     with patch.object(hanko.httpx, "AsyncClient", return_value=fake):
-        result = _run(
-            hanko.send_invitation_email(
-                email="new@example.com",
-                accept_url="https://app/invitations/accept?token=t2",
-                organization_name="Acme",
-                inviter_name="Bob",
-            )
-        )
+        result = _run(hanko.ensure_hanko_user("new@example.com"))
 
     assert result is True
-    assert len(fake.post_calls) == 2
+    assert len(fake.post_calls) == 1
     create_url, create_kwargs = fake.post_calls[0]
     assert create_url == "https://tenant.hanko.io/admin/users"
     assert create_kwargs["json"] == {
@@ -172,25 +141,14 @@ def test_create_409_falls_back_to_lookup(hanko_settings):
             _FakeResponse(json_data=[existing_user]),
         ]
     )
-    fake.post = AsyncMock(
-        side_effect=[
-            _FakeResponse(status_code=409),
-            _FakeResponse(status_code=200, json_data={}),
-        ]
-    )
+    fake.post = AsyncMock(side_effect=[_FakeResponse(status_code=409)])
 
     with patch.object(hanko.httpx, "AsyncClient", return_value=fake):
-        result = _run(
-            hanko.send_invitation_email(
-                email="race@example.com",
-                accept_url="https://app/invitations/accept?token=t3",
-                organization_name="Acme",
-            )
-        )
+        result = _run(hanko.ensure_hanko_user("race@example.com"))
 
     assert result is True
     assert fake.get.await_count == 2
-    assert fake.post.await_count == 2
+    assert fake.post.await_count == 1
 
 
 def test_http_error_returns_false(hanko_settings, caplog):
@@ -200,16 +158,12 @@ def test_http_error_returns_false(hanko_settings, caplog):
 
     with patch.object(hanko.httpx, "AsyncClient", return_value=fake):
         with caplog.at_level("ERROR"):
-            result = _run(
-                hanko.send_invitation_email(
-                    email="boom@example.com",
-                    accept_url="https://app/invitations/accept?token=t4",
-                    organization_name="Acme",
-                )
-            )
+            result = _run(hanko.ensure_hanko_user("boom@example.com"))
 
     assert result is False
-    assert any("Hanko invitation email failed" in r.message for r in caplog.records)
+    assert any(
+        "Hanko user provisioning failed" in r.message for r in caplog.records
+    )
 
 
 def test_request_error_returns_false(hanko_settings, caplog):
@@ -220,13 +174,22 @@ def test_request_error_returns_false(hanko_settings, caplog):
 
     with patch.object(hanko.httpx, "AsyncClient", return_value=fake):
         with caplog.at_level("ERROR"):
-            result = _run(
-                hanko.send_invitation_email(
-                    email="net@example.com",
-                    accept_url="https://app/invitations/accept?token=t5",
-                    organization_name="Acme",
-                )
-            )
+            result = _run(hanko.ensure_hanko_user("net@example.com"))
 
     assert result is False
-    assert any("Hanko invitation email failed" in r.message for r in caplog.records)
+    assert any(
+        "Hanko user provisioning failed" in r.message for r in caplog.records
+    )
+
+
+def test_user_record_missing_id_returns_false(hanko_settings, caplog):
+    fake = _FakeAsyncClient(get_response=_FakeResponse(json_data=[{"emails": []}]))
+
+    with patch.object(hanko.httpx, "AsyncClient", return_value=fake):
+        with caplog.at_level("ERROR"):
+            result = _run(hanko.ensure_hanko_user("no-id@example.com"))
+
+    assert result is False
+    assert any(
+        "Hanko user provisioning failed" in r.message for r in caplog.records
+    )

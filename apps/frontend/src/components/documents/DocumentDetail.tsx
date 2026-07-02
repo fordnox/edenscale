@@ -1,9 +1,54 @@
-import { Download, FileText, Loader2, Lock } from "lucide-react"
+import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { Download, FileText, Loader2, Lock, Pencil, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Eyebrow } from "@/components/ui/eyebrow"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useApiMutation } from "@/hooks/useApiMutation"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { formatDate, titleCase } from "@/lib/format"
+import type { components } from "@/lib/schema"
+
+type DocumentType = components["schemas"]["DocumentType"]
+
+const TYPE_OPTIONS: Array<{ value: DocumentType; label: string }> = [
+  { value: "report", label: "Report" },
+  { value: "financial", label: "Financial" },
+  { value: "notice", label: "Notice" },
+  { value: "legal", label: "Legal" },
+  { value: "kyc_aml", label: "KYC / AML" },
+  { value: "other", label: "Other" },
+]
 
 function formatBytes(n: number | null | undefined) {
   if (!n || n <= 0) return "—"
@@ -13,11 +58,50 @@ function formatBytes(n: number | null | undefined) {
 
 interface DocumentDetailProps {
   documentId: string
+  onDeleted?: () => void
 }
 
-export function DocumentDetail({ documentId }: DocumentDetailProps) {
+export function DocumentDetail({ documentId, onDeleted }: DocumentDetailProps) {
+  const queryClient = useQueryClient()
+  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const canManage =
+    isSuperadmin ||
+    activeMembership?.role === "admin" ||
+    activeMembership?.role === "fund_manager"
+
   const documentQuery = useApiQuery("/documents/{document_id}", {
     params: { path: { document_id: documentId } },
+  })
+
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editTitle, setEditTitle] = useState("")
+  const [editType, setEditType] = useState<DocumentType>("other")
+  const [editConfidential, setEditConfidential] = useState(true)
+
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ["/documents"] })
+    queryClient.invalidateQueries({
+      queryKey: [
+        "/documents/{document_id}",
+        { params: { path: { document_id: documentId } } },
+      ],
+    })
+  }
+
+  const updateDocument = useApiMutation("patch", "/documents/{document_id}", {
+    onSuccess: () => {
+      toast.success("Document updated")
+      invalidate()
+      setEditOpen(false)
+    },
+  })
+  const deleteDocument = useApiMutation("delete", "/documents/{document_id}", {
+    onSuccess: () => {
+      toast.success("Document deleted")
+      queryClient.invalidateQueries({ queryKey: ["/documents"] })
+      onDeleted?.()
+    },
   })
 
   if (documentQuery.isLoading || !documentQuery.data) {
@@ -30,6 +114,13 @@ export function DocumentDetail({ documentId }: DocumentDetailProps) {
 
   const doc = documentQuery.data
   const downloadUrl = doc.download_url ?? doc.file_url
+
+  function openEdit() {
+    setEditTitle(doc.title)
+    setEditType(doc.document_type)
+    setEditConfidential(doc.is_confidential)
+    setEditOpen(true)
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -75,7 +166,7 @@ export function DocumentDetail({ documentId }: DocumentDetailProps) {
             <div className="flex flex-col gap-1">
               <Eyebrow>Fund</Eyebrow>
               <span className="font-sans text-[14px] text-ink-900">
-                #{doc.fund_id}
+                {doc.fund_name ?? "—"}
               </span>
             </div>
           )}
@@ -83,7 +174,7 @@ export function DocumentDetail({ documentId }: DocumentDetailProps) {
             <div className="flex flex-col gap-1">
               <Eyebrow>Investor</Eyebrow>
               <span className="font-sans text-[14px] text-ink-900">
-                #{doc.investor_id}
+                {doc.investor_name ?? "—"}
               </span>
             </div>
           )}
@@ -108,6 +199,29 @@ export function DocumentDetail({ documentId }: DocumentDetailProps) {
 
       <div className="sticky bottom-0 z-10 border-t border-[color:var(--border-hairline)] bg-surface px-6 py-3">
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          {canManage && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-h-11 w-full md:min-h-9 md:w-auto"
+                disabled={deleteDocument.isPending}
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2 strokeWidth={1.5} className="size-4" />
+                Delete
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="min-h-11 w-full md:min-h-9 md:w-auto"
+                onClick={openEdit}
+              >
+                <Pencil strokeWidth={1.5} className="size-4" />
+                Edit
+              </Button>
+            </>
+          )}
           <Button
             asChild
             variant="primary"
@@ -121,6 +235,108 @@ export function DocumentDetail({ documentId }: DocumentDetailProps) {
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this document?</AlertDialogTitle>
+            <AlertDialogDescription>
+              “{doc.title}” will be removed for everyone, including limited
+              partners it was shared with. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep document</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                deleteDocument.mutate({
+                  params: { path: { document_id: documentId } },
+                })
+              }
+            >
+              Delete document
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit document</DialogTitle>
+            <DialogDescription>
+              Update the title, classification, or confidentiality of this
+              document.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="document-title">Title</Label>
+              <Input
+                id="document-title"
+                value={editTitle}
+                onChange={(event) => setEditTitle(event.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label>Type</Label>
+              <Select
+                value={editType}
+                onValueChange={(value) => setEditType(value as DocumentType)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <label className="flex items-center gap-2 font-sans text-[13px] text-ink-700">
+              <Checkbox
+                checked={editConfidential}
+                onCheckedChange={(checked) =>
+                  setEditConfidential(checked === true)
+                }
+              />
+              Confidential (hidden from limited partners on fund-wide shares)
+            </label>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setEditOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={updateDocument.isPending || editTitle.trim() === ""}
+              onClick={() =>
+                updateDocument.mutate({
+                  params: { path: { document_id: documentId } },
+                  body: {
+                    title: editTitle.trim(),
+                    document_type: editType,
+                    is_confidential: editConfidential,
+                  },
+                })
+              }
+            >
+              {updateDocument.isPending && (
+                <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+              )}
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

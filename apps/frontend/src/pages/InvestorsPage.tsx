@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
-import { Loader2, Mail, Pencil, Plus, Star } from "lucide-react"
+import { Loader2, Mail, Pencil, Plus, Star, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHero } from "@/components/layout/PageHero"
@@ -10,6 +10,16 @@ import { CommitmentCreateDialog } from "@/components/commitments/CommitmentCreat
 import { InvestorCreateDialog } from "@/components/investors/InvestorCreateDialog"
 import { InvestorEditDialog } from "@/components/investors/InvestorEditDialog"
 import { InviteContactDialog } from "@/components/investors/InviteContactDialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardSection } from "@/components/ui/card"
@@ -102,10 +112,19 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
     activeMembership?.role === "superadmin"
 
   const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const [commitmentCreateOpen, setCommitmentCreateOpen] = useState(false)
   const [inviteContact, setInviteContact] = useState<InvestorContactRead | null>(
     null,
   )
+
+  const deleteInvestor = useApiMutation("delete", "/investors/{investor_id}", {
+    onSuccess: () => {
+      toast.success("Investor deleted")
+      queryClient.invalidateQueries({ queryKey: ["/investors"] })
+      queryClient.invalidateQueries({ queryKey: ["/dashboard"] })
+    },
+  })
 
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -163,15 +182,26 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
               {investor?.name ?? "Loading…"}
             </h2>
           </div>
-          {investor && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setEditOpen(true)}
-            >
-              <Pencil strokeWidth={1.5} className="size-4" />
-              Edit
-            </Button>
+          {investor && canManageCommitments && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={deleteInvestor.isPending}
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2 strokeWidth={1.5} className="size-4" />
+                Delete
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setEditOpen(true)}
+              >
+                <Pencil strokeWidth={1.5} className="size-4" />
+                Edit
+              </Button>
+            </div>
           )}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 font-sans text-[12px] text-ink-500">
@@ -193,6 +223,33 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
           open={editOpen}
           onOpenChange={setEditOpen}
         />
+      )}
+
+      {investor && (
+        <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {investor.name}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {commitments.length > 0
+                  ? "This investor still holds commitments, so the register will refuse the deletion. Cancel their commitments first."
+                  : "The investor and their contacts will be removed from the register. This cannot be undone."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep investor</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() =>
+                  deleteInvestor.mutate({
+                    params: { path: { investor_id: investorId } },
+                  })
+                }
+              >
+                Delete investor
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
 
       {investor && (
@@ -267,7 +324,9 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
                         <button
                           type="button"
                           onClick={() => togglePrimary(contact.id, isPrimary)}
-                          disabled={updateContact.isPending}
+                          disabled={
+                            updateContact.isPending || !canManageCommitments
+                          }
                           aria-label={
                             isPrimary
                               ? "Unset primary contact"
@@ -278,6 +337,7 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
                             isPrimary
                               ? "text-brass-600 hover:text-brass-700"
                               : "text-ink-300 hover:text-brass-500",
+                            !canManageCommitments && "cursor-default",
                           )}
                         >
                           <Star
@@ -316,6 +376,7 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
             </DataTable>
           )}
 
+          {canManageCommitments && (
           <div className="border-t border-[color:var(--border-hairline)] pt-5">
             <Eyebrow>Add contact</Eyebrow>
             <form
@@ -393,6 +454,7 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
               </div>
             </form>
           </div>
+          )}
         </TabsContent>
 
         <TabsContent value="commitments" className="px-6 py-5">
@@ -487,6 +549,13 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
 }
 
 export default function InvestorsPage() {
+  const { activeMembership: pageMembership, isSuperadmin } =
+    useActiveOrganization()
+  const canManageInvestors =
+    isSuperadmin ||
+    pageMembership?.role === "admin" ||
+    pageMembership?.role === "fund_manager"
+
   const [createOpen, setCreateOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -520,13 +589,15 @@ export default function InvestorsPage() {
         title="Investors and commitments."
         description="A small register, kept by hand. Each line is a partner, with their contacts and commitments."
         actions={
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setCreateOpen(true)}
-          >
-            New investor
-          </Button>
+          canManageInvestors ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setCreateOpen(true)}
+            >
+              New investor
+            </Button>
+          ) : undefined
         }
       />
 
@@ -557,13 +628,15 @@ export default function InvestorsPage() {
                 Once limited partners are added, they will appear here with their
                 commitments and contacts.
               </p>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setCreateOpen(true)}
-              >
-                New investor
-              </Button>
+              {canManageInvestors && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setCreateOpen(true)}
+                >
+                  New investor
+                </Button>
+              )}
             </CardSection>
           </Card>
         )}

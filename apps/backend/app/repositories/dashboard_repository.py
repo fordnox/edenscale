@@ -8,6 +8,7 @@ from sqlalchemy.orm import Query, Session
 
 from app.models import (
     CapitalCall,
+    CapitalCallItem,
     CapitalCallStatus,
     Commitment,
     Distribution,
@@ -34,6 +35,7 @@ from app.schemas.dashboard import (
     DashboardOverviewResponse,
     FundSummary,
 )
+from app.services.metrics import fund_metrics
 
 OUTSTANDING_CAPITAL_CALL_STATUSES = (
     CapitalCallStatus.scheduled,
@@ -169,15 +171,25 @@ class DashboardRepository:
             )
         commitments_total_amount = commitments_q.scalar()
 
+        # LPs get figures for their own allocations (calls that include one of
+        # their items; distribution items on their commitments) rather than
+        # fund-wide aggregates — the labels on the LP dashboard claim personal
+        # numbers.
         capital_calls_q = db.query(func.count(CapitalCall.id)).filter(
             CapitalCall.status.in_(OUTSTANDING_CAPITAL_CALL_STATUSES)
         )
-        capital_calls_outstanding = (
-            self._scope_by_fund(
+        if membership.role in _ORG_VISIBLE_ROLES:
+            capital_calls_q = self._scope_by_fund(
                 capital_calls_q, CapitalCall.fund_id, fund_filter
-            ).scalar()
-            or 0
-        )
+            )
+        else:
+            lp_call_ids = (
+                select(CapitalCallItem.capital_call_id)
+                .join(Commitment, Commitment.id == CapitalCallItem.commitment_id)
+                .where(Commitment.investor_id.in_(investor_filter))
+            )
+            capital_calls_q = capital_calls_q.filter(CapitalCall.id.in_(lp_call_ids))
+        capital_calls_outstanding = capital_calls_q.scalar() or 0
 
         year_start = date(date.today().year, 1, 1)
         distributions_q = (
@@ -185,9 +197,15 @@ class DashboardRepository:
             .join(Distribution, Distribution.id == DistributionItem.distribution_id)
             .filter(DistributionItem.paid_at >= year_start)
         )
-        distributions_ytd_amount = self._scope_by_fund(
-            distributions_q, Distribution.fund_id, fund_filter
-        ).scalar()
+        if membership.role in _ORG_VISIBLE_ROLES:
+            distributions_q = self._scope_by_fund(
+                distributions_q, Distribution.fund_id, fund_filter
+            )
+        else:
+            distributions_q = distributions_q.join(
+                Commitment, Commitment.id == DistributionItem.commitment_id
+            ).filter(Commitment.investor_id.in_(investor_filter))
+        distributions_ytd_amount = distributions_q.scalar()
 
         fund_agg_subq = (
             db.query(
@@ -217,33 +235,41 @@ class DashboardRepository:
             .all()
         )
 
-        recent_funds = [
-            FundSummary(
-                id=fund.id,
-                name=fund.name,
-                vintage_year=fund.vintage_year,
-                strategy=fund.strategy,
-                status=fund.status,
-                currency_code=fund.currency_code,
-                committed_amount=Decimal(str(committed)),
-                called_amount=Decimal(str(called)),
-                irr=None,
-                tvpi=None,
+        # Bounded N+1: at most 5 recent funds, each metrics call is a pair of
+        # aggregate queries plus the cashflow scan for IRR.
+        recent_funds = []
+        for fund, committed, called in fund_rows:
+            metrics = fund_metrics(db, fund.id)
+            recent_funds.append(
+                FundSummary(
+                    id=fund.id,
+                    name=fund.name,
+                    vintage_year=fund.vintage_year,
+                    strategy=fund.strategy,
+                    status=fund.status,
+                    currency_code=fund.currency_code,
+                    committed_amount=Decimal(str(committed)),
+                    called_amount=Decimal(str(called)),
+                    irr=metrics.irr,
+                    dpi=metrics.dpi,
+                )
             )
-            for fund, committed, called in fund_rows
-        ]
 
         upcoming_q = (
             db.query(CapitalCall, Fund.name)
             .join(Fund, Fund.id == CapitalCall.fund_id)
             .filter(CapitalCall.status.in_(OUTSTANDING_CAPITAL_CALL_STATUSES))
         )
-        upcoming_rows = (
-            self._scope_by_fund(upcoming_q, Fund.id, fund_filter)
-            .order_by(CapitalCall.due_date.asc())
-            .limit(5)
-            .all()
-        )
+        if membership.role in _ORG_VISIBLE_ROLES:
+            upcoming_q = self._scope_by_fund(upcoming_q, Fund.id, fund_filter)
+        else:
+            lp_upcoming_ids = (
+                select(CapitalCallItem.capital_call_id)
+                .join(Commitment, Commitment.id == CapitalCallItem.commitment_id)
+                .where(Commitment.investor_id.in_(investor_filter))
+            )
+            upcoming_q = upcoming_q.filter(CapitalCall.id.in_(lp_upcoming_ids))
+        upcoming_rows = upcoming_q.order_by(CapitalCall.due_date.asc()).limit(5).all()
 
         upcoming_capital_calls = [
             CapitalCallSummary(

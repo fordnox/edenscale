@@ -24,8 +24,11 @@ import SuperadminOrganizationDetailPage from './pages/superadmin/SuperadminOrgan
 import InvitationAcceptPage from './pages/InvitationAcceptPage'
 import OnboardingPage from './pages/OnboardingPage'
 import LoginPage from './pages/LoginPage'
+import { RequireRole } from './components/RequireRole'
 import { orgPath } from './lib/appRoutes'
 import { getLastVisitedOrgSlug } from './lib/activeOrg'
+
+const MANAGER_ROLES = ['admin', 'fund_manager', 'superadmin'] as const
 
 function ProtectedProviders() {
   return (
@@ -92,15 +95,31 @@ function App() {
           <Route path="/app/:orgSlug" element={<OrgScopeLayout />}>
             <Route index element={<DashboardPage />} />
             <Route path="funds" element={<FundsPage />} />
+            {/* LPs may open this page too — the backend scopes the register
+                to investors they are a linked contact for. */}
             <Route path="investors" element={<InvestorsPage />} />
             <Route path="calls" element={<CapitalCallsPage />} />
             <Route path="distributions" element={<DistributionsPage />} />
             <Route path="documents" element={<DocumentsPage />} />
             <Route path="letters" element={<LettersPage />} />
-            <Route path="tasks" element={<TasksPage />} />
+            <Route
+              path="tasks"
+              element={
+                <RequireRole allowed={MANAGER_ROLES}>
+                  <TasksPage />
+                </RequireRole>
+              }
+            />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="settings" element={<OrganizationSettingsPage />} />
-            <Route path="audit-log" element={<AuditLogPage />} />
+            <Route
+              path="audit-log"
+              element={
+                <RequireRole allowed={MANAGER_ROLES}>
+                  <AuditLogPage />
+                </RequireRole>
+              }
+            />
 
             {/* Fund workspace */}
             <Route path=":fundSlug" element={<FundScopeLayout />} />

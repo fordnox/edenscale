@@ -33,6 +33,7 @@ function parseDecimal(value: string | null | undefined) {
 export default function DashboardPage() {
   const navigate = useNavigate()
   const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const isLp = !isSuperadmin && activeMembership?.role === "lp"
   const canWriteLetters =
     isSuperadmin ||
     activeMembership?.role === "admin" ||
@@ -59,7 +60,11 @@ export default function DashboardPage() {
       <PageHero
         eyebrow={formatDate(TODAY, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         title="Welcome back."
-        description="A snapshot of activity across your funds, limited partners, and capital movements."
+        description={
+          isLp
+            ? "A snapshot of your commitments, capital calls, and distributions."
+            : "A snapshot of activity across your funds, limited partners, and capital movements."
+        }
         actions={
           <>
             <Button variant="secondary" size="sm" onClick={() => navigate(orgPath(activeMembership?.organization.slug ?? "", "calls"))}>
@@ -98,28 +103,40 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 gap-0 md:grid-cols-4">
                 <CardSection className="md:border-r border-b md:border-b-0 border-[color:var(--border-hairline)]">
                   <Stat
-                    label="Active funds"
+                    label={isLp ? "Your funds" : "Active funds"}
                     value={overview.funds_active}
-                    caption={`${overview.investors_total} limited partners`}
+                    caption={
+                      isLp
+                        ? "Funds you hold a commitment in"
+                        : `${overview.investors_total} limited partners`
+                    }
                   />
                 </CardSection>
                 <CardSection className="md:border-r border-b md:border-b-0 border-[color:var(--border-hairline)]">
                   <Stat
-                    label="Total committed"
+                    label={isLp ? "Your commitment" : "Total committed"}
                     value={formatCurrency(totalCommitted, "USD", { compact: true })}
-                    caption="Across all funds in scope"
+                    caption={
+                      isLp
+                        ? "Across your commitments"
+                        : "Across all funds in scope"
+                    }
                   />
                 </CardSection>
                 <CardSection className="md:border-r border-b md:border-b-0 border-[color:var(--border-hairline)]">
                   <Stat
-                    label="Capital calls outstanding"
+                    label={
+                      isLp ? "Open capital calls" : "Capital calls outstanding"
+                    }
                     value={overview.capital_calls_outstanding}
                     caption="Scheduled, sent, or overdue"
                   />
                 </CardSection>
                 <CardSection>
                   <Stat
-                    label="Distributions YTD"
+                    label={
+                      isLp ? "Distributions received YTD" : "Distributions YTD"
+                    }
                     value={formatCurrency(distributionsYtd, "USD", { compact: true })}
                     caption={`Year ${TODAY.getFullYear()}`}
                   />
@@ -228,7 +245,7 @@ export default function DashboardPage() {
                     const committed = parseDecimal(fund.committed_amount)
                     const called = parseDecimal(fund.called_amount)
                     const calledPct = committed > 0 ? called / committed : 0
-                    const tvpi = parseDecimal(fund.tvpi)
+                    const dpi = parseDecimal(fund.dpi)
                     const irr = parseDecimal(fund.irr)
                     return (
                       <Card key={fund.id} className="flex flex-col">
@@ -260,10 +277,10 @@ export default function DashboardPage() {
                             </div>
                             <div className="flex flex-col gap-1">
                               <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-ink-500">
-                                TVPI
+                                DPI
                               </span>
                               <span className="es-numeric font-sans text-[15px] font-semibold text-ink-900">
-                                {fund.tvpi ? `${tvpi.toFixed(2)}x` : "—"}
+                                {fund.dpi ? `${dpi.toFixed(2)}x` : "—"}
                               </span>
                             </div>
                             <div className="flex flex-col gap-1">

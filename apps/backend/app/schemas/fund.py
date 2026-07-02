@@ -83,5 +83,7 @@ class FundOverview(BaseModel):
     distributed: Decimal
     remaining_commitment: Decimal
     irr: Decimal | None = None
+    dpi: Decimal | None = None
+    called_pct: Decimal | None = None
 
     model_config = ConfigDict(from_attributes=True)

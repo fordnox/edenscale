@@ -18,6 +18,7 @@ from app.schemas.fund import (
     FundRead,
     FundUpdate,
 )
+from app.services.metrics import fund_metrics
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -137,15 +138,17 @@ async def get_fund_overview(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view this fund",
         )
-    committed, called, distributed = repo.overview_totals(fund_id)
+    metrics = fund_metrics(db, fund_id)
     return FundOverview(
         fund_id=fund.id,  # type: ignore[invalid-argument-type]
         currency_code=fund.currency_code,  # type: ignore[invalid-argument-type]
-        committed=committed,
-        called=called,
-        distributed=distributed,
-        remaining_commitment=committed - called,
-        irr=None,
+        committed=metrics.committed,
+        called=metrics.called,
+        distributed=metrics.distributed,
+        remaining_commitment=metrics.committed - metrics.called,
+        irr=metrics.irr,
+        dpi=metrics.dpi,
+        called_pct=metrics.called_pct,
     )
 
 

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&amp;family=Inter+Tight:wght@400;500;600&amp;display=swap" rel="stylesheet" />
+    <title>Join $organization_name on NewTaven</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#FBF9F4;">
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">Join $organization_name on NewTaven</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#FBF9F4;padding:40px 0;font-family:'Inter Tight',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+      <tr>
+        <td align="center">
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;max-width:560px;width:100%;">
+            <tr>
+              <td style="padding:0 24px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#FFFFFF;border:1px solid rgba(26,26,24,0.10);border-radius:0;">
+                  <tr>
+                    <td style="padding:40px;">
+                      <p style="font-family:'Inter Tight',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:20px;font-weight:600;letter-spacing:-0.02em;color:#1F3D2E;margin:0 0 32px;">NewTaven</p>
+                      <p style="font-family:'Inter Tight',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.16em;color:#8A6A3F;margin:0 0 12px;">Invitation</p>
+
+                      <h1 style="font-family:'Cormorant Garamond',Georgia,'Times New Roman',Times,serif;font-weight:500;font-size:28px;line-height:1.2;letter-spacing:-0.015em;color:#1A1A18;margin:0 0 24px;">
+                        Join <strong>$organization_name</strong> on NewTaven
+                      </h1>
+
+                      <p style="font-family:'Inter Tight',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#3A3A36;margin:0 0 16px;">
+                        <strong>$inviter_name</strong> has invited you to join
+                        <strong>$organization_name</strong> as $role_label on NewTaven.
+                      </p>
+
+                      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
+                        <tr>
+                          <td>
+                            <a href="$accept_url" style="display:inline-block;background-color:#1F3D2E;border-radius:2px;color:#FBF9F4;font-family:'Inter Tight',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;text-decoration:none;text-align:center;padding:12px 28px;">Accept invitation</a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <p style="font-family:'Inter Tight',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#3A3A36;margin:16px 0 16px;">
+                        Or copy and paste this link into your browser:
+                        <a href="$accept_url" style="color:#1F3D2E;text-decoration:underline;word-break:break-all;">$accept_url</a>
+                      </p>
+
+                      <hr style="border:none;border-top:1px solid rgba(26,26,24,0.10);margin:32px 0 24px;" />
+
+                      <p style="font-family:'Inter Tight',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.55;color:#6F6E68;margin:0;">
+                        This invitation was sent to <span style="color:#1A1A18;">$invitee_email</span>
+                        and expires on <span style="color:#1A1A18;">$expires_at</span>.
+                        If you were not expecting this invitation, you can ignore this email.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

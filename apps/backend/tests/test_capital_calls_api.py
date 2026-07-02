@@ -637,3 +637,91 @@ class TestNestedFundRoute:
         assert response.status_code == 200
         titles = sorted(row["title"] for row in response.json())
         assert titles == ["First", "Second"]
+
+
+class TestLpItemScoping:
+    """An LP who can view a call (they hold an item) must not see other
+    investors' allocation items in the payload."""
+
+    def _seed_two_lp_call(self, client, override_user):
+        org_id = _seed_org()
+        investor_a = _seed_investor(org_id, name="LP A")
+        investor_b = _seed_investor(org_id, name="LP B")
+        fund_id = _seed_fund(org_id)
+        commitment_a = _seed_commitment(fund_id, investor_a)
+        commitment_b = _seed_commitment(fund_id, investor_b)
+
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        call_id = client.post(
+            "/capital-calls",
+            json={
+                "fund_id": fund_id,
+                "title": "Shared Call",
+                "due_date": "2026-06-01",
+                "amount": "2000.00",
+            },
+        ).json()["id"]
+        client.post(
+            f"/capital-calls/{call_id}/items",
+            json={
+                "items": [
+                    {"commitment_id": commitment_a, "amount_due": "1000.00"},
+                    {"commitment_id": commitment_b, "amount_due": "1000.00"},
+                ]
+            },
+        )
+        return org_id, fund_id, investor_a, commitment_a, call_id
+
+    def test_lp_sees_only_own_items_on_detail(self, client, override_user):
+        org_id, fund_id, investor_a, commitment_a, call_id = self._seed_two_lp_call(
+            client, override_user
+        )
+
+        # GP sees both items.
+        gp_detail = client.get(f"/capital-calls/{call_id}")
+        assert gp_detail.status_code == 200
+        assert len(gp_detail.json()["items"]) == 2
+
+        lp_user_id = _seed_user(
+            "hanko-lp",
+            UserRole.lp,
+            email="lp@example.com",
+            organization_id=org_id,
+        )
+        _seed_contact(investor_a, lp_user_id)
+        override_user("hanko-lp")
+
+        lp_detail = client.get(f"/capital-calls/{call_id}")
+        assert lp_detail.status_code == 200
+        items = lp_detail.json()["items"]
+        assert len(items) == 1
+        assert items[0]["commitment_id"] == commitment_a
+        # Fund-level total remains the full call amount.
+        assert Decimal(lp_detail.json()["amount"]) == Decimal("2000.00")
+
+    def test_lp_sees_only_own_items_on_lists(self, client, override_user):
+        org_id, fund_id, investor_a, commitment_a, call_id = self._seed_two_lp_call(
+            client, override_user
+        )
+        lp_user_id = _seed_user(
+            "hanko-lp",
+            UserRole.lp,
+            email="lp@example.com",
+            organization_id=org_id,
+        )
+        _seed_contact(investor_a, lp_user_id)
+        override_user("hanko-lp")
+
+        for url in ("/capital-calls", f"/funds/{fund_id}/capital-calls"):
+            resp = client.get(url)
+            assert resp.status_code == 200
+            rows = resp.json()
+            assert len(rows) == 1
+            assert len(rows[0]["items"]) == 1
+            assert rows[0]["items"][0]["commitment_id"] == commitment_a

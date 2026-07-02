@@ -34,7 +34,9 @@ class DocumentRead(BaseModel):
     id: UUID4
     organization_id: UUID4 | None
     fund_id: UUID4 | None
+    fund_name: str | None = None
     investor_id: UUID4 | None
+    investor_name: str | None = None
     uploaded_by_user_id: UUID4 | None
     document_type: DocumentType
     title: str

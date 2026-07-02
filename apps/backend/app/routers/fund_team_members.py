@@ -12,6 +12,9 @@ from app.models.fund import Fund
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.fund_repository import FundRepository
 from app.repositories.fund_team_member_repository import FundTeamMemberRepository
+from app.repositories.user_organization_membership_repository import (
+    UserOrganizationMembershipRepository,
+)
 from app.schemas.fund_team_member import (
     FundTeamMemberCreate,
     FundTeamMemberRead,
@@ -72,6 +75,15 @@ async def add_team_member(
 ):
     fund = _load_fund_or_404(db, fund_id)
     _ensure_org_scope(membership, fund)
+    member_membership = UserOrganizationMembershipRepository(db).get(
+        data.user_id,
+        fund.organization_id,  # type: ignore[invalid-argument-type]
+    )
+    if member_membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not a member of this fund's organization",
+        )
     repo = FundTeamMemberRepository(db)
     if repo.get_by_fund_and_user(fund_id, data.user_id) is not None:
         raise HTTPException(

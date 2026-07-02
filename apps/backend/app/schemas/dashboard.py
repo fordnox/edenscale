@@ -16,7 +16,7 @@ class FundSummary(BaseModel):
     committed_amount: Decimal
     called_amount: Decimal
     irr: Decimal | None = None
-    tvpi: Decimal | None = None
+    dpi: Decimal | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

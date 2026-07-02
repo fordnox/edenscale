@@ -8,8 +8,16 @@ import { Button } from "@/components/ui/button"
 import { Eyebrow } from "@/components/ui/eyebrow"
 import { Input } from "@/components/ui/input"
 import { ProgressBar } from "@/components/ui/progress"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { StatusPill } from "@/components/ui/StatusPill"
 import { DataTable, TD, TH, TR } from "@/components/ui/table"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@/hooks/useApiMutation"
 import { useApiQuery } from "@/hooks/useApiQuery"
 import { formatCurrency, formatDate } from "@/lib/format"
@@ -26,6 +34,11 @@ interface DistributionDetailProps {
 
 export function DistributionDetail({ distributionId }: DistributionDetailProps) {
   const queryClient = useQueryClient()
+  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const canManage =
+    isSuperadmin ||
+    activeMembership?.role === "admin" ||
+    activeMembership?.role === "fund_manager"
 
   const distributionQuery = useApiQuery(
     "/distributions/{distribution_id}",
@@ -111,7 +124,22 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
     },
   )
 
+  const addItems = useApiMutation(
+    "post",
+    "/distributions/{distribution_id}/items",
+    {
+      onSuccess: () => {
+        toast.success("Allocations added")
+        invalidateDistributionScopes()
+        setAllocationCommitmentId("")
+        setAllocationAmount("")
+      },
+    },
+  )
+
   const [paymentDrafts, setPaymentDrafts] = useState<Record<string, string>>({})
+  const [allocationCommitmentId, setAllocationCommitmentId] = useState("")
+  const [allocationAmount, setAllocationAmount] = useState("")
 
   if (distributionQuery.isLoading || !distributionQuery.data) {
     return (
@@ -133,11 +161,28 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
     (acc, i) => acc + parseDecimal(i.amount_due),
     0,
   )
-  const paidPct = amountTotal > 0 ? Math.min(paidTotal / amountTotal, 1) : 0
+  // LPs only receive their own allocation items, so progress is measured
+  // against their share, not the fund-level distribution amount.
+  const paidPct = canManage
+    ? amountTotal > 0
+      ? Math.min(paidTotal / amountTotal, 1)
+      : 0
+    : dueTotal > 0
+      ? Math.min(paidTotal / dueTotal, 1)
+      : 0
 
   const canSend =
-    distribution.status === "draft" || distribution.status === "scheduled"
-  const canCancel = !["paid", "cancelled"].includes(distribution.status)
+    canManage &&
+    (distribution.status === "draft" || distribution.status === "scheduled")
+  const canCancel =
+    canManage && !["paid", "cancelled"].includes(distribution.status)
+  const canAllocate =
+    canManage && !["paid", "cancelled"].includes(distribution.status)
+
+  const allocatedCommitmentIds = new Set(items.map((i) => i.commitment_id))
+  const unallocatedCommitments = (commitmentsQuery.data ?? []).filter(
+    (c) => !allocatedCommitmentIds.has(c.id),
+  )
 
   function handleRecordPayment(itemId: string) {
     const draft = paymentDrafts[itemId]
@@ -199,19 +244,21 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
             </span>
           </div>
           <div className="flex flex-col gap-1">
-            <Eyebrow>Paid</Eyebrow>
+            <Eyebrow>{canManage ? "Paid" : "You have received"}</Eyebrow>
             <span className="es-numeric font-display text-[22px] text-ink-900">
               {formatCurrency(paidTotal, currency, { compact: true })}
             </span>
             <ProgressBar value={paidPct} tone="brand" />
           </div>
           <div className="flex flex-col gap-1">
-            <Eyebrow>Allocated</Eyebrow>
+            <Eyebrow>{canManage ? "Allocated" : "Your share"}</Eyebrow>
             <span className="es-numeric font-display text-[22px] text-ink-900">
               {formatCurrency(dueTotal, currency, { compact: true })}
             </span>
             <span className="font-sans text-[11px] text-ink-500">
-              {items.length} limited partners
+              {canManage
+                ? `${items.length} limited partners`
+                : `across ${items.length} commitment${items.length === 1 ? "" : "s"}`}
             </span>
           </div>
         </div>
@@ -219,11 +266,33 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
         <div className="px-6 pb-6 pt-5">
           <Eyebrow>Allocations</Eyebrow>
           {items.length === 0 ? (
-            <div className="mt-4 flex flex-col items-start gap-2 border border-dashed border-[color:var(--border-hairline)] p-6">
+            <div className="mt-4 flex flex-col items-start gap-3 border border-dashed border-[color:var(--border-hairline)] p-6">
               <p className="font-sans text-[13px] text-ink-700">
-                No items allocated yet. Items can be added pro-rata when the
-                distribution is created, or manually via the API.
+                {canAllocate
+                  ? "No items allocated yet. Split the distribution pro-rata across approved commitments, or add allocations one by one below."
+                  : "No items allocated yet."}
               </p>
+              {canAllocate && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={addItems.isPending}
+                  onClick={() =>
+                    addItems.mutate({
+                      params: {
+                        path: { distribution_id: distributionId },
+                        query: { mode: "pro-rata" },
+                      },
+                      body: { items: [] },
+                    })
+                  }
+                >
+                  {addItems.isPending && (
+                    <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+                  )}
+                  Allocate pro-rata
+                </Button>
+              )}
             </div>
           ) : (
             <>
@@ -259,37 +328,39 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="0.01"
-                          placeholder={`Record payment (${String(paid)})`}
-                          value={draft}
-                          onChange={(event) =>
-                            setPaymentDrafts((prev) => ({
-                              ...prev,
-                              [item.id]: event.target.value,
-                            }))
-                          }
-                          className="flex-1"
-                        />
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          className="min-h-11"
-                          disabled={
-                            updateItem.isPending ||
-                            draft.trim() === "" ||
-                            !Number.isFinite(Number(draft))
-                          }
-                          onClick={() => handleRecordPayment(item.id)}
-                        >
-                          Save
-                        </Button>
-                      </div>
+                      {canManage && (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            step="0.01"
+                            placeholder={`Record payment (${String(paid)})`}
+                            value={draft}
+                            onChange={(event) =>
+                              setPaymentDrafts((prev) => ({
+                                ...prev,
+                                [item.id]: event.target.value,
+                              }))
+                            }
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            className="min-h-11"
+                            disabled={
+                              updateItem.isPending ||
+                              draft.trim() === "" ||
+                              !Number.isFinite(Number(draft))
+                            }
+                            onClick={() => handleRecordPayment(item.id)}
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -301,7 +372,7 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
                       <TH>Investor</TH>
                       <TH align="right">Due</TH>
                       <TH align="right">Paid</TH>
-                      <TH align="right">Record payment</TH>
+                      {canManage && <TH align="right">Record payment</TH>}
                     </tr>
                   </thead>
                   <tbody>
@@ -332,38 +403,40 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
                           <TD align="right">
                             {formatCurrency(paid, currency, { compact: true })}
                           </TD>
-                          <TD align="right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Input
-                                type="number"
-                                inputMode="decimal"
-                                min={0}
-                                step="0.01"
-                                placeholder={String(paid)}
-                                value={draft}
-                                onChange={(event) =>
-                                  setPaymentDrafts((prev) => ({
-                                    ...prev,
-                                    [item.id]: event.target.value,
-                                  }))
-                                }
-                                className="h-8 w-28 text-right"
-                              />
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                disabled={
-                                  updateItem.isPending ||
-                                  draft.trim() === "" ||
-                                  !Number.isFinite(Number(draft))
-                                }
-                                onClick={() => handleRecordPayment(item.id)}
-                              >
-                                Save
-                              </Button>
-                            </div>
-                          </TD>
+                          {canManage && (
+                            <TD align="right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Input
+                                  type="number"
+                                  inputMode="decimal"
+                                  min={0}
+                                  step="0.01"
+                                  placeholder={String(paid)}
+                                  value={draft}
+                                  onChange={(event) =>
+                                    setPaymentDrafts((prev) => ({
+                                      ...prev,
+                                      [item.id]: event.target.value,
+                                    }))
+                                  }
+                                  className="h-8 w-28 text-right"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  disabled={
+                                    updateItem.isPending ||
+                                    draft.trim() === "" ||
+                                    !Number.isFinite(Number(draft))
+                                  }
+                                  onClick={() => handleRecordPayment(item.id)}
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            </TD>
+                          )}
                         </TR>
                       )
                     })}
@@ -372,9 +445,80 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
               </div>
             </>
           )}
+
+          {canAllocate && unallocatedCommitments.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-end gap-2 border-t border-[color:var(--border-hairline)] pt-4">
+              <div className="flex min-w-[200px] flex-1 flex-col gap-1">
+                <Eyebrow>Add allocation</Eyebrow>
+                <Select
+                  value={allocationCommitmentId}
+                  onValueChange={setAllocationCommitmentId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select commitment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unallocatedCommitments.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.investor.name} ·{" "}
+                        {formatCurrency(
+                          parseDecimal(c.committed_amount),
+                          currency,
+                          { compact: true },
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="0.01"
+                placeholder="Amount due"
+                value={allocationAmount}
+                onChange={(event) => setAllocationAmount(event.target.value)}
+                className="w-36"
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={
+                  addItems.isPending ||
+                  allocationCommitmentId === "" ||
+                  allocationAmount.trim() === "" ||
+                  !Number.isFinite(Number(allocationAmount)) ||
+                  Number(allocationAmount) < 0
+                }
+                onClick={() =>
+                  addItems.mutate({
+                    params: {
+                      path: { distribution_id: distributionId },
+                      query: { mode: "manual" },
+                    },
+                    body: {
+                      items: [
+                        {
+                          commitment_id: allocationCommitmentId,
+                          amount_due: allocationAmount,
+                        },
+                      ],
+                    },
+                  })
+                }
+              >
+                {addItems.isPending && (
+                  <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+                )}
+                Add
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
+      {canManage && (
       <div className="sticky bottom-0 z-10 border-t border-[color:var(--border-hairline)] bg-surface px-6 py-3">
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
@@ -413,6 +557,7 @@ export function DistributionDetail({ distributionId }: DistributionDetailProps) 
           </Button>
         </div>
       </div>
+      )}
     </div>
   )
 }
