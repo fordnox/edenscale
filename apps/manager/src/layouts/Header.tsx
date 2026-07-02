@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-import { Button } from "@edenscale/ui/button.tsx";
-import { config } from "@edenscale/api/config.ts";
-import { UserMenu } from "@/components/user-menu.tsx";
-import { getSection } from "@/lib/links.ts";
+import { Button } from "@edenscale/ui/button";
+import { config } from "@edenscale/api/config";
+import { UserMenu } from "@/components/user-menu";
+import { getSection } from "@/lib/links";
 
 const mainLinks = getSection("Main")?.links || [];
 

@@ -113,8 +113,11 @@ def _app_base_url() -> str:
     return settings.APP_DOMAIN_URL.rstrip("/")
 
 
-def _build_accept_url(token) -> str:
-    return f"{_app_base_url()}/invitations/accept?token={token}"
+def _build_accept_url(token, role) -> str:
+    # The gateway only serves the SPAs under their mounts (/manager, /investor);
+    # a bare /invitations/accept would land on the marketing site in production.
+    mount = "investor" if role is UserRole.lp else "manager"
+    return f"{_app_base_url()}/{mount}/invitations/accept?token={token}"
 
 
 def _fmt_money(amount, currency_code=None) -> str:
@@ -189,7 +192,7 @@ async def task_send_invitation_email(ctx: dict, invitation_id: str) -> int:
             "organization_name": org_name,
             "inviter_name": inviter_name,
             "role_label": _ROLE_LABELS.get(invitation.role, "member"),  # type: ignore[no-matching-overload]
-            "accept_url": _build_accept_url(invitation.token),
+            "accept_url": _build_accept_url(invitation.token, invitation.role),
             "invitee_email": invitation.email,
             "expires_at": _fmt_date(invitation.expires_at),
         }

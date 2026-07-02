@@ -19,7 +19,7 @@ export const sections: NavSection[] = [
     title: "Main",
     links: [
       { path: "/", label: "Home", icon: LayoutDashboard },
-      { path: "/login", label: "Login", icon: Package },
+      { path: "/manager/login", label: "Login", icon: Package },
     ],
   },
   {

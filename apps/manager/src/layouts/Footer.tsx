@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
-import { config } from "@edenscale/api/config.ts"
-import { getSection } from "@/lib/links.ts"
+import { config } from "@edenscale/api/config"
+import { getSection } from "@/lib/links"
 
 export function Footer() {
   return (

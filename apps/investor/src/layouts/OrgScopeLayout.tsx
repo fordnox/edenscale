@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { Link, Navigate, useParams } from "react-router-dom"
+import { Link, useParams } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@edenscale/ui/button"
@@ -9,6 +9,16 @@ import AppShell from "@/layouts/AppShell"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { RESERVED_ORG_SLUGS } from "@/lib/investorRoutes"
 import { setLastVisitedOrgSlug } from "@edenscale/shared/active-org"
+
+// The manager app is a separate SPA behind the gateway — a react-router
+// <Navigate> to /manager/* would only hit this app's wildcard route, so the
+// role redirect must be a full document navigation.
+function CrossAppRedirect({ to }: { to: string }) {
+  useEffect(() => {
+    window.location.replace(to)
+  }, [to])
+  return <LoadingState />
+}
 
 function LoadingState() {
   return (
@@ -65,7 +75,7 @@ export default function OrgScopeLayout() {
   }
 
   if (membership?.role !== "lp") {
-    return <Navigate to={`/manager/${resolvedSlug}`} replace />
+    return <CrossAppRedirect to={`/manager/${resolvedSlug}`} />
   }
 
   if (activeOrganizationId !== resolvedOrgId) {

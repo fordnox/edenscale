@@ -20,7 +20,7 @@ export default function ProtectedLayout() {
     const next = `${location.pathname}${location.search}${location.hash}`
     return (
       <Navigate
-        to={`/login?next=${encodeURIComponent(next)}`}
+        to={`/investor/login?next=${encodeURIComponent(next)}`}
         replace
         state={{ from: location }}
       />

@@ -1,8 +1,8 @@
 import { ArrowRight, Sparkles, Zap, Shield, Code } from "lucide-react"
 import { Link } from "react-router-dom"
-import { Button } from "@edenscale/ui/button.tsx"
-import { Badge } from "@edenscale/ui/badge.tsx"
-import { config } from "@edenscale/api/config.ts"
+import { Button } from "@edenscale/ui/button"
+import { Badge } from "@edenscale/ui/badge"
+import { config } from "@edenscale/api/config"
 
 export function SectionHero() {
   return (
@@ -49,7 +49,7 @@ export function SectionHero() {
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
             <Button size="lg" className="text-base px-8 h-12 gap-2" asChild>
-              <Link to="/login">
+              <Link to="/investor/login">
                 Get Started
                 <ArrowRight className="size-4" />
               </Link>

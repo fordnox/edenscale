@@ -1,5 +1,4 @@
 import { Helmet } from "react-helmet-async"
-import { useNavigate } from "react-router-dom"
 import { Landmark, Mail } from "lucide-react"
 
 import { Button } from "@edenscale/ui/button"
@@ -8,8 +7,6 @@ import { EmptyState } from "@edenscale/ui/EmptyState"
 import { config } from "@edenscale/api/config"
 
 export default function NoOrganizationHomePage() {
-  const navigate = useNavigate()
-
   return (
     <>
       <Helmet>
@@ -22,13 +19,13 @@ export default function NoOrganizationHomePage() {
             title="No organization yet"
             body="You haven't been invited to an organization yet. Check your email for a pending invitation, or create your own fund manager firm to get started."
             action={
-              <Button
-                variant="primary"
-                size="md"
-                onClick={() => navigate("/investor/onboarding")}
-              >
-                <Landmark strokeWidth={1.5} className="size-4" />
-                Create your firm
+              // Firm creation lives in the manager SPA — a hard navigation
+              // is required to cross the /investor → /manager mount.
+              <Button asChild variant="primary" size="md">
+                <a href="/manager/onboarding">
+                  <Landmark strokeWidth={1.5} className="size-4" />
+                  Create your firm
+                </a>
               </Button>
             }
           />

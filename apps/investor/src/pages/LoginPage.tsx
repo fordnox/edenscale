@@ -58,7 +58,7 @@ export default function LoginPage() {
           name="description"
           content="Sign in to the NewTaven investor portal."
         />
-        <link rel="canonical" href={`${config.VITE_APP_URL}/login`} />
+        <link rel="canonical" href={`${config.VITE_APP_URL}/investor/login`} />
         <meta
           property="og:title"
           content={`Investor portal login | ${config.VITE_APP_TITLE}`}
@@ -67,7 +67,7 @@ export default function LoginPage() {
           property="og:description"
           content="Sign in to the NewTaven investor portal."
         />
-        <meta property="og:url" content={`${config.VITE_APP_URL}/login`} />
+        <meta property="og:url" content={`${config.VITE_APP_URL}/investor/login`} />
         <meta property="og:type" content="website" />
         <meta
           name="twitter:title"

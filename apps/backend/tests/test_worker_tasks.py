@@ -249,8 +249,32 @@ class TestInvitationEmail:
         assert ctx["organization_name"] == "NewTaven Capital"
         assert ctx["inviter_name"] == "Eleanor Vance"
         assert ctx["role_label"] == "Limited Partner"
-        assert ctx["accept_url"].endswith("/invitations/accept?token=tok-worker-1")
+        assert ctx["accept_url"].endswith(
+            "/investor/invitations/accept?token=tok-worker-1"
+        )
         assert "tok-worker-1" in mail["html"]
+
+    def test_manager_invitation_links_to_manager_mount(self, sent_emails):
+        ids = _seed_base()
+        db = SessionLocal()
+        try:
+            invitation = OrganizationInvitation(
+                organization_id=ids["org_id"],
+                email="sam@example.com",
+                role=UserRole.fund_manager,
+                token="tok-worker-3",
+            )
+            db.add(invitation)
+            db.commit()
+            invitation_id = str(invitation.id)
+        finally:
+            db.close()
+
+        assert _run(tasks.task_send_invitation_email({}, invitation_id)) == 1
+        ctx = sent_emails[0]["context"]
+        assert ctx["accept_url"].endswith(
+            "/manager/invitations/accept?token=tok-worker-3"
+        )
 
     def test_non_pending_invitation_is_skipped(self, sent_emails, caplog):
         ids = _seed_base()

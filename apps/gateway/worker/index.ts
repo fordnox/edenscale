@@ -6,11 +6,12 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url)
 
-    const appMount = url.pathname.startsWith("/manager/")
-      ? "/manager"
-      : url.pathname.startsWith("/investor/")
-        ? "/investor"
-        : null
+    const appMount =
+      url.pathname === "/manager" || url.pathname.startsWith("/manager/")
+        ? "/manager"
+        : url.pathname === "/investor" || url.pathname.startsWith("/investor/")
+          ? "/investor"
+          : null
 
     // Product SPAs mounted at /manager/ and /investor/ — serve the asset,
     // falling back to the SPA shell for client-side document navigations.

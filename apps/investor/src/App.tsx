@@ -48,13 +48,13 @@ function App() {
   return (
     <Routes>
       {/* Pages without authenticated app providers */}
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/investor/login" element={<LoginPage />} />
 
       {/* Authenticated application routes */}
       <Route element={<ProtectedLayout />}>
         <Route element={<ProtectedProviders />}>
           <Route
-            path="/invitations/accept"
+            path="/investor/invitations/accept"
             element={<InvitationAcceptPage />}
           />
 

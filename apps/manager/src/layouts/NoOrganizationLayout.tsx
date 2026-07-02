@@ -36,7 +36,7 @@ export default function NoOrganizationLayout() {
 
   const handleSignOut = async () => {
     await logout()
-    navigate("/login")
+    navigate("/manager/login")
   }
 
   return (

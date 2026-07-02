@@ -40,7 +40,7 @@ export const STATIC_ORG_CHILD_SEGMENTS = new Set([
  * path is a top-level or static org route rather than a fund page. */
 export function fundSlugFromPath(pathname: string): string | undefined {
   const parts = pathname.replace(/^\/+|\/+$/g, "").split("/")
-  if (parts.length < 3 || parts[0] !== "app") return undefined
+  if (parts.length < 3 || parts[0] !== "investor") return undefined
   const [, orgSlug, segment] = parts
   if (RESERVED_ORG_SLUGS.has(orgSlug)) return undefined
   if (STATIC_ORG_CHILD_SEGMENTS.has(segment)) return undefined

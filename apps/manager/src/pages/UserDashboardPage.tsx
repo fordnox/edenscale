@@ -192,7 +192,7 @@ export default function UserDashboardPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => navigate("/invitations/accept")}
+                onClick={() => navigate("/manager/invitations/accept")}
               >
                 Review invitations
               </Button>

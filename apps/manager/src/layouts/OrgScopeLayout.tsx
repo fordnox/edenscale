@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react"
-import { Link, Navigate, useParams } from "react-router-dom"
+import { Link, useParams } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@edenscale/ui/button"
@@ -10,6 +10,16 @@ import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { RESERVED_ORG_SLUGS } from "@/lib/managerRoutes"
 import { setLastVisitedOrgSlug } from "@edenscale/shared/active-org"
+
+// The investor app is a separate SPA behind the gateway — a react-router
+// <Navigate> to /investor/* would only hit this app's wildcard route, so the
+// role redirect must be a full document navigation.
+function CrossAppRedirect({ to }: { to: string }) {
+  useEffect(() => {
+    window.location.replace(to)
+  }, [to])
+  return <LoadingState />
+}
 
 function LoadingState() {
   return (
@@ -88,7 +98,7 @@ export default function OrgScopeLayout() {
   }
 
   if (membership?.role === "lp" && !isSuperadmin) {
-    return <Navigate to={`/investor/${resolvedSlug}`} replace />
+    return <CrossAppRedirect to={`/investor/${resolvedSlug}`} />
   }
 
   if (activeOrganizationId !== resolvedOrgId) {

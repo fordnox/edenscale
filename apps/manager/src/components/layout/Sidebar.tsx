@@ -63,7 +63,7 @@ function SidebarBody({ onOpenSearch, onCloseSheet }: SidebarBodyProps) {
 
   const handleSignOut = async () => {
     await logout()
-    navigate("/login")
+    navigate("/manager/login")
   }
 
   return (

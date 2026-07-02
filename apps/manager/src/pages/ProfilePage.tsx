@@ -119,7 +119,7 @@ export default function ProfilePage() {
 
   async function handleSignOut() {
     await logout()
-    navigate("/login")
+    navigate("/manager/login")
   }
 
   return (

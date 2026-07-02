@@ -25,10 +25,12 @@ export default function InvitationAcceptPage() {
 
   useEffect(() => {
     if (authLoading || isAuthenticated) return
-    const next = `/invitations/accept${
+    const next = `/investor/invitations/accept${
       token ? `?token=${encodeURIComponent(token)}` : ""
     }`
-    navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true })
+    navigate(`/investor/login?next=${encodeURIComponent(next)}`, {
+      replace: true,
+    })
   }, [authLoading, isAuthenticated, navigate, token])
 
   const acceptMutation = useApiMutation("post", "/invitations/accept", {

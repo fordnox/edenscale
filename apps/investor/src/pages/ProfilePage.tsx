@@ -117,7 +117,7 @@ export default function ProfilePage() {
 
   async function handleSignOut() {
     await logout()
-    navigate("/login")
+    navigate("/investor/login")
   }
 
   return (

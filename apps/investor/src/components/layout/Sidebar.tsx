@@ -60,7 +60,7 @@ function SidebarBody({ onOpenSearch, onCloseSheet }: SidebarBodyProps) {
 
   const handleSignOut = async () => {
     await logout()
-    navigate("/login")
+    navigate("/investor/login")
   }
 
   return (

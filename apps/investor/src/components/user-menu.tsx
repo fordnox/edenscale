@@ -24,7 +24,7 @@ export function UserMenu() {
 
   if (!isAuthenticated || !user) {
     return (
-      <Link to="/login">
+      <Link to="/investor/login">
         <Button variant="outline" size="sm" className="gap-2">
           <LogIn className="w-4 h-4" />
           Login

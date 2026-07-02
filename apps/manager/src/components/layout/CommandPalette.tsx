@@ -72,7 +72,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const handleSignOut = run(async () => {
     await logout()
-    navigate("/login")
+    navigate("/manager/login")
   })
 
   const isLoading =
