@@ -6,11 +6,6 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url)
 
-    if (url.pathname === "/app" || url.pathname.startsWith("/app/")) {
-      url.pathname = url.pathname.replace(/^\/app\b/, "/manager")
-      return Response.redirect(url.toString(), 308)
-    }
-
     const appMount = url.pathname.startsWith("/manager/")
       ? "/manager"
       : url.pathname.startsWith("/investor/")
