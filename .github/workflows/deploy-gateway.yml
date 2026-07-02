@@ -52,7 +52,7 @@ jobs:
         run: |
           set -euo pipefail
           for name in VITE_APP_TITLE VITE_HANKO_API_URL; do
-            value="$(op read "op://Github/taven/VITE/$name")"
+            value="$(op read "op://Github/taven/$name")"
             echo "::add-mask::$value"
             echo "$name=$value" >> "$GITHUB_ENV"
           done
