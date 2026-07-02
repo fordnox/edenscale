@@ -1,0 +1,75 @@
+name: Deploy Gateway
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/gateway/**"
+      - "apps/web/**"
+      - "apps/manager/**"
+      - "apps/investor/**"
+      - "turbo.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/deploy-gateway.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-gateway-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    env:
+      # Lets the `op` CLI authenticate non-interactively (same token as deploy.yml).
+      OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+
+      # 1Password CLI — used to read the build/deploy secrets from the vault.
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@v1
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Read all secrets from 1Password in one shot.
+      #   - VITE_* go to GITHUB_ENV so the build step compiles them into the bundle.
+      #   - The Cloudflare token goes to a masked step output for the deploy step.
+      - name: Load secrets from 1Password
+        id: secrets
+        run: |
+          set -euo pipefail
+          for name in VITE_APP_TITLE VITE_API_URL VITE_HANKO_API_URL; do
+            value="$(op read "op://Github/taven/VITE/$name")"
+            echo "::add-mask::$value"
+            echo "$name=$value" >> "$GITHUB_ENV"
+          done
+          token="$(op read 'op://Github/taven/CLOUDFLARE_API_TOKEN')"
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+
+      # Builds web + manager + investor and assembles apps/gateway/dist.
+      # VITE_* pass through because turbo.json declares "env": ["VITE_*"] on build.
+      - name: Build gateway
+        run: pnpm turbo run build --filter=gateway
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ steps.secrets.outputs.token }}
+          workingDirectory: apps/gateway
+          packageManager: pnpm
+          # Assets are already built above; deploy without a rebuild.
+          command: deploy
