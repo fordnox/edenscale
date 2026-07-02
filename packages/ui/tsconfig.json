@@ -1,0 +1,13 @@
+{
+  "extends": "@edenscale/typescript-config/react",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@edenscale/api/*": ["../api/src/*"],
+      "@edenscale/auth/*": ["../auth/src/*"],
+      "@edenscale/shared/*": ["../shared/src/*"],
+      "@edenscale/ui/*": ["./src/components/ui/*"]
+    }
+  },
+  "include": ["src", "../api/src/vite-env.d.ts"]
+}

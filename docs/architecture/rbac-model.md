@@ -98,8 +98,8 @@ visible_fund_ids = (
 
 Authorisation is **enforced** on the backend; the frontend uses role only to hide UI a user can't act on. Two helpers:
 
-- **`useNavItems()`** (`frontend/src/hooks/useNavItems.ts`) — reads `GET /users/me` once (TanStack Query, 5-min stale time) and returns the sidebar entries the role should see. LPs get a stripped sidebar (no Capital Calls, Distributions, Tasks). Admins get the full set plus an Audit Log entry.
-- **`<RequireRole allowed={[...]}>`** (`frontend/src/components/RequireRole.tsx`) — wraps a page; renders an empty-state with a "Back to dashboard" link when the role does not match. Used by `OrganizationSettingsPage` (admin + fund_manager) and `AuditLogPage` (admin only).
+- **Manager nav/guards** (`apps/manager/src/hooks/useNavItems.ts`, `apps/manager/src/components/RequireRole.tsx`) — expose manager/admin/superadmin workflows and gate manager-only pages.
+- **Investor nav** (`apps/investor/src/hooks/useNavItems.ts`) — exposes only LP-facing read-only sections. Organization-scoped investor URLs redirect non-LP memberships back to the manager app.
 
 Hiding nav items is a UX nicety; the API always re-checks. If you add a new role-gated page, gate it on **both** sides.
 

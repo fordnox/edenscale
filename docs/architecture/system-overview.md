@@ -40,7 +40,7 @@ EdenScale is a two-service monorepo wired together through a generated OpenAPI c
 └──────────────────────┘
 ```
 
-- **Frontend:** React 18 + Vite 7 + TypeScript, Tailwind CSS v4, React Router v6, TanStack Query, Radix UI primitives in `frontend/src/components/ui/`.
+- **Frontend:** React + Vite + TypeScript, Tailwind CSS v4, React Router, TanStack Query, and Radix/shadcn-style primitives. Turborepo orchestrates `apps/manager`, `apps/investor`, `apps/web`, `apps/gateway`, `apps/emails`, and shared packages under `packages/`.
 - **Backend:** FastAPI on Python 3.12, SQLAlchemy ORM, Alembic migrations, `pydantic-settings` config. Single `FastAPI()` instance in `backend/app/main.py`; routers mounted under `/dashboard`, `/users`, `/funds`, `/investors`, `/commitments`, `/capital-calls`, `/distributions`, `/documents`, `/communications`, `/tasks`, `/notifications`, `/audit-logs`, `/organizations`.
 - **Background jobs:** `arq` worker (`app.worker.WorkerSettings`) on a Redis queue named after `settings.APP_DOMAIN`. Enqueue via `app.tasks.enqueue_task` which opens and closes a fresh pool per call.
 - **Storage:** Documents go through a [`StoragePort`](../../backend/app/services/storage.py) abstraction; the shipped default is `LocalDevStorage` writing to `backend/dev_storage/`. See [[ADR-002-Storage-Port-Pattern]].
@@ -50,8 +50,8 @@ EdenScale is a two-service monorepo wired together through a generated OpenAPI c
 The OpenAPI schema is the single source of truth for the API surface. The dev loop is:
 
 1. Backend route or schema changes → run `make openapi`.
-2. `make openapi` regenerates `backend/openapi.json` and runs `pnpm run generate-client` to refresh `frontend/src/lib/schema.d.ts`.
-3. Frontend code uses `openapi-fetch` against those generated types via `frontend/src/lib/api.ts`. There are no hand-written request/response types.
+2. `make openapi` regenerates `apps/backend/openapi.json` and runs `pnpm turbo run generate-client --filter=@edenscale/api` to refresh `packages/api/src/schema.d.ts`.
+3. Frontend code uses `openapi-fetch` against those generated types via `@edenscale/api`. There are no hand-written request/response types.
 
 A frontend type error after a backend change almost always means `make openapi` was skipped. See the README's pre-commit checklist (test, lint, openapi-sync).
 

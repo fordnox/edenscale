@@ -248,7 +248,7 @@ async def task_send_capital_call_emails(ctx: dict, call_id: str) -> int:
         org_name = organization.name if organization is not None else "NewTaven"
         currency = fund.currency_code or "USD"
         view_url = (
-            f"{_app_base_url()}/app/{organization.slug}/calls"
+            f"{_app_base_url()}/investor/{organization.slug}/calls"
             if organization is not None
             else _app_base_url()
         )
@@ -316,7 +316,7 @@ async def task_send_distribution_emails(ctx: dict, distribution_id: str) -> int:
         org_name = organization.name if organization is not None else "NewTaven"
         currency = fund.currency_code or "USD"
         view_url = (
-            f"{_app_base_url()}/app/{organization.slug}/distributions"
+            f"{_app_base_url()}/investor/{organization.slug}/distributions"
             if organization is not None
             else _app_base_url()
         )
@@ -370,7 +370,7 @@ async def task_send_welcome_email(ctx: dict, user_id: str, organization_id: str)
         params = {
             "recipient_name": (user.first_name or "").strip() or "there",
             "organization_name": org_name,
-            "app_url": f"{_app_base_url()}/app",
+            "app_url": f"{_app_base_url()}/investor",
             "recipient_email": user.email,
         }
         sent = await _deliver(user.email, "Welcome to NewTaven", "welcome", params)
@@ -409,7 +409,7 @@ async def task_send_document_email(ctx: dict, document_id: str) -> int:
             organization = fund.organization
         org_name = organization.name if organization is not None else "NewTaven"
         view_url = (
-            f"{_app_base_url()}/app/{organization.slug}/documents"
+            f"{_app_base_url()}/investor/{organization.slug}/documents"
             if organization is not None
             else _app_base_url()
         )

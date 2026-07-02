@@ -13,76 +13,67 @@ related:
 
 # Frontend Routing
 
-The SPA is a single React Router v6 tree declared in [`frontend/src/App.tsx`](../../frontend/src/App.tsx). Two layouts exist: `AppShell` for the authenticated dashboard, and a bare layout for `/login`. Page-level role gating is applied with `<RequireRole>` (see [[RBAC-Model]]); sidebar-level filtering is applied with `useNavItems()`.
+The product UI is split into two Vite SPAs orchestrated by Turborepo:
 
-## Route table
+- `apps/manager` mounts at `/manager` and owns manager, admin, fund-manager, and superadmin workflows.
+- `apps/investor` mounts at `/investor` and owns LP-facing read-only workflows.
 
-| Path                      | Component                       | Layout       | Sidebar visibility (per role)                | Page-level role gate            |
-| ------------------------- | ------------------------------- | ------------ | -------------------------------------------- | ------------------------------- |
-| `/`                       | `DashboardPage`                 | `AppShell`   | admin · fund_manager · lp                    | none (data is role-scoped)      |
-| `/funds`                  | `FundsPage`                     | `AppShell`   | admin · fund_manager · lp                    | none (data is role-scoped)      |
-| `/funds/:fundId`          | `FundDetailPage`                | `AppShell`   | (deep-link only)                             | none (404 if not visible)       |
-| `/investors`              | `InvestorsPage`                 | `AppShell`   | admin · fund_manager · lp                    | none (data is role-scoped)      |
-| `/calls`                  | `CapitalCallsPage`              | `AppShell`   | admin · fund_manager (lp: hidden in sidebar) | none (data is role-scoped)      |
-| `/distributions`          | `DistributionsPage`             | `AppShell`   | admin · fund_manager (lp: hidden in sidebar) | none (data is role-scoped)      |
-| `/documents`              | `DocumentsPage`                 | `AppShell`   | admin · fund_manager · lp                    | none (data is role-scoped)      |
-| `/letters`                | `LettersPage`                   | `AppShell`   | admin · fund_manager · lp                    | none (data is role-scoped)      |
-| `/tasks`                  | `TasksPage`                     | `AppShell`   | admin · fund_manager (lp: hidden in sidebar) | none (data is role-scoped)      |
-| `/notifications`          | `NotificationsPage`             | `AppShell`   | admin · fund_manager · lp                    | none (per-user)                 |
-| `/profile`                | `ProfilePage`                   | `AppShell`   | (Topbar user menu only, not sidebar)         | none (per-user)                 |
-| `/settings/organization`  | `OrganizationSettingsPage`      | `AppShell`   | (Profile page link only)                     | `RequireRole: admin, fund_manager` |
-| `/audit-log`              | `AuditLogPage`                  | `AppShell`   | admin only                                   | `RequireRole: admin`            |
-| `/login`                  | `LoginPage`                     | (bare)       | n/a                                          | n/a                             |
+Both apps share generated API types/client hooks from `@edenscale/api`, Hanko auth utilities from `@edenscale/auth`, organization state and formatting utilities from `@edenscale/shared`, and NewTaven UI primitives/global CSS from `@edenscale/ui`.
 
-"Sidebar visibility" controls what `useNavItems()` returns — a fund_manager has Capital Calls in the sidebar, an LP does not. The API still re-checks on the backend; hiding nav is a UX nicety, not a security boundary.
+## Manager Routes
 
-## Layouts
+| Path | Purpose |
+| --- | --- |
+| `/manager` | Authenticated manager dashboard / org picker |
+| `/manager/profile` | Current user profile |
+| `/manager/invitations/accept` | Invitation acceptance |
+| `/manager/:orgSlug` | Organization overview |
+| `/manager/:orgSlug/funds` | Fund management |
+| `/manager/:orgSlug/investors` | Investor register and commitments |
+| `/manager/:orgSlug/calls` | Capital calls |
+| `/manager/:orgSlug/distributions` | Distributions |
+| `/manager/:orgSlug/documents` | Documents |
+| `/manager/:orgSlug/letters` | Communications |
+| `/manager/:orgSlug/tasks` | Manager tasks |
+| `/manager/:orgSlug/settings` | Organization settings |
+| `/manager/:orgSlug/audit-log` | Audit log |
+| `/manager/:orgSlug/:fundSlug` | Fund workspace |
+| `/manager/superadmin/organizations` | Superadmin organization list |
+| `/manager/superadmin/organizations/:organizationId` | Superadmin organization detail |
 
-### `AppShell` (`frontend/src/layouts/AppShell.tsx`)
+LP memberships that hit an organization-scoped manager URL are redirected to the matching `/investor/:orgSlug` URL.
 
-Standard authenticated chrome:
+## Investor Routes
 
-- **Sidebar** (`components/layout/Sidebar.tsx`) — consumes `useNavItems()`, role-aware. Header sub-label and footer text are role-driven (`Administrator view` / `Manager view` / `Limited partner view`).
-- **Topbar** — global search, notifications bell with unread count, and user-menu (Profile / Sign out).
-- **`<Outlet />`** — the page renders here.
+| Path | Purpose |
+| --- | --- |
+| `/investor` | LP organization picker |
+| `/investor/profile` | Current user profile |
+| `/investor/invitations/accept` | Invitation acceptance |
+| `/investor/:orgSlug` | Investor overview |
+| `/investor/:orgSlug/funds` | Accessible funds |
+| `/investor/:orgSlug/:fundSlug` | Read-only fund summary |
+| `/investor/:orgSlug/calls` | Capital calls |
+| `/investor/:orgSlug/distributions` | Distributions |
+| `/investor/:orgSlug/documents` | Documents |
+| `/investor/:orgSlug/letters` | Communications |
+| `/investor/:orgSlug/notifications` | Notifications |
 
-`AppShell` itself does not check auth; it relies on the API client redirecting to `/login` on 401 (see `frontend/src/lib/api.ts`).
+Non-LP memberships that hit an organization-scoped investor URL are redirected to the matching `/manager/:orgSlug` URL.
 
-### `LoginPage`
+## Gateway Behavior
 
-Standalone — no shell. Hosts the Hanko `<hanko-auth>` web component.
+The Cloudflare Worker serves:
 
-### Legacy `MainLayout`
+- `/` from `apps/web/dist`
+- `/manager/*` from `apps/manager/dist`
+- `/investor/*` from `apps/investor/dist`
 
-`frontend/src/layouts/MainLayout.tsx` (with `Header.tsx` + `Footer.tsx`) is retained as scaffolding for any future marketing route, but **no route currently uses it**. The previous `/profile` was migrated to `AppShell` in Phase 09.
-
-## Sidebar role mapping
-
-From `frontend/src/hooks/useNavItems.ts`:
-
-```
-fund_manager → [Overview, Funds, Investors, Capital Calls, Distributions,
-                Documents, Letters, Tasks, Notifications]
-admin        → fund_manager set + [Audit Log]
-lp           → [Overview, Funds, Investors, Documents, Letters, Notifications]
-unknown      → fund_manager set (default during loading; the actual route is
-                still gated by RequireRole / API checks, so this is safe)
-```
-
-`Profile` and `Organization Settings` are reachable from the Topbar user menu and the Profile page; they are **not** in the sidebar.
+Missing JS/CSS assets under the SPA mount points return the real asset 404. Only document navigations fall back to the relevant SPA `index.html`. Legacy `/app/*` URLs redirect to `/manager/*`.
 
 ## Conventions
 
-- **Route declaration** — every route is declared in `App.tsx`. Do not introduce nested route trees in pages; if a page needs subroutes, lift them to `App.tsx` and use `<Outlet />`.
-- **Path alias** — `@/*` resolves to `frontend/src/*`. Configured in both `vite.config.ts` and `tsconfig.json`.
-- **API client** — `frontend/src/lib/api.ts` exports a typed `openapi-fetch` client built from `frontend/src/lib/schema.d.ts` (regenerated via `make openapi`). Auto-attaches the Hanko session token via `getSessionToken()` and surfaces non-401 errors through `sonner` toasts.
-- **Data hooks** — `useApiQuery` and `useApiMutation` (`frontend/src/hooks/`) wrap TanStack Query against the typed client. The standard mutation pattern is `useApiMutation` + `queryClient.invalidateQueries({ queryKey: [path] })` + sonner toast — see `InvestorDetailPanel`'s `invalidateInvestorScopes` helper as the canonical example.
-- **Role gating** — wrap a whole page with `<RequireRole allowed={[...]}>` in the page module itself, not in `App.tsx`, so the gating travels with the page and the route declaration stays uniform.
-
-## Adding a new page
-
-1. Create `frontend/src/pages/MyPage.tsx`. Follow the established `PageHero` + stacked `Card` layout used by `NotificationsPage` / `TasksPage` / `ProfilePage`.
-2. If role-restricted, wrap the page contents in `<RequireRole allowed={[...]}>`.
-3. Add the `<Route>` to `App.tsx`, inside the `AppShell` block.
-4. If the page should appear in the sidebar, add a `NavItem` constant in `useNavItems.ts` and slot it into the appropriate role's array.
-5. Update this doc's route table.
+- Generated OpenAPI types live in `packages/api/src/schema.d.ts`; do not hand-edit them.
+- App-local imports use `@/*`; shared code should be imported through `@edenscale/*` package exports.
+- Run `pnpm turbo run typecheck` for workspace TypeScript validation.
+- Run `pnpm turbo run build --filter=manager`, `--filter=investor`, or `--filter=gateway` for targeted frontend builds.

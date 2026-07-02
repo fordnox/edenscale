@@ -6,14 +6,23 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url)
 
-    // Frontend SPA mounted at /app/ — serve the asset, falling back to the
-    // SPA shell for client-side routes that don't map to a file. Real hashed
-    // assets exist and return 200 (passed through). Unknown routes hit the
-    // asset layer as a 404 or a trailing-slash 307 to /app/.
-    if (url.pathname.startsWith("/app/")) {
+    if (url.pathname === "/app" || url.pathname.startsWith("/app/")) {
+      url.pathname = url.pathname.replace(/^\/app\b/, "/manager")
+      return Response.redirect(url.toString(), 308)
+    }
+
+    const appMount = url.pathname.startsWith("/manager/")
+      ? "/manager"
+      : url.pathname.startsWith("/investor/")
+        ? "/investor"
+        : null
+
+    // Product SPAs mounted at /manager/ and /investor/ — serve the asset,
+    // falling back to the SPA shell for client-side document navigations.
+    if (appMount) {
       const res = await env.ASSETS.fetch(request)
       if (res.status === 404 || (res.status >= 300 && res.status < 400)) {
-        // Only navigations (deep links like /app/dashboard) fall back to the
+        // Only navigations (deep links like /manager/acme/funds) fall back to the
         // SPA shell. A missing hashed asset — e.g. a stale cached index.html
         // requesting an old JS chunk after a redeploy pruned it — must return
         // the real 404, NOT the HTML shell. Serving index.html for a
@@ -24,7 +33,7 @@ export default {
         const isNavigation =
           dest === "document" || (!dest && accept.includes("text/html"))
         if (isNavigation) {
-          return env.ASSETS.fetch(new URL("/app/index.html", url.origin))
+          return env.ASSETS.fetch(new URL(`${appMount}/index.html`, url.origin))
         }
       }
       return res

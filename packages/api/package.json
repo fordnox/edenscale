@@ -1,0 +1,31 @@
+{
+  "name": "@edenscale/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate-client": "openapi-typescript ../../apps/backend/openapi.json -o ./src/schema.d.ts",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/client.ts",
+    "./client": "./src/client.ts",
+    "./config": "./src/config.ts",
+    "./hooks/useApiMutation": "./src/hooks/useApiMutation.ts",
+    "./hooks/useApiQuery": "./src/hooks/useApiQuery.ts",
+    "./queryClient": "./src/queryClient.ts",
+    "./schema": "./src/schema.d.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.101.2",
+    "openapi-fetch": "^0.17.0",
+    "sonner": "^2.0.7"
+  },
+  "devDependencies": {
+    "@edenscale/typescript-config": "workspace:*",
+    "@types/react": "^19.2.17",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^6.0.3"
+  }
+}

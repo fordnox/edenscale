@@ -2,9 +2,9 @@ import re
 import uuid
 from collections.abc import Callable
 
-# Keep in sync with the frontend routes: top-level siblings of /app/:orgSlug
-# and the static children of /app/:orgSlug that share the URL level with
-# /app/:orgSlug/:fundSlug.
+# Keep in sync with the frontend routes: top-level siblings of
+# /manager/:orgSlug and /investor/:orgSlug, plus static children that share
+# the URL level with /:app/:orgSlug/:fundSlug.
 RESERVED_SLUGS = frozenset(
     {
         "app",

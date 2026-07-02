@@ -1,0 +1,4 @@
+{
+  "extends": "@edenscale/typescript-config/node",
+  "include": ["vite.config.ts"]
+}

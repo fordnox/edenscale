@@ -4,10 +4,9 @@
 export MY_UID := 1000
 export MY_GID := 1000
 
-sync: ## npm install and uv sync
+sync: ## pnpm install and uv sync
 	cd apps/backend && uv sync
-	cd apps/frontend && pnpm i
-	cd apps/emails && pnpm i
+	pnpm install
 
 build: ## Build backend and frontend Docker images
 	@echo "Building backend Docker image..."
@@ -22,7 +21,7 @@ lint: ## Run linters
 
 openapi:  ## Generate OpenAPI schema from FastAPI app
 	cd apps/backend && uv run python -c "import app.main; import json; print(json.dumps(app.main.app.openapi()))" > ./openapi.json
-	cd apps/frontend && pnpm run generate-client
+	pnpm turbo run generate-client --filter=@edenscale/api
 
 db-init: ## Create all database tables from SQLAlchemy models (dev only — use migrations in prod)
 	cd apps/backend && uv run python -c "from app import models; from app.core.database import init_db; init_db(); print('✓ tables created')"
@@ -42,8 +41,14 @@ upgrade: ## Apply migrations
 downgrade: ## Apply downgrade migrations
 	cd apps/backend && uv run alembic downgrade -1
 
-start-frontend: ## Start the development frontend
-	cd apps/frontend && npm run dev
+start-manager: ## Start the development manager frontend
+	pnpm turbo run dev --filter=manager
+
+start-investor: ## Start the development investor frontend
+	pnpm turbo run dev --filter=investor
+
+start-frontend: ## Start the development manager frontend (legacy alias)
+	$(MAKE) start-manager
 
 start-backend: ## Start the development backend
 	cd apps/backend && uv run fastapi dev app/main.py --port 8000 --host localhost
@@ -70,7 +75,8 @@ kamal-logs: kamal-check ## Tail logs
 	kamal app logs -f
 
 wrangler-deploy:
-	cd apps/gateway && VITE_APP_TITLE=NewTaven VITE_API_URL=https://api.newtaven.com VITE_HANKO_API_URL=https://400bf941-ad5d-4497-8aa0-b3e2aeb420e3.hanko.io pnpm run build && pnpm run deploy
+	VITE_APP_TITLE=NewTaven VITE_API_URL=https://api.newtaven.com VITE_HANKO_API_URL=https://400bf941-ad5d-4497-8aa0-b3e2aeb420e3.hanko.io pnpm turbo run build --filter=gateway
+	cd apps/gateway && pnpm run deploy
 
 .PHONY: help
 .DEFAULT_GOAL := help

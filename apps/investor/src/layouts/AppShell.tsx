@@ -1,0 +1,48 @@
+import { useState } from "react"
+import { Outlet, useLocation } from "react-router-dom"
+
+import { CommandPalette } from "@/components/layout/CommandPalette"
+import { Sidebar } from "@/components/layout/Sidebar"
+import { Topbar } from "@/components/layout/Topbar"
+import { PendingInvitationsBanner } from "@edenscale/ui/invitations/PendingInvitationsBanner"
+import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useCommandPalette } from "@/hooks/useCommandPalette"
+import { usePendingInvitations } from "@edenscale/shared/hooks/usePendingInvitations"
+
+export default function AppShell() {
+  const { pathname } = useLocation()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette()
+  const { memberships } = useActiveOrganization()
+  const { visibleInvitations, showBanner, dismissBanner } =
+    usePendingInvitations()
+  const isAccountDashboard = pathname === "/investor"
+
+  return (
+    <div className="flex min-h-svh bg-page text-ink-900">
+      {!isAccountDashboard && (
+        <Sidebar
+          open={sidebarOpen}
+          onOpenChange={setSidebarOpen}
+          onOpenSearch={() => setPaletteOpen(true)}
+        />
+      )}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {!isAccountDashboard && (
+          <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
+        )}
+        {showBanner && (
+          <PendingInvitationsBanner
+            invitations={visibleInvitations}
+            onDismiss={dismissBanner}
+            emphasize={memberships.length === 0}
+          />
+        )}
+        <main className="flex flex-1 flex-col">
+          <Outlet />
+        </main>
+      </div>
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+    </div>
+  )
+}

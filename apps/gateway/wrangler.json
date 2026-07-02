@@ -8,7 +8,7 @@
     "directory": "./dist",
     "not_found_handling": "404-page",
     "binding": "ASSETS",
-    "run_worker_first": ["/app/*"]
+    "run_worker_first": ["/manager/*", "/investor/*", "/app/*"]
   },
   "observability": {
     "enabled": true

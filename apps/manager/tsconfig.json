@@ -1,0 +1,17 @@
+{
+  "extends": "@edenscale/typescript-config/react",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@edenscale/api/*": ["../../packages/api/src/*"],
+      "@edenscale/auth/*": ["../../packages/auth/src/*"],
+      "@edenscale/shared/*": ["../../packages/shared/src/*"],
+      "@edenscale/ui/*": ["../../packages/ui/src/components/ui/*"],
+      "@edenscale/ui/PageHero": ["../../packages/ui/src/components/PageHero.tsx"],
+      "@edenscale/ui/invitations/*": ["../../packages/ui/src/components/invitations/*"]
+    }
+  },
+  "include": ["src", "../../packages/*/src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

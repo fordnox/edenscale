@@ -1,0 +1,23 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "generate-client": {
+      "outputs": ["src/schema.d.ts"]
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".astro/**"]
+    },
+    "lint": {
+      "dependsOn": ["^typecheck"]
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

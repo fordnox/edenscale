@@ -81,7 +81,7 @@ Pydantic v2 models. Conventions:
 - `XListItem` — slimmer DTO returned for list endpoints.
 - `XOverview` / `XStats` — denormalised aggregates for dashboard cards.
 
-These DTOs are the source of truth for the OpenAPI schema and therefore for the generated frontend types in `frontend/src/lib/schema.d.ts`.
+These DTOs are the source of truth for the OpenAPI schema and therefore for the generated frontend types in `packages/api/src/schema.d.ts`.
 
 ## Concrete example: list funds
 
@@ -138,6 +138,6 @@ After any backend change to a route or schema:
 
 1. `make test` — pytest must pass.
 2. `make lint` — import smoke test, `ruff`, `ty`, `black`, `isort`.
-3. `make openapi` — regenerate `backend/openapi.json` and `frontend/src/lib/schema.d.ts`.
+3. `make openapi` — regenerate `apps/backend/openapi.json` and `packages/api/src/schema.d.ts`.
 
 Skipping step 3 will fail the frontend type check on the next pull.

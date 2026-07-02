@@ -1,0 +1,33 @@
+{
+  "name": "@edenscale/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./active-org": "./src/activeOrg.ts",
+    "./contexts/ActiveOrganizationContext": "./src/contexts/ActiveOrganizationContext.tsx",
+    "./contexts/PendingInvitationsBannerContext": "./src/contexts/PendingInvitationsBannerContext.tsx",
+    "./format": "./src/format.ts",
+    "./hooks/useActiveOrganization": "./src/hooks/useActiveOrganization.ts",
+    "./hooks/usePendingInvitations": "./src/hooks/usePendingInvitations.ts",
+    "./userDisplay": "./src/userDisplay.ts",
+    "./utils": "./src/utils.ts"
+  },
+  "dependencies": {
+    "@edenscale/api": "workspace:*",
+    "@edenscale/auth": "workspace:*",
+    "@tanstack/react-query": "^5.101.2",
+    "clsx": "^2.1.1",
+    "react": "^19.2.7",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@edenscale/typescript-config": "workspace:*",
+    "@types/react": "^19.2.17",
+    "typescript": "^6.0.3"
+  }
+}

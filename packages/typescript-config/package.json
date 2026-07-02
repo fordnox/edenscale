@@ -1,0 +1,11 @@
+{
+  "name": "@edenscale/typescript-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./react": "./react.json",
+    "./node": "./node.json",
+    "./base": "./base.json"
+  }
+}

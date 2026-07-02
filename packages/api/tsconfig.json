@@ -1,0 +1,12 @@
+{
+  "extends": "@edenscale/typescript-config/react",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@edenscale/api/*": ["./src/*"],
+      "@edenscale/auth/*": ["../auth/src/*"],
+      "@edenscale/shared/*": ["../shared/src/*"]
+    }
+  },
+  "include": ["src"]
+}
