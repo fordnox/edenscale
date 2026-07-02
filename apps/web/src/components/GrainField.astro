@@ -1,22 +1,25 @@
 ---
 /* Generative paper-grain background, ported from the design comp
    (apps/design/NewTaven Homepage.dc.html). `page` renders a fixed,
-   viewport-sized field in ink over the parchment page; `dark` renders an
-   absolute field in parchment inside a dark full-bleed section (the section
-   must be position: relative with its content above z-index 0). */
+   viewport-sized field in ink; `dark` renders an absolute parchment field
+   inside a dark container; `card` renders an absolute ink field inside a
+   light container. Absolute variants need a position: relative parent with
+   its content above z-index 0. */
 interface Props {
-  kind?: "page" | "dark";
+  kind?: "page" | "dark" | "card";
 }
 const { kind = "dark" } = Astro.props;
 const isPage = kind === "page";
+const tone = kind === "dark" ? "parchment" : "ink";
+const base = kind === "dark" ? "0.10" : kind === "card" ? "0.06" : "0.05";
 ---
 
 <svg
   data-noise={kind}
-  data-tone={isPage ? "ink" : "parchment"}
-  data-base={isPage ? "0.05" : "0.10"}
+  data-tone={tone}
+  data-base={base}
   aria-hidden="true"
-  class:list={["grain-field", isPage ? "grain-field--page" : "grain-field--dark"]}
+  class:list={["grain-field", isPage ? "grain-field--page" : "grain-field--abs"]}
 ></svg>
 
 <style>
@@ -32,7 +35,7 @@ const isPage = kind === "page";
     width: 100%;
     height: 100%;
   }
-  .grain-field--dark {
+  .grain-field--abs {
     position: absolute;
     inset: 0;
     width: 100%;

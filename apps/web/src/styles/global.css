@@ -11,12 +11,11 @@ html {
 }
 
 :focus-visible {
-  outline: 2px solid var(--conifer-600);
+  outline: 2px solid #000;
   outline-offset: 2px;
 }
-.cadence :focus-visible,
-.footer-cta :focus-visible {
-  outline-color: var(--brass-300);
+.nv-dark :focus-visible {
+  outline-color: #f5f5f5;
 }
 
 * {

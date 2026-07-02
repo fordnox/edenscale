@@ -1,6 +1,5 @@
 ---
 import "../styles/global.css";
-import GrainField from "../components/GrainField.astro";
 
 interface Props {
   title?: string;
@@ -8,8 +7,8 @@ interface Props {
 }
 
 const {
-  title = "NewTaven — Fund administration for small managers",
-  description = "NewTaven keeps your limited partners, capital calls, and quarterly communications in one calm place.",
+  title = "NewTaven — Fund operations, automated",
+  description = "An end-to-end software platform built to streamline the entire lifecycle of your investment fund, from LP onboarding to seamless capital distributions.",
 } = Astro.props;
 ---
 
@@ -21,7 +20,7 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
-    <meta name="theme-color" content="#FBF9F4" />
+    <meta name="theme-color" content="#F5F5F5" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="NewTaven" />
     <meta property="og:title" content={title} />
@@ -31,14 +30,14 @@ const {
     <meta name="twitter:description" content={description} />
     <link
       rel="preload"
-      href="/fonts/CormorantGaramond-500.woff2"
+      href="/fonts/InterTight-400.woff2"
       as="font"
       type="font/woff2"
       crossorigin
     />
     <link
       rel="preload"
-      href="/fonts/InterTight-400.woff2"
+      href="/fonts/InterTight-500.woff2"
       as="font"
       type="font/woff2"
       crossorigin
@@ -48,13 +47,21 @@ const {
       document.documentElement.classList.add("js");
     </script>
   </head>
-  <body class="es-page">
-    <div class="nt-shell">
-      <div class="nt-guides" aria-hidden="true">
-        <div><div></div></div>
-      </div>
-      <GrainField kind="page" />
-      <slot />
-    </div>
+  <body>
+    <slot />
   </body>
 </html>
+
+<style>
+  body {
+    margin: 0;
+    background: #f5f5f5;
+    color: #000;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+</style>

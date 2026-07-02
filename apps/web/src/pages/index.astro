@@ -1,10 +1,75 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import Header from "../components/Header.astro";
-import Divider from "../components/Divider.astro";
 import GrainField from "../components/GrainField.astro";
-import Mark from "../components/Mark.astro";
-import CtaButton from "../components/CtaButton.astro";
+import LogoIcon from "../components/LogoIcon.astro";
+
+/* Faux-logotype styling per brand keeps the marquee feeling like a row of
+   real marks without shipping image assets. */
+const integrations = [
+  {
+    name: "Stripe",
+    style: "font-family: Georgia, 'Times New Roman', serif; font-weight: 700; letter-spacing: -0.02em; font-size: 15px;",
+  },
+  {
+    name: "DocuSign",
+    style: "font-family: Arial, sans-serif; font-weight: 900; letter-spacing: 0.08em; font-size: 13px; text-transform: uppercase;",
+  },
+  {
+    name: "Plaid",
+    style: "font-family: 'Trebuchet MS', sans-serif; font-weight: 600; letter-spacing: 0.01em; font-size: 15px; font-style: italic;",
+  },
+  {
+    name: "Carta",
+    style: "font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: 0.12em; font-size: 13px; text-transform: uppercase;",
+  },
+  {
+    name: "Xero",
+    style: "font-family: Palatino, 'Book Antiqua', serif; font-weight: 400; letter-spacing: -0.01em; font-size: 16px;",
+  },
+  {
+    name: "Salesforce",
+    style: "font-family: Impact, 'Arial Narrow', sans-serif; font-weight: 400; letter-spacing: 0.04em; font-size: 14px;",
+  },
+  {
+    name: "HubSpot",
+    style: "font-family: Verdana, sans-serif; font-weight: 700; letter-spacing: -0.03em; font-size: 13px;",
+  },
+];
+
+const backers = [
+  {
+    name: "Meridian Family Office",
+    style: "font-family: 'Times New Roman', serif; font-weight: 400; letter-spacing: 0.02em; font-size: 14px;",
+  },
+  {
+    name: "Kessler Capital",
+    style: "font-family: 'Arial Black', Arial, sans-serif; font-weight: 900; letter-spacing: 0.08em; font-size: 16px; text-transform: uppercase;",
+  },
+  {
+    name: "Novak & Sons",
+    style: "font-family: Impact, 'Arial Narrow', sans-serif; font-weight: 700; letter-spacing: 0.05em; font-size: 18px;",
+  },
+  {
+    name: "Alderman Endowment",
+    style: "font-family: Georgia, serif; font-weight: 600; letter-spacing: -0.02em; font-size: 17px;",
+  },
+  {
+    name: "Beacon Family Office",
+    style: "font-family: Helvetica, Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 15px;",
+  },
+  {
+    name: "Stillwater Group",
+    style: "font-family: Verdana, sans-serif; font-weight: 700; letter-spacing: 0.06em; font-size: 14px; text-transform: uppercase;",
+  },
+  {
+    name: "Harlow Rand",
+    style: "font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: 0.18em; font-size: 14px;",
+  },
+  {
+    name: "Corminster Trust",
+    style: "font-family: Palatino, 'Book Antiqua', serif; font-weight: 500; letter-spacing: 0.03em; font-size: 15px;",
+  },
+];
 
 const problems = [
   {
@@ -26,17 +91,17 @@ const problems = [
 
 const steps = [
   {
-    n: "STEP 01",
+    n: "Step 01",
     title: "Bring your LPs in",
     body: "Import commitments, contacts, and entities. NewTaven becomes the register of record for the whole fund.",
   },
   {
-    n: "STEP 02",
+    n: "Step 02",
     title: "Issue a call",
     body: "Draft a capital call once. Each LP receives their exact figure, wire details, and due date — no mail merge.",
   },
   {
-    n: "STEP 03",
+    n: "Step 03",
     title: "Let the cadence run",
     body: "Wires reconcile against the register. Anyone outstanding gets a measured follow-up on schedule — in your voice.",
   },
@@ -44,19 +109,19 @@ const steps = [
 
 const cadenceCards = [
   {
-    label: "DRAFT · T+72h",
+    label: "Draft · T+72h",
     tone: "Gentle",
     subject: "A quick note on the Fund II call",
     body: "The Fund II call is at 68% funded. A reminder that your portion — $900,000 — is due by the 30th. Wire details are unchanged, and attached again for convenience.",
   },
   {
-    label: "DRAFT · T+7d",
+    label: "Draft · T+7d",
     tone: "Warm",
     subject: "Following up on the Fund II call",
     body: "One week out. We are holding your allocation. If the timing is tight on your end, reply here and we will work with your team on the date.",
   },
   {
-    label: "DRAFT · T+14d",
+    label: "Draft · T+14d",
     tone: "Direct",
     subject: "Final reminder — Fund II",
     body: "The call closes Friday. Please confirm your wire, or let us know if anything has changed on your end. We would rather adjust than assume.",
@@ -122,217 +187,298 @@ const defaultOutput =
 ---
 
 <Layout>
-  <Header />
-
-  <main id="top">
-    <!-- 01 HERO -->
-    <section class="hero nt-container">
-      <div class="hero-eyebrow" data-stage style="--stage: 0">
-        <Mark size={24} />
-        <span class="nt-mono">01 // NewTaven</span>
+  <!-- Navbar + hero fill the first viewport -->
+  <div class="screen" id="top">
+    <nav class="navbar" aria-label="Primary">
+      <div class="navbar-row">
+        <a href="#top" class="brand">
+          <LogoIcon size={28} />
+          <span>NewTaven</span>
+        </a>
+        <div class="nav-links">
+          <a href="#platform">Platform</a>
+          <a href="#how">How it works</a>
+          <a href="#use-cases">Use cases</a>
+          <a href="#pricing">Pricing</a>
+        </div>
+        <a href="mailto:hello@newtaven.com" class="pill pill--nav">Book Demo</a>
       </div>
-      <div class="nt-2col hero-grid">
-        <div>
-          <h1 class="es-display-xl hero-title" data-stage style="--stage: 1">Manage your LPs like the deals depend on it.</h1>
-          <p class="es-body-l hero-sub" data-stage style="--stage: 2">
-            NewTaven keeps your limited partners, capital calls, and quarterly communications in one calm place — so
-            nothing slips between the fund and the founders you back.
+    </nav>
+
+    <section class="hero">
+      <div class="hero-card">
+        <GrainField kind="card" />
+        <div class="hero-overlay">
+          <h1 class="hero-title">Fund Operations,<br />Automated</h1>
+          <p class="hero-sub">
+            An end-to-end software platform built to streamline the entire lifecycle of your
+            investment fund, from LP onboarding to seamless capital distributions.
           </p>
-          <div class="hero-actions" data-stage style="--stage: 3">
-            <CtaButton class="hero-cta" />
-            <a href="#how" class="nt-link hero-secondary">See how it works →</a>
-          </div>
-        </div>
+          <a href="mailto:hello@newtaven.com" class="pill pill--hero">
+            <span>Book a Demo</span>
+            <span class="pill-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+            </span>
+          </a>
 
-        <div class="nt-card hero-card" data-stage style="--stage: 4">
-          <div class="hero-card-head">
-            <span class="hero-card-name">Fund II — Capital Call 03</span>
-            <span class="nt-mono hero-card-pct">68% FUNDED</span>
-          </div>
-          <div class="hero-card-bar">
-            <div class="hero-card-bar-fill"></div>
-          </div>
-          <div class="hero-card-rows">
-            <div class="hero-card-row">
-              <span>Meridian Family Office</span>
-              <span class="hero-card-row-right">
-                <span class="es-numeric">$2,500,000</span>
-                <span class="pill pill-positive">Wired</span>
-              </span>
-            </div>
-            <div class="hero-card-row">
-              <span>Alderman Endowment</span>
-              <span class="hero-card-row-right">
-                <span class="es-numeric">$1,750,000</span>
-                <span class="pill pill-positive">Wired</span>
-              </span>
-            </div>
-            <div class="hero-card-row">
-              <span>Kessler Capital</span>
-              <span class="hero-card-row-right">
-                <span class="es-numeric">$900,000</span>
-                <span class="pill pill-warning">Follow-up T+7d</span>
-              </span>
-            </div>
-            <div class="hero-card-row">
-              <span>Novak &amp; Sons</span>
-              <span class="hero-card-row-right">
-                <span class="es-numeric">$600,000</span>
-                <span class="pill pill-warning">Follow-up T+72h</span>
-              </span>
+          <div class="hero-marquee">
+            <div class="marquee-track marquee-track--hero">
+              {[0, 1].map((dup) => (
+                <div class="marquee-group" aria-hidden={dup === 1}>
+                  {integrations.map((b) => (
+                    <span class="marquee-item" style={b.style}>{b.name}</span>
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
     </section>
+  </div>
 
-    <Divider />
-
-    <!-- 02 THE PROBLEM -->
-    <section id="problem" class="section nt-container">
-      <div data-reveal class="nt-2col section-head-split">
-        <span class="nt-mono eyebrow">02 // The problem</span>
-        <h2 class="es-display-m section-head-title">Managers run funds on memory and spreadsheets.</h2>
-      </div>
-      <div data-reveal class="nt-3col grid-3 grid-bordered">
-        {problems.map((p) => (
-          <div class="grid-cell">
-            <span class="nt-mono cell-index">{p.n}</span>
-            <h3 class="es-h3 cell-title">{p.title}</h3>
-            <p class="es-body cell-body">{p.body}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-
-    <Divider />
-
-    <!-- 03 HOW IT WORKS -->
-    <section id="how" class="section nt-container">
-      <div data-reveal class="section-intro">
-        <span class="nt-mono eyebrow eyebrow-block">03 // How it works</span>
-        <h2 class="es-display-m">Three steps, then it runs itself.</h2>
-        <p class="es-body-l section-intro-body">
-          Bring your fund in once. From there, NewTaven handles the mechanics you would otherwise do by hand.
-        </p>
-      </div>
-      <div data-reveal class="nt-3col grid-3 steps-grid">
-        {steps.map((s) => (
-          <div class="step-cell">
-            <span class="nt-mono step-index">{s.n}</span>
-            <h3 class="step-title">{s.title}</h3>
-            <p class="es-body">{s.body}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-
-    <!-- 04 THE CADENCE -->
-    <section id="cadence" class="cadence">
-      <GrainField kind="dark" />
-      <span class="nt-tick nt-tick--left cadence-tick" aria-hidden="true">
-        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg>
-      </span>
-      <span class="nt-tick nt-tick--right cadence-tick" aria-hidden="true">
-        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg>
-      </span>
-      <div class="nt-container cadence-inner" id="cadence-inner">
-        <div class="cadence-intro">
-          <span class="nt-mono eyebrow eyebrow-block cadence-eyebrow">04 // The cadence</span>
-          <h2 class="es-display-m cadence-title">The follow-ups you'd never get around to.</h2>
-          <p class="es-body-l cadence-sub">
-            When a wire is still outstanding, NewTaven sends a measured reminder — at 72 hours, 7 days, and 14 days.
-            Considerate, never pushy. You approve the voice once.
-          </p>
+  <main>
+    <!-- The problem -->
+    <section id="problem" class="sect">
+      <div class="container">
+        <div class="sect-head" data-reveal>
+          <span class="eyebrow">The problem</span>
+          <h2 class="sect-title">Managers run funds on<br />memory and spreadsheets.</h2>
         </div>
-
-        <svg viewBox="0 0 1120 96" width="100%" class="cadence-timeline" aria-hidden="true">
-          <line x1="8" y1="48" x2="1112" y2="48" stroke="rgba(251,249,244,0.14)" stroke-width="1"></line>
-          <path id="cadence-line" d="M8 48 H 1112" fill="none" stroke="var(--brass-500)" stroke-width="2"></path>
-          <g>
-            <circle data-marker cx="200" cy="48" r="7" fill="var(--brass-500)" class="cadence-marker"></circle>
-            <circle cx="200" cy="48" r="7" fill="none" stroke="rgba(251,249,244,0.25)" stroke-width="1"></circle>
-          </g>
-          <g>
-            <circle data-marker cx="560" cy="48" r="7" fill="var(--brass-500)" class="cadence-marker"></circle>
-            <circle cx="560" cy="48" r="7" fill="none" stroke="rgba(251,249,244,0.25)" stroke-width="1"></circle>
-          </g>
-          <g>
-            <circle data-marker cx="920" cy="48" r="7" fill="var(--brass-500)" class="cadence-marker"></circle>
-            <circle cx="920" cy="48" r="7" fill="none" stroke="rgba(251,249,244,0.25)" stroke-width="1"></circle>
-          </g>
-          <text x="200" y="82" text-anchor="middle" fill="rgba(251,249,244,0.62)" class="cadence-tag">T+72h</text>
-          <text x="560" y="82" text-anchor="middle" fill="rgba(251,249,244,0.62)" class="cadence-tag">T+7d</text>
-          <text x="920" y="82" text-anchor="middle" fill="rgba(251,249,244,0.62)" class="cadence-tag">T+14d</text>
-        </svg>
-
-        <div class="nt-3col grid-3 cadence-cards">
-          {cadenceCards.map((c) => (
-            <div data-cadence-card class="cadence-card">
-              <div class="cadence-card-head">
-                <span class="nt-mono cadence-card-label">{c.label}</span>
-                <span class="nt-mono cadence-card-tone">{c.tone}</span>
+        <div class="cards-3" data-reveal>
+          {problems.map((p) => (
+            <article class="card">
+              <span class="card-index">{p.n}</span>
+              <div>
+                <h3 class="card-title">{p.title}</h3>
+                <p class="card-body">{p.body}</p>
               </div>
-              <div class="cadence-card-subject">{c.subject}</div>
-              <p class="es-body-s cadence-card-body">{c.body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Meet NewTaven -->
+    <section id="platform" class="sect">
+      <div class="container">
+        <div class="info-head" data-reveal>
+          <div>
+            <h2 class="sect-title">Meet NewTaven.</h2>
+            <a href="#features" class="pill pill--base">
+              <span>Explore features</span>
+              <span class="pill-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+              </span>
+            </a>
+          </div>
+          <p class="info-lede">
+            NewTaven is a comprehensive fund operating system that fully automates your
+            back-office, allowing GPs to focus purely on making investments and driving returns.
+          </p>
+        </div>
+
+        <div class="info-cards" data-reveal>
+          <article class="info-card info-card--visual">
+            <h3>Capital Calls, Simplified</h3>
+            <p>
+              Automate notices, accurately track incoming commitments, and automatically reconcile
+              accounts with zero manual data entry.
+            </p>
+          </article>
+          <article class="info-card info-card--green nv-dark">
+            <h3>Elevated LP<br />Experience.</h3>
+            <p>
+              Provide your limited partners with a dedicated, white-labeled portal for real-time
+              reporting, tax documents, and performance metrics.
+            </p>
+          </article>
+          <article class="info-card info-card--green nv-dark">
+            <h3>End-to-End<br />Compliance</h3>
+            <p>
+              Built-in KYC/AML workflows and automated regulatory reporting operate quietly in the
+              background to keep your fund secure.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trusted by -->
+    <section id="investors" class="backers">
+      <div class="container backers-grid">
+        <p class="backers-note">Trusted by top-tier GPs<br />and forward-thinking firms.</p>
+        <div class="backers-marquee">
+          <div class="marquee-track marquee-track--backers">
+            {[0, 1].map((dup) => (
+              <div class="marquee-group" aria-hidden={dup === 1}>
+                {backers.map((b) => (
+                  <span class="marquee-item marquee-item--backer" style={b.style}>{b.name}</span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section id="how" class="sect">
+      <div class="container">
+        <div class="sect-head" data-reveal>
+          <span class="eyebrow">How it works</span>
+          <h2 class="sect-title">Three steps, then it runs itself.</h2>
+          <p class="sect-sub">
+            Bring your fund in once. From there, NewTaven handles the mechanics you would otherwise
+            do by hand.
+          </p>
+        </div>
+        <div class="steps" data-reveal>
+          {steps.map((s) => (
+            <div class="step">
+              <span class="step-index">{s.n}</span>
+              <h3 class="step-title">{s.title}</h3>
+              <p class="card-body">{s.body}</p>
             </div>
           ))}
         </div>
       </div>
     </section>
 
-    <!-- 05 FEATURES -->
-    <section id="features" class="section nt-container">
-      <div data-reveal class="section-intro">
-        <span class="nt-mono eyebrow eyebrow-block">05 // Features</span>
-        <h2 class="es-display-m">Everything the fund needs. Nothing it doesn't.</h2>
-      </div>
-      <div data-reveal class="nt-3col grid-3 grid-bordered">
-        {features.map((f) => (
-          <div class="nt-card grid-cell">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--conifer-700)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d={f.icon}></path>
+    <!-- The cadence -->
+    <section id="cadence" class="sect">
+      <div class="container">
+        <div class="cadence-card nv-dark">
+          <GrainField kind="dark" />
+          <div class="cadence-inner" id="cadence-inner">
+            <span class="eyebrow eyebrow--light">The cadence</span>
+            <h2 class="sect-title sect-title--light">The follow-ups you'd<br />never get around to.</h2>
+            <p class="sect-sub sect-sub--light">
+              When a wire is still outstanding, NewTaven sends a measured reminder — at 72 hours,
+              7 days, and 14 days. Considerate, never pushy. You approve the voice once.
+            </p>
+
+            <svg viewBox="0 0 1120 96" width="100%" class="cadence-timeline" aria-hidden="true">
+              <line x1="8" y1="48" x2="1112" y2="48" stroke="rgba(255,255,255,0.16)" stroke-width="1"></line>
+              <path id="cadence-line" d="M8 48 H 1112" fill="none" stroke="#FFFFFF" stroke-width="2"></path>
+              <g>
+                <circle data-marker cx="200" cy="48" r="7" fill="#FFFFFF" class="cadence-marker"></circle>
+                <circle cx="200" cy="48" r="7" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"></circle>
+              </g>
+              <g>
+                <circle data-marker cx="560" cy="48" r="7" fill="#FFFFFF" class="cadence-marker"></circle>
+                <circle cx="560" cy="48" r="7" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"></circle>
+              </g>
+              <g>
+                <circle data-marker cx="920" cy="48" r="7" fill="#FFFFFF" class="cadence-marker"></circle>
+                <circle cx="920" cy="48" r="7" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"></circle>
+              </g>
+              <text x="200" y="82" text-anchor="middle" fill="rgba(255,255,255,0.62)" class="cadence-tag">T+72h</text>
+              <text x="560" y="82" text-anchor="middle" fill="rgba(255,255,255,0.62)" class="cadence-tag">T+7d</text>
+              <text x="920" y="82" text-anchor="middle" fill="rgba(255,255,255,0.62)" class="cadence-tag">T+14d</text>
             </svg>
-            <h3 class="es-h3 feature-title">{f.title}</h3>
-            <p class="es-body cell-body">{f.body}</p>
+
+            <div class="cadence-mails">
+              {cadenceCards.map((c) => (
+                <div data-cadence-card class="cadence-mail">
+                  <div class="cadence-mail-head">
+                    <span class="cadence-mail-label">{c.label}</span>
+                    <span class="cadence-mail-tone">{c.tone}</span>
+                  </div>
+                  <div class="cadence-mail-subject">{c.subject}</div>
+                  <p class="cadence-mail-body">{c.body}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
+        </div>
       </div>
     </section>
 
-    <Divider />
+    <!-- Features -->
+    <section id="features" class="sect">
+      <div class="container">
+        <div class="sect-head" data-reveal>
+          <span class="eyebrow">Features</span>
+          <h2 class="sect-title">Everything the fund needs.<br />Nothing it doesn't.</h2>
+        </div>
+        <div class="features-grid" data-reveal>
+          {features.map((f) => (
+            <article class="card card--feature">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16281F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d={f.icon}></path>
+              </svg>
+              <div>
+                <h3 class="card-title">{f.title}</h3>
+                <p class="card-body">{f.body}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
 
-    <!-- 06 TRY IT -->
-    <section class="section nt-container">
-      <div class="tryit-frame">
-        <div class="nt-tryit-grid tryit-grid">
-          <div data-reveal class="nt-tryit-left tryit-left">
-            <span class="nt-mono eyebrow eyebrow-block">06 // Try it</span>
-            <h2 class="es-display-s tryit-title">Draft an LP note in NewTaven's voice.</h2>
-            <p class="es-body tryit-body">
-              Describe the situation. NewTaven writes a short, plain email you could send to your limited partners —
-              no puffery, no exclamation marks.
+    <!-- Use cases -->
+    <section id="use-cases" class="sect">
+      <div class="container usecases-grid">
+        <div class="usecases-left">
+          <span class="eyebrow">NewTaven in Practice</span>
+          <h2>Built for scale</h2>
+          <p>
+            NewTaven powers a wide range of operational modes for venture capital, private equity,
+            and hedge funds wanting secure, automated fund administration.
+          </p>
+        </div>
+        <div class="usecase-card nv-dark">
+          <GrainField kind="dark" />
+          <div class="usecase-overlay">
+            <h3>Automated Distributions</h3>
+            <p>
+              Streamline the payout process. Calculate complex waterfall distributions instantly
+              and disburse capital to your LPs with complete accuracy and transparent audit trails.
+            </p>
+            <a href="mailto:hello@newtaven.com" class="usecase-link">
+              <span class="usecase-link-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+              </span>
+              View workflows
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Try it -->
+    <section id="try" class="sect">
+      <div class="container">
+        <div class="tryit-frame" data-reveal>
+          <div class="tryit-left">
+            <span class="eyebrow">Try it</span>
+            <h2 class="tryit-title">Draft an LP note in NewTaven's voice.</h2>
+            <p class="tryit-body">
+              Describe the situation. NewTaven writes a short, plain email you could send to your
+              limited partners — no puffery, no exclamation marks.
             </p>
             <div class="tryit-form">
-              <label class="nt-mono tryit-label" for="tryit-input">What do you need to say?</label>
+              <label class="tryit-label" for="tryit-input">What do you need to say?</label>
               <textarea
                 id="tryit-input"
-                class="nt-input tryit-textarea"
+                class="tryit-textarea"
                 rows="4"
                 placeholder="e.g. Fund II is closing next month and we're at 82% of target."></textarea>
               <div class="tryit-presets">
                 {presets.map((p, i) => (
-                  <button type="button" class="nt-btn-sec tryit-preset" data-preset-index={i}>{p.label}</button>
+                  <button type="button" class="tryit-preset" data-preset-index={i}>{p.label}</button>
                 ))}
               </div>
-              <button type="button" id="tryit-draft" class="nt-btn-primary tryit-submit">Draft the note</button>
+              <button type="button" id="tryit-draft" class="pill pill--submit">Draft the note</button>
               <span id="tryit-error" class="tryit-error" hidden></span>
             </div>
           </div>
           <div class="tryit-preview">
             <div class="tryit-preview-head">
-              <span class="nt-mono tryit-preview-label">DRAFT PREVIEW</span>
-              <span class="nt-mono tryit-preview-to">to: limited partners</span>
+              <span class="tryit-preview-label">Draft preview</span>
+              <span class="tryit-preview-to">to: limited partners</span>
             </div>
             <div id="tryit-loading" class="tryit-loading" hidden>
               <span class="tryit-dot"></span>Drafting a note…
@@ -346,311 +492,510 @@ const defaultOutput =
       </div>
     </section>
 
-    <Divider />
-
-    <!-- 07 PRICING -->
-    <section id="pricing" class="section nt-container">
-      <div data-reveal class="nt-2col pricing-grid">
+    <!-- Pricing -->
+    <section id="pricing" class="sect">
+      <div class="container pricing-grid" data-reveal>
         <div>
-          <span class="nt-mono eyebrow eyebrow-block">07 // Pricing</span>
-          <h2 class="es-display-m">Pricing is a conversation.</h2>
+          <span class="eyebrow">Pricing</span>
+          <h2 class="sect-title">Pricing is<br />a conversation.</h2>
         </div>
         <div>
-          <p class="es-body-l pricing-body">
-            Every fund is a different size, at a different stage, with a different LP base. We would rather understand
-            yours than post a number that fits no one. A short call, a fair quote, no obligation.
+          <p class="pricing-body">
+            Every fund is a different size, at a different stage, with a different LP base. We
+            would rather understand yours than post a number that fits no one. A short call, a
+            fair quote, no obligation.
           </p>
-          <div class="hero-actions">
-            <a href="mailto:hello@newtaven.com" class="nt-btn-primary hero-cta">Contact us for pricing</a>
-            <a href="mailto:hello@newtaven.com" class="nt-link hero-secondary">hello@newtaven.com</a>
+          <div class="pricing-actions">
+            <a href="mailto:hello@newtaven.com" class="pill pill--base">
+              <span>Contact us for pricing</span>
+              <span class="pill-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+              </span>
+            </a>
+            <a href="mailto:hello@newtaven.com" class="pricing-mail">hello@newtaven.com</a>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 08 FOOTER CTA -->
-    <section class="footer-cta">
-      <GrainField kind="dark" />
-      <span class="nt-tick nt-tick--left cadence-tick" aria-hidden="true">
-        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg>
-      </span>
-      <span class="nt-tick nt-tick--right cadence-tick" aria-hidden="true">
-        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg>
-      </span>
-      <div class="nt-container footer-cta-inner">
-        <div class="footer-cta-top">
-          <h2 class="es-display-l footer-cta-title">Give your fund the back office it never had time to build.</h2>
-          <CtaButton class="footer-cta-btn" />
-        </div>
-        <hr class="footer-cta-rule" />
-        <div class="footer-cta-bottom">
-          <div class="footer-cta-brand">
-            <Mark size={20} color="var(--brass-300)" />
-            <span>NewTaven</span>
+    <!-- Closing CTA -->
+    <section class="sect">
+      <div class="container">
+        <div class="cta-card nv-dark">
+          <GrainField kind="dark" />
+          <div class="cta-inner">
+            <h2>Give your fund the back office it never had time to build.</h2>
+            <a href="mailto:hello@newtaven.com" class="pill pill--invert">
+              <span>Book a Demo</span>
+              <span class="pill-arrow pill-arrow--dark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+              </span>
+            </a>
           </div>
-          <span class="nt-mono footer-cta-copy">© 2026 NewTaven — Fund administration for small managers</span>
         </div>
       </div>
     </section>
   </main>
+
+  <footer class="footer">
+    <div class="container footer-row">
+      <a href="#top" class="brand brand--footer">
+        <LogoIcon size={20} />
+        <span>NewTaven</span>
+      </a>
+      <a href="mailto:hello@newtaven.com" class="footer-mail">hello@newtaven.com</a>
+      <span class="footer-copy">© 2026 NewTaven — Fund administration for small managers</span>
+    </div>
+  </footer>
 </Layout>
 
 <style>
-  /* ---------- Hero ---------- */
-  .hero {
-    padding-top: clamp(96px, 14vw, 168px);
-    padding-bottom: clamp(64px, 10vw, 112px);
+  /* ---------- Shared ---------- */
+  .container {
+    max-width: 88rem;
+    margin: 0 auto;
   }
-  /* Staged entrance on load — eyebrow, title, sub, actions, ledger card.
-     Gated on html.js so the page renders complete without scripts. */
-  :global(html.js) .hero [data-stage] {
-    opacity: 0;
-    transform: translateY(10px);
-    animation: hero-rise var(--motion-slow) var(--ease-out) forwards;
-    animation-delay: calc(var(--stage) * 90ms);
+
+  .sect {
+    padding: 72px 24px;
   }
-  @keyframes hero-rise {
+  .sect-head {
+    margin-bottom: 56px;
+    max-width: 46rem;
+  }
+  .sect-title {
+    margin: 0;
+    color: #000;
+    font-size: clamp(36px, 4vw, 48px);
+    font-weight: 500;
+    line-height: 1.12;
+    letter-spacing: -0.03em;
+  }
+  .sect-title--light {
+    color: #fff;
+  }
+  .sect-sub {
+    margin: 20px 0 0;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: clamp(16px, 1.3vw, 18px);
+    line-height: 1.6;
+    max-width: 36rem;
+  }
+  .sect-sub--light {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .eyebrow {
+    display: block;
+    margin-bottom: 12px;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 14px;
+  }
+  .eyebrow--light {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #000;
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    background: #000;
+    color: #fff;
+    font-weight: 500;
+    border: 0;
+    font-family: inherit;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color 200ms var(--ease-standard);
+  }
+  .pill:hover {
+    background: #1f2937;
+  }
+  .pill--nav {
+    font-size: 16px;
+    padding: 10px 28px;
+  }
+  .pill--hero {
+    gap: 12px;
+    font-size: clamp(16px, 1.3vw, 18px);
+    padding: 8px 8px 8px 32px;
+  }
+  .pill--base {
+    gap: 12px;
+    font-size: 16px;
+    padding: 8px 8px 8px 28px;
+  }
+  .pill--submit {
+    font-size: 15px;
+    padding: 12px 28px;
+    align-self: flex-start;
+    margin-top: 8px;
+  }
+  .pill--invert {
+    background: #fff;
+    color: #000;
+    gap: 12px;
+    font-size: clamp(16px, 1.3vw, 18px);
+    padding: 8px 8px 8px 32px;
+  }
+  .pill--invert:hover {
+    background: #e5e7eb;
+  }
+  .pill-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    color: #000;
+    border-radius: 999px;
+    padding: 8px;
+  }
+  .pill-arrow--dark {
+    background: #000;
+    color: #fff;
+  }
+  .pill-arrow svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* ---------- Cards ---------- */
+  .cards-3 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 640px) {
+    .cards-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    min-height: 240px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .card-index {
+    color: rgba(0, 0, 0, 0.4);
+    font-size: 14px;
+  }
+  .card-title {
+    margin: 0 0 8px;
+    color: #000;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+  }
+  .card-body {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  /* ---------- Marquees ---------- */
+  .marquee-track {
+    display: flex;
+    align-items: center;
+    width: max-content;
+  }
+  .marquee-track--hero {
+    animation: marquee 22s linear infinite;
+  }
+  .marquee-track--backers {
+    animation: marquee 30s linear infinite;
+  }
+  .marquee-group {
+    display: flex;
+    align-items: center;
+  }
+  .marquee-item {
+    margin: 0 28px;
+    flex-shrink: 0;
+    color: rgba(0, 0, 0, 0.6);
+    white-space: nowrap;
+  }
+  .marquee-item--backer {
+    margin: 0 40px;
+    color: rgba(0, 0, 0, 0.5);
+  }
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
     to {
-      opacity: 1;
-      transform: none;
+      transform: translateX(-50%);
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    :global(html.js) .hero [data-stage] {
+    .marquee-track {
       animation: none;
-      opacity: 1;
-      transform: none;
     }
   }
-  .hero-eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 28px;
-  }
-  .hero-eyebrow span {
-    font-size: 12px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--brass-700);
-  }
-  .hero-grid {
-    grid-template-columns: 7fr 5fr;
-    gap: clamp(40px, 6vw, 88px);
-    align-items: center;
-  }
-  .hero-title {
-    margin: 0 0 28px;
-    max-width: 12ch;
-  }
-  .hero-sub {
-    max-width: 46ch;
-    margin: 0 0 36px;
-    color: var(--fg-secondary);
-  }
-  .hero-actions {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-  .hero-secondary {
-    font-family: var(--font-sans);
-    font-weight: 500;
-    font-size: 15px;
-    color: var(--fg-primary);
-    border-bottom: 1px solid var(--brass-500);
-    padding-bottom: 2px;
-  }
-  .hero-card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-hairline);
-    padding: 24px;
-  }
-  .hero-card-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 4px;
-  }
-  .hero-card-name {
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: 15px;
-    color: var(--fg-primary);
-  }
-  .hero-card-pct {
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    color: var(--brass-700);
-  }
-  .hero-card-bar {
-    height: 3px;
-    background: var(--parchment-200);
-    margin: 12px 0 20px;
-    overflow: hidden;
-  }
-  .hero-card-bar-fill {
-    width: 68%;
-    height: 100%;
-    background: var(--conifer-600);
-  }
-  .hero-card-rows {
+
+  /* ---------- Navbar ---------- */
+  .screen {
+    position: relative;
+    height: 100svh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
-  .hero-card-row {
+  .navbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    padding: 20px 24px;
+  }
+  .navbar-row {
+    max-width: 88rem;
+    margin: 0 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 0;
-    border-top: 1px solid var(--border-hairline);
-    font-size: 14px;
-    color: var(--fg-primary);
+    gap: 24px;
   }
-  .hero-card-row-right {
+  .nav-links {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 32px;
   }
-  .hero-card-row-right .es-numeric {
-    font-size: 14px;
-    color: var(--fg-secondary);
+  .nav-links a {
+    font-size: 16px;
+    font-weight: 500;
+    color: #374151;
+    transition: color 200ms var(--ease-standard);
   }
-  .pill {
-    font-size: 11px;
-    padding: 2px 10px;
-    border-radius: var(--radius-pill);
+  .nav-links a:hover {
+    color: #000;
   }
-  .pill-positive {
-    background: rgba(74, 122, 79, 0.12);
-    color: var(--status-positive);
-  }
-  .pill-warning {
-    background: rgba(184, 145, 92, 0.16);
-    color: var(--brass-700);
+  @media (max-width: 767px) {
+    .nav-links {
+      display: none;
+    }
   }
 
-  /* ---------- Shared section rhythm ---------- */
-  .section {
-    padding-top: clamp(64px, 12vw, 128px);
-    padding-bottom: clamp(64px, 12vw, 128px);
+  /* ---------- Hero ---------- */
+  .hero {
+    flex: 1;
+    padding: 80px 24px 24px;
+    display: flex;
+    align-items: flex-end;
   }
-  .eyebrow {
-    font-size: 12px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--brass-700);
+  .hero-card {
+    position: relative;
+    width: 100%;
+    max-width: 88rem;
+    margin: 0 auto;
+    height: calc(100svh - 96px);
+    border-radius: 16px;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 90% at 85% 0%, rgba(184, 199, 187, 0.55) 0%, rgba(184, 199, 187, 0) 55%),
+      linear-gradient(160deg, #fdfdfc 0%, #eff2ed 48%, #dee6dc 100%);
   }
-  .eyebrow-block {
-    display: block;
-    margin-bottom: 24px;
+  .hero-overlay {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: clamp(28px, 3.5vw, 48px);
+    padding-top: clamp(96px, 17svh, 144px);
   }
-  .section-head-split {
-    grid-template-columns: 5fr 7fr;
-    gap: clamp(32px, 5vw, 72px);
-    align-items: end;
-    margin-bottom: 64px;
+  .hero-title {
+    margin: 0 0 16px;
+    color: #000;
+    font-size: clamp(40px, 5.2vw, 60px);
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+    max-width: 36rem;
   }
-  .section-head-title {
-    margin: 0;
-    max-width: 18ch;
+  .hero-sub {
+    margin: 0 0 32px;
+    max-width: 28rem;
+    color: rgba(0, 0, 0, 0.7);
+    font-size: clamp(16px, 1.3vw, 18px);
+    line-height: 1.6;
   }
-  .section-intro {
-    margin-bottom: 64px;
-    max-width: 720px;
+  .hero-marquee {
+    margin-top: auto;
+    padding-top: 48px;
+    width: 100%;
+    max-width: 28rem;
+    overflow: hidden;
   }
-  .section-intro-body {
-    margin: 0;
-    color: var(--fg-secondary);
-  }
-  .grid-3 {
+
+  /* ---------- Meet NewTaven ---------- */
+  .info-head {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1fr;
+    gap: 48px;
+    align-items: start;
+    margin-bottom: 64px;
   }
-  .grid-bordered {
-    gap: 1px;
-    background: var(--border-hairline);
-    border: 1px solid var(--border-hairline);
+  @media (min-width: 768px) {
+    .info-head {
+      grid-template-columns: 1fr 1fr;
+    }
   }
-  .grid-cell {
-    background: var(--bg-page);
-    padding: clamp(24px, 4vw, 32px);
+  .info-head .sect-title {
+    margin-bottom: 32px;
   }
-  .cell-index {
-    font-size: 12px;
-    color: var(--brass-700);
-  }
-  .cell-title {
-    margin: 16px 0 10px;
-  }
-  .cell-body {
+  .info-lede {
     margin: 0;
+    color: rgba(0, 0, 0, 0.7);
+    font-size: clamp(22px, 2.4vw, 30px);
+    line-height: 1.5;
   }
-  .feature-title {
-    margin: 20px 0 10px;
+  .info-cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 640px) {
+    .info-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .info-cards {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .info-card--visual {
+      grid-column: span 2;
+    }
+  }
+  .info-card {
+    border-radius: 16px;
+    padding: 28px;
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .info-card h3 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+  }
+  .info-card p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  .info-card--visual {
+    background:
+      radial-gradient(100% 120% at 100% 100%, rgba(138, 162, 144, 0.5) 0%, rgba(138, 162, 144, 0) 60%),
+      linear-gradient(150deg, #f3f5f0 0%, #dde5da 100%);
+  }
+  .info-card--visual h3 {
+    color: #000;
+  }
+  .info-card--visual p {
+    color: rgba(0, 0, 0, 0.7);
+    max-width: 20rem;
+  }
+  .info-card--green {
+    background: #16281f;
+  }
+  .info-card--green h3 {
+    color: #fff;
+  }
+  .info-card--green p {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  /* ---------- Trusted by ---------- */
+  .backers {
+    padding: 0 24px;
+  }
+  .backers-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    align-items: center;
+  }
+  @media (min-width: 768px) {
+    .backers-grid {
+      grid-template-columns: 1fr 3fr;
+    }
+  }
+  .backers-note {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.7);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .backers-marquee {
+    overflow: hidden;
   }
 
   /* ---------- How it works ---------- */
-  .steps-grid {
-    gap: clamp(24px, 4vw, 56px);
+  .steps {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
   }
-  .step-cell {
-    border-top: 1px solid var(--border-default);
+  @media (min-width: 768px) {
+    .steps {
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(24px, 4vw, 56px);
+    }
+  }
+  .step {
+    border-top: 1px solid rgba(0, 0, 0, 0.15);
     padding-top: 24px;
   }
   .step-index {
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    color: var(--brass-700);
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 14px;
   }
   .step-title {
-    font-family: var(--font-display);
+    margin: 14px 0 10px;
+    color: #000;
+    font-size: 24px;
     font-weight: 500;
-    font-size: var(--fs-h2);
-    margin: 16px 0 12px;
-    color: var(--fg-primary);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
   }
 
-  /* ---------- Cadence ---------- */
-  .cadence {
-    background: var(--conifer-700);
-    color: var(--fg-inverse);
+  /* ---------- The cadence ---------- */
+  .cadence-card {
     position: relative;
-  }
-  .cadence-tick {
-    position: absolute;
-    top: -4.5px;
-    line-height: 0;
-  }
-  /* These sections are full-bleed, so mirror the divider ticks' position:
-     center the 1280px container, then inset by the gutter. */
-  .cadence-tick.nt-tick--left {
-    left: calc(max(0px, (100% - 1280px) / 2) + var(--gut) - 4.5px);
-  }
-  .cadence-tick.nt-tick--right {
-    right: calc(max(0px, (100% - 1280px) / 2) + var(--gut) - 4.5px);
+    border-radius: 24px;
+    overflow: hidden;
+    background: #16281f;
   }
   .cadence-inner {
-    padding-top: clamp(72px, 12vw, 128px);
-    padding-bottom: clamp(72px, 12vw, 128px);
     position: relative;
     z-index: 1;
+    padding: clamp(32px, 5vw, 64px);
   }
-  .cadence-intro {
-    max-width: 640px;
-    margin-bottom: 56px;
-  }
-  .cadence-eyebrow {
-    color: var(--brass-300);
-  }
-  .cadence-title {
-    margin: 0 0 20px;
-    color: var(--fg-inverse);
-  }
-  .cadence-sub {
-    margin: 0;
-    color: rgba(251, 249, 244, 0.72);
+  .cadence-inner .sect-sub {
+    margin-bottom: 48px;
   }
   .cadence-timeline {
     display: block;
@@ -680,80 +1025,215 @@ const defaultOutput =
     }
   }
   .cadence-tag {
-    font-family: var(--font-mono);
     font-size: 13px;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
+    font-family: var(--font-sans);
   }
-  .cadence-cards {
-    gap: clamp(16px, 2.5vw, 32px);
+  .cadence-mails {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
     margin-top: 40px;
   }
-  .cadence-card {
-    background: var(--parchment-50);
-    color: var(--fg-primary);
-    border: 1px solid rgba(251, 249, 244, 0.12);
-    padding: 22px;
+  @media (min-width: 768px) {
+    .cadence-mails {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
-  :global(html.js) .cadence-card {
+  .cadence-mail {
+    background: #fff;
+    color: #000;
+    border-radius: 12px;
+    padding: 24px;
+  }
+  :global(html.js) .cadence-mail {
     opacity: 0;
     transform: translateX(24px);
   }
-  :global(html.js) .cadence-card.is-visible {
+  :global(html.js) .cadence-mail.is-visible {
     transition: opacity 150ms var(--ease-standard), transform 150ms var(--ease-standard);
     opacity: 1;
     transform: none;
   }
   @media (prefers-reduced-motion: reduce) {
-    :global(html.js) .cadence-card {
+    :global(html.js) .cadence-mail {
       opacity: 1;
       transform: none;
       transition: none;
     }
   }
-  .cadence-card-head {
+  .cadence-mail-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 14px;
   }
-  .cadence-card-label {
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    color: var(--brass-700);
+  .cadence-mail-label,
+  .cadence-mail-tone {
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 13px;
   }
-  .cadence-card-tone {
-    font-size: 11px;
-    color: var(--fg-tertiary);
-  }
-  .cadence-card-subject {
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: 15px;
+  .cadence-mail-subject {
     margin-bottom: 10px;
+    color: #000;
+    font-size: 15px;
+    font-weight: 500;
   }
-  .cadence-card-body {
+  .cadence-mail-body {
     margin: 0;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  /* ---------- Features ---------- */
+  .features-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 640px) {
+    .features-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .features-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  .card--feature {
+    min-height: 220px;
+  }
+
+  /* ---------- Use cases ---------- */
+  .usecases-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .usecases-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .usecases-left {
+      padding-right: 48px;
+      padding-top: 8px;
+    }
+  }
+  .usecases-left h2 {
+    margin: 0 0 24px;
+    color: #000;
+    font-size: clamp(44px, 5vw, 60px);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .usecases-left p {
+    margin: 0;
+    max-width: 24rem;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .usecase-card {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    min-height: 720px;
+    background: #16281f;
+  }
+  @media (max-width: 640px) {
+    .usecase-card {
+      min-height: 560px;
+    }
+  }
+  .usecase-overlay {
+    position: relative;
+    z-index: 1;
+    padding: clamp(32px, 4vw, 48px);
+  }
+  .usecase-overlay h3 {
+    margin: 0 0 20px;
+    color: #fff;
+    font-size: clamp(36px, 4vw, 48px);
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+  .usecase-overlay p {
+    margin: 0 0 32px;
+    max-width: 28rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .usecase-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .usecase-link-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.8);
+    color: #000;
+    backdrop-filter: blur(4px);
+    transition: background-color 200ms var(--ease-standard);
+  }
+  .usecase-link:hover .usecase-link-icon {
+    background: #fff;
+  }
+  .usecase-link-icon svg {
+    width: 16px;
+    height: 16px;
   }
 
   /* ---------- Try it ---------- */
   .tryit-frame {
-    border: 1px solid var(--border-default);
-    background: var(--bg-surface);
-  }
-  .tryit-grid {
     display: grid;
-    grid-template-columns: 5fr 7fr;
+    grid-template-columns: 1fr;
+    background: #fff;
+    border-radius: 24px;
+    overflow: hidden;
+  }
+  @media (min-width: 900px) {
+    .tryit-frame {
+      grid-template-columns: 5fr 7fr;
+    }
+    .tryit-left {
+      border-right: 1px solid rgba(0, 0, 0, 0.08);
+    }
+  }
+  @media (max-width: 899px) {
+    .tryit-left {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
   }
   .tryit-left {
     padding: clamp(32px, 4vw, 56px);
-    border-right: 1px solid var(--border-hairline);
   }
   .tryit-title {
     margin: 0 0 16px;
+    color: #000;
+    font-size: clamp(26px, 2.6vw, 32px);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
   }
   .tryit-body {
     margin: 0 0 28px;
-    color: var(--fg-secondary);
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 16px;
+    line-height: 1.6;
   }
   .tryit-form {
     display: flex;
@@ -761,15 +1241,24 @@ const defaultOutput =
     gap: 12px;
   }
   .tryit-label {
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--fg-tertiary);
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 13px;
   }
   .tryit-textarea {
-    padding: 12px 14px;
+    padding: 12px 16px;
     resize: vertical;
+    font-family: inherit;
+    font-size: 15px;
     line-height: 1.5;
+    color: #000;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    outline: none;
+    transition: border-color 200ms var(--ease-standard);
+  }
+  .tryit-textarea:focus {
+    border-color: #000;
   }
   .tryit-presets {
     display: flex;
@@ -778,22 +1267,28 @@ const defaultOutput =
     margin-top: 2px;
   }
   .tryit-preset {
-    font-size: 12px;
-    padding: 7px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.7);
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 999px;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: background-color 200ms var(--ease-standard), color 200ms var(--ease-standard);
   }
-  .tryit-submit {
-    font-size: 15px;
-    padding: 13px 24px;
-    margin-top: 8px;
-    align-self: flex-start;
+  .tryit-preset:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #000;
   }
   .tryit-error {
+    color: #b91c1c;
     font-size: 13px;
-    color: var(--status-negative);
   }
   .tryit-preview {
     padding: clamp(32px, 4vw, 56px);
-    background: var(--parchment-50);
+    background: #fafaf9;
     min-height: 320px;
     display: flex;
     flex-direction: column;
@@ -804,22 +1299,18 @@ const defaultOutput =
     justify-content: space-between;
     margin-bottom: 20px;
     padding-bottom: 16px;
-    border-bottom: 1px solid var(--border-hairline);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   }
-  .tryit-preview-label {
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    color: var(--brass-700);
-  }
+  .tryit-preview-label,
   .tryit-preview-to {
-    font-size: 11px;
-    color: var(--fg-tertiary);
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 13px;
   }
   .tryit-loading {
     display: flex;
     align-items: center;
     gap: 12px;
-    color: var(--fg-tertiary);
+    color: rgba(0, 0, 0, 0.5);
     font-size: 14px;
   }
   .tryit-loading[hidden] {
@@ -828,82 +1319,108 @@ const defaultOutput =
   .tryit-dot {
     width: 8px;
     height: 8px;
-    border-radius: var(--radius-pill);
-    background: var(--brass-500);
+    border-radius: 999px;
+    background: #16281f;
   }
   .tryit-result {
-    font-family: var(--font-sans);
     font-size: 15px;
     line-height: 1.6;
-    color: var(--fg-primary);
+    color: #000;
     white-space: pre-wrap;
   }
   .tryit-placeholder {
-    color: var(--fg-muted);
+    color: rgba(0, 0, 0, 0.35);
     font-size: 15px;
     line-height: 1.6;
-    font-style: italic;
-    font-family: var(--font-display);
   }
 
   /* ---------- Pricing ---------- */
   .pricing-grid {
-    grid-template-columns: 5fr 7fr;
-    gap: clamp(32px, 5vw, 72px);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 48px;
     align-items: center;
+  }
+  @media (min-width: 768px) {
+    .pricing-grid {
+      grid-template-columns: 5fr 7fr;
+    }
   }
   .pricing-body {
     margin: 0 0 28px;
-    color: var(--fg-secondary);
-    max-width: 46ch;
+    max-width: 34rem;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: clamp(16px, 1.3vw, 18px);
+    line-height: 1.6;
+  }
+  .pricing-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .pricing-mail {
+    color: rgba(0, 0, 0, 0.7);
+    font-size: 15px;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+    padding-bottom: 2px;
+    transition: color 200ms var(--ease-standard);
+  }
+  .pricing-mail:hover {
+    color: #000;
   }
 
-  /* ---------- Footer CTA ---------- */
-  .footer-cta {
-    background: var(--conifer-700);
-    color: var(--fg-inverse);
+  /* ---------- Closing CTA ---------- */
+  .cta-card {
     position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    background: #16281f;
   }
-  .footer-cta-inner {
+  .cta-inner {
     position: relative;
     z-index: 1;
-    padding-top: clamp(80px, 12vw, 144px);
-    padding-bottom: clamp(40px, 6vw, 64px);
+    padding: clamp(48px, 7vw, 96px) clamp(32px, 5vw, 64px);
   }
-  .footer-cta-top {
-    max-width: 680px;
-    margin-bottom: 48px;
-  }
-  .footer-cta-title {
-    margin: 0 0 28px;
-    color: var(--fg-inverse);
-    max-width: 13ch;
-  }
-  .footer-cta-rule {
-    border: 0;
-    border-top: 1px solid rgba(251, 249, 244, 0.16);
+  .cta-inner h2 {
     margin: 0 0 32px;
+    max-width: 24ch;
+    color: #fff;
+    font-size: clamp(36px, 4.5vw, 56px);
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
   }
-  .footer-cta-bottom {
+
+  /* ---------- Footer ---------- */
+  .footer {
+    padding: 24px 24px 32px;
+  }
+  .footer-row {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding-top: 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 16px;
   }
-  .footer-cta-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: 15px;
-    color: var(--fg-inverse);
+  .brand--footer {
+    font-size: 16px;
   }
-  .footer-cta-copy {
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    color: rgba(251, 249, 244, 0.5);
+  .footer-mail {
+    color: rgba(0, 0, 0, 0.7);
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 200ms var(--ease-standard);
+  }
+  .footer-mail:hover {
+    color: #000;
+  }
+  .footer-copy {
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 13px;
   }
 </style>
 

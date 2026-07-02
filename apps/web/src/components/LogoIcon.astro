@@ -1,0 +1,11 @@
+---
+/* Geometric "N" mark — inherits color via currentColor. */
+interface Props {
+  size?: number;
+}
+const { size = 24 } = Astro.props;
+---
+
+<svg viewBox="0 0 256 256" width={size} height={size} fill="currentColor" aria-hidden="true">
+  <path d="M 56 208 V 48 H 96 L 160 144 V 48 H 200 V 208 H 160 L 96 112 V 208 H 56 Z"></path>
+</svg>
