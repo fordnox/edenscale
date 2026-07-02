@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import Header from "../components/Header.astro";
 import Divider from "../components/Divider.astro";
+import GrainField from "../components/GrainField.astro";
 import Mark from "../components/Mark.astro";
 import CtaButton from "../components/CtaButton.astro";
 
@@ -126,24 +127,24 @@ const defaultOutput =
   <main id="top">
     <!-- 01 HERO -->
     <section class="hero nt-container">
-      <div class="hero-eyebrow">
+      <div class="hero-eyebrow" data-stage style="--stage: 0">
         <Mark size={24} />
         <span class="nt-mono">01 // NewTaven</span>
       </div>
       <div class="nt-2col hero-grid">
         <div>
-          <h1 class="es-display-xl hero-title">Manage your LPs like the deals depend on it.</h1>
-          <p class="es-body-l hero-sub">
+          <h1 class="es-display-xl hero-title" data-stage style="--stage: 1">Manage your LPs like the deals depend on it.</h1>
+          <p class="es-body-l hero-sub" data-stage style="--stage: 2">
             NewTaven keeps your limited partners, capital calls, and quarterly communications in one calm place — so
             nothing slips between the fund and the founders you back.
           </p>
-          <div class="hero-actions">
+          <div class="hero-actions" data-stage style="--stage: 3">
             <CtaButton class="hero-cta" />
             <a href="#how" class="nt-link hero-secondary">See how it works →</a>
           </div>
         </div>
 
-        <div class="nt-card hero-card">
+        <div class="nt-card hero-card" data-stage style="--stage: 4">
           <div class="hero-card-head">
             <span class="hero-card-name">Fund II — Capital Call 03</span>
             <span class="nt-mono hero-card-pct">68% FUNDED</span>
@@ -228,6 +229,7 @@ const defaultOutput =
 
     <!-- 04 THE CADENCE -->
     <section id="cadence" class="cadence">
+      <GrainField kind="dark" />
       <span class="nt-tick nt-tick--left cadence-tick" aria-hidden="true">
         <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg>
       </span>
@@ -368,6 +370,7 @@ const defaultOutput =
 
     <!-- 08 FOOTER CTA -->
     <section class="footer-cta">
+      <GrainField kind="dark" />
       <span class="nt-tick nt-tick--left cadence-tick" aria-hidden="true">
         <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 0V10M0 5H10"></path></svg>
       </span>
@@ -397,6 +400,27 @@ const defaultOutput =
   .hero {
     padding-top: clamp(96px, 14vw, 168px);
     padding-bottom: clamp(64px, 10vw, 112px);
+  }
+  /* Staged entrance on load — eyebrow, title, sub, actions, ledger card.
+     Gated on html.js so the page renders complete without scripts. */
+  :global(html.js) .hero [data-stage] {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: hero-rise var(--motion-slow) var(--ease-out) forwards;
+    animation-delay: calc(var(--stage) * 90ms);
+  }
+  @keyframes hero-rise {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.js) .hero [data-stage] {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
   }
   .hero-eyebrow {
     display: flex;
@@ -551,7 +575,7 @@ const defaultOutput =
   }
   .grid-cell {
     background: var(--bg-page);
-    padding: 32px;
+    padding: clamp(24px, 4vw, 32px);
   }
   .cell-index {
     font-size: 12px;
@@ -599,6 +623,14 @@ const defaultOutput =
     top: -4.5px;
     line-height: 0;
   }
+  /* These sections are full-bleed, so mirror the divider ticks' position:
+     center the 1280px container, then inset by the gutter. */
+  .cadence-tick.nt-tick--left {
+    left: calc(max(0px, (100% - 1280px) / 2) + var(--gut) - 4.5px);
+  }
+  .cadence-tick.nt-tick--right {
+    right: calc(max(0px, (100% - 1280px) / 2) + var(--gut) - 4.5px);
+  }
   .cadence-inner {
     padding-top: clamp(72px, 12vw, 128px);
     padding-bottom: clamp(72px, 12vw, 128px);
@@ -625,14 +657,27 @@ const defaultOutput =
     overflow: visible;
     margin-bottom: 8px;
   }
-  .cadence-marker {
+  /* Scaled to a phone width the T+ labels become illegible; the cards carry
+     the same T+ markers, so the timeline can bow out. */
+  @media (max-width: 640px) {
+    .cadence-timeline {
+      display: none;
+    }
+  }
+  :global(html.js) .cadence-marker {
     transform: scale(0);
     transform-box: fill-box;
     transform-origin: center;
   }
-  .cadence-marker.is-active {
+  :global(html.js) .cadence-marker.is-active {
     transition: transform 150ms var(--ease-standard);
     transform: scale(1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.js) .cadence-marker {
+      transform: none;
+      transition: none;
+    }
   }
   .cadence-tag {
     font-family: var(--font-mono);
@@ -644,17 +689,26 @@ const defaultOutput =
     margin-top: 40px;
   }
   .cadence-card {
-    opacity: 0;
-    transform: translateX(24px);
     background: var(--parchment-50);
     color: var(--fg-primary);
     border: 1px solid rgba(251, 249, 244, 0.12);
     padding: 22px;
   }
-  .cadence-card.is-visible {
+  :global(html.js) .cadence-card {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  :global(html.js) .cadence-card.is-visible {
     transition: opacity 150ms var(--ease-standard), transform 150ms var(--ease-standard);
     opacity: 1;
     transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.js) .cadence-card {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
   }
   .cadence-card-head {
     display: flex;
@@ -870,7 +924,13 @@ const defaultOutput =
 
   // Cadence — draw timeline + activate markers + slide in cards
   const cadenceSection = document.getElementById("cadence-inner");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const runCadence = () => {
+    if (reducedMotion) {
+      document.querySelectorAll("[data-marker]").forEach((m) => m.classList.add("is-active"));
+      document.querySelectorAll("[data-cadence-card]").forEach((c) => c.classList.add("is-visible"));
+      return;
+    }
     const line = document.getElementById("cadence-line");
     if (line && line.getTotalLength) {
       const len = line.getTotalLength();

@@ -4,6 +4,21 @@ html {
   scroll-behavior: smooth;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--conifer-600);
+  outline-offset: 2px;
+}
+.cadence :focus-visible,
+.footer-cta :focus-visible {
+  outline-color: var(--brass-300);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -205,12 +220,22 @@ a {
   }
 }
 
-[data-reveal] {
+/* Reveal styles only apply once JS has tagged <html class="js"> — without
+   scripts the content simply renders visible. */
+html.js [data-reveal] {
   opacity: 0;
   transform: translateY(8px);
   transition: opacity var(--motion-slow) var(--ease-standard), transform var(--motion-slow) var(--ease-standard);
 }
-[data-reveal].is-visible {
+html.js [data-reveal].is-visible {
   opacity: 1;
   transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.js [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

@@ -3,7 +3,7 @@ import Mark from "./Mark.astro";
 import CtaButton from "./CtaButton.astro";
 ---
 
-<nav id="nt-nav" class="nt-nav">
+<nav id="nt-nav" class="nt-nav" aria-label="Primary">
   <div class="nt-nav-inner">
     <a href="#top" class="nt-nav-brand">
       <Mark size={20} />
@@ -28,15 +28,28 @@ import CtaButton from "./CtaButton.astro";
     right: 0;
     z-index: 50;
     opacity: 0;
+    /* visibility keeps the hidden nav out of the tab order; the delayed
+       visibility transition lets the fade-out finish before it leaves. */
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity var(--motion-base) var(--ease-standard);
+    transition:
+      opacity var(--motion-base) var(--ease-standard),
+      visibility 0s linear var(--motion-base);
     background: var(--parchment-50);
     border-bottom: 1px solid var(--border-hairline);
     box-shadow: var(--shadow-xs);
   }
   .nt-nav.is-visible {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
+    transition: opacity var(--motion-base) var(--ease-standard);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nt-nav,
+    .nt-nav.is-visible {
+      transition: none;
+    }
   }
   .nt-nav-inner {
     max-width: 1280px;
