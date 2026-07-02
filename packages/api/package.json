@@ -18,7 +18,6 @@
     "./schema": "./src/schema.d.ts"
   },
   "dependencies": {
-    "@edenscale/auth": "workspace:*",
     "@tanstack/react-query": "^5.101.2",
     "openapi-fetch": "^0.17.0",
     "sonner": "^2.0.7"

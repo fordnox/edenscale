@@ -6,11 +6,20 @@ const ACTIVE_ORG_ID_KEY = "newtaven.active_org_id"
 
 let unauthorizedOrganizationFallbackPath = "/"
 
+// Injected by the host app so this package doesn't need to depend on
+// @edenscale/auth (which itself depends on @edenscale/api — a hard import here
+// would create a package cycle that breaks the turbo build graph).
+let sessionTokenProvider: () => string | null = () => null
+
 export function configureApiClient(options: {
   unauthorizedOrganizationFallbackPath?: string
+  getSessionToken?: () => string | null
 }): void {
   unauthorizedOrganizationFallbackPath =
     options.unauthorizedOrganizationFallbackPath ?? "/"
+  if (options.getSessionToken) {
+    sessionTokenProvider = options.getSessionToken
+  }
 }
 
 function getActiveOrganizationId(): string | null {
@@ -23,8 +32,7 @@ function getActiveOrganizationId(): string | null {
 
 const myMiddleware: Middleware = {
   async onRequest({ request }) {
-    const { getSessionToken } = await import("@edenscale/auth/hanko")
-    const token = getSessionToken()
+    const token = sessionTokenProvider()
     if (token) {
       request.headers.set("Authorization", `Bearer ${token}`)
     }

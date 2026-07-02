@@ -7,9 +7,13 @@ import { Toaster } from 'sonner'
 import App from './App'
 import { configureApiClient } from '@edenscale/api/client'
 import { queryClient } from '@edenscale/api/queryClient'
+import { getSessionToken } from '@edenscale/auth/hanko'
 import '@edenscale/ui/styles.css'
 
-configureApiClient({ unauthorizedOrganizationFallbackPath: '/manager' })
+configureApiClient({
+  unauthorizedOrganizationFallbackPath: '/manager',
+  getSessionToken,
+})
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
