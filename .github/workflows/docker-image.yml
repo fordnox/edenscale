@@ -8,6 +8,8 @@ on:
 
 jobs:
   docker:
+    # Temporarily disabled — remove this line to re-enable.
+    if: false
     runs-on: ubuntu-latest
     env:
       WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}

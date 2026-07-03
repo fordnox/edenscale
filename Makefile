@@ -62,7 +62,7 @@ kamal-check: ## Verify op + kamal are installed and signed in (used by build/dep
 	@op whoami >/dev/null 2>&1 || { echo "🚨 Not signed in to 1Password — run 'op signin' (or export OP_SERVICE_ACCOUNT_TOKEN)"; exit 1; }
 
 kamal-build: kamal-check ## Build backend image with Kamal and push to ghcr (secrets via 1Password/op)
-	kamal build push
+	kamal build deliver
 
 kamal-deploy: kamal-check ## Deploy backend with Kamal — pulls fixed :latest image, no build (secrets via 1Password/op)
 	kamal deploy --skip-push --version=latest

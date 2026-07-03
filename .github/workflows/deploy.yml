@@ -22,6 +22,8 @@ env:
 
 jobs:
   deploy:
+    # Temporarily disabled — remove this line to re-enable.
+    if: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
