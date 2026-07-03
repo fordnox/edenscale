@@ -3,8 +3,8 @@
 The invitation flow only needs Hanko for account pre-provisioning: we ensure
 the invitee exists as a Hanko user (create via Admin API if missing) so that
 the sign-in flow works when they follow the invitation link. The invitation
-email itself is delivered by our own email service (see ``app.services.email``
-and the ``task_send_invitation_email`` arq task).
+email itself is delivered by the notification pipeline (see
+``notify_invitation`` in ``app.services.notifications``).
 
 Failures never raise to the caller — they are logged so the admin can resend.
 """

@@ -47,8 +47,11 @@ from app.schemas.organization_invitation import (
 )
 from app.schemas.user_organization_membership import MembershipRead
 from app.services.hanko import ensure_hanko_user
-from app.services.notification_service import notify
-from app.tasks import enqueue_or_log
+from app.services.notifications import (
+    notify_invitation,
+    notify_invitation_accepted,
+    notify_welcome,
+)
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -106,7 +109,7 @@ async def create_invitation(
     # Pre-provision the Hanko account so the invitee can sign in from the
     # invitation link; the email itself is delivered by the worker.
     await ensure_hanko_user(invitation.email)  # type: ignore[invalid-argument-type]
-    await enqueue_or_log("task_send_invitation_email", str(invitation.id))
+    await notify_invitation(db, invitation=invitation)
     return InvitationRead.model_validate(invitation)
 
 
@@ -208,20 +211,13 @@ async def accept_invitation(
         user_email,  # type: ignore[invalid-argument-type]
         current_user.id,  # type: ignore[invalid-argument-type]
     )
-    if invitation.invited_by_user_id is not None:
-        notify(
-            db,
-            user_id=invitation.invited_by_user_id,  # type: ignore[invalid-argument-type]
-            title="Invitation accepted",
-            message=f"{user_email} accepted your invitation.",
-            related_type="invitation",
-            related_id=invitation.id,  # type: ignore[invalid-argument-type]
-        )
-    await enqueue_or_log(
-        "task_send_welcome_email",
-        str(current_user.id),
-        str(invitation.organization_id),
+    await notify_invitation_accepted(
+        db, invitation=invitation, accepted_by=current_user
     )
+    if invitation.organization is not None:
+        await notify_welcome(
+            db, user=current_user, organization=invitation.organization
+        )
     return MembershipRead.model_validate(new_membership)
 
 
@@ -284,5 +280,5 @@ async def resend_invitation(
     assert rotated is not None
 
     await ensure_hanko_user(rotated.email)  # type: ignore[invalid-argument-type]
-    await enqueue_or_log("task_send_invitation_email", str(rotated.id))
+    await notify_invitation(db, invitation=rotated)
     return InvitationRead.model_validate(rotated)

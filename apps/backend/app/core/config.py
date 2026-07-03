@@ -19,13 +19,13 @@ class Settings(BaseSettings):
     HANKO_AUDIENCE: str = "localhost"
     STORAGE_BACKEND: str = "local"
     DEV_STORAGE_TOKEN: str = "dev-storage"
-    SMTP_HOST: str = ""
-    SMTP_PORT: int = 587
-    SMTP_USERNAME: str = ""
-    SMTP_PASSWORD: str = ""
-    SMTP_STARTTLS: bool = True
-    EMAIL_FROM: str = ""
-    EMAIL_ENABLED: bool = False
+    # Email delivery is via Resend hosted templates (see
+    # app/services/channels/email_channel.py). Delivery is OFF until
+    # RESEND_API_KEY is set — without it the notification pipeline still writes
+    # in-app rows and logs, but the email channel returns a failure and nothing
+    # leaves the box.
+    RESEND_API_KEY: str = ""
+    NOTIFICATION_FROM_EMAIL: str = "notifications@newtaven.com"
 
 
 settings = Settings()

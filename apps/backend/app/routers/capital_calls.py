@@ -10,11 +10,9 @@ from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.capital_call import CapitalCall
-from app.models.capital_call_item import CapitalCallItem
 from app.models.commitment import Commitment
 from app.models.enums import CapitalCallStatus, CommitmentStatus, UserRole
 from app.models.fund import Fund
-from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.capital_call_repository import CapitalCallRepository
 from app.repositories.fund_repository import FundRepository
@@ -28,8 +26,7 @@ from app.schemas.capital_call import (
     CapitalCallUpdate,
 )
 from app.services.allocation import allocate_pro_rata
-from app.services.notification_service import notify
-from app.tasks import enqueue_or_log
+from app.services.notifications import notify_capital_call
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -292,28 +289,7 @@ async def send_capital_call(
             status_code=status.HTTP_409_CONFLICT, detail=str(exc)
         ) from exc
     assert sent is not None
-    user_ids = (
-        db.query(InvestorContact.user_id)
-        .join(Commitment, Commitment.investor_id == InvestorContact.investor_id)
-        .join(CapitalCallItem, CapitalCallItem.commitment_id == Commitment.id)
-        .filter(
-            CapitalCallItem.capital_call_id == sent.id,
-            InvestorContact.is_primary.is_(True),
-            InvestorContact.user_id.is_not(None),
-        )
-        .distinct()
-        .all()
-    )
-    for (user_id,) in user_ids:
-        notify(
-            db,
-            user_id=user_id,
-            title=f"Capital call: {sent.title}",
-            message=f"A capital call for {sent.title} has been issued.",
-            related_type="capital_call",
-            related_id=sent.id,  # type: ignore[invalid-argument-type]
-        )
-    await enqueue_or_log("task_send_capital_call_emails", str(sent.id))
+    await notify_capital_call(db, call=sent)
     return sent
 
 

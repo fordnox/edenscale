@@ -10,7 +10,6 @@ from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import CommitmentStatus, UserRole
 from app.models.fund import Fund
 from app.models.investor import Investor
-from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.commitment_repository import CommitmentRepository
 from app.repositories.fund_repository import FundRepository
@@ -21,7 +20,7 @@ from app.schemas.commitment import (
     CommitmentStatusUpdate,
     CommitmentUpdate,
 )
-from app.services.notification_service import notify
+from app.services.notifications import notify_commitment_status
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -175,26 +174,7 @@ async def update_commitment_status(
         )
     updated = repo.set_status(commitment_id, data.status)
     assert updated is not None
-    user_ids = (
-        db.query(InvestorContact.user_id)
-        .filter(
-            InvestorContact.investor_id == updated.investor_id,
-            InvestorContact.user_id.is_not(None),
-        )
-        .distinct()
-        .all()
-    )
-    for (user_id,) in user_ids:
-        notify(
-            db,
-            user_id=user_id,
-            title=f"Commitment {data.status.value}",
-            message=(
-                f"Your commitment to {fund.name} is now " f"'{data.status.value}'."
-            ),
-            related_type="commitment",
-            related_id=updated.id,  # type: ignore[invalid-argument-type]
-        )
+    await notify_commitment_status(db, commitment=updated, fund=fund)
     return updated
 
 

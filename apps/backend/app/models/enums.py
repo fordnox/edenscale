@@ -88,3 +88,45 @@ class InvitationStatus(str, enum.Enum):
     accepted = "accepted"
     revoked = "revoked"
     expired = "expired"
+
+
+# ---------------------------------------------------------------------------
+# Notification types
+#
+# Every notification is either admin- (org-level, fanned to org managers) or
+# customer-facing (a single user). The string value is audience-prefixed and
+# dotted so the same logical event can exist in both enums without colliding;
+# it is load-bearing: it is what the worker stores, and — with non-alphanumerics
+# stripped — the Resend template id (``customer.capital_call`` →
+# ``customercapitalcall``). See app/services/channels/email_channel.py.
+# ---------------------------------------------------------------------------
+
+
+class AdminNotificationType(enum.StrEnum):
+    INVITATION_ACCEPTED = "admin.invitation_accepted"
+
+
+class CustomerNotificationType(enum.StrEnum):
+    WELCOME = "customer.welcome"
+    INVITATION = "customer.invitation"
+    CAPITAL_CALL = "customer.capital_call"
+    DISTRIBUTION = "customer.distribution"
+    DOCUMENT_UPLOADED = "customer.document_uploaded"
+    COMMITMENT_STATUS = "customer.commitment_status"
+    TASK_ASSIGNED = "customer.task_assigned"
+    COMMUNICATION = "customer.communication"
+
+
+NotificationType = AdminNotificationType | CustomerNotificationType
+
+
+def coerce_notification_type(value: str) -> NotificationType:
+    """Narrow a raw notification-type string back to its enum.
+
+    The worker receives the type as a plain string off the queue; the DB column
+    is a bare ``VARCHAR`` because SQLAlchemy can't type a union of two enums.
+    """
+    try:
+        return AdminNotificationType(value)
+    except ValueError:
+        return CustomerNotificationType(value)

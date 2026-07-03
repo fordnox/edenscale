@@ -12,7 +12,7 @@ from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.fund_repository import FundRepository
 from app.repositories.task_repository import TaskRepository
 from app.schemas.task import TaskCreate, TaskRead, TaskUpdate
-from app.services.notification_service import notify
+from app.services.notifications import notify_task_assigned
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -104,13 +104,8 @@ async def create_task(
         task.assigned_to_user_id is not None
         and task.assigned_to_user_id != membership.user_id
     ):
-        notify(
-            db,
-            user_id=task.assigned_to_user_id,  # type: ignore[invalid-argument-type]
-            title=f"New task: {task.title}",
-            message=str(task.title),
-            related_type="task",
-            related_id=task.id,  # type: ignore[invalid-argument-type]
+        await notify_task_assigned(
+            db, task=task, assignee_user_id=task.assigned_to_user_id
         )
     return task
 
@@ -142,13 +137,8 @@ async def update_task(
         and updated.assigned_to_user_id != previous_assignee
         and updated.assigned_to_user_id != membership.user_id
     ):
-        notify(
-            db,
-            user_id=updated.assigned_to_user_id,  # type: ignore[invalid-argument-type]
-            title=f"Task assigned: {updated.title}",
-            message=str(updated.title),
-            related_type="task",
-            related_id=updated.id,  # type: ignore[invalid-argument-type]
+        await notify_task_assigned(
+            db, task=updated, assignee_user_id=updated.assigned_to_user_id
         )
     return updated
 

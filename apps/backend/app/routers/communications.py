@@ -20,7 +20,7 @@ from app.schemas.communication import (
     CommunicationSendRequest,
     CommunicationUpdate,
 )
-from app.services.notification_service import notify
+from app.services.notifications import notify_communication
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -166,26 +166,31 @@ async def send_communication(
             status_code=status.HTTP_409_CONFLICT, detail=str(exc)
         ) from exc
     assert sent is not None
-    notified: set[uuid.UUID] = set()
+    notified: set = set()
     for recipient in sent.recipients:
         target_user_id: uuid.UUID | None = recipient.user_id
-        if target_user_id is None and recipient.investor_contact_id is not None:
+        contact_email: str | None = None
+        if recipient.investor_contact_id is not None:
             contact = (
                 db.query(InvestorContact)
                 .filter(InvestorContact.id == recipient.investor_contact_id)
                 .first()
             )
-            target_user_id = contact.user_id if contact is not None else None  # type: ignore[invalid-assignment]
-        if target_user_id is None or target_user_id in notified:
+            if contact is not None:
+                if target_user_id is None:
+                    target_user_id = contact.user_id  # type: ignore[invalid-assignment]
+                contact_email = contact.email  # type: ignore[invalid-assignment]
+        # De-dup by whichever identity we have; email-only recipients (no user)
+        # are keyed by address so each is still reached exactly once.
+        key = target_user_id or contact_email
+        if key is None or key in notified:
             continue
-        notified.add(target_user_id)
-        notify(
+        notified.add(key)
+        await notify_communication(
             db,
-            user_id=target_user_id,
-            title=f"New {sent.type.value}: {sent.subject}",
-            message=str(sent.subject),
-            related_type="communication",
-            related_id=sent.id,  # type: ignore[invalid-argument-type]
+            communication=sent,
+            recipient_user_id=target_user_id,
+            recipient_email=contact_email,
         )
     return sent
 

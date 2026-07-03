@@ -137,3 +137,25 @@ def override_user():
     app.dependency_overrides.clear()
     for db in sessions:
         db.close()
+
+
+@pytest.fixture(autouse=True)
+def deliver_notifications_inline(monkeypatch):
+    """Deliver enqueued notifications synchronously in tests.
+
+    In production a ``notify_*`` helper enqueues ``task_send_notification`` and
+    the arq worker writes the in-app row + delivery log. There is no worker or
+    Redis in tests, so patch the event bus's enqueue to run the worker task
+    inline — the pipeline (fan-out → in-app row → email channel → log) is
+    exercised end-to-end, and the email channel no-ops without a Resend key.
+    """
+    from app import worker
+
+    async def _inline(**kwargs):
+        kwargs["notification_type"] = str(kwargs["notification_type"])
+        await worker.task_send_notification({}, **kwargs)
+        return None
+
+    monkeypatch.setattr(
+        "app.core.event_bus.enqueue_send_notification", _inline, raising=True
+    )
