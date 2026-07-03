@@ -8,6 +8,7 @@ from app.repositories.document_repository import DocumentRepository
 from app.repositories.fund_group_repository import FundGroupRepository
 from app.repositories.fund_repository import FundRepository
 from app.repositories.fund_team_member_repository import FundTeamMemberRepository
+from app.repositories.fund_valuation_repository import FundValuationRepository
 from app.repositories.investor_contact_repository import InvestorContactRepository
 from app.repositories.investor_repository import InvestorRepository
 from app.repositories.lp_scope import (
@@ -36,6 +37,7 @@ __all__ = [
     "FundGroupRepository",
     "FundRepository",
     "FundTeamMemberRepository",
+    "FundValuationRepository",
     "InvestorContactRepository",
     "InvestorRepository",
     "NotificationRepository",

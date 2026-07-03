@@ -61,13 +61,25 @@ export default function FundDetailPage({
       called += parseDecimal(c.called_amount)
       distributed += parseDecimal(c.distributed_amount)
     }
+    // The LP's share of the fund NAV, pro-rated by their commitment.
+    const fundNav = fund?.nav != null ? parseDecimal(fund.nav) : null
+    const fundCommitted = parseDecimal(fund?.current_size)
+    const fairValue =
+      fundNav != null && fundCommitted > 0
+        ? (committed / fundCommitted) * fundNav
+        : null
     return {
       committed,
       called,
       distributed,
       dpi: called > 0 ? distributed / called : null,
+      fairValue,
+      tvpi:
+        fairValue != null && called > 0
+          ? (distributed + fairValue) / called
+          : null,
     }
-  }, [commitmentsQuery.data])
+  }, [commitmentsQuery.data, fund?.nav, fund?.current_size])
 
   const calls = callsQuery.data ?? []
   const distributions = distributionsQuery.data ?? []
@@ -134,8 +146,21 @@ export default function FundDetailPage({
             </CardSection>
             <CardSection>
               <Stat
-                label="Your DPI"
-                value={mine.dpi != null ? `${mine.dpi.toFixed(2)}×` : "—"}
+                label="Your value"
+                value={
+                  mine.fairValue != null
+                    ? formatCurrency(mine.fairValue, currency, { compact: true })
+                    : mine.dpi != null
+                      ? `${mine.dpi.toFixed(2)}×`
+                      : "—"
+                }
+                caption={
+                  mine.fairValue != null
+                    ? mine.tvpi != null
+                      ? `${mine.tvpi.toFixed(2)}× TVPI`
+                      : "fair value"
+                    : "DPI (no NAV yet)"
+                }
               />
             </CardSection>
           </div>
@@ -167,21 +192,32 @@ export default function FundDetailPage({
             </CardSection>
             <CardSection className="border-r border-[color:var(--border-hairline)]">
               <Stat
-                label="Called"
+                label="TVPI"
                 value={
-                  overview?.called_pct != null
-                    ? formatPercent(parseDecimal(overview.called_pct))
+                  overview?.tvpi != null
+                    ? `${parseDecimal(overview.tvpi).toFixed(2)}×`
                     : "—"
+                }
+                caption={
+                  overview?.rvpi != null
+                    ? `${parseDecimal(overview.rvpi).toFixed(2)}× RVPI`
+                    : undefined
                 }
               />
             </CardSection>
             <CardSection>
               <Stat
-                label="Fund size"
-                value={formatCurrency(parseDecimal(overview?.committed), currency, {
-                  compact: true,
-                })}
-                caption="total committed"
+                label="Fund NAV"
+                value={
+                  overview?.nav != null
+                    ? formatCurrency(parseDecimal(overview.nav), currency, {
+                        compact: true,
+                      })
+                    : "—"
+                }
+                caption={
+                  overview?.nav != null ? "fair value" : "not yet marked"
+                }
               />
             </CardSection>
           </div>

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { ChevronDown, Menu } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 
 import { cn } from "@edenscale/shared/utils"
 import { orgPath } from "@/lib/investorRoutes"
@@ -19,30 +19,6 @@ const ROLE_LABELS: Partial<Record<UserRole, string>> = {
   admin: "Admin",
   fund_manager: "Fund manager",
   lp: "LP",
-}
-
-interface TopbarProps {
-  onOpenSidebar: () => void
-}
-
-export function Topbar({ onOpenSidebar }: TopbarProps) {
-  return (
-    <header className="sticky top-0 z-20 flex items-center border-b border-[color:var(--border-hairline)] bg-page/85 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-page/75 md:hidden">
-      <button
-        type="button"
-        onClick={onOpenSidebar}
-        aria-label="Open navigation"
-        className={cn(
-          "inline-flex size-11 items-center justify-center rounded-xs",
-          "text-ink-700 transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
-          "hover:bg-parchment-200 hover:text-ink-900",
-          "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
-        )}
-      >
-        <Menu strokeWidth={1.5} className="size-5" />
-      </button>
-    </header>
-  )
 }
 
 export function OrganizationSwitcher() {

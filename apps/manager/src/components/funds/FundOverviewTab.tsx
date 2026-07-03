@@ -20,6 +20,7 @@ import { Eyebrow } from "@edenscale/ui/eyebrow"
 import { ProgressBar } from "@edenscale/ui/progress"
 import { Stat } from "@edenscale/ui/stat"
 import { StatusPill } from "@edenscale/ui/StatusPill"
+import { FundValuationsCard } from "@/components/funds/FundValuationsCard"
 import {
   formatCurrency,
   formatDate,
@@ -66,6 +67,7 @@ interface FundOverviewTabProps {
   calls: readonly CapitalCallRead[]
   distributions: readonly DistributionRead[]
   commitments: readonly CommitmentRead[]
+  canManage: boolean
 }
 
 export function FundOverviewTab({
@@ -74,6 +76,7 @@ export function FundOverviewTab({
   calls,
   distributions,
   commitments,
+  canManage,
 }: FundOverviewTabProps) {
   const currency = fund.currency_code
 
@@ -87,6 +90,12 @@ export function FundOverviewTab({
 
   const dpiLabel =
     overview?.dpi != null ? `${parseDecimal(overview.dpi).toFixed(2)}x` : "—"
+  const tvpiLabel =
+    overview?.tvpi != null ? `${parseDecimal(overview.tvpi).toFixed(2)}x` : "—"
+  const navLabel =
+    overview?.nav != null
+      ? formatCurrency(parseDecimal(overview.nav), currency, { compact: true })
+      : "—"
   const irrLabel =
     overview?.irr != null ? formatPercent(parseDecimal(overview.irr)) : "—"
   const calledPctLabel =
@@ -266,15 +275,19 @@ export function FundOverviewTab({
 
       {/* Metric tiles */}
       <Card>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 md:grid-cols-4">
           <MetricCell label="Paid in" value={formatCurrency(called, currency, { compact: true })} border />
           <MetricCell label="Distributed" value={formatCurrency(distributed, currency, { compact: true })} border />
           <MetricCell label="DPI" value={dpiLabel} border />
+          <MetricCell label="TVPI" value={tvpiLabel} border />
           <MetricCell label="Net IRR" value={irrLabel} border />
           <MetricCell label="Called %" value={calledPctLabel} border />
+          <MetricCell label="Fund NAV" value={navLabel} border />
           <MetricCell label="Remaining commitment" value={formatCurrency(remaining, currency, { compact: true })} />
         </div>
       </Card>
+
+      <FundValuationsCard fundId={fund.id} currency={currency} canManage={canManage} />
 
       {/* Capital activity over time */}
       <Card>

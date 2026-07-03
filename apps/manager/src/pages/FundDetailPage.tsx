@@ -324,6 +324,7 @@ function FundDetailPageContent({ fundId }: { fundId: string }) {
                 calls={calls}
                 distributions={distributions}
                 commitments={commitments}
+                canManage={canManage}
               />
             </TabsContent>
 

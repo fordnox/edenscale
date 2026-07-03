@@ -1,7 +1,8 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Loader2 } from "lucide-react"
 
+import { NoticeDetailSheet } from "@/components/NoticeDetailSheet"
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { Eyebrow } from "@edenscale/ui/eyebrow"
@@ -25,6 +26,11 @@ const OPEN_STATUSES = ["scheduled", "sent", "partially_paid", "overdue"]
 export default function CapitalCallsPage() {
   const callsQuery = useApiQuery("/capital-calls")
   const calls = useMemo(() => callsQuery.data ?? [], [callsQuery.data])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selected = useMemo(
+    () => calls.find((c) => c.id === selectedId) ?? null,
+    [calls, selectedId],
+  )
 
   const summary = useMemo(() => {
     let openCount = 0
@@ -120,7 +126,11 @@ export default function CapitalCallsPage() {
                     )
                     const paidPct = due > 0 ? Math.min(paid / due, 1) : 0
                     return (
-                      <TR key={call.id}>
+                      <TR
+                        key={call.id}
+                        className="cursor-pointer"
+                        onClick={() => setSelectedId(call.id)}
+                      >
                         <TD primary>{call.title}</TD>
                         <TD>{call.fund.name}</TD>
                         <TD align="right">{formatDate(call.due_date)}</TD>
@@ -153,6 +163,11 @@ export default function CapitalCallsPage() {
           </CardSection>
         </Card>
       </div>
+
+      <NoticeDetailSheet
+        notice={selected ? { kind: "capital_call", record: selected } : null}
+        onClose={() => setSelectedId(null)}
+      />
     </>
   )
 }

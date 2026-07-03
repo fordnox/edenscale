@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { Link, Outlet, useParams } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
@@ -7,8 +7,7 @@ import { Card } from "@edenscale/ui/card"
 import { EmptyState } from "@edenscale/ui/EmptyState"
 import { PendingInvitationsBanner } from "@edenscale/ui/invitations/PendingInvitationsBanner"
 import { CommandPalette } from "@/components/layout/CommandPalette"
-import { Sidebar } from "@/components/layout/Sidebar"
-import { Topbar } from "@/components/layout/Topbar"
+import { TopNav } from "@/components/layout/TopNav"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useCommandPalette } from "@/hooks/useCommandPalette"
 import { usePendingInvitations } from "@edenscale/shared/hooks/usePendingInvitations"
@@ -35,35 +34,27 @@ function LoadingState() {
   )
 }
 
-// The full application shell — sidebar, topbar, command palette — shown once an
-// organization slug has resolved to a fund the current LP can view.
+// The full application shell — a horizontal top nav (no sidebar) plus the
+// command palette — shown once an org slug resolves to a fund the LP can view.
 function OrgShell() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette()
   const { memberships } = useActiveOrganization()
   const { visibleInvitations, showBanner, dismissBanner } =
     usePendingInvitations()
 
   return (
-    <div className="flex min-h-svh bg-page text-ink-900">
-      <Sidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        onOpenSearch={() => setPaletteOpen(true)}
-      />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
-        {showBanner && (
-          <PendingInvitationsBanner
-            invitations={visibleInvitations}
-            onDismiss={dismissBanner}
-            emphasize={memberships.length === 0}
-          />
-        )}
-        <main className="flex flex-1 flex-col">
-          <Outlet />
-        </main>
-      </div>
+    <div className="flex min-h-svh flex-col bg-page text-ink-900">
+      <TopNav onOpenSearch={() => setPaletteOpen(true)} />
+      {showBanner && (
+        <PendingInvitationsBanner
+          invitations={visibleInvitations}
+          onDismiss={dismissBanner}
+          emphasize={memberships.length === 0}
+        />
+      )}
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
+        <Outlet />
+      </main>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>
   )

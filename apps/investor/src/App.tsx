@@ -13,6 +13,8 @@ import FundsPage from './pages/FundsPage'
 import CapitalCallsPage from './pages/CapitalCallsPage'
 import DistributionsPage from './pages/DistributionsPage'
 import DocumentsPage from './pages/DocumentsPage'
+import ReportsPage from './pages/ReportsPage'
+import ArchivePage from './pages/ArchivePage'
 import LettersPage from './pages/LettersPage'
 import NotificationsPage from './pages/NotificationsPage'
 import ProfilePage from './pages/ProfilePage'
@@ -67,6 +69,8 @@ function App() {
             <Route path="calls" element={<CapitalCallsPage />} />
             <Route path="distributions" element={<DistributionsPage />} />
             <Route path="documents" element={<DocumentsPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="archive" element={<ArchivePage />} />
             <Route path="letters" element={<LettersPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
 

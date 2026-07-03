@@ -18,12 +18,14 @@ from app.schemas.fund import (
     FundRead,
     FundUpdate,
 )
-from app.services.metrics import fund_metrics
+from app.services.metrics import fund_metrics, latest_fund_nav, latest_fund_navs
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
-def _to_read_dict(fund: FundModel, current_size: Decimal) -> dict:
+def _to_read_dict(
+    fund: FundModel, current_size: Decimal, nav: Decimal | None = None
+) -> dict:
     return {
         "id": fund.id,
         "organization_id": fund.organization_id,
@@ -37,6 +39,7 @@ def _to_read_dict(fund: FundModel, current_size: Decimal) -> dict:
         "target_size": fund.target_size,
         "hard_cap": fund.hard_cap,
         "current_size": current_size,
+        "nav": nav,
         "status": fund.status,
         "inception_date": fund.inception_date,
         "close_date": fund.close_date,
@@ -46,7 +49,9 @@ def _to_read_dict(fund: FundModel, current_size: Decimal) -> dict:
     }
 
 
-def _to_list_item(fund: FundModel, current_size: Decimal) -> dict:
+def _to_list_item(
+    fund: FundModel, current_size: Decimal, nav: Decimal | None = None
+) -> dict:
     return {
         "id": fund.id,
         "organization_id": fund.organization_id,
@@ -56,6 +61,7 @@ def _to_list_item(fund: FundModel, current_size: Decimal) -> dict:
         "currency_code": fund.currency_code,
         "target_size": fund.target_size,
         "current_size": current_size,
+        "nav": nav,
         "status": fund.status,
         "vintage_year": fund.vintage_year,
     }
@@ -70,7 +76,11 @@ async def list_funds(
 ):
     repo = FundRepository(db)
     rows = repo.list_for_membership(membership, skip=skip, limit=limit)
-    return [_to_list_item(fund, current_size) for fund, current_size in rows]
+    navs = latest_fund_navs(db, [fund.id for fund, _ in rows])  # type: ignore[invalid-argument-type]
+    return [
+        _to_list_item(fund, current_size, navs.get(fund.id))  # type: ignore[invalid-argument-type]
+        for fund, current_size in rows
+    ]
 
 
 @router.get("/by-slug/{slug}", response_model=FundRead)
@@ -96,7 +106,7 @@ async def get_fund_by_slug(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view this fund",
         )
-    return _to_read_dict(fund, current_size)
+    return _to_read_dict(fund, current_size, latest_fund_nav(db, fund.id))  # type: ignore[invalid-argument-type]
 
 
 @router.get("/{fund_id}", response_model=FundRead)
@@ -117,7 +127,7 @@ async def get_fund(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot view this fund",
         )
-    return _to_read_dict(fund, current_size)
+    return _to_read_dict(fund, current_size, latest_fund_nav(db, fund.id))  # type: ignore[invalid-argument-type]
 
 
 @router.get("/{fund_id}/overview", response_model=FundOverview)
@@ -146,8 +156,11 @@ async def get_fund_overview(
         called=metrics.called,
         distributed=metrics.distributed,
         remaining_commitment=metrics.committed - metrics.called,
+        nav=metrics.nav,
         irr=metrics.irr,
         dpi=metrics.dpi,
+        tvpi=metrics.tvpi,
+        rvpi=metrics.rvpi,
         called_pct=metrics.called_pct,
     )
 

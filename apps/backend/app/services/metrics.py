@@ -1,9 +1,9 @@
-"""Fund performance metrics derived from recorded cashflows.
+"""Fund performance metrics derived from recorded cashflows and NAV marks.
 
-All figures come from capital-call / distribution items — there is no NAV
-or valuation mark in the data model, so residual-value metrics (TVPI, RVPI)
-are intentionally absent. ``called_amount`` on commitments is the sum of
-*paid* capital-call items, so "called" throughout equals paid-in capital.
+Cash figures come from capital-call / distribution items; ``called_amount`` on
+commitments is the sum of *paid* capital-call items, so "called" throughout
+equals paid-in capital. Residual-value metrics (TVPI, RVPI) use the latest
+``FundValuation`` (NAV) when one exists, and are ``None`` until a fund is marked.
 """
 
 import uuid
@@ -19,6 +19,7 @@ from app.models.capital_call_item import CapitalCallItem
 from app.models.commitment import Commitment
 from app.models.distribution import Distribution
 from app.models.distribution_item import DistributionItem
+from app.models.fund_valuation import FundValuation
 
 _QUANT = Decimal("0.0001")
 _MAX_ITERATIONS = 100
@@ -32,8 +33,11 @@ class FundMetrics:
     committed: Decimal
     called: Decimal  # paid-in capital (sum of paid capital-call items)
     distributed: Decimal
+    nav: Decimal | None  # latest fund NAV (fair value), None if never marked
     dpi: Decimal | None
     irr: Decimal | None
+    tvpi: Decimal | None  # (distributed + nav) / called
+    rvpi: Decimal | None  # nav / called
     called_pct: Decimal | None
 
 
@@ -139,11 +143,56 @@ def fund_metrics(db: Session, fund_id: uuid.UUID) -> FundMetrics:
     dpi = (distributed / called).quantize(_QUANT) if called > 0 else None
     called_pct = (called / committed).quantize(_QUANT) if committed > 0 else None
     irr = xirr(fund_cashflows(db, fund_id))
+    nav = latest_fund_nav(db, fund_id)
+    tvpi = (
+        ((distributed + nav) / called).quantize(_QUANT)
+        if nav is not None and called > 0
+        else None
+    )
+    rvpi = (nav / called).quantize(_QUANT) if nav is not None and called > 0 else None
     return FundMetrics(
         committed=committed,
         called=called,
         distributed=distributed,
+        nav=nav,
         dpi=dpi,
         irr=irr,
+        tvpi=tvpi,
+        rvpi=rvpi,
         called_pct=called_pct,
     )
+
+
+def latest_fund_nav(db: Session, fund_id: uuid.UUID) -> Decimal | None:
+    """The most recent fund NAV mark by ``as_of_date``, or None if unmarked."""
+    row = (
+        db.query(FundValuation.nav)
+        .filter(FundValuation.fund_id == fund_id)
+        .order_by(FundValuation.as_of_date.desc(), FundValuation.created_at.desc())
+        .first()
+    )
+    return Decimal(str(row[0])) if row is not None else None
+
+
+def latest_fund_navs(
+    db: Session, fund_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, Decimal]:
+    """Latest NAV per fund for a set of funds — one query for list endpoints."""
+    if not fund_ids:
+        return {}
+    rows = (
+        db.query(
+            FundValuation.fund_id,
+            FundValuation.nav,
+            FundValuation.as_of_date,
+        )
+        .filter(FundValuation.fund_id.in_(fund_ids))
+        .order_by(FundValuation.fund_id, FundValuation.as_of_date.desc())
+        .all()
+    )
+    out: dict[uuid.UUID, Decimal] = {}
+    for fund_id, nav, _as_of in rows:
+        # rows are ordered by as_of_date desc within each fund; keep the first.
+        if fund_id not in out:
+            out[fund_id] = Decimal(str(nav))
+    return out

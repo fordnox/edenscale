@@ -50,6 +50,8 @@ class FundRead(BaseModel):
     target_size: Decimal | None
     hard_cap: Decimal | None
     current_size: Decimal
+    # Latest fund-level net asset value (fair value), or None if never marked.
+    nav: Decimal | None = None
     status: FundStatus
     inception_date: date | None
     close_date: date | None
@@ -69,6 +71,7 @@ class FundListItem(BaseModel):
     currency_code: str
     target_size: Decimal | None
     current_size: Decimal
+    nav: Decimal | None = None
     status: FundStatus
     vintage_year: int | None
 
@@ -82,8 +85,12 @@ class FundOverview(BaseModel):
     called: Decimal
     distributed: Decimal
     remaining_commitment: Decimal
+    # Fair-value metrics — populated once a fund valuation (NAV) has been marked.
+    nav: Decimal | None = None
     irr: Decimal | None = None
     dpi: Decimal | None = None
+    tvpi: Decimal | None = None
+    rvpi: Decimal | None = None
     called_pct: Decimal | None = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -470,6 +470,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/funds/{fund_id}/valuations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Fund Valuations
+         * @description NAV marks for a fund, newest first. Any member who can view the fund
+         *     (LPs included) can read them — the NAV drives their fair-value figures.
+         */
+        get: operations["list_fund_valuations_funds__fund_id__valuations_get"];
+        put?: never;
+        /**
+         * Create Fund Valuation
+         * @description Record (or overwrite) the fund NAV for a given as-of date. Managers only.
+         */
+        post: operations["create_fund_valuation_funds__fund_id__valuations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/funds/{fund_id}/valuations/{valuation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Fund Valuation */
+        delete: operations["delete_fund_valuation_funds__fund_id__valuations__valuation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/funds/{fund_id}/team": {
         parameters: {
             query?: never;
@@ -2068,6 +2110,8 @@ export interface components {
             target_size: string | null;
             /** Current Size */
             current_size: string;
+            /** Nav */
+            nav?: string | null;
             status: components["schemas"]["FundStatus"];
             /** Vintage Year */
             vintage_year: number | null;
@@ -2089,10 +2133,16 @@ export interface components {
             distributed: string;
             /** Remaining Commitment */
             remaining_commitment: string;
+            /** Nav */
+            nav?: string | null;
             /** Irr */
             irr?: string | null;
             /** Dpi */
             dpi?: string | null;
+            /** Tvpi */
+            tvpi?: string | null;
+            /** Rvpi */
+            rvpi?: string | null;
             /** Called Pct */
             called_pct?: string | null;
         };
@@ -2128,6 +2178,8 @@ export interface components {
             hard_cap: string | null;
             /** Current Size */
             current_size: string;
+            /** Nav */
+            nav?: string | null;
             status: components["schemas"]["FundStatus"];
             /** Inception Date */
             inception_date: string | null;
@@ -2255,6 +2307,46 @@ export interface components {
             close_date?: string | null;
             /** Description */
             description?: string | null;
+        };
+        /** FundValuationCreate */
+        FundValuationCreate: {
+            /**
+             * As Of Date
+             * Format: date
+             */
+            as_of_date: string;
+            /** Nav */
+            nav: number | string;
+            /** Note */
+            note?: string | null;
+        };
+        /** FundValuationRead */
+        FundValuationRead: {
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Fund Id
+             * Format: uuid4
+             */
+            fund_id: string;
+            /**
+             * As Of Date
+             * Format: date
+             */
+            as_of_date: string;
+            /** Nav */
+            nav: string;
+            /** Note */
+            note: string | null;
+            /** Created By User Id */
+            created_by_user_id: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -4051,6 +4143,108 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["FundRead"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_fund_valuations_funds__fund_id__valuations_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+            };
+            path: {
+                fund_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundValuationRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_fund_valuation_funds__fund_id__valuations_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+            };
+            path: {
+                fund_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FundValuationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FundValuationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_fund_valuation_funds__fund_id__valuations__valuation_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+            };
+            path: {
+                fund_id: string;
+                valuation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

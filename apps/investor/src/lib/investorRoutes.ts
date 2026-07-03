@@ -29,6 +29,8 @@ export const STATIC_ORG_CHILD_SEGMENTS = new Set([
   "calls",
   "distributions",
   "documents",
+  "reports",
+  "archive",
   "letters",
   "tasks",
   "notifications",

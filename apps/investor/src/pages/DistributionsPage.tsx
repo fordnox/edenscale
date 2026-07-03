@@ -1,7 +1,8 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Loader2 } from "lucide-react"
 
+import { NoticeDetailSheet } from "@/components/NoticeDetailSheet"
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { ProgressBar } from "@edenscale/ui/progress"
@@ -24,6 +25,11 @@ export default function DistributionsPage() {
   const distributions = useMemo(
     () => distributionsQuery.data ?? [],
     [distributionsQuery.data],
+  )
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selected = useMemo(
+    () => distributions.find((d) => d.id === selectedId) ?? null,
+    [distributions, selectedId],
   )
 
   const summary = useMemo(() => {
@@ -103,7 +109,11 @@ export default function DistributionsPage() {
                     )
                     const paidPct = due > 0 ? Math.min(paid / due, 1) : 0
                     return (
-                      <TR key={distribution.id}>
+                      <TR
+                        key={distribution.id}
+                        className="cursor-pointer"
+                        onClick={() => setSelectedId(distribution.id)}
+                      >
                         <TD primary>{distribution.title}</TD>
                         <TD>{distribution.fund.name}</TD>
                         <TD align="right">
@@ -134,6 +144,11 @@ export default function DistributionsPage() {
           </CardSection>
         </Card>
       </div>
+
+      <NoticeDetailSheet
+        notice={selected ? { kind: "distribution", record: selected } : null}
+        onClose={() => setSelectedId(null)}
+      />
     </>
   )
 }
