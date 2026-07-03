@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # in-app rows and logs, but the email channel returns a failure and nothing
     # leaves the box.
     RESEND_API_KEY: str = ""
-    NOTIFICATION_FROM_EMAIL: str = "notifications@newtaven.com"
+    NOTIFICATION_FROM_EMAIL: str = "notifications@updates.newtaven.com"
 
 
 settings = Settings()

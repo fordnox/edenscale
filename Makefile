@@ -47,9 +47,6 @@ start-manager: ## Start the development manager frontend
 start-investor: ## Start the development investor frontend
 	pnpm turbo run dev --filter=investor
 
-start-frontend: ## Start the development manager frontend (legacy alias)
-	$(MAKE) start-manager
-
 start-backend: ## Start the development backend
 	cd apps/backend && uv run fastapi dev app/main.py --port 8000 --host localhost
 
@@ -73,10 +70,6 @@ kamal-deploy: kamal-check ## Deploy backend with Kamal — pulls fixed :latest i
 
 kamal-logs: kamal-check ## Tail logs
 	kamal app logs -f
-
-wrangler-deploy:
-	VITE_APP_TITLE=NewTaven VITE_HANKO_API_URL=https://400bf941-ad5d-4497-8aa0-b3e2aeb420e3.hanko.io pnpm turbo run build --filter=gateway
-	cd apps/gateway && pnpm run deploy
 
 .PHONY: help
 .DEFAULT_GOAL := help

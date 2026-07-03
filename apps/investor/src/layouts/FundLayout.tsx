@@ -2,10 +2,12 @@ import { Loader2 } from "lucide-react"
 import { useParams } from "react-router-dom"
 
 import { PageHero } from "@edenscale/ui/PageHero"
-import { InvestorFundDetailPage } from "@/pages/InvestorReadOnlyPages"
+import FundDetailPage from "@/pages/FundDetailPage"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 
-export default function FundScopeLayout() {
+// Fund view: resolves the :fundSlug param to a fund and renders its LP detail
+// page. Rendered inside OrgLayout's shell, so an org is already active.
+export default function FundLayout() {
   const { fundSlug } = useParams<{ fundSlug: string }>()
   // Resolve the fund directly by slug (O(1) on the backend) rather than
   // scanning the paginated /funds list, which would miss funds past the
@@ -36,5 +38,5 @@ export default function FundScopeLayout() {
     )
   }
 
-  return <InvestorFundDetailPage fundId={fund.id} />
+  return <FundDetailPage fundId={fund.id} fundSlug={fundSlug ?? ""} />
 }

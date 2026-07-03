@@ -16,7 +16,10 @@ import { usePendingInvitations } from "@edenscale/shared/hooks/usePendingInvitat
 import { config } from "@edenscale/api/config"
 import { deriveInitials } from "@edenscale/shared/userDisplay"
 
-export default function NoOrganizationLayout() {
+// Account view: the cross-organization state at /investor (and /investor/profile).
+// No org is selected, so there is no sidebar — just a slim header with the
+// account menu. Used whether or not the signed-in user belongs to any org yet.
+export default function AccountLayout() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const { visibleInvitations, showBanner, dismissBanner } =
