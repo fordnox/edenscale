@@ -40,6 +40,7 @@ import {
   PopoverTrigger,
 } from "@edenscale/ui/popover"
 import { Kbd } from "@edenscale/ui/kbd"
+import { config } from "@edenscale/api/config"
 import type { components } from "@edenscale/api/schema"
 
 type UserRole = components["schemas"]["UserRole"]
@@ -85,29 +86,44 @@ export interface TopbarOrganization {
   slug: string
 }
 
+// Breadcrumb crumb for the organization level. Works without an active
+// organization too (account-level pages): the crumb then reads "Select
+// organization" and the switcher menu is the way into a workspace.
 function OrgCrumb({
   organization,
   role,
 }: {
-  organization: TopbarOrganization
+  organization: TopbarOrganization | null
   role: UserRole | null
 }) {
   const navigate = useNavigate()
   const { memberships, activeMembership, isSuperadmin } =
     useActiveOrganization()
 
-  const showMenu = memberships.length > 1 || isSuperadmin
+  // With an org open the menu is for *switching* (needs somewhere else to
+  // go); without one it is for *selecting* (any membership qualifies).
+  const showMenu =
+    isSuperadmin || memberships.length > (organization ? 1 : 0)
+
+  if (!organization && !showMenu) return null
 
   return (
     <div className="flex min-w-0 items-center gap-0.5">
-      <Link
-        to={orgPath(organization.slug)}
-        title={organization.name}
-        className={cn(crumbLinkClass, "max-w-[180px]")}
-      >
-        {organization.name}
-      </Link>
-      {role && (
+      <CrumbSeparator />
+      {organization ? (
+        <Link
+          to={orgPath(organization.slug)}
+          title={organization.name}
+          className={cn(crumbLinkClass, "max-w-[180px]")}
+        >
+          {organization.name}
+        </Link>
+      ) : (
+        <span className="px-1.5 py-1 font-sans text-[13px] font-medium text-ink-500">
+          Select organization
+        </span>
+      )}
+      {organization && role && (
         <span className="mx-1 hidden shrink-0 rounded-full border border-[color:var(--border-hairline)] px-2 py-0.5 font-sans text-[10px] tracking-[0.06em] uppercase text-ink-500 sm:inline-flex">
           {ROLE_LABELS[role]}
         </span>
@@ -257,7 +273,7 @@ function UserMenu({
   orgSlug,
 }: {
   role: UserRole | null
-  orgSlug: string
+  orgSlug: string | null
 }) {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -318,7 +334,7 @@ function UserMenu({
           <UserIcon strokeWidth={1.5} />
           <span>Profile</span>
         </DropdownMenuItem>
-        {(role === "admin" || role === "fund_manager") && (
+        {orgSlug && (role === "admin" || role === "fund_manager") && (
           <DropdownMenuItem
             className="min-h-11 md:min-h-0"
             onSelect={() => navigate(orgPath(orgSlug, "settings"))}
@@ -384,15 +400,23 @@ function NavTabs({ orgSlug }: { orgSlug: string }) {
 }
 
 interface TopbarProps {
-  organization: TopbarOrganization
-  role: UserRole | null
-  onOpenSearch: () => void
+  /** The open organization, or null on account-level pages (/manager,
+   * /manager/profile, …) — the org switcher stays available either way. */
+  organization?: TopbarOrganization | null
+  role?: UserRole | null
+  /** Omit to hide the search button (search is org-scoped). */
+  onOpenSearch?: () => void
 }
 
 // The app-wide top bar: breadcrumb controls (logo / organization / fund) with
 // switcher dropdowns, search and the user menu on the right, and a second row
-// of nav tabs. Replaces the old sidebar entirely.
-export function Topbar({ organization, role, onOpenSearch }: TopbarProps) {
+// of nav tabs. Without an organization it degrades to the account variant:
+// app title, org selector, user menu — no tabs, no search.
+export function Topbar({
+  organization = null,
+  role = null,
+  onOpenSearch,
+}: TopbarProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-[color:var(--border-hairline)] bg-page/85 backdrop-blur supports-[backdrop-filter]:bg-page/75">
       <div className="flex h-14 items-center gap-1 px-3 md:px-4">
@@ -407,32 +431,38 @@ export function Topbar({ organization, role, onOpenSearch }: TopbarProps) {
         >
           <Landmark strokeWidth={1.5} className="size-4" />
         </Link>
-        <CrumbSeparator />
+        {!organization && (
+          <span className="ml-1 font-sans text-[14px] font-semibold tracking-[-0.04em] text-ink-900">
+            {config.VITE_APP_TITLE}
+          </span>
+        )}
         <OrgCrumb organization={organization} role={role} />
-        <FundCrumb orgSlug={organization.slug} />
+        {organization && <FundCrumb orgSlug={organization.slug} />}
 
         <div className="ml-auto flex shrink-0 items-center gap-2 pl-2">
-          <button
-            type="button"
-            onClick={onOpenSearch}
-            aria-label="Open search"
-            className={cn(
-              "inline-flex h-8 items-center gap-2 rounded-xs border border-[color:var(--border-hairline)] bg-surface px-2.5",
-              "text-ink-700 transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
-              "hover:border-conifer-600 hover:text-ink-900",
-              "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
-            )}
-          >
-            <Search strokeWidth={1.5} className="size-4" />
-            <Kbd className="hidden bg-parchment-200 text-ink-700 md:inline-flex">
-              ⌘K
-            </Kbd>
-          </button>
-          <UserMenu role={role} orgSlug={organization.slug} />
+          {onOpenSearch && (
+            <button
+              type="button"
+              onClick={onOpenSearch}
+              aria-label="Open search"
+              className={cn(
+                "inline-flex h-8 items-center gap-2 rounded-xs border border-[color:var(--border-hairline)] bg-surface px-2.5",
+                "text-ink-700 transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+                "hover:border-conifer-600 hover:text-ink-900",
+                "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
+              )}
+            >
+              <Search strokeWidth={1.5} className="size-4" />
+              <Kbd className="hidden bg-parchment-200 text-ink-700 md:inline-flex">
+                ⌘K
+              </Kbd>
+            </button>
+          )}
+          <UserMenu role={role} orgSlug={organization?.slug ?? null} />
         </div>
       </div>
 
-      <NavTabs orgSlug={organization.slug} />
+      {organization && <NavTabs orgSlug={organization.slug} />}
     </header>
   )
 }
