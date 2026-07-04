@@ -1,10 +1,24 @@
 import { describe, expect, it } from "vitest"
 
-import { fundSlugFromPath, fundPath, orgPath } from "./managerRoutes"
+import {
+  FUND_SECTIONS,
+  fundSectionPath,
+  fundSlugFromPath,
+  fundPath,
+  orgPath,
+} from "./managerRoutes"
 
 describe("fundSlugFromPath", () => {
   it("returns the fund slug for a fund page", () => {
     expect(fundSlugFromPath("/manager/acme/fund-a")).toBe("fund-a")
+  })
+
+  it("returns the fund slug for fund section pages", () => {
+    for (const section of FUND_SECTIONS) {
+      expect(fundSlugFromPath(fundSectionPath("acme", "fund-a", section))).toBe(
+        "fund-a",
+      )
+    }
   })
 
   it("accepts trailing slashes", () => {

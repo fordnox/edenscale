@@ -31,7 +31,7 @@ import {
 import type { components } from "@edenscale/api/schema"
 
 type FundRead = components["schemas"]["FundRead"]
-type FundOverview = components["schemas"]["FundOverview"]
+type FundOverviewData = components["schemas"]["FundOverview"]
 type CapitalCallRead = components["schemas"]["CapitalCallRead"]
 type DistributionRead = components["schemas"]["DistributionRead"]
 type CommitmentRead = components["schemas"]["CommitmentRead"]
@@ -61,23 +61,23 @@ const committedConfig = {
   committed: { label: "Committed", color: CALLED_COLOR },
 } satisfies ChartConfig
 
-interface FundOverviewTabProps {
+interface FundOverviewProps {
   fund: FundRead
-  overview: FundOverview | undefined
+  overview: FundOverviewData | undefined
   calls: readonly CapitalCallRead[]
   distributions: readonly DistributionRead[]
   commitments: readonly CommitmentRead[]
   canManage: boolean
 }
 
-export function FundOverviewTab({
+export function FundOverview({
   fund,
   overview,
   calls,
   distributions,
   commitments,
   canManage,
-}: FundOverviewTabProps) {
+}: FundOverviewProps) {
   const currency = fund.currency_code
 
   const committed = parseDecimal(overview?.committed)

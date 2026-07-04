@@ -18,7 +18,13 @@ import {
 
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
-import { fundPath, fundSlugFromPath, fundTabPath, orgPath } from "@/lib/managerRoutes"
+import {
+  fundPath,
+  fundSectionPath,
+  fundSlugFromPath,
+  orgPath,
+  type FundSection,
+} from "@/lib/managerRoutes"
 import type { components } from "@edenscale/api/schema"
 
 type UserRole = components["schemas"]["UserRole"]
@@ -165,9 +171,8 @@ export function useOrgNavItems(): UseNavItemsResult {
   return { items, role, isLoading }
 }
 
-/** Nav items for the fund workspace (/manager/:orgSlug/:fundSlug) — links set
- * the ?tab= query param on the existing fund detail page rather than
- * navigating to separate routes. */
+/** Nav items for the fund workspace (/manager/:orgSlug/:fundSlug) — each
+ * fund section is its own page under the fund route. */
 export function useFundNavItems(): UseNavItemsResult {
   const { activeMembership, isLoading } = useActiveOrganization()
   const params = useParams<{ orgSlug?: string }>()
@@ -182,11 +187,11 @@ export function useFundNavItems(): UseNavItemsResult {
   const items = useMemo<NavEntry[]>(() => {
     if (!orgSlug || !fundSlug) return []
 
-    const tabItem = (
-      tab: "commitments" | "calls" | "distributions" | "team" | "letters",
+    const sectionItem = (
+      section: FundSection,
       label: string,
       icon: NavItem["icon"],
-    ): NavItem => ({ to: fundTabPath(orgSlug, fundSlug, tab), label, icon })
+    ): NavItem => ({ to: fundSectionPath(orgSlug, fundSlug, section), label, icon })
 
     return [
       {
@@ -195,11 +200,11 @@ export function useFundNavItems(): UseNavItemsResult {
         icon: LayoutDashboard,
         end: true,
       },
-      tabItem("commitments", "Commitments", Users),
-      tabItem("calls", "Capital Calls", ArrowDownToLine),
-      tabItem("distributions", "Distributions", ArrowUpFromLine),
-      tabItem("team", "Team", UserCog),
-      tabItem("letters", "Letters", Mail),
+      sectionItem("commitments", "Commitments", Users),
+      sectionItem("calls", "Capital Calls", ArrowDownToLine),
+      sectionItem("distributions", "Distributions", ArrowUpFromLine),
+      sectionItem("team", "Team", UserCog),
+      sectionItem("letters", "Letters", Mail),
       { kind: "divider" },
       {
         to: orgPath(orgSlug),

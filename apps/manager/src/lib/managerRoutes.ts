@@ -47,12 +47,17 @@ export function fundSlugFromPath(pathname: string): string | undefined {
   return segment
 }
 
-export type FundDetailTab =
-  | "commitments"
-  | "calls"
-  | "distributions"
-  | "team"
-  | "letters"
+// Child routes declared under /manager/:orgSlug/:fundSlug in App.tsx. The fund
+// overview is the index route and has no segment of its own.
+export const FUND_SECTIONS = [
+  "commitments",
+  "calls",
+  "distributions",
+  "team",
+  "letters",
+] as const
+
+export type FundSection = (typeof FUND_SECTIONS)[number]
 
 export function orgPath(orgSlug: string, subpath = ""): string {
   const trimmed = subpath.replace(/^\/+/, "")
@@ -63,10 +68,10 @@ export function fundPath(orgSlug: string, fundSlug: string): string {
   return `/manager/${orgSlug}/${fundSlug}`
 }
 
-export function fundTabPath(
+export function fundSectionPath(
   orgSlug: string,
   fundSlug: string,
-  tab: FundDetailTab,
+  section: FundSection,
 ): string {
-  return `${fundPath(orgSlug, fundSlug)}?tab=${tab}`
+  return `${fundPath(orgSlug, fundSlug)}/${section}`
 }

@@ -24,6 +24,12 @@ import SuperadminOrganizationsPage from './pages/superadmin/SuperadminOrganizati
 import SuperadminOrganizationDetailPage from './pages/superadmin/SuperadminOrganizationDetailPage'
 import InvitationAcceptPage from './pages/InvitationAcceptPage'
 import OnboardingPage from './pages/OnboardingPage'
+import FundOverviewPage from './pages/funds/FundOverviewPage'
+import FundCommitmentsPage from './pages/funds/FundCommitmentsPage'
+import FundCapitalCallsPage from './pages/funds/FundCapitalCallsPage'
+import FundDistributionsPage from './pages/funds/FundDistributionsPage'
+import FundTeamPage from './pages/funds/FundTeamPage'
+import FundLettersPage from './pages/funds/FundLettersPage'
 import LoginPage from './pages/LoginPage'
 import { RequireRole } from './components/RequireRole'
 
@@ -113,8 +119,16 @@ function App() {
               }
             />
 
-            {/* Fund workspace */}
-            <Route path=":fundSlug" element={<FundLayout />} />
+            {/* Fund workspace — each section is its own page under the
+                shared fund chrome (hero + KPI strip) in FundLayout. */}
+            <Route path=":fundSlug" element={<FundLayout />}>
+              <Route index element={<FundOverviewPage />} />
+              <Route path="commitments" element={<FundCommitmentsPage />} />
+              <Route path="calls" element={<FundCapitalCallsPage />} />
+              <Route path="distributions" element={<FundDistributionsPage />} />
+              <Route path="team" element={<FundTeamPage />} />
+              <Route path="letters" element={<FundLettersPage />} />
+            </Route>
           </Route>
         </Route>
       </Route>
