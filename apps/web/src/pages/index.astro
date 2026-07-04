@@ -787,7 +787,6 @@ const defaultOutput =
   /* ---------- Navbar ---------- */
   .screen {
     position: relative;
-    height: 100svh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -840,7 +839,7 @@ const defaultOutput =
     width: 100%;
     max-width: 88rem;
     margin: 0 auto;
-    height: calc(100svh - 96px);
+    height: clamp(460px, 68svh, 680px);
     border-radius: 16px;
     overflow: hidden;
     background:
@@ -855,7 +854,7 @@ const defaultOutput =
     flex-direction: column;
     align-items: flex-start;
     padding: clamp(28px, 3.5vw, 48px);
-    padding-top: clamp(96px, 17svh, 144px);
+    padding-top: clamp(56px, 10svh, 88px);
   }
   .hero-title {
     margin: 0 0 16px;
