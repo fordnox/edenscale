@@ -63,6 +63,8 @@ env:
     - HANKO_API_URL
     - HANKO_AUDIENCE
     - GENERATE_OPENAPI_DOCS
+    - RESEND_API_KEY
+    - SUPERADMIN_EMAIL
 
 # Persisted local services on the server (managed by Kamal, not the proxy).
 accessories:
