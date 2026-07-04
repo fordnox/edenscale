@@ -12,7 +12,7 @@ from app.core.slugs import slugify
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.audit import record_audit
+from app.core.audit import _ENTITY_TYPES, _UNAUDITED_MODELS, record_audit
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
 from app.middleware.audit_context import (
@@ -22,7 +22,12 @@ from app.middleware.audit_context import (
 )
 from app.models import (
     AuditLog,
+    CapitalCall,
+    CapitalCallItem,
+    Commitment,
     Fund,
+    Investor,
+    InvestorContact,
     Organization,
     OrganizationType,
     User,
@@ -184,6 +189,95 @@ class TestEventListeners:
         assert len(rows) == 1
         assert str(rows[0].user_id) == user_id
         assert rows[0].ip_address == "10.0.0.1"
+        assert str(rows[0].organization_id) == org_id
+
+
+class TestListenerCoverage:
+    def test_every_mapped_model_is_classified(self):
+        """Every ORM model must be audited or explicitly excluded — adding a
+        model without classifying it in ``app.core.audit`` fails here."""
+        mapped = {mapper.class_ for mapper in Base.registry.mappers}
+        classified = set(_ENTITY_TYPES) | _UNAUDITED_MODELS
+        assert mapped == classified, (
+            f"unclassified models: {mapped - classified}; "
+            f"stale entries: {classified - mapped}"
+        )
+
+    def test_investor_create_is_audited_with_direct_org(self):
+        org_id = _seed_org()
+        db = SessionLocal()
+        try:
+            investor = Investor(organization_id=org_id, name="Northstar Trust")
+            db.add(investor)
+            db.commit()
+            investor_id = str(investor.id)
+        finally:
+            db.close()
+
+        rows = _audit_rows(entity_type="investor", action="create")
+        assert len(rows) == 1
+        assert str(rows[0].entity_id) == investor_id
+        assert str(rows[0].organization_id) == org_id
+
+    def test_investor_contact_resolves_org_through_investor(self):
+        org_id = _seed_org()
+        db = SessionLocal()
+        try:
+            investor = Investor(organization_id=org_id, name="Atlas Family Office")
+            db.add(investor)
+            db.flush()
+            contact = InvestorContact(
+                investor_id=investor.id, first_name="Elena", last_name="Park"
+            )
+            db.add(contact)
+            db.commit()
+        finally:
+            db.close()
+
+        rows = _audit_rows(entity_type="investor_contact", action="create")
+        assert len(rows) == 1
+        assert str(rows[0].organization_id) == org_id
+
+    def test_capital_call_item_resolves_org_through_call_and_fund(self):
+        from datetime import date
+
+        org_id = _seed_org()
+        db = SessionLocal()
+        try:
+            fund = Fund(
+                organization_id=org_id, name="Fund I", slug=slugify("Fund I")
+            )
+            investor = Investor(organization_id=org_id, name="LP One")
+            db.add_all([fund, investor])
+            db.flush()
+            commitment = Commitment(
+                fund_id=fund.id,
+                investor_id=investor.id,
+                committed_amount=1_000_000,
+                commitment_date=date(2026, 1, 1),
+            )
+            db.add(commitment)
+            db.flush()
+            call = CapitalCall(
+                fund_id=fund.id,
+                title="Call 1",
+                due_date=date(2026, 8, 1),
+                amount=100_000,
+            )
+            db.add(call)
+            db.flush()
+            item = CapitalCallItem(
+                capital_call_id=call.id,
+                commitment_id=commitment.id,
+                amount_due=100_000,
+            )
+            db.add(item)
+            db.commit()
+        finally:
+            db.close()
+
+        rows = _audit_rows(entity_type="capital_call_item", action="create")
+        assert len(rows) == 1
         assert str(rows[0].organization_id) == org_id
 
 

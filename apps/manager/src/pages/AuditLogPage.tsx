@@ -37,12 +37,16 @@ type OrgMemberRead = components["schemas"]["OrgMemberRead"]
 const ACTION_OPTIONS = ["create", "update", "delete", "login"] as const
 const PAGE_SIZE = 50
 
+// Mirrors _ENTITY_TYPES in the backend's app/core/audit.py — keep in sync.
 const ENTITY_TYPES = [
   "organization",
+  "invitation",
   "user",
+  "membership",
   "fund",
   "fund_group",
   "fund_team_member",
+  "fund_valuation",
   "investor",
   "investor_contact",
   "commitment",
@@ -52,6 +56,7 @@ const ENTITY_TYPES = [
   "distribution_item",
   "document",
   "communication",
+  "communication_recipient",
   "task",
   "notification",
 ] as const

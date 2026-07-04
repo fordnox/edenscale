@@ -1,6 +1,6 @@
 """Audit-log machinery — manual ``record_audit`` plus ORM event listeners.
 
-Every mutation on the entities listed in ``_AUDITED_MODELS`` triggers an
+Every mutation on the entities listed in ``_ENTITY_TYPES`` triggers an
 ``after_insert`` / ``after_update`` / ``after_delete`` listener that writes a
 row to ``audit_logs`` directly via the active DB connection. The actor and
 client IP are pulled from the request-scoped ``AuditContext`` populated by
@@ -23,33 +23,63 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any
 
-from sqlalchemy import event, inspect
+from sqlalchemy import event, inspect, select
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Mapper, Session
 
 from app.middleware.audit_context import get_audit_context
 from app.models.audit_log import AuditLog
 from app.models.capital_call import CapitalCall
+from app.models.capital_call_item import CapitalCallItem
 from app.models.commitment import Commitment
 from app.models.communication import Communication
+from app.models.communication_recipient import CommunicationRecipient
 from app.models.distribution import Distribution
+from app.models.distribution_item import DistributionItem
 from app.models.document import Document
 from app.models.fund import Fund
+from app.models.fund_group import FundGroup
+from app.models.fund_team_member import FundTeamMember
+from app.models.fund_valuation import FundValuation
+from app.models.investor import Investor
+from app.models.investor_contact import InvestorContact
+from app.models.notification import Notification
+from app.models.notification_log import NotificationLog
 from app.models.organization import Organization
+from app.models.organization_invitation import OrganizationInvitation
 from app.models.task import Task
 from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 
+# Every mapped model is audited. The test suite asserts this map (plus
+# _UNAUDITED_MODELS) covers the full ORM registry, so adding a model without
+# classifying it here fails loudly instead of silently skipping its trail.
 _ENTITY_TYPES: dict[type, str] = {
     Organization: "organization",
+    OrganizationInvitation: "invitation",
     User: "user",
+    UserOrganizationMembership: "membership",
     Fund: "fund",
+    FundGroup: "fund_group",
+    FundTeamMember: "fund_team_member",
+    FundValuation: "fund_valuation",
+    Investor: "investor",
+    InvestorContact: "investor_contact",
     Commitment: "commitment",
     CapitalCall: "capital_call",
+    CapitalCallItem: "capital_call_item",
     Distribution: "distribution",
+    DistributionItem: "distribution_item",
     Document: "document",
     Communication: "communication",
+    CommunicationRecipient: "communication_recipient",
     Task: "task",
+    Notification: "notification",
 }
+
+# Deliberately not audited: the audit table itself (would recurse) and the
+# notification delivery log (pure telemetry, one row per send attempt).
+_UNAUDITED_MODELS: set[type] = {AuditLog, NotificationLog}
 
 # Skip these columns from diffs — they're maintained by the ORM/db and add
 # noise without telling the auditor anything useful.
@@ -89,12 +119,55 @@ def _build_diff(target: Any) -> dict[str, dict[str, Any]]:
     return diff
 
 
-def _organization_id_for(target: Any) -> uuid.UUID | None:
-    """Best-effort organization id for the affected row."""
+# Child rows whose fund (and therefore organization) hangs off a parent row.
+_FUND_VIA_PARENT = (
+    ("capital_call_id", CapitalCall.__table__),
+    ("distribution_id", Distribution.__table__),
+    ("communication_id", Communication.__table__),
+)
+
+
+def _organization_id_for(connection: Connection, target: Any) -> uuid.UUID | None:
+    """Best-effort organization id for the affected row.
+
+    The org-scoped audit view only shows rows whose ``organization_id``
+    matches the caller's membership, so attribution matters: rows without a
+    direct column resolve through their parent FKs (item → call/distribution/
+    communication → fund → organization) with Core selects on the flush
+    connection. Rows with no org at all (users, notifications) stay None.
+    """
     if isinstance(target, Organization):
         # Events on the organization itself belong to that organization.
         return target.id
-    return getattr(target, "organization_id", None)
+    direct = getattr(target, "organization_id", None)
+    if direct is not None:
+        return direct
+
+    fund_id = getattr(target, "fund_id", None)
+    if fund_id is None:
+        for parent_attr, parent_table in _FUND_VIA_PARENT:
+            parent_id = getattr(target, parent_attr, None)
+            if parent_id is not None:
+                fund_id = connection.execute(
+                    select(parent_table.c.fund_id).where(parent_table.c.id == parent_id)
+                ).scalar()
+                break
+    if fund_id is not None:
+        return connection.execute(
+            select(Fund.__table__.c.organization_id).where(
+                Fund.__table__.c.id == fund_id
+            )
+        ).scalar()
+
+    investor_id = getattr(target, "investor_id", None)
+    if investor_id is not None:
+        return connection.execute(
+            select(Investor.__table__.c.organization_id).where(
+                Investor.__table__.c.id == investor_id
+            )
+        ).scalar()
+
+    return None
 
 
 def _entity_id(target: Any) -> uuid.UUID | None:
@@ -186,7 +259,7 @@ def _make_listener(action: str, with_diff: bool):
         _write_audit_via_connection(
             connection,
             user_id=ctx.user_id,
-            organization_id=_organization_id_for(target),
+            organization_id=_organization_id_for(connection, target),
             action=action,
             entity_type=entity_type,
             entity_id=_entity_id(target),
