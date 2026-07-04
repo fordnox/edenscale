@@ -57,9 +57,7 @@ const myMiddleware: Middleware = {
         return response
       }
 
-      toast.error("Request failed", {
-        description: message,
-      })
+      console.error(message)
     }
 
     return response
