@@ -3,29 +3,30 @@ import { useQuery } from "@tanstack/react-query"
 import { Helmet } from "react-helmet-async"
 import { useNavigate } from "react-router-dom"
 import {
-  ArrowDownToLine,
   Bell,
   Building2,
-  CheckCircle2,
-  Circle,
   ClipboardList,
   Landmark,
   Loader2,
   Users,
 } from "lucide-react"
 
+import { FundsListCard } from "@/components/dashboard/FundsListCard"
+import {
+  OnboardingProgressCard,
+  type OnboardingStep,
+} from "@/components/dashboard/OnboardingProgressCard"
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Button } from "@edenscale/ui/button"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { Eyebrow } from "@edenscale/ui/eyebrow"
-import { ProgressBar } from "@edenscale/ui/progress"
 import { Stat } from "@edenscale/ui/stat"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { usePendingInvitations } from "@edenscale/shared/hooks/usePendingInvitations"
 import api from "@edenscale/api/client"
 import { orgPath } from "@/lib/managerRoutes"
 import { config } from "@edenscale/api/config"
-import { formatCurrency, formatPercent, titleCase } from "@edenscale/shared/format"
+import { formatCurrency, titleCase } from "@edenscale/shared/format"
 import type { components } from "@edenscale/api/schema"
 
 type DashboardOverview = components["schemas"]["DashboardOverviewResponse"]
@@ -34,17 +35,6 @@ function parseDecimal(value: string | null | undefined) {
   if (value === null || value === undefined || value === "") return 0
   const n = Number(value)
   return Number.isFinite(n) ? n : 0
-}
-
-function StepStatusIcon({ done }: { done: boolean }) {
-  const Icon = done ? CheckCircle2 : Circle
-  return (
-    <Icon
-      aria-hidden
-      strokeWidth={1.5}
-      className={done ? "size-5 text-conifer-700" : "size-5 text-ink-400"}
-    />
-  )
 }
 
 export default function UserDashboardPage() {
@@ -126,7 +116,7 @@ export default function UserDashboardPage() {
   const hasCommitments = totals.commitments > 0
   const hasCapitalCalls = totals.calls > 0
   const hasCommunications = totals.communications > 0
-  const onboardingSteps = [
+  const onboardingSteps: OnboardingStep[] = [
     {
       label: "Create firm",
       caption: hasFirm
@@ -172,8 +162,6 @@ export default function UserDashboardPage() {
       to: orgPath(managerOrgSlug, "letters"),
     },
   ]
-  const completedSteps = onboardingSteps.filter((step) => step.done).length
-  const onboardingProgress = completedSteps / onboardingSteps.length
   const nextStep = onboardingSteps.find((step) => !step.done)
   const primaryActionPath = nextStep?.to ?? (managerOrgSlug ? orgPath(managerOrgSlug) : "/manager")
 
@@ -256,71 +244,30 @@ export default function UserDashboardPage() {
             </Card>
 
             <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-              <Card>
-                <div className="flex flex-col gap-5 px-6 pt-7 md:px-8 md:pt-8">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div className="flex flex-col gap-2">
-                      <Eyebrow>Onboarding progress</Eyebrow>
-                      <h2 className="es-display text-[28px]">
-                        {nextStep
-                          ? `${nextStep.label} is next.`
-                          : "Core setup is complete."}
-                      </h2>
-                      <p className="max-w-2xl font-sans text-[14px] leading-[1.6] text-ink-700">
-                        {nextStep
-                          ? nextStep.caption
-                          : "Your account has the main operating pieces in place across the organizations you can access."}
-                      </p>
-                    </div>
-                    <Button
-                      variant={nextStep ? "primary" : "secondary"}
-                      size="sm"
-                      onClick={() => navigate(primaryActionPath)}
-                      disabled={!managerMembership && nextStep?.to !== "/manager/onboarding"}
-                    >
-                      {nextStep ? nextStep.actionLabel : "Review organizations"}
-                    </Button>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between font-sans text-[12px] text-ink-500">
-                      <span>
-                        {completedSteps} of {onboardingSteps.length} complete
-                      </span>
-                      <span className="es-numeric">
-                        {formatPercent(onboardingProgress, 0)}
-                      </span>
-                    </div>
-                    <ProgressBar value={onboardingProgress} tone="brass" />
-                  </div>
-                </div>
-
-                <CardSection className="pt-6">
-                  <div className="grid grid-cols-1 gap-0 border border-[color:var(--border-hairline)] md:grid-cols-2">
-                    {onboardingSteps.map((step, index) => (
-                      <button
-                        key={step.label}
-                        type="button"
-                        onClick={() => navigate(step.to)}
-                        disabled={!managerMembership && step.to !== "/manager/onboarding" && step.to !== "/manager"}
-                        className="group flex min-h-[112px] items-start gap-4 border-b border-[color:var(--border-hairline)] p-5 text-left transition-colors duration-[140ms] hover:bg-parchment-100 disabled:cursor-not-allowed disabled:opacity-60 md:[&:nth-child(odd)]:border-r md:[&:nth-last-child(-n+2)]:border-b-0"
-                      >
-                        <StepStatusIcon done={step.done} />
-                        <span className="flex min-w-0 flex-1 flex-col gap-1">
-                          <span className="font-sans text-[14px] font-semibold text-ink-900">
-                            {index + 1}. {step.label}
-                          </span>
-                          <span className="font-sans text-[13px] leading-[1.5] text-ink-500">
-                            {step.caption}
-                          </span>
-                          <span className="mt-1 font-sans text-[12px] font-medium text-conifer-700 group-hover:border-b group-hover:border-brass-500">
-                            {step.done ? "Review" : step.actionLabel}
-                          </span>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </CardSection>
-              </Card>
+              {nextStep ? (
+                <OnboardingProgressCard
+                  steps={onboardingSteps}
+                  isStepDisabled={(step) =>
+                    !managerMembership &&
+                    step.to !== "/manager/onboarding" &&
+                    step.to !== "/manager"
+                  }
+                />
+              ) : (
+                <FundsListCard
+                  funds={organizationOverviews.flatMap((entry) =>
+                    (entry.overview as DashboardOverview).recent_funds.map(
+                      (fund) => ({
+                        fund,
+                        to: orgPath(
+                          entry.membership.organization.slug,
+                          "funds",
+                        ),
+                      }),
+                    ),
+                  )}
+                />
+              )}
 
               <Card>
                 <CardSection className="flex flex-col gap-6">

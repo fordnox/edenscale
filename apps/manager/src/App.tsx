@@ -80,10 +80,7 @@ function App() {
           <Route element={<AccountLayout />}>
             <Route path="/manager" element={<AppRootRoute />} />
             <Route path="/manager/profile" element={<ProfilePage />} />
-            <Route
-              path="/manager/notifications"
-              element={<NotificationsPage />}
-            />
+            <Route path="/manager/notifications" element={<NotificationsPage />} />
           </Route>
 
           {/* Organization workspace */}
