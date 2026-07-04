@@ -29,9 +29,6 @@ db-init: ## Create all database tables from SQLAlchemy models (dev only — use 
 db-seed: ## Seed the database with a demo dataset (idempotent)
 	cd apps/backend && uv run python -m scripts.seed_demo
 
-superadmin: ## Promote a user to superadmin by email (usage: make superadmin EMAIL=user@example.com)
-	cd apps/backend && read -p "Enter usr email: " name && uv run python -m scripts.promote_superadmin "$$name"
-
 migration: ## Create a new migration
 	cd apps/backend && read -p "Enter migration name: " name && uv run alembic revision -m "$$name" --autogenerate
 
@@ -46,6 +43,9 @@ start-manager: ## Start the development manager frontend
 
 start-investor: ## Start the development investor frontend
 	pnpm turbo run dev --filter=investor
+
+start-superadmin: ## Start the development superadmin frontend
+	pnpm turbo run dev --filter=superadmin
 
 start-backend: ## Start the development backend
 	cd apps/backend && uv run fastapi dev app/main.py --port 8000 --host localhost

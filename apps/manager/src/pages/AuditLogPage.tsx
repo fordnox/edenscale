@@ -32,7 +32,7 @@ import { cn } from "@edenscale/shared/utils"
 import type { components } from "@edenscale/api/schema"
 
 type AuditLogRead = components["schemas"]["AuditLogRead"]
-type UserRead = components["schemas"]["UserRead"]
+type OrgMemberRead = components["schemas"]["OrgMemberRead"]
 
 const ACTION_OPTIONS = ["create", "update", "delete", "login"] as const
 const PAGE_SIZE = 50
@@ -80,7 +80,7 @@ export default function AuditLogPage() {
   )
 }
 
-function fullName(user: UserRead) {
+function fullName(user: OrgMemberRead) {
   const name = `${user.first_name} ${user.last_name}`.trim()
   return name || user.email
 }
@@ -129,7 +129,7 @@ function AuditLogContent() {
   const usersQuery = useApiQuery("/users")
 
   const userById = useMemo(() => {
-    const map = new Map<string, UserRead>()
+    const map = new Map<string, OrgMemberRead>()
     for (const u of usersQuery.data ?? []) map.set(u.id, u)
     return map
   }, [usersQuery.data])

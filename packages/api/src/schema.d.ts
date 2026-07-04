@@ -68,8 +68,8 @@ export interface paths {
          * @description List the active organization's members.
          *
          *     Membership rows are the source of truth (invitation acceptance only
-         *     creates a membership), so ``role`` reflects the member's role in this
-         *     org rather than the legacy global ``users.role`` column.
+         *     creates a membership), so ``role`` is the member's role in this org —
+         *     users have no global role.
          */
         get: operations["list_users_users_get"];
         put?: never;
@@ -114,10 +114,9 @@ export interface paths {
          * Update User Role
          * @description Change a member's role within the caller's active organization.
          *
-         *     RBAC reads roles from membership rows (``get_active_membership``), so the
-         *     membership — not the legacy global ``users.role`` column — is what gets
-         *     updated. The response's ``role`` mirrors the new membership role, matching
-         *     what ``GET /users`` returns.
+         *     Roles live exclusively on membership rows — this updates the target's
+         *     membership in the caller's org. The response's ``role`` mirrors the new
+         *     membership role, matching what ``GET /users`` returns.
          */
         patch: operations["update_user_role_users__user_id__role_patch"];
         trace?: never;
@@ -2743,6 +2742,49 @@ export interface components {
             /** Updated */
             updated: number;
         };
+        /**
+         * OrgMemberRead
+         * @description A user seen through their membership in the active organization —
+         *     ``role`` is the per-org membership role (users have no global role).
+         */
+        OrgMemberRead: {
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Email */
+            email: string;
+            /** Phone */
+            phone: string | null;
+            /** Title */
+            title: string | null;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Is Superadmin
+             * @default false
+             */
+            is_superadmin: boolean;
+            /** Last Login At */
+            last_login_at: string | null;
+            /** Hanko Subject Id */
+            hanko_subject_id: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            /**
+             * Memberships
+             * @default []
+             */
+            memberships: components["schemas"]["MembershipRead"][];
+            role: components["schemas"]["UserRole"];
+        };
         /** OrganizationCreate */
         OrganizationCreate: {
             type: components["schemas"]["OrganizationType"];
@@ -2950,7 +2992,6 @@ export interface components {
              * Format: uuid4
              */
             id: string;
-            role: components["schemas"]["UserRole"];
             /** First Name */
             first_name: string;
             /** Last Name */
@@ -2963,6 +3004,11 @@ export interface components {
             title: string | null;
             /** Is Active */
             is_active: boolean;
+            /**
+             * Is Superadmin
+             * @default false
+             */
+            is_superadmin: boolean;
             /** Last Login At */
             last_login_at: string | null;
             /** Hanko Subject Id */
@@ -3157,7 +3203,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserRead"][];
+                    "application/json": components["schemas"]["OrgMemberRead"][];
                 };
             };
             /** @description Validation Error */
@@ -3231,7 +3277,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserRead"];
+                    "application/json": components["schemas"]["OrgMemberRead"];
                 };
             };
             /** @description Validation Error */

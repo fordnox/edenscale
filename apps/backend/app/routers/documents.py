@@ -10,8 +10,8 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.rbac import (
     get_active_membership,
+    get_current_user_record,
     require_membership_roles,
-    require_roles,
 )
 from app.models.enums import DocumentType, UserRole
 from app.models.user import User
@@ -125,11 +125,8 @@ def _to_read(document) -> DocumentRead:
 )
 async def init_document_upload(
     payload: DocumentUploadInit,
-    current_user: User = Depends(
-        require_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.lp, UserRole.superadmin
-        )
-    ),
+    # Every role may stage an upload — plain authentication is enough.
+    current_user: User = Depends(get_current_user_record),
 ):
     storage = get_storage()
     key = _generate_storage_key(payload.file_name)

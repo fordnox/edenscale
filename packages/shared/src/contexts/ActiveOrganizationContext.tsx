@@ -61,7 +61,7 @@ export function ActiveOrganizationProvider({
     const all = membershipsQuery.data ?? []
     return roles ? all.filter((m) => roles.includes(m.role)) : all
   }, [membershipsQuery.data, roles])
-  const isSuperadmin = meQuery.data?.role === "superadmin"
+  const isSuperadmin = meQuery.data?.is_superadmin === true
 
   // No auto-heal effect here by design: once inside a scoped app URL, the URL
   // (resolved by OrgScopeLayout) is the source of truth for which org is

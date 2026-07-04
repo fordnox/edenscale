@@ -58,7 +58,6 @@ def _seed_org_and_user(email: str = "lp@example.com"):
             email=email,
             first_name="Priya",
             last_name="Anand",
-            role=UserRole.lp,
         )
         db.add(user)
         db.commit()

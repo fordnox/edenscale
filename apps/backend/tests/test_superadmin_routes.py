@@ -25,6 +25,7 @@ from app.core.slugs import slugify
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
 from app.models import (
@@ -34,6 +35,13 @@ from app.models import (
     UserOrganizationMembership,
     UserRole,
 )
+
+
+@pytest.fixture(autouse=True)
+def configure_superadmin(monkeypatch):
+    """Superadmins are config-defined; register the email these tests
+    sign superadmins in with."""
+    monkeypatch.setattr(settings, "SUPERADMIN_EMAIL", "super@example.com")
 
 
 @pytest.fixture(autouse=True)
@@ -58,7 +66,6 @@ def _seed_user(
     db = SessionLocal()
     try:
         user = User(
-            role=role,
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
@@ -290,7 +297,6 @@ class TestCreateOrganizationWithAdmin:
             assert stub.hanko_subject_id is None
             assert stub.first_name == "Stub"
             assert stub.last_name == "User"
-            assert stub.role == UserRole.lp
 
             membership = (
                 db.query(UserOrganizationMembership)

@@ -58,7 +58,7 @@ import { formatRelativeDays } from "@edenscale/shared/format"
 import type { components } from "@edenscale/api/schema"
 
 type UserRole = components["schemas"]["UserRole"]
-type UserRead = components["schemas"]["UserRead"]
+type OrgMemberRead = components["schemas"]["OrgMemberRead"]
 type FundGroupRead = components["schemas"]["FundGroupRead"]
 type OrganizationType = components["schemas"]["OrganizationType"]
 type InvitationListItem = components["schemas"]["InvitationListItem"]
@@ -100,7 +100,7 @@ const STATUS_TONES: Record<InvitationStatus, BadgeTone> = {
   expired: "negative",
 }
 
-function fullName(user: UserRead) {
+function fullName(user: OrgMemberRead) {
   const name = `${user.first_name} ${user.last_name}`.trim()
   return name || user.email
 }
@@ -127,7 +127,7 @@ function OrganizationSettingsContent() {
   const activeRole = activeMembership?.role
   const isAdmin = activeRole === "admin"
   const isFundManager = activeRole === "fund_manager"
-  const isSuperadmin = me?.role === "superadmin"
+  const isSuperadmin = me?.is_superadmin === true
 
   const orgQuery = useApiQuery(
     "/organizations/{organization_id}",
@@ -245,7 +245,7 @@ function OrganizationSettingsContent() {
     setDescription(org.description ?? "")
   }
 
-  function handleRoleChange(user: UserRead, nextRole: UserRole) {
+  function handleRoleChange(user: OrgMemberRead, nextRole: UserRole) {
     if (user.role === nextRole) return
     if (me && user.id === me.id) {
       toast.error("You cannot change your own role")
@@ -266,7 +266,7 @@ function OrganizationSettingsContent() {
   }, [usersQuery.data])
 
   const userById = useMemo(() => {
-    const map = new Map<string, UserRead>()
+    const map = new Map<string, OrgMemberRead>()
     for (const user of usersQuery.data ?? []) map.set(user.id, user)
     return map
   }, [usersQuery.data])

@@ -53,7 +53,6 @@ def _seed_user(
     db = SessionLocal()
     try:
         user = User(
-            role=role,
             first_name=first_name,
             last_name=last_name,
             email=email or f"{subject_id}@example.com",

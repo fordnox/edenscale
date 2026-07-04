@@ -4,7 +4,6 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from app.models.enums import UserRole
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
 
@@ -56,9 +55,10 @@ class UserRepository:
            sign-in; Hanko has already verified the email before issuing the
            JWT, so binding by email is safe. If the email is already linked to
            a *different* subject, raise ``ValueError``.
-        3. Otherwise provision a fresh row defaulting to ``role=UserRole.lp``.
-           ``first_name`` falls back to a best-effort name derived from the
-           email local part so new users have a reasonable default profile.
+        3. Otherwise provision a fresh row. ``first_name`` falls back to a
+           best-effort name derived from the email local part so new users
+           have a reasonable default profile. Access comes later, via
+           membership rows (or the config-defined superadmin list).
 
         Raises ``ValueError`` if a new user must be provisioned but no email
         was supplied in the token, or if the email is already linked to a
@@ -85,7 +85,6 @@ class UserRepository:
         user = User(
             hanko_subject_id=hanko_id,
             email=email,
-            role=UserRole.lp,
             first_name=first_name or _derive_name_from_email(email) or "",
             last_name=last_name,
         )
@@ -119,7 +118,6 @@ class UserRepository:
         if existing is not None:
             return existing
         stub = User(
-            role=UserRole.lp,
             first_name=first_name or "",
             last_name=last_name or "",
             email=email,

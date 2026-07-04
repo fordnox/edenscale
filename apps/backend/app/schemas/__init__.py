@@ -111,6 +111,7 @@ from app.schemas.task import (
     TaskUpdate,
 )
 from app.schemas.user import (
+    OrgMemberRead,
     UserCreate,
     UserRead,
     UserRoleUpdate,
@@ -204,6 +205,7 @@ __all__ = [
     "SuperadminOrganizationCreate",
     "SuperadminOrganizationCreateResponse",
     "SuperadminOrganizationRead",
+    "OrgMemberRead",
     "TaskCreate",
     "TaskRead",
     "TaskUpdate",

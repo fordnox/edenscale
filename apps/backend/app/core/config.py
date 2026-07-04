@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     HANKO_API_URL: str = ""
     HANKO_API_KEY: str = ""
     HANKO_AUDIENCE: str = "localhost"
+    # Superadmins are defined here, never in the database: a signed-in user
+    # whose Hanko-verified email matches (case-insensitive) IS a superadmin.
+    # Comma-separate to allow more than one; empty means no superadmins.
+    SUPERADMIN_EMAIL: str = ""
     STORAGE_BACKEND: str = "local"
     DEV_STORAGE_TOKEN: str = "dev-storage"
     # Email delivery is via Resend hosted templates (see
@@ -26,6 +30,15 @@ class Settings(BaseSettings):
     # leaves the box.
     RESEND_API_KEY: str = ""
     NOTIFICATION_FROM_EMAIL: str = "notifications@updates.newtaven.com"
+
+    @property
+    def superadmin_emails(self) -> frozenset[str]:
+        """Normalized set parsed from ``SUPERADMIN_EMAIL`` (comma-separated)."""
+        return frozenset(
+            email.strip().lower()
+            for email in self.SUPERADMIN_EMAIL.split(",")
+            if email.strip()
+        )
 
 
 settings = Settings()

@@ -6,15 +6,12 @@ the decoded payload. The platform also needs a local `User` row keyed by
 `organization_id`, and so on. This module bridges the two:
 
 * `get_current_user_record` — find-or-create the local `User` for the JWT
-  subject; default new users to `UserRole.lp` and copy any name/email claims
-  the IdP supplied.
-* `require_roles` — dependency factory that 403s when the resolved user's
-  global role is not in the allow-list. Used for superadmin-only / global
-  routes.
+  subject, copying any name/email claims the IdP supplied.
 * `require_superadmin` — direct dependency that 403s unless the resolved
-  user has the global `superadmin` role. Used for `/superadmin/*` routes
-  that operate across organizations and so do not require an
-  `X-Organization-Id` header.
+  user is a superadmin. Superadmins are defined purely by the
+  `SUPERADMIN_EMAIL` setting (never stored in the database); used for
+  `/superadmin/*` routes that operate across organizations and so do not
+  require an `X-Organization-Id` header.
 * `get_active_membership` — resolves the `UserOrganizationMembership` the
   caller is acting through, based on the `X-Organization-Id` header. Used
   for org-scoped routes where the user may belong to multiple orgs.
@@ -55,31 +52,18 @@ def get_current_user_record(
     return current_user
 
 
-def require_roles(*allowed: UserRole) -> Callable[[User], User]:
-    """Return a dependency that allows the request only for `allowed` roles."""
-
-    def _dep(current_user: User = Depends(get_current_user_record)) -> User:
-        if current_user.role not in allowed:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient role",
-            )
-        return current_user
-
-    return _dep
-
-
 def require_superadmin(
     current_user: User = Depends(get_current_user_record),
 ) -> User:
     """Allow the request only when the resolved user is a superadmin.
 
-    Unlike `require_membership_roles`, this does NOT depend on
+    Superadmin is a config-defined identity (`SUPERADMIN_EMAIL`), not a
+    database role. Unlike `require_membership_roles`, this does NOT depend on
     `get_active_membership` and so does not require an `X-Organization-Id`
-    header — superadmin is a global role used by the `/superadmin/*` control
-    surface to act across all organizations.
+    header — the `/superadmin/*` control surface acts across all
+    organizations.
     """
-    if current_user.role != UserRole.superadmin:
+    if not current_user.is_superadmin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Superadmin role required",
@@ -117,7 +101,7 @@ def get_active_membership(
         membership = repo.get(current_user.id, x_organization_id)  # type: ignore[invalid-argument-type]
         if membership is not None:
             return membership
-        if current_user.role == UserRole.superadmin:
+        if current_user.is_superadmin:
             # Synthesize a transient membership row — never added to the
             # session, never persisted. Lets superadmins act on any org by
             # passing the header without requiring a per-org row.
@@ -131,7 +115,7 @@ def get_active_membership(
             detail="Not a member of this organization",
         )
 
-    if current_user.role == UserRole.superadmin:
+    if current_user.is_superadmin:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="X-Organization-Id required",

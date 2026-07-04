@@ -4,24 +4,20 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
-    Enum,
     String,
     Uuid,
     func,
 )
 from sqlalchemy.orm import relationship
 
+from app.core.config import settings
 from app.core.database import Base
-from app.models.enums import UserRole
 
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    # Global role: distinguishes superadmins and the provisioning default
-    # (lp). Per-organization roles live on UserOrganizationMembership.
-    role = Column(Enum(UserRole, name="user_role"), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     email = Column(String(255), nullable=False, unique=True, index=True)
@@ -65,3 +61,10 @@ class User(Base):
         "Task", back_populates="created_by_user", foreign_keys="Task.created_by_user_id"
     )
     audit_logs = relationship("AuditLog", back_populates="user")
+
+    @property
+    def is_superadmin(self) -> bool:
+        """Superadmins are defined by ``SUPERADMIN_EMAIL`` in config, never
+        stored: a user is a superadmin iff their (Hanko-verified) email is
+        listed there. Per-organization roles live on memberships."""
+        return (self.email or "").lower() in settings.superadmin_emails

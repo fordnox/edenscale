@@ -34,7 +34,6 @@ def _seed_user(
     db = SessionLocal()
     try:
         user = User(
-            role=role,
             first_name=first_name,
             last_name=last_name,
             email=email or f"{subject_id}@example.com",
@@ -69,7 +68,6 @@ def _seed_invited_member(
     db = SessionLocal()
     try:
         user = User(
-            role=UserRole.lp,
             first_name="Invited",
             last_name="Member",
             email=email or f"{subject_id}@example.com",
@@ -136,17 +134,17 @@ class TestReadCurrentUser:
         data = response.json()
         assert data["id"] == user_id
         assert data["email"] == "me@example.com"
-        assert data["role"] == "fund_manager"
+        assert data["is_superadmin"] is False
         assert data["first_name"] == "Margot"
         assert data["last_name"] == "Lane"
 
-    def test_get_me_auto_provisions_unknown_subject_as_lp(self, client, override_user):
+    def test_get_me_auto_provisions_unknown_subject(self, client, override_user):
         override_user("hanko-fresh")
         response = client.get("/users/me")
 
         assert response.status_code == 200
         data = response.json()
-        assert data["role"] == "lp"
+        assert data["is_superadmin"] is False
         assert data["hanko_subject_id"] == "hanko-fresh"
 
 

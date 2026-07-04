@@ -33,6 +33,7 @@ from app.core.slugs import slugify
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
 from app.models import (
@@ -45,6 +46,13 @@ from app.models import (
 )
 from app.models.enums import InvitationStatus
 from app.models.notification import Notification
+
+
+@pytest.fixture(autouse=True)
+def configure_superadmin(monkeypatch):
+    """Superadmins are config-defined; register the email these tests
+    sign superadmins in with."""
+    monkeypatch.setattr(settings, "SUPERADMIN_EMAIL", "root@example.com")
 
 
 @pytest.fixture(autouse=True)
@@ -98,7 +106,6 @@ def _seed_user(
     db = SessionLocal()
     try:
         user = User(
-            role=role,
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",
@@ -762,7 +769,6 @@ class TestPendingForMe:
         db = SessionLocal()
         try:
             user = User(
-                role=UserRole.lp,
                 first_name="No",
                 last_name="Email",
                 email="",

@@ -110,7 +110,6 @@ def _get_or_create_user(
     if user is None:
         user = repo.create(
             UserCreate(
-                role=role,
                 first_name=first_name,
                 last_name=last_name,
                 email=email,

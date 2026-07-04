@@ -3,7 +3,6 @@ import { useLocation, useParams } from "react-router-dom"
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
-  Building2,
   ClipboardCheck,
   FileText,
   History,
@@ -15,7 +14,6 @@ import {
 } from "lucide-react"
 
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
-import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import {
   fundPath,
   fundSectionPath,
@@ -45,8 +43,6 @@ export interface NavDivider {
 }
 
 export type NavEntry = NavItem | NavSection | NavDivider
-
-const SUPERADMIN_ORGANIZATIONS_PATH = "/manager/superadmin/organizations"
 
 function orgItems(orgSlug: string): NavItem[] {
   const overview: NavItem = {
@@ -107,14 +103,12 @@ interface UseNavItemsResult {
   isLoading: boolean
 }
 
-/** Nav items for the organization-level workspace (/manager/:orgSlug/...). */
+/** Nav items for the organization-level workspace (/manager/:orgSlug/...).
+ * Superadmin pages live in the separate /superadmin SPA, so there is no
+ * superadmin section here. */
 export function useOrgNavItems(): UseNavItemsResult {
   const { activeMembership, isLoading } = useActiveOrganization()
   const params = useParams<{ orgSlug?: string }>()
-  const meQuery = useApiQuery("/users/me", undefined, {
-    staleTime: 5 * 60 * 1000,
-  })
-  const isSuperadmin = meQuery.data?.role === "superadmin"
 
   const role = activeMembership?.role ?? null
   const orgSlug = params.orgSlug ?? activeMembership?.organization.slug ?? null
@@ -127,23 +121,8 @@ export function useOrgNavItems(): UseNavItemsResult {
       end: true,
     }
     const tenantItems = orgSlug ? orgItems(orgSlug) : []
-    if (!isSuperadmin) {
-      return orgSlug ? [homeItem, { kind: "divider" }, ...tenantItems] : [homeItem]
-    }
-
-    const superadminEntries: NavEntry[] = [
-      homeItem,
-      { kind: "divider" },
-      { kind: "section", label: "Superadmin" },
-      {
-        to: SUPERADMIN_ORGANIZATIONS_PATH,
-        label: "Organizations",
-        icon: Building2,
-      },
-    ]
-    if (tenantItems.length === 0) return superadminEntries
-    return [...superadminEntries, { kind: "divider" }, ...tenantItems]
-  }, [isSuperadmin, orgSlug])
+    return orgSlug ? [homeItem, { kind: "divider" }, ...tenantItems] : [homeItem]
+  }, [orgSlug])
 
   return { items, role, isLoading }
 }

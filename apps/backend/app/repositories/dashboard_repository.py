@@ -79,7 +79,7 @@ class DashboardRepository:
             membership = self._memberships.get(user.id, header_org_id)  # type: ignore[invalid-argument-type]
             if membership is not None:
                 return membership
-            if user.role == UserRole.superadmin:
+            if user.is_superadmin:
                 return UserOrganizationMembership(
                     user_id=user.id,
                     organization_id=header_org_id,
@@ -89,7 +89,7 @@ class DashboardRepository:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not a member of this organization",
             )
-        if user.role == UserRole.superadmin:
+        if user.is_superadmin:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="X-Organization-Id required",

@@ -11,10 +11,14 @@ export default {
         ? "/manager"
         : url.pathname === "/investor" || url.pathname.startsWith("/investor/")
           ? "/investor"
-          : null
+          : url.pathname === "/superadmin" ||
+              url.pathname.startsWith("/superadmin/")
+            ? "/superadmin"
+            : null
 
-    // Product SPAs mounted at /manager/ and /investor/ — serve the asset,
-    // falling back to the SPA shell for client-side document navigations.
+    // Product SPAs mounted at /manager/, /investor/ and /superadmin/ — serve
+    // the asset, falling back to the SPA shell for client-side document
+    // navigations.
     if (appMount) {
       const res = await env.ASSETS.fetch(request)
       if (res.status === 404 || (res.status >= 300 && res.status < 400)) {

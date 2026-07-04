@@ -4,9 +4,17 @@ import pytest
 from fastapi.testclient import TestClient
 from app.core.slugs import slugify
 
+from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
 from app.models import Organization, OrganizationType, User, UserRole
+
+
+@pytest.fixture(autouse=True)
+def configure_superadmin(monkeypatch):
+    """Superadmins are config-defined; register the email these tests
+    sign superadmins in with."""
+    monkeypatch.setattr(settings, "SUPERADMIN_EMAIL", "super@example.com")
 
 
 @pytest.fixture(autouse=True)
@@ -31,7 +39,6 @@ def _seed_user(
     db = SessionLocal()
     try:
         user = User(
-            role=role,
             first_name="First",
             last_name="Last",
             email=email or f"{subject_id}@example.com",

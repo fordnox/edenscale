@@ -39,7 +39,6 @@ def _seed_user_and_org(
         db.add(org)
         db.flush()
         user = User(
-            role=UserRole.fund_manager,
             first_name="Alice",
             last_name="Liddell",
             email=email,

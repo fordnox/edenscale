@@ -7,7 +7,6 @@ from app.schemas.user_organization_membership import MembershipRead
 
 
 class UserCreate(BaseModel):
-    role: UserRole
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
     email: EmailStr
@@ -37,13 +36,15 @@ class UserRoleUpdate(BaseModel):
 
 class UserRead(BaseModel):
     id: UUID4
-    role: UserRole
     first_name: str
     last_name: str
     email: str
     phone: str | None
     title: str | None
     is_active: bool
+    # Computed from SUPERADMIN_EMAIL config (User.is_superadmin property) —
+    # superadmins are never stored in the database.
+    is_superadmin: bool = False
     last_login_at: datetime | None
     hanko_subject_id: str | None
     created_at: datetime | None
@@ -51,3 +52,10 @@ class UserRead(BaseModel):
     memberships: list[MembershipRead] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class OrgMemberRead(UserRead):
+    """A user seen through their membership in the active organization —
+    ``role`` is the per-org membership role (users have no global role)."""
+
+    role: UserRole

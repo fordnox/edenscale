@@ -159,7 +159,9 @@ function OrgCrumb({
               <>
                 {memberships.length > 0 && <DropdownMenuSeparator />}
                 <DropdownMenuItem
-                  onSelect={() => navigate("/manager/superadmin/organizations")}
+                  // The superadmin console is a separate SPA — full document
+                  // navigation, not a client-side route change.
+                  onSelect={() => window.location.assign("/superadmin")}
                   className="min-h-11 md:min-h-0 font-sans text-[13px] text-ink-900"
                 >
                   <span>Manage all organizations →</span>

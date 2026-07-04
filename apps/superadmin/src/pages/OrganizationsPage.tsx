@@ -3,8 +3,7 @@ import { Helmet } from "react-helmet-async"
 import { useNavigate } from "react-router-dom"
 import { Building2, Loader2, Plus } from "lucide-react"
 
-import { RequireSuperadmin } from "@/components/RequireSuperadmin"
-import { CreateOrganizationDialog } from "@/components/superadmin/CreateOrganizationDialog"
+import { CreateOrganizationDialog } from "@/components/CreateOrganizationDialog"
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Badge } from "@edenscale/ui/badge"
 import { Button } from "@edenscale/ui/button"
@@ -24,15 +23,7 @@ const ORG_TYPE_LABELS: Record<OrganizationType, string> = {
   service_provider: "Service provider",
 }
 
-export default function SuperadminOrganizationsPage() {
-  return (
-    <RequireSuperadmin>
-      <SuperadminOrganizationsContent />
-    </RequireSuperadmin>
-  )
-}
-
-function SuperadminOrganizationsContent() {
+export default function OrganizationsPage() {
   const navigate = useNavigate()
   const [createOpen, setCreateOpen] = useState(false)
 
@@ -103,7 +94,7 @@ function SuperadminOrganizationsContent() {
                       key={org.id}
                       className="cursor-pointer"
                       onClick={() =>
-                        navigate(`/manager/superadmin/organizations/${org.id}`)
+                        navigate(`/superadmin/organizations/${org.id}`)
                       }
                     >
                       <TD primary>{org.name}</TD>

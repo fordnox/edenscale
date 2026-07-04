@@ -50,7 +50,6 @@ def _seed_org(db, name: str = "NewTaven Capital") -> int:
 
 def _seed_user(db, email: str, role: UserRole = UserRole.admin) -> int:
     user = User(
-        role=role,
         first_name="First",
         last_name="Last",
         email=email,

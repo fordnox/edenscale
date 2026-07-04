@@ -1,10 +1,10 @@
 """Tests for the auth/RBAC layer.
 
-User resolution and first-login provisioning now live in
+User resolution and first-login provisioning live in
 `UserRepository.get_or_provision_by_hanko_id` (exercised here directly against
-the SQLAlchemy session); `app.core.rbac` only layers role checks
-(`require_roles` / `require_superadmin`) on top of the resolved user. No
-FastAPI client needed.
+the SQLAlchemy session). Superadmins are defined purely by the
+``SUPERADMIN_EMAIL`` setting — `User.is_superadmin` and `require_superadmin`
+read config, never the database. No FastAPI client needed.
 """
 
 import pytest
@@ -12,9 +12,10 @@ from fastapi import HTTPException
 from app.core.slugs import slugify
 
 from app.core.auth import _extract_email_from_hanko_payload
+from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
-from app.core.rbac import require_roles, require_superadmin
-from app.models import Organization, OrganizationType, User, UserRole
+from app.core.rbac import require_superadmin
+from app.models import Organization, OrganizationType, User
 from app.repositories.user_repository import UserRepository
 
 
@@ -45,7 +46,6 @@ def test_unknown_subject_is_auto_provisioned(db):
     assert is_new is True
     assert user.id is not None
     assert user.hanko_subject_id == "hanko-new-1"
-    assert user.role == UserRole.lp
     assert user.email == "new@example.com"
     assert user.first_name == "Ada"
     assert user.last_name == "Lovelace"
@@ -86,7 +86,6 @@ def test_auto_provision_derives_name_when_claims_missing(db):
     )
 
     assert is_new is True
-    assert user.role == UserRole.lp
     assert user.email == "solo@example.com"
     assert user.first_name == "Solo"  # derived from the email local part
     assert user.last_name == ""
@@ -97,7 +96,6 @@ def test_existing_user_is_returned_unchanged(db):
     db.add(org)
     db.flush()
     existing = User(
-        role=UserRole.fund_manager,
         first_name="Margot",
         last_name="Lane",
         email="margot@example.com",
@@ -115,7 +113,6 @@ def test_existing_user_is_returned_unchanged(db):
 
     assert is_new is False
     assert user.id == existing_id
-    assert user.role == UserRole.fund_manager
     assert user.email == "margot@example.com"
     assert user.first_name == "Margot"
 
@@ -123,13 +120,12 @@ def test_existing_user_is_returned_unchanged(db):
 def test_seed_row_is_claimed_by_email_on_first_signin(db):
     """Pre-provisioned user (e.g. from `make seed`) has hanko_subject_id=None.
     First Hanko sign-in with the matching email claim should bind the row by
-    setting `hanko_subject_id`, not create a duplicate `lp` user.
+    setting `hanko_subject_id`, not create a duplicate user.
     """
     org = Organization(name="NewTaven Capital", slug=slugify("NewTaven Capital"), type=OrganizationType.fund_manager_firm)
     db.add(org)
     db.flush()
     seeded = User(
-        role=UserRole.fund_manager,
         first_name="Ava",
         last_name="Morgan",
         email="ava.morgan@newtaven.demo",
@@ -147,7 +143,6 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
     assert is_new is False
     assert user.id == seeded_id
     assert user.hanko_subject_id == "hanko-claim-1"
-    assert user.role == UserRole.fund_manager
     assert (
         db.query(User).filter(User.email == "ava.morgan@newtaven.demo").count() == 1
     )
@@ -163,7 +158,6 @@ def test_seed_claim_refuses_when_email_already_linked(db):
     db.add(org)
     db.flush()
     existing = User(
-        role=UserRole.fund_manager,
         first_name="Ava",
         last_name="Morgan",
         email="ava.morgan@newtaven.demo",
@@ -186,60 +180,47 @@ def test_seed_claim_refuses_when_email_already_linked(db):
     )
 
 
-def test_require_roles_allows_matching_role():
-    user = User(
-        role=UserRole.admin,
+def _user(email: str) -> User:
+    return User(
         first_name="A",
         last_name="B",
-        email="a@b.com",
-        hanko_subject_id="x",
-    )
-    dep = require_roles(UserRole.admin, UserRole.fund_manager)
-
-    assert dep(current_user=user) is user
-
-
-def test_require_roles_rejects_other_role():
-    user = User(
-        role=UserRole.lp,
-        first_name="A",
-        last_name="B",
-        email="a@b.com",
-        hanko_subject_id="x",
-    )
-    dep = require_roles(UserRole.admin, UserRole.fund_manager)
-
-    with pytest.raises(HTTPException) as excinfo:
-        dep(current_user=user)
-    assert excinfo.value.status_code == 403
-
-
-def test_require_superadmin_allows_superadmin():
-    user = User(
-        role=UserRole.superadmin,
-        first_name="Sam",
-        last_name="Root",
-        email="sam@example.com",
+        email=email,
         hanko_subject_id="x",
     )
 
-    assert require_superadmin(current_user=user) is user
 
+class TestConfigDefinedSuperadmin:
+    def test_is_superadmin_matches_configured_email(self, monkeypatch):
+        monkeypatch.setattr(settings, "SUPERADMIN_EMAIL", "root@example.com")
+        assert _user("root@example.com").is_superadmin is True
+        assert _user("someone-else@example.com").is_superadmin is False
 
-@pytest.mark.parametrize(
-    "role",
-    [UserRole.admin, UserRole.fund_manager, UserRole.lp],
-)
-def test_require_superadmin_rejects_non_superadmin(role):
-    user = User(
-        role=role,
-        first_name="A",
-        last_name="B",
-        email="a@b.com",
-        hanko_subject_id="x",
-    )
+    def test_match_is_case_insensitive(self, monkeypatch):
+        monkeypatch.setattr(settings, "SUPERADMIN_EMAIL", "Root@Example.COM")
+        assert _user("ROOT@example.com").is_superadmin is True
 
-    with pytest.raises(HTTPException) as excinfo:
-        require_superadmin(current_user=user)
-    assert excinfo.value.status_code == 403
-    assert excinfo.value.detail == "Superadmin role required"
+    def test_supports_comma_separated_list(self, monkeypatch):
+        monkeypatch.setattr(
+            settings, "SUPERADMIN_EMAIL", "root@example.com, ops@example.com"
+        )
+        assert _user("ops@example.com").is_superadmin is True
+        assert _user("root@example.com").is_superadmin is True
+        assert _user("other@example.com").is_superadmin is False
+
+    def test_empty_setting_means_no_superadmins(self, monkeypatch):
+        monkeypatch.setattr(settings, "SUPERADMIN_EMAIL", "")
+        assert _user("root@example.com").is_superadmin is False
+
+    def test_require_superadmin_allows_configured_email(self, monkeypatch):
+        monkeypatch.setattr(settings, "SUPERADMIN_EMAIL", "root@example.com")
+        user = _user("root@example.com")
+
+        assert require_superadmin(current_user=user) is user
+
+    def test_require_superadmin_rejects_unconfigured_email(self, monkeypatch):
+        monkeypatch.setattr(settings, "SUPERADMIN_EMAIL", "root@example.com")
+
+        with pytest.raises(HTTPException) as excinfo:
+            require_superadmin(current_user=_user("a@b.com"))
+        assert excinfo.value.status_code == 403
+        assert excinfo.value.detail == "Superadmin role required"

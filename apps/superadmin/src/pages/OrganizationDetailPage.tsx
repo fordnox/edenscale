@@ -5,8 +5,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { ChevronLeft, Loader2, Plus, Users } from "lucide-react"
 import { toast } from "sonner"
 
-import { RequireSuperadmin } from "@/components/RequireSuperadmin"
-import { AssignAdminDialog } from "@/components/superadmin/AssignAdminDialog"
+import { AssignAdminDialog } from "@/components/AssignAdminDialog"
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Badge } from "@edenscale/ui/badge"
 import { Button } from "@edenscale/ui/button"
@@ -36,15 +35,7 @@ const ORG_TYPE_LABELS: Record<OrganizationType, string> = {
   service_provider: "Service provider",
 }
 
-export default function SuperadminOrganizationDetailPage() {
-  return (
-    <RequireSuperadmin>
-      <SuperadminOrganizationDetailContent />
-    </RequireSuperadmin>
-  )
-}
-
-function SuperadminOrganizationDetailContent() {
+export default function OrganizationDetailPage() {
   const params = useParams<{ organizationId: string }>()
   const orgId = params.organizationId ?? null
 
@@ -57,7 +48,7 @@ function SuperadminOrganizationDetailContent() {
             body="The URL does not include a valid organization id."
             action={
               <Button asChild variant="secondary" size="sm">
-                <Link to="/manager/superadmin/organizations">Back to organizations</Link>
+                <Link to="/superadmin">Back to organizations</Link>
               </Button>
             }
           />
@@ -147,7 +138,7 @@ function OrganizationDetail({ organizationId }: OrganizationDetailProps) {
 
       <div className="px-4 pt-6 sm:px-6 md:px-8">
         <Button asChild variant="ghost" size="sm" className="-ml-2">
-          <Link to="/manager/superadmin/organizations">
+          <Link to="/superadmin">
             <ChevronLeft strokeWidth={1.5} className="size-4" />
             All organizations
           </Link>
@@ -191,9 +182,7 @@ function OrganizationDetail({ organizationId }: OrganizationDetailProps) {
               body="This organization may have been removed."
               action={
                 <Button asChild variant="secondary" size="sm">
-                  <Link to="/manager/superadmin/organizations">
-                    Back to organizations
-                  </Link>
+                  <Link to="/superadmin">Back to organizations</Link>
                 </Button>
               }
             />

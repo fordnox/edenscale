@@ -10,6 +10,7 @@ import pytest
 from fastapi import HTTPException
 from app.core.slugs import slugify
 
+from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models import (
@@ -19,6 +20,13 @@ from app.models import (
     UserOrganizationMembership,
     UserRole,
 )
+
+
+@pytest.fixture(autouse=True)
+def configure_superadmin(monkeypatch):
+    """Superadmins are config-defined; register the email these tests
+    sign superadmins in with."""
+    monkeypatch.setattr(settings, "SUPERADMIN_EMAIL", "root@example.com")
 
 
 @pytest.fixture(autouse=True)
@@ -47,7 +55,6 @@ def _seed_org(db, name: str = "NewTaven Capital") -> Organization:
 
 def _seed_user(db, role: UserRole, *, email: str, subject_id: str) -> User:
     user = User(
-        role=role,
         first_name="First",
         last_name="Last",
         email=email,

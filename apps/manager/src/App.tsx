@@ -20,8 +20,6 @@ import NotificationsPage from './pages/NotificationsPage'
 import ProfilePage from './pages/ProfilePage'
 import OrganizationSettingsPage from './pages/OrganizationSettingsPage'
 import AuditLogPage from './pages/AuditLogPage'
-import SuperadminOrganizationsPage from './pages/superadmin/SuperadminOrganizationsPage'
-import SuperadminOrganizationDetailPage from './pages/superadmin/SuperadminOrganizationDetailPage'
 import InvitationAcceptPage from './pages/InvitationAcceptPage'
 import OnboardingPage from './pages/OnboardingPage'
 import FundOverviewPage from './pages/funds/FundOverviewPage'
@@ -85,14 +83,6 @@ function App() {
             <Route
               path="/manager/notifications"
               element={<NotificationsPage />}
-            />
-            <Route
-              path="/manager/superadmin/organizations"
-              element={<SuperadminOrganizationsPage />}
-            />
-            <Route
-              path="/manager/superadmin/organizations/:organizationId"
-              element={<SuperadminOrganizationDetailPage />}
             />
           </Route>
 

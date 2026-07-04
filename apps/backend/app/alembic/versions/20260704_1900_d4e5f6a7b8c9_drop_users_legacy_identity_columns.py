@@ -1,9 +1,14 @@
-"""drop_users_organization_id
+"""drop_users_legacy_identity_columns
 
 Memberships (user_organization_memberships) are the source of truth for who
-belongs to an organization and with what role; the legacy single-org
-``users.organization_id`` column is no longer read anywhere. Backfill any
-membership rows still missing from legacy data, then drop the column.
+belongs to an organization and with what role, and superadmins are defined
+purely by the SUPERADMIN_EMAIL setting — so both legacy identity columns on
+``users`` go away:
+
+* ``organization_id`` — backfill any membership rows still missing from
+  legacy data (copying the legacy role), then drop.
+* ``role`` — global roles no longer exist; drop (former superadmins must be
+  listed in SUPERADMIN_EMAIL to keep their access).
 
 Revision ID: d4e5f6a7b8c9
 Revises: c3d4e5f6a7b8
@@ -65,7 +70,9 @@ def upgrade() -> None:
             "id": uuid.uuid4(),
             "user_id": row.id,
             "organization_id": row.organization_id,
-            "role": row.role,
+            # Memberships never carry the superadmin role; superadmins are
+            # config-defined and act on orgs via synthesized memberships.
+            "role": row.role if row.role != "superadmin" else "admin",
         }
         for row in legacy_rows
         if (row.id, row.organization_id) not in existing
@@ -73,17 +80,30 @@ def upgrade() -> None:
     if to_insert:
         conn.execute(memberships.insert(), to_insert)
 
-    # Batch mode so the drop also works on SQLite (dev default), where an
+    # Batch mode so the drops also work on SQLite (dev default), where an
     # indexed / FK-bearing column cannot be dropped in place.
     with op.batch_alter_table("users") as batch_op:
         batch_op.drop_index(op.f("ix_users_organization_id"))
         batch_op.drop_column("organization_id")
+        batch_op.drop_column("role")
+
+    # The user_role enum type has no remaining columns on Postgres.
+    if conn.dialect.name == "postgresql":
+        sa.Enum(name="user_role").drop(conn, checkfirst=True)
 
 
 def downgrade() -> None:
     conn = op.get_bind()
 
+    role_enum = sa.Enum(
+        "superadmin", "admin", "fund_manager", "lp", name="user_role"
+    )
+    role_enum.create(conn, checkfirst=True)
+
     with op.batch_alter_table("users") as batch_op:
+        batch_op.add_column(
+            sa.Column("role", role_enum, nullable=False, server_default="lp")
+        )
         batch_op.add_column(
             sa.Column("organization_id", sa.Uuid(), nullable=True)
         )
@@ -97,21 +117,28 @@ def downgrade() -> None:
             op.f("ix_users_organization_id"), ["organization_id"], unique=False
         )
 
-    # Best-effort restore: users with exactly one membership get that org
-    # back; multi-org users cannot be represented by the single-org column
-    # and stay NULL.
+    # Best-effort restore: users with exactly one membership get that org and
+    # role back; multi-org users cannot be represented by the single-org
+    # columns and keep the defaults.
     memberships = _memberships_table()
     users = _users_table()
     rows = conn.execute(
-        sa.select(memberships.c.user_id, memberships.c.organization_id)
+        sa.select(
+            memberships.c.user_id,
+            memberships.c.organization_id,
+            memberships.c.role,
+        )
     ).fetchall()
-    org_by_user: dict = {}
+    by_user: dict = {}
     for row in rows:
-        org_by_user.setdefault(row.user_id, set()).add(row.organization_id)
-    for user_id, org_ids in org_by_user.items():
-        if len(org_ids) == 1:
+        by_user.setdefault(row.user_id, []).append(row)
+    for user_id, user_rows in by_user.items():
+        if len(user_rows) == 1:
             conn.execute(
                 users.update()
                 .where(users.c.id == user_id)
-                .values(organization_id=next(iter(org_ids)))
+                .values(
+                    organization_id=user_rows[0].organization_id,
+                    role=user_rows[0].role,
+                )
             )

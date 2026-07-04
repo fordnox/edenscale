@@ -51,6 +51,11 @@ def _rewrite_to_test(dsn: str) -> str:
 _TEST_DSN = _rewrite_to_test(_load_env_dsn())
 os.environ["APP_DATABASE_DSN"] = _TEST_DSN
 
+# Superadmins are config-defined (SUPERADMIN_EMAIL); force the set empty so a
+# developer's .env can't leak superadmin powers into tests. Tests opt in by
+# monkeypatching ``settings.SUPERADMIN_EMAIL``.
+os.environ["SUPERADMIN_EMAIL"] = ""
+
 
 def _ensure_test_database() -> None:
     """Create the ``_test`` database if it does not yet exist (Postgres only)."""

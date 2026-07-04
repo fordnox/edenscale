@@ -17,6 +17,7 @@ from app.repositories.user_organization_membership_repository import (
 )
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import (
+    OrgMemberRead,
     UserRead,
     UserRoleUpdate,
     UserSelfUpdate,
@@ -61,7 +62,7 @@ async def list_my_memberships(
     return repo.list_for_user(current_user.id)  # type: ignore[invalid-argument-type]
 
 
-@router.get("", response_model=list[UserRead])
+@router.get("", response_model=list[OrgMemberRead])
 async def list_users(
     skip: int = 0,
     limit: int = 100,
@@ -76,8 +77,8 @@ async def list_users(
     """List the active organization's members.
 
     Membership rows are the source of truth (invitation acceptance only
-    creates a membership), so ``role`` reflects the member's role in this
-    org rather than the legacy global ``users.role`` column.
+    creates a membership), so ``role`` is the member's role in this org —
+    users have no global role.
     """
     repo = UserOrganizationMembershipRepository(db)
     rows = repo.list_org_members(
@@ -87,7 +88,10 @@ async def list_users(
         include_inactive=include_inactive,
     )
     return [
-        UserRead.model_validate(user).model_copy(update={"role": m.role})
+        OrgMemberRead(
+            **UserRead.model_validate(user).model_dump(),
+            role=m.role,  # type: ignore[invalid-argument-type]
+        )
         for m, user in rows
     ]
 
@@ -124,7 +128,7 @@ async def update_user(
     return repo.update(user_id, data)
 
 
-@router.patch("/{user_id}/role", response_model=UserRead)
+@router.patch("/{user_id}/role", response_model=OrgMemberRead)
 async def update_user_role(
     user_id: uuid.UUID,
     data: UserRoleUpdate,
@@ -135,10 +139,9 @@ async def update_user_role(
 ):
     """Change a member's role within the caller's active organization.
 
-    RBAC reads roles from membership rows (``get_active_membership``), so the
-    membership — not the legacy global ``users.role`` column — is what gets
-    updated. The response's ``role`` mirrors the new membership role, matching
-    what ``GET /users`` returns.
+    Roles live exclusively on membership rows — this updates the target's
+    membership in the caller's org. The response's ``role`` mirrors the new
+    membership role, matching what ``GET /users`` returns.
     """
     target = UserRepository(db).get_by_id(user_id)
     if target is None:
@@ -160,4 +163,7 @@ async def update_user_role(
         data.role,
     )
     assert updated is not None
-    return UserRead.model_validate(target).model_copy(update={"role": updated.role})
+    return OrgMemberRead(
+        **UserRead.model_validate(target).model_dump(),
+        role=updated.role,  # type: ignore[invalid-argument-type]
+    )
