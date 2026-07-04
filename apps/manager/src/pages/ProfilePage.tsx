@@ -1,41 +1,20 @@
 import { useEffect, useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
-import { Link, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
-import { ArrowUpRight, Loader2, LogOut } from "lucide-react"
+import { Loader2, LogOut } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHero } from "@edenscale/ui/PageHero"
-import { Badge } from "@edenscale/ui/badge"
 import { Button } from "@edenscale/ui/button"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { Eyebrow } from "@edenscale/ui/eyebrow"
 import { Input } from "@edenscale/ui/input"
 import { Label } from "@edenscale/ui/label"
-import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { useAuth } from "@edenscale/auth/useAuth"
-import { orgPath } from "@/lib/managerRoutes"
 import { config } from "@edenscale/api/config"
-import { titleCase } from "@edenscale/shared/format"
-import type { components } from "@edenscale/api/schema"
-
-type UserRole = components["schemas"]["UserRole"]
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  superadmin: "Superadmin",
-  admin: "Administrator",
-  fund_manager: "Fund manager",
-  lp: "Limited partner",
-}
-
-const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  superadmin: "Platform-level access across all organizations.",
-  admin: "Full access to organization settings, audit log, and all firm data.",
-  fund_manager: "Manages funds, investors, capital activity, and team members.",
-  lp: "Read-only access to your commitments, documents, and letters.",
-}
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -46,16 +25,6 @@ export default function ProfilePage() {
     staleTime: 5 * 60 * 1000,
   })
   const me = meQuery.data
-  const { activeMembership } = useActiveOrganization()
-
-  const orgId = activeMembership?.organization_id ?? null
-  const orgQuery = useApiQuery(
-    "/organizations/{organization_id}",
-    {
-      params: { path: { organization_id: orgId ?? "" } },
-    },
-    { enabled: orgId !== null, staleTime: 5 * 60 * 1000 },
-  )
 
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -86,11 +55,6 @@ export default function ProfilePage() {
       title.trim() !== (me.title ?? "")
     )
   }, [me, firstName, lastName, phone, title])
-
-  const displayRole: UserRole | null = activeMembership?.role ?? me?.role ?? null
-  const canManageOrg =
-    activeMembership?.role === "admin" ||
-    activeMembership?.role === "fund_manager"
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -130,7 +94,7 @@ export default function ProfilePage() {
       <PageHero
         eyebrow="Account"
         title="Your profile."
-        description="Update your contact details. Roles and organization membership are managed by your administrator."
+        description="Update your contact details. Your role and organization access live under Organization settings."
       />
 
       <div className="px-4 pb-16 sm:px-6 md:px-8">
@@ -233,69 +197,6 @@ export default function ProfilePage() {
                     </Button>
                   </div>
                 </form>
-              </CardSection>
-            </Card>
-
-            <Card>
-              <CardSection>
-                <Eyebrow>Role &amp; access</Eyebrow>
-                <div className="mt-4 flex flex-col gap-3">
-                  {displayRole ? (
-                    <>
-                      <div className="flex items-center gap-3">
-                        <Badge tone="info">{ROLE_LABELS[displayRole]}</Badge>
-                        <span className="font-sans text-[12px] text-ink-500">
-                          {titleCase(displayRole)}
-                        </span>
-                      </div>
-                      <p className="font-sans text-[13px] leading-[1.55] text-ink-700">
-                        {ROLE_DESCRIPTIONS[displayRole]}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="font-sans text-[13px] leading-[1.55] text-ink-700">
-                      No role assigned in the current organization.
-                    </p>
-                  )}
-                  <p className="font-sans text-[12px] text-ink-500">
-                    Roles are managed by your administrator. Contact them if your
-                    access needs to change.
-                  </p>
-                </div>
-              </CardSection>
-            </Card>
-
-            <Card>
-              <CardSection>
-                <Eyebrow>Organization</Eyebrow>
-                {orgId === null ? (
-                  <p className="mt-4 font-sans text-[13px] text-ink-700">
-                    You are not currently associated with an organization.
-                  </p>
-                ) : (
-                  <div className="mt-4 flex flex-col gap-3">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <h3 className="font-display text-[20px] tracking-tight text-ink-900">
-                        {orgQuery.data?.name ?? (orgQuery.isLoading ? "Loading…" : "—")}
-                      </h3>
-                      {orgQuery.data?.legal_name &&
-                        orgQuery.data.legal_name !== orgQuery.data.name && (
-                          <span className="font-sans text-[12px] text-ink-500">
-                            {orgQuery.data.legal_name}
-                          </span>
-                        )}
-                    </div>
-                    {canManageOrg && activeMembership && (
-                      <Link
-                        to={orgPath(activeMembership.organization.slug, "settings")}
-                        className="inline-flex w-fit items-center gap-1 font-sans text-[13px] text-conifer-700 underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
-                      >
-                        Manage organization settings
-                        <ArrowUpRight strokeWidth={1.5} className="size-4" />
-                      </Link>
-                    )}
-                  </div>
-                )}
               </CardSection>
             </Card>
 

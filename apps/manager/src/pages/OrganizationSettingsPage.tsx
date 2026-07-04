@@ -71,6 +71,13 @@ const ROLE_LABELS: Record<UserRole, string> = {
   lp: "Limited partner",
 }
 
+const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  superadmin: "Platform-level access across all organizations.",
+  admin: "Full access to organization settings, audit log, and all firm data.",
+  fund_manager: "Manages funds, investors, capital activity, and team members.",
+  lp: "Read-only access to your commitments, documents, and letters.",
+}
+
 const ORG_TYPE_LABELS: Record<OrganizationType, string> = {
   fund_manager_firm: "Fund manager firm",
   investor_firm: "Investor firm",
@@ -324,6 +331,28 @@ function OrganizationSettingsContent() {
           </Card>
         ) : (
           <div className="mx-auto flex max-w-5xl flex-col gap-6">
+            <Card>
+              <CardSection>
+                <Eyebrow>Your access</Eyebrow>
+                <div className="mt-4 flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <Badge tone="info">
+                      {activeRole ? ROLE_LABELS[activeRole] : "—"}
+                    </Badge>
+                    {activeRole && (
+                      <span className="font-sans text-[13px] text-ink-700">
+                        {ROLE_DESCRIPTIONS[activeRole]}
+                      </span>
+                    )}
+                  </div>
+                  <p className="font-sans text-[12px] text-ink-500">
+                    Roles are managed by your administrator. Contact them if
+                    your access needs to change.
+                  </p>
+                </div>
+              </CardSection>
+            </Card>
+
             <Card>
               <CardSection>
                 <div className="flex items-baseline justify-between gap-3">

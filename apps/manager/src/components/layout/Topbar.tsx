@@ -316,7 +316,7 @@ function UserMenu({
           <UserIcon strokeWidth={1.5} />
           <span>Profile</span>
         </DropdownMenuItem>
-        {role === "admin" && (
+        {(role === "admin" || role === "fund_manager") && (
           <DropdownMenuItem
             className="min-h-11 md:min-h-0"
             onSelect={() => navigate(orgPath(orgSlug, "settings"))}
