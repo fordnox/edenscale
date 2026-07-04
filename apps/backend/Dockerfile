@@ -25,6 +25,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # 2) Add project manifests + source (this layer changes on every code edit).
 COPY pyproject.toml uv.lock alembic.ini ./
 COPY ./app ./app
+COPY ./scripts ./scripts
 
 # 3) Install the project itself. Dependencies are already resolved and cached
 #    above, so this is fast; --frozen skips re-resolution, --no-dev keeps the
