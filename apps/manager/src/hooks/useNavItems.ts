@@ -2,7 +2,6 @@ import { useMemo } from "react"
 import { useLocation, useParams } from "react-router-dom"
 import {
   ArrowDownToLine,
-  ArrowLeft,
   ArrowUpFromLine,
   Bell,
   Building2,
@@ -190,14 +189,8 @@ export function useFundNavItems(): UseNavItemsResult {
       sectionItem("distributions", "Distributions", ArrowUpFromLine),
       sectionItem("team", "Team", UserCog),
       sectionItem("letters", "Letters", Mail),
-      { kind: "divider" },
-      {
-        to: orgPath(orgSlug),
-        label: `Back to ${activeMembership?.organization.name ?? "organization"}`,
-        icon: ArrowLeft,
-      },
     ]
-  }, [orgSlug, fundSlug, activeMembership])
+  }, [orgSlug, fundSlug])
 
   return { items, role, isLoading }
 }

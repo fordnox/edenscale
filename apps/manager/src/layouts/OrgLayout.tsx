@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo } from "react"
 import { Link, Outlet, useParams } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
@@ -7,14 +7,16 @@ import { Card } from "@edenscale/ui/card"
 import { EmptyState } from "@edenscale/ui/EmptyState"
 import { PendingInvitationsBanner } from "@edenscale/ui/invitations/PendingInvitationsBanner"
 import { CommandPalette } from "@/components/layout/CommandPalette"
-import { Sidebar } from "@/components/layout/Sidebar"
-import { Topbar } from "@/components/layout/Topbar"
+import { Topbar, type TopbarOrganization } from "@/components/layout/Topbar"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useCommandPalette } from "@/hooks/useCommandPalette"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { usePendingInvitations } from "@edenscale/shared/hooks/usePendingInvitations"
 import { RESERVED_ORG_SLUGS } from "@/lib/managerRoutes"
 import { setLastVisitedOrgSlug } from "@edenscale/shared/active-org"
+import type { components } from "@edenscale/api/schema"
+
+type UserRole = components["schemas"]["UserRole"]
 
 function LoadingState() {
   return (
@@ -26,35 +28,37 @@ function LoadingState() {
   )
 }
 
-// The full application shell — sidebar, topbar, command palette — shown once an
+// The full application shell — top bar and command palette — shown once an
 // organization slug has resolved to an org the current user can act on.
-function OrgShell() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+function OrgShell({
+  organization,
+  role,
+}: {
+  organization: TopbarOrganization
+  role: UserRole | null
+}) {
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette()
   const { memberships } = useActiveOrganization()
   const { visibleInvitations, showBanner, dismissBanner } =
     usePendingInvitations()
 
   return (
-    <div className="flex min-h-svh bg-page text-ink-900">
-      <Sidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
+    <div className="flex min-h-svh flex-col bg-page text-ink-900">
+      <Topbar
+        organization={organization}
+        role={role}
         onOpenSearch={() => setPaletteOpen(true)}
       />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
-        {showBanner && (
-          <PendingInvitationsBanner
-            invitations={visibleInvitations}
-            onDismiss={dismissBanner}
-            emphasize={memberships.length === 0}
-          />
-        )}
-        <main className="flex flex-1 flex-col">
-          <Outlet />
-        </main>
-      </div>
+      {showBanner && (
+        <PendingInvitationsBanner
+          invitations={visibleInvitations}
+          onDismiss={dismissBanner}
+          emphasize={memberships.length === 0}
+        />
+      )}
+      <main className="flex flex-1 flex-col">
+        <Outlet />
+      </main>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>
   )
@@ -100,6 +104,9 @@ export default function OrgLayout() {
 
   const resolvedOrgId = membership?.organization_id ?? superadminOrg?.id ?? null
   const resolvedSlug = membership?.organization.slug ?? superadminOrg?.slug ?? null
+  const resolvedName = membership?.organization.name ?? superadminOrg?.name ?? null
+  const role: UserRole | null =
+    membership?.role ?? (isSuperadmin ? "superadmin" : null)
 
   useEffect(() => {
     if (!resolvedOrgId || !resolvedSlug) return
@@ -137,5 +144,13 @@ export default function OrgLayout() {
     return <LoadingState />
   }
 
-  return <OrgShell />
+  return (
+    <OrgShell
+      organization={{
+        name: resolvedName ?? resolvedSlug ?? "",
+        slug: resolvedSlug ?? "",
+      }}
+      role={role}
+    />
+  )
 }
