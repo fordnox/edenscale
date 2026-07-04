@@ -45,10 +45,15 @@ def _seed_user(
         db.close()
 
 
-def _seed_org(name: str = "NewTaven Capital") -> int:
+def _seed_org(name: str = "NewTaven Capital", *, is_demo: bool = False) -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name,
+            slug=slugify(name),
+            type=OrganizationType.fund_manager_firm,
+            is_demo=is_demo,
+        )
         db.add(org)
         db.commit()
         return str(org.id)
@@ -142,6 +147,67 @@ class TestSelfServeCreateOrganization:
         )
         assert response.status_code == 201
         assert response.json()["organization"]["name"] == "Side Fund"
+
+
+class TestDemoOrganization:
+    def test_get_demo_returns_null_when_none_seeded(self, client, override_user):
+        _seed_user("hanko-lp", UserRole.lp, email="lp@example.com")
+        override_user("hanko-lp")
+
+        response = client.get("/organizations/demo")
+        assert response.status_code == 200
+        assert response.json() is None
+
+    def test_get_demo_returns_the_flagged_org(self, client, override_user):
+        demo_id = _seed_org("Demo Capital", is_demo=True)
+        _seed_org("Regular Capital")
+        _seed_user("hanko-lp", UserRole.lp, email="lp@example.com")
+        override_user("hanko-lp")
+
+        response = client.get("/organizations/demo")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["id"] == demo_id
+        assert body["is_demo"] is True
+
+    def test_join_demo_creates_fund_manager_membership(self, client, override_user):
+        demo_id = _seed_org("Demo Capital", is_demo=True)
+        _seed_user("hanko-newcomer", UserRole.lp, email="newcomer@example.com")
+        override_user("hanko-newcomer")
+
+        response = client.post("/organizations/demo/join")
+        assert response.status_code == 201
+        body = response.json()
+        assert body["organization_id"] == demo_id
+        assert body["role"] == "fund_manager"
+        assert body["organization"]["is_demo"] is True
+
+        memberships_response = client.get("/users/me/memberships")
+        assert memberships_response.status_code == 200
+        memberships = memberships_response.json()
+        assert len(memberships) == 1
+        assert memberships[0]["organization_id"] == demo_id
+
+    def test_join_demo_is_idempotent(self, client, override_user):
+        _seed_org("Demo Capital", is_demo=True)
+        _seed_user("hanko-newcomer", UserRole.lp, email="newcomer@example.com")
+        override_user("hanko-newcomer")
+
+        first = client.post("/organizations/demo/join")
+        second = client.post("/organizations/demo/join")
+        assert first.status_code == 201
+        assert second.status_code == 201
+        assert second.json()["id"] == first.json()["id"]
+
+        memberships = client.get("/users/me/memberships").json()
+        assert len(memberships) == 1
+
+    def test_join_demo_404s_when_none_seeded(self, client, override_user):
+        _seed_user("hanko-newcomer", UserRole.lp, email="newcomer@example.com")
+        override_user("hanko-newcomer")
+
+        response = client.post("/organizations/demo/join")
+        assert response.status_code == 404
 
 
 class TestListAndReadOrganization:

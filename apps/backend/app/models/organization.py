@@ -19,6 +19,10 @@ class Organization(Base):
     website = Column(String(255), nullable=True)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
+    # Marks the shared sandbox org that new users may join during onboarding
+    # (as fund_manager) instead of founding their own firm. Seeded via
+    # scripts/seed_demo.py; at most one org is expected to carry the flag.
+    is_demo = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

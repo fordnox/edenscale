@@ -48,6 +48,7 @@ class OrganizationRead(BaseModel):
     website: str | None
     description: str | None
     is_active: bool
+    is_demo: bool
     created_at: datetime | None
     updated_at: datetime | None
 

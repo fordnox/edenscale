@@ -62,6 +62,20 @@ class OrganizationRepository:
             .first()
         )
 
+    def get_demo(self) -> Organization | None:
+        """Return the active demo organization, if one is seeded.
+
+        The seed keeps at most one org flagged `is_demo`; ordering by
+        `created_at` makes the pick deterministic if that invariant is
+        ever violated.
+        """
+        return (
+            self.db.query(Organization)
+            .filter(Organization.is_demo.is_(True), Organization.is_active.is_(True))
+            .order_by(Organization.created_at, Organization.id)
+            .first()
+        )
+
     def create(self, data: OrganizationCreate) -> Organization:
         organization = Organization(
             **data.model_dump(), slug=self._generate_slug(data.name)

@@ -76,13 +76,20 @@ from app.schemas.user import UserCreate
 
 
 def _get_or_create_organization(
-    db: Session, *, name: str, type: OrganizationType, **extra
+    db: Session, *, name: str, type: OrganizationType, is_demo: bool = False, **extra
 ) -> Organization:
-    existing = db.query(Organization).filter(Organization.name == name).first()
-    if existing is not None:
-        return existing
-    repo = OrganizationRepository(db)
-    return repo.create(OrganizationCreate(name=name, type=type, **extra))
+    organization = db.query(Organization).filter(Organization.name == name).first()
+    if organization is None:
+        repo = OrganizationRepository(db)
+        organization = repo.create(OrganizationCreate(name=name, type=type, **extra))
+    # `is_demo` is not part of OrganizationCreate (it is seed-only, never set
+    # through the API), so reconcile it here — this also upgrades databases
+    # seeded before the flag existed.
+    if is_demo and not organization.is_demo:
+        organization.is_demo = True
+        db.commit()
+        db.refresh(organization)
+    return organization
 
 
 def _get_or_create_user(
@@ -590,6 +597,9 @@ def seed(db: Session) -> None:
         legal_name="NewTaven Capital Partners LP",
         website="https://newtaven.example.com",
         description="Mid-market growth equity and venture funds.",
+        # The fund-manager firm doubles as the joinable demo org offered on
+        # the signup onboarding screen (POST /organizations/demo/join).
+        is_demo=True,
     )
     northstar = _get_or_create_organization(
         db,

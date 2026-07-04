@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
-import { Landmark, Loader2 } from "lucide-react"
+import { Landmark, Loader2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@edenscale/ui/button"
@@ -11,6 +11,7 @@ import { Input } from "@edenscale/ui/input"
 import { Label } from "@edenscale/ui/label"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
+import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { fundPath, orgPath } from "@/lib/managerRoutes"
 import { config } from "@edenscale/api/config"
 
@@ -31,6 +32,24 @@ export default function OnboardingPage() {
 
   const [investorName, setInvestorName] = useState("")
   const [investorType, setInvestorType] = useState("")
+
+  // The seeded demo firm, if the deployment has one. Joining it (as a
+  // fund manager) is offered as an alternative to founding an empty firm.
+  const demoOrgQuery = useApiQuery("/organizations/demo")
+  const demoOrg = demoOrgQuery.data ?? null
+
+  const joinDemoOrganization = useApiMutation(
+    "post",
+    "/organizations/demo/join",
+    {
+      onSuccess: (data) => {
+        setActiveOrganizationId(data.organization_id)
+        queryClient.invalidateQueries({ queryKey: ["/users/me/memberships"] })
+        toast.success(`Welcome to ${data.organization.name}.`)
+        navigate(orgPath(data.organization.slug))
+      },
+    },
+  )
 
   const createOrganization = useApiMutation(
     "post",
@@ -161,6 +180,7 @@ export default function OnboardingPage() {
                 </div>
 
                 {step === "firm" ? (
+                  <>
                   <form
                     onSubmit={handleFirmSubmit}
                     className="flex flex-col gap-4"
@@ -200,6 +220,57 @@ export default function OnboardingPage() {
                       Continue
                     </Button>
                   </form>
+                  {demoOrg && (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <div className="h-px flex-1 bg-[var(--border-hairline)]" />
+                        <span className="font-sans text-[12px] uppercase tracking-[0.08em] text-ink-500">
+                          or
+                        </span>
+                        <div className="h-px flex-1 bg-[var(--border-hairline)]" />
+                      </div>
+                      <div className="flex flex-col gap-3 rounded-md border border-hairline p-4">
+                        <div className="flex items-start gap-3">
+                          <span
+                            aria-hidden
+                            className="mt-0.5 text-[color:var(--brass-700)] [&_svg]:size-5 [&_svg]:stroke-[1.25]"
+                          >
+                            <Sparkles />
+                          </span>
+                          <div className="flex flex-col gap-1">
+                            <p className="font-sans text-[14px] font-medium text-ink-900">
+                              Explore {demoOrg.name}
+                            </p>
+                            <p className="font-sans text-[13px] leading-[1.5] text-ink-700">
+                              Join a shared demo firm as a fund manager and
+                              look around with pre-seeded funds, investors,
+                              capital calls, and distributions — no setup
+                              needed.
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="md"
+                          disabled={
+                            joinDemoOrganization.isPending ||
+                            createOrganization.isPending
+                          }
+                          onClick={() => joinDemoOrganization.mutate({})}
+                        >
+                          {joinDemoOrganization.isPending && (
+                            <Loader2
+                              strokeWidth={1.5}
+                              className="size-4 animate-spin"
+                            />
+                          )}
+                          Join the demo firm
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                  </>
                 ) : step === "fund" ? (
                   <form
                     onSubmit={handleFundSubmit}

@@ -131,6 +131,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organizations/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Demo Organization
+         * @description Return the shared demo organization, or null when none is seeded.
+         *
+         *     Returns 200 with a null body rather than 404 so the onboarding page can
+         *     probe for the demo org without tripping the client's global error
+         *     handling.
+         */
+        get: operations["get_demo_organization_organizations_demo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizations/demo/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Join Demo Organization
+         * @description Onboarding alternative to /self-serve: join the seeded demo org.
+         *
+         *     Adds the caller as a `fund_manager` of the demo organization so they can
+         *     explore the product with realistic pre-seeded data instead of starting
+         *     from an empty firm. Idempotent: re-joining returns the existing
+         *     membership unchanged (including its original role).
+         */
+        post: operations["join_demo_organization_organizations_demo_join_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organizations": {
         parameters: {
             query?: never;
@@ -2733,6 +2782,8 @@ export interface components {
             description: string | null;
             /** Is Active */
             is_active: boolean;
+            /** Is Demo */
+            is_demo: boolean;
             /** Created At */
             created_at: string | null;
             /** Updated At */
@@ -3208,6 +3259,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_demo_organization_organizations_demo_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationRead"] | null;
+                };
+            };
+        };
+    };
+    join_demo_organization_organizations_demo_join_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipRead"];
                 };
             };
         };
