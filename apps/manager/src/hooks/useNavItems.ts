@@ -3,7 +3,6 @@ import { useLocation, useParams } from "react-router-dom"
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
-  Bell,
   Building2,
   ClipboardCheck,
   FileText,
@@ -83,11 +82,6 @@ function orgItems(orgSlug: string): NavItem[] {
     label: "Tasks",
     icon: ClipboardCheck,
   }
-  const notifications: NavItem = {
-    to: orgPath(orgSlug, "notifications"),
-    label: "Notifications",
-    icon: Bell,
-  }
   const auditLog: NavItem = {
     to: orgPath(orgSlug, "audit-log"),
     label: "Audit Log",
@@ -103,7 +97,6 @@ function orgItems(orgSlug: string): NavItem[] {
     documents,
     letters,
     tasks,
-    notifications,
     auditLog,
   ]
 }

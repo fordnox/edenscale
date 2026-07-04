@@ -83,6 +83,10 @@ function App() {
             <Route path="/manager" element={<AppRootRoute />} />
             <Route path="/manager/profile" element={<ProfilePage />} />
             <Route
+              path="/manager/notifications"
+              element={<NotificationsPage />}
+            />
+            <Route
               path="/manager/superadmin/organizations"
               element={<SuperadminOrganizationsPage />}
             />
@@ -109,7 +113,13 @@ function App() {
                 </RequireRole>
               }
             />
-            <Route path="notifications" element={<NotificationsPage />} />
+            {/* Notifications are user-scoped and moved to /manager/notifications;
+                keep the old org path redirecting so bookmarks survive and the
+                segment never falls through to the :fundSlug route. */}
+            <Route
+              path="notifications"
+              element={<Navigate to="/manager/notifications" replace />}
+            />
             <Route path="settings" element={<OrganizationSettingsPage />} />
             <Route
               path="audit-log"

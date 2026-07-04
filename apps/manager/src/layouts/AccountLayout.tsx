@@ -1,5 +1,5 @@
 import { Outlet, useNavigate } from "react-router-dom"
-import { Landmark, LogOut, User as UserIcon } from "lucide-react"
+import { Bell, Landmark, LogOut, User as UserIcon } from "lucide-react"
 
 import { PendingInvitationsBanner } from "@edenscale/ui/invitations/PendingInvitationsBanner"
 import {
@@ -86,6 +86,13 @@ export default function AccountLayout() {
                   )}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="min-h-11 md:min-h-0"
+                  onSelect={() => navigate("/manager/notifications")}
+                >
+                  <Bell strokeWidth={1.5} />
+                  <span>Notifications</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   className="min-h-11 md:min-h-0"
                   onSelect={() => navigate("/manager/profile")}

@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom"
 import {
+  Bell,
   Check,
   ChevronsUpDown,
   Landmark,
@@ -301,6 +302,13 @@ function UserMenu({
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="min-h-11 md:min-h-0"
+          onSelect={() => navigate("/manager/notifications")}
+        >
+          <Bell strokeWidth={1.5} />
+          <span>Notifications</span>
+        </DropdownMenuItem>
         <DropdownMenuItem
           className="min-h-11 md:min-h-0"
           onSelect={() => navigate("/manager/profile")}
