@@ -46,7 +46,6 @@ def _create_org_user(
         db.add(org)
         db.flush()
         user = User(
-            organization_id=org.id,
             role=role,
             first_name="Margot",
             last_name="Lane",
@@ -73,7 +72,6 @@ def _create_admin_user(subject_id: str, *, organization_ids: list[int]) -> int:
     db = SessionLocal()
     try:
         user = User(
-            organization_id=organization_ids[0] if organization_ids else None,
             role=UserRole.admin,
             first_name="Root",
             last_name="Admin",
@@ -100,7 +98,6 @@ def _create_lp_user(subject_id: str, *, organization_id: int | None = None) -> i
     db = SessionLocal()
     try:
         user = User(
-            organization_id=organization_id,
             role=UserRole.lp,
             first_name="Lp",
             last_name="Holder",
@@ -144,7 +141,6 @@ class TestDashboardOverview:
         db = SessionLocal()
         try:
             user = User(
-                organization_id=None,
                 role=UserRole.lp,
                 first_name="Solo",
                 last_name="User",

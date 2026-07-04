@@ -431,11 +431,14 @@ async def notify_task_assigned(db: Session, *, task: Task, assignee_user_id) -> 
         assignee = db.query(User).filter(User.id == assignee_user_id).first()
         if assignee is None:
             return
+        # Brand the notification with the org the task belongs to (via its
+        # fund); users have no single home org, only memberships.
         organization = (
             db.query(Organization)
-            .filter(Organization.id == assignee.organization_id)
+            .join(Fund, Fund.organization_id == Organization.id)
+            .filter(Fund.id == task.fund_id)
             .first()
-            if assignee.organization_id is not None
+            if task.fund_id is not None
             else None
         )
         due = _fmt_date(task.due_date) if task.due_date else "—"
@@ -479,11 +482,14 @@ async def notify_communication(
             if recipient_user_id is not None
             else None
         )
+        # Brand the notification with the org the communication belongs to
+        # (via its fund); users have no single home org, only memberships.
         organization = (
             db.query(Organization)
-            .filter(Organization.id == recipient.organization_id)
+            .join(Fund, Fund.organization_id == Organization.id)
+            .filter(Fund.id == communication.fund_id)
             .first()
-            if recipient is not None and recipient.organization_id is not None
+            if communication.fund_id is not None
             else None
         )
         email = recipient_email or (recipient.email if recipient is not None else None)

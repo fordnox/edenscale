@@ -58,7 +58,6 @@ def _seed_user(
     db = SessionLocal()
     try:
         user = User(
-            organization_id=organization_id,
             role=role,
             first_name="First",
             last_name="Last",
@@ -304,7 +303,6 @@ class TestCrossOrgScopingViaHeader:
         db = SessionLocal()
         try:
             user = User(
-                organization_id=org_ids[0],
                 role=UserRole.admin,
                 first_name="Multi",
                 last_name="Admin",

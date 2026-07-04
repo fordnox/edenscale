@@ -8,7 +8,6 @@ from app.core.database import get_db
 from app.core.rbac import (
     get_current_user_record,
     require_membership_roles,
-    require_roles,
 )
 from app.models.enums import UserRole
 from app.models.user import User
@@ -74,13 +73,23 @@ async def list_users(
         )
     ),
 ):
-    repo = UserRepository(db)
-    return repo.list_by_organization(
-        organization_id=membership.organization_id,  # type: ignore[invalid-argument-type]
+    """List the active organization's members.
+
+    Membership rows are the source of truth (invitation acceptance only
+    creates a membership), so ``role`` reflects the member's role in this
+    org rather than the legacy global ``users.role`` column.
+    """
+    repo = UserOrganizationMembershipRepository(db)
+    rows = repo.list_org_members(
+        membership.organization_id,  # type: ignore[invalid-argument-type]
         skip=skip,
         limit=limit,
         include_inactive=include_inactive,
     )
+    return [
+        UserRead.model_validate(user).model_copy(update={"role": m.role})
+        for m, user in rows
+    ]
 
 
 @router.patch("/{user_id}", response_model=UserRead)
@@ -102,7 +111,11 @@ async def update_user(
         )
     if (
         membership.role is not UserRole.superadmin
-        and target.organization_id != membership.organization_id
+        and UserOrganizationMembershipRepository(db).get(
+            user_id,
+            membership.organization_id,  # type: ignore[invalid-argument-type]
+        )
+        is None
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -111,20 +124,40 @@ async def update_user(
     return repo.update(user_id, data)
 
 
-@router.patch(
-    "/{user_id}/role",
-    response_model=UserRead,
-    dependencies=[Depends(require_roles(UserRole.admin, UserRole.superadmin))],
-)
+@router.patch("/{user_id}/role", response_model=UserRead)
 async def update_user_role(
     user_id: uuid.UUID,
     data: UserRoleUpdate,
     db: Session = Depends(get_db),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(UserRole.admin, UserRole.superadmin)
+    ),
 ):
-    repo = UserRepository(db)
-    user = repo.update_role(user_id, data.role)
-    if user is None:
+    """Change a member's role within the caller's active organization.
+
+    RBAC reads roles from membership rows (``get_active_membership``), so the
+    membership — not the legacy global ``users.role`` column — is what gets
+    updated. The response's ``role`` mirrors the new membership role, matching
+    what ``GET /users`` returns.
+    """
+    target = UserRepository(db).get_by_id(user_id)
+    if target is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
-    return user
+    membership_repo = UserOrganizationMembershipRepository(db)
+    target_membership = membership_repo.get(
+        user_id,
+        membership.organization_id,  # type: ignore[invalid-argument-type]
+    )
+    if target_membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User is not a member of this organization",
+        )
+    updated = membership_repo.update_role(
+        target_membership.id,  # type: ignore[invalid-argument-type]
+        data.role,
+    )
+    assert updated is not None
+    return UserRead.model_validate(target).model_copy(update={"role": updated.role})

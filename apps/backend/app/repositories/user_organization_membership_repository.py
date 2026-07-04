@@ -33,6 +33,30 @@ class UserOrganizationMembershipRepository:
             .all()
         )
 
+    def list_org_members(
+        self,
+        organization_id: uuid.UUID,
+        *,
+        skip: int = 0,
+        limit: int = 100,
+        include_inactive: bool = False,
+    ) -> list[tuple[UserOrganizationMembership, User]]:
+        """The organization's members with their per-org membership row.
+
+        Membership rows — not the legacy ``users.organization_id`` column —
+        are the source of truth for who belongs to an org and with what role
+        (invitation acceptance only creates a membership).
+        """
+        query = (
+            self.db.query(UserOrganizationMembership, User)
+            .join(User, UserOrganizationMembership.user_id == User.id)
+            .filter(UserOrganizationMembership.organization_id == organization_id)
+        )
+        if not include_inactive:
+            query = query.filter(User.is_active.is_(True))
+        rows = query.order_by(User.created_at, User.id).offset(skip).limit(limit).all()
+        return [(membership, user) for membership, user in rows]
+
     def get(
         self, user_id: uuid.UUID, organization_id: uuid.UUID
     ) -> UserOrganizationMembership | None:
@@ -93,32 +117,3 @@ class UserOrganizationMembershipRepository:
         self.db.delete(membership)
         self.db.commit()
         return membership
-
-    def bulk_seed_from_legacy_user_org_id(self) -> int:
-        """Idempotently create memberships for every user with a legacy
-        ``users.organization_id`` that lacks a corresponding membership row.
-
-        Returns the number of memberships inserted on this call.
-        """
-        legacy_users = (
-            self.db.query(User)
-            .filter(User.organization_id.is_not(None))
-            .order_by(User.created_at, User.id)
-            .all()
-        )
-        inserted = 0
-        for user in legacy_users:
-            existing = self.get(user.id, user.organization_id)  # type: ignore[invalid-argument-type]
-            if existing is not None:
-                continue
-            self.db.add(
-                UserOrganizationMembership(
-                    user_id=user.id,
-                    organization_id=user.organization_id,
-                    role=user.role,
-                )
-            )
-            inserted += 1
-        if inserted:
-            self.db.commit()
-        return inserted

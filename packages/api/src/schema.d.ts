@@ -63,7 +63,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Users */
+        /**
+         * List Users
+         * @description List the active organization's members.
+         *
+         *     Membership rows are the source of truth (invitation acceptance only
+         *     creates a membership), so ``role`` reflects the member's role in this
+         *     org rather than the legacy global ``users.role`` column.
+         */
         get: operations["list_users_users_get"];
         put?: never;
         post?: never;
@@ -103,7 +110,15 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update User Role */
+        /**
+         * Update User Role
+         * @description Change a member's role within the caller's active organization.
+         *
+         *     RBAC reads roles from membership rows (``get_active_membership``), so the
+         *     membership — not the legacy global ``users.role`` column — is what gets
+         *     updated. The response's ``role`` mirrors the new membership role, matching
+         *     what ``GET /users`` returns.
+         */
         patch: operations["update_user_role_users__user_id__role_patch"];
         trace?: never;
     };
@@ -2935,8 +2950,6 @@ export interface components {
              * Format: uuid4
              */
             id: string;
-            /** Organization Id */
-            organization_id: string | null;
             role: components["schemas"]["UserRole"];
             /** First Name */
             first_name: string;
@@ -3198,7 +3211,9 @@ export interface operations {
     update_user_role_users__user_id__role_patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+            };
             path: {
                 user_id: string;
             };

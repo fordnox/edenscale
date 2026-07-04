@@ -97,7 +97,6 @@ def test_existing_user_is_returned_unchanged(db):
     db.add(org)
     db.flush()
     existing = User(
-        organization_id=org.id,
         role=UserRole.fund_manager,
         first_name="Margot",
         last_name="Lane",
@@ -130,7 +129,6 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
     db.add(org)
     db.flush()
     seeded = User(
-        organization_id=org.id,
         role=UserRole.fund_manager,
         first_name="Ava",
         last_name="Morgan",
@@ -165,7 +163,6 @@ def test_seed_claim_refuses_when_email_already_linked(db):
     db.add(org)
     db.flush()
     existing = User(
-        organization_id=org.id,
         role=UserRole.fund_manager,
         first_name="Ava",
         last_name="Morgan",

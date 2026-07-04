@@ -60,6 +60,9 @@ from app.repositories.investor_repository import InvestorRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.repositories.organization_repository import OrganizationRepository
 from app.repositories.task_repository import TaskRepository
+from app.repositories.user_organization_membership_repository import (
+    UserOrganizationMembershipRepository,
+)
 from app.repositories.user_repository import UserRepository
 from app.schemas.capital_call import CapitalCallCreate
 from app.schemas.commitment import CommitmentCreate
@@ -99,23 +102,31 @@ def _get_or_create_user(
     role: UserRole,
     first_name: str,
     last_name: str,
-    organization_id: uuid.UUID | None,
+    organization_id: uuid.UUID,
     title: str | None = None,
 ) -> User:
     repo = UserRepository(db)
-    existing = repo.get_by_email(email)
-    if existing is not None:
-        return existing
-    return repo.create(
-        UserCreate(
+    user = repo.get_by_email(email)
+    if user is None:
+        user = repo.create(
+            UserCreate(
+                role=role,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                title=title,
+            )
+        )
+    # Org association lives on the membership row — it is what RBAC and the
+    # team roster read. Idempotent so reruns also backfill older seed data.
+    membership_repo = UserOrganizationMembershipRepository(db)
+    if membership_repo.get(user.id, organization_id) is None:  # type: ignore[invalid-argument-type]
+        membership_repo.create(
+            user_id=user.id,  # type: ignore[invalid-argument-type]
             organization_id=organization_id,
             role=role,
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            title=title,
         )
-    )
+    return user
 
 
 def _get_or_create_fund_group(
@@ -1101,6 +1112,7 @@ def seed(db: Session) -> None:
             action="login",
             entity_type="session",
             entity_id=None,
+            organization_id=newtaven.id,  # type: ignore[arg-type]
             metadata={"reason": "seed_demo"},
         )
 

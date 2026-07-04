@@ -7,7 +7,6 @@ from app.schemas.user_organization_membership import MembershipRead
 
 
 class UserCreate(BaseModel):
-    organization_id: UUID4 | None = None
     role: UserRole
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
@@ -38,7 +37,6 @@ class UserRoleUpdate(BaseModel):
 
 class UserRead(BaseModel):
     id: UUID4
-    organization_id: UUID4 | None
     role: UserRole
     first_name: str
     last_name: str

@@ -136,6 +136,7 @@ def record_audit(
     action: str,
     entity_type: str,
     entity_id: uuid.UUID | None,
+    organization_id: uuid.UUID | None = None,
     metadata: dict[str, Any] | None = None,
     request: Any = None,
 ) -> AuditLog:
@@ -144,11 +145,12 @@ def record_audit(
     Pull actor + IP from the explicit ``user`` / ``request`` arguments when
     given; otherwise fall back to whatever the request-scoped audit context
     holds. This makes the helper safe to call from background jobs that have
-    set the context manually.
+    set the context manually. Users belong to organizations only through
+    memberships, so callers that want org attribution pass
+    ``organization_id`` explicitly.
     """
     ctx = get_audit_context()
     user_id = user.id if user is not None else ctx.user_id
-    organization_id = user.organization_id if user is not None else None
     ip_address = ctx.ip_address
     if request is not None:
         client = getattr(request, "client", None)

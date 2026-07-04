@@ -5,7 +5,6 @@ from sqlalchemy import (
     Column,
     DateTime,
     Enum,
-    ForeignKey,
     String,
     Uuid,
     func,
@@ -20,9 +19,8 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id = Column(
-        Uuid(as_uuid=True), ForeignKey("organizations.id"), nullable=True, index=True
-    )
+    # Global role: distinguishes superadmins and the provisioning default
+    # (lp). Per-organization roles live on UserOrganizationMembership.
     role = Column(Enum(UserRole, name="user_role"), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
@@ -38,7 +36,6 @@ class User(Base):
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    organization = relationship("Organization", back_populates="users")
     memberships = relationship(
         "UserOrganizationMembership",
         back_populates="user",

@@ -55,7 +55,6 @@ def _seed_org_and_user(email: str = "lp@example.com"):
         db.add(org)
         db.flush()
         user = User(
-            organization_id=org.id,
             email=email,
             first_name="Priya",
             last_name="Anand",

@@ -29,18 +29,6 @@ class UserRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def list_by_organization(
-        self,
-        organization_id: uuid.UUID,
-        skip: int = 0,
-        limit: int = 100,
-        include_inactive: bool = False,
-    ) -> list[User]:
-        query = self.db.query(User).filter(User.organization_id == organization_id)
-        if not include_inactive:
-            query = query.filter(User.is_active.is_(True))
-        return query.order_by(User.created_at, User.id).offset(skip).limit(limit).all()
-
     def get_by_id(self, user_id: uuid.UUID) -> User | None:
         return self.db.query(User).filter(User.id == user_id).first()
 
@@ -154,15 +142,6 @@ class UserRepository:
             return None
         for key, value in data.model_dump(exclude_unset=True).items():
             setattr(user, key, value)
-        self.db.commit()
-        self.db.refresh(user)
-        return user
-
-    def update_role(self, user_id: uuid.UUID, role: UserRole) -> User | None:
-        user = self.get_by_id(user_id)
-        if user is None:
-            return None
-        user.role = role
         self.db.commit()
         self.db.refresh(user)
         return user

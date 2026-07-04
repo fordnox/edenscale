@@ -4,9 +4,9 @@ Run from the repo root via ``cd backend && uv run python -m
 scripts.promote_superadmin <email>``.
 
 Superadmin assignment is intentionally out-of-band — there is no API endpoint
-for self-promotion. This CLI flips a user's role to ``superadmin`` and clears
-their ``organization_id`` (superadmins are global, not scoped to a single
-org). Re-running on an already-promoted user is a no-op idempotently.
+for self-promotion. This CLI flips a user's global role to ``superadmin``
+(superadmins are global, not scoped to a single org). Re-running on an
+already-promoted user is a no-op idempotently.
 """
 
 from __future__ import annotations
@@ -28,13 +28,9 @@ def main(email: str) -> None:
         if user is None:
             raise SystemExit(f"User not found: {email}")
         user.role = UserRole.superadmin
-        user.organization_id = None
         db.commit()
         db.refresh(user)
-        print(
-            f"Promoted {user.email} (id={user.id}) to superadmin; "
-            "organization_id cleared."
-        )
+        print(f"Promoted {user.email} (id={user.id}) to superadmin.")
     finally:
         db.close()
 

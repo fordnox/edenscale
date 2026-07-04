@@ -98,7 +98,6 @@ def _seed_user(
     db = SessionLocal()
     try:
         user = User(
-            organization_id=organization_id,
             role=role,
             first_name="First",
             last_name="Last",
