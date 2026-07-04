@@ -2,23 +2,20 @@ interface Env {
   ASSETS: Fetcher
 }
 
+// Product SPAs assembled under these path prefixes by scripts/assemble.mjs —
+// keep the two lists in sync when adding an app.
+const APP_MOUNTS = ["/manager", "/investor", "/superadmin"]
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
 
-    const appMount =
-      url.pathname === "/manager" || url.pathname.startsWith("/manager/")
-        ? "/manager"
-        : url.pathname === "/investor" || url.pathname.startsWith("/investor/")
-          ? "/investor"
-          : url.pathname === "/superadmin" ||
-              url.pathname.startsWith("/superadmin/")
-            ? "/superadmin"
-            : null
+    const appMount = APP_MOUNTS.find(
+      (mount) => url.pathname === mount || url.pathname.startsWith(`${mount}/`),
+    )
 
-    // Product SPAs mounted at /manager/, /investor/ and /superadmin/ — serve
-    // the asset, falling back to the SPA shell for client-side document
-    // navigations.
+    // Product SPAs — serve the asset, falling back to the SPA shell for
+    // client-side document navigations.
     if (appMount) {
       const res = await env.ASSETS.fetch(request)
       if (res.status === 404 || (res.status >= 300 && res.status < 400)) {
