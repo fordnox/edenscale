@@ -67,9 +67,7 @@ const myMiddleware: Middleware = {
   async onError({ error }) {
     console.error("Network error:", error)
     const message = error instanceof Error ? error.message : "Network error occurred"
-    toast.error("Connection failed", {
-      description: message,
-    })
+    console.error("Connection failed:", message)
     return undefined
   },
 }
