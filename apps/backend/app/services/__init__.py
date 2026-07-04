@@ -10,6 +10,7 @@ from app.services.metrics import (
 )
 from app.services.storage import (
     LocalDevStorage,
+    S3Storage,
     StoragePort,
     get_storage,
     key_from_file_url,
@@ -20,6 +21,7 @@ __all__ = [
     "FundMetrics",
     "HankoServiceError",
     "LocalDevStorage",
+    "S3Storage",
     "StoragePort",
     "allocate_pro_rata",
     "ensure_hanko_user",

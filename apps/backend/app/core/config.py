@@ -21,8 +21,6 @@ class Settings(BaseSettings):
     # whose Hanko-verified email matches (case-insensitive) IS a superadmin.
     # Comma-separate to allow more than one; empty means no superadmins.
     SUPERADMIN_EMAIL: str = ""
-    STORAGE_BACKEND: str = "local"
-    DEV_STORAGE_TOKEN: str = "dev-storage"
     # Email delivery is via Resend hosted templates (see
     # app/services/channels/email_channel.py). Delivery is OFF until
     # RESEND_API_KEY is set — without it the notification pipeline still writes
@@ -30,6 +28,17 @@ class Settings(BaseSettings):
     # leaves the box.
     RESEND_API_KEY: str = ""
     NOTIFICATION_FROM_EMAIL: str = "notifications@updates.newtaven.com"
+
+    # S3/R2 storage settings
+    STORAGE_BACKEND: str = "local"
+    DEV_STORAGE_TOKEN: str = "dev-storage"
+    S3_ENDPOINT_URL: str = ""
+    S3_ACCESS_KEY_ID: str = ""
+    S3_SECRET_ACCESS_KEY: str = ""
+    S3_BUCKET_NAME: str = "universal"
+    S3_REGION: str = "auto"
+    S3_PUBLIC_URL: str = ""
+    S3_PREFIX: str = "taven"
 
     @property
     def superadmin_emails(self) -> frozenset[str]:

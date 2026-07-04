@@ -65,6 +65,12 @@ env:
     - GENERATE_OPENAPI_DOCS
     - RESEND_API_KEY
     - SUPERADMIN_EMAIL
+    - STORAGE_BACKEND
+    - S3_ENDPOINT_URL
+    - S3_ACCESS_KEY_ID
+    - S3_SECRET_ACCESS_KEY
+    - S3_BUCKET_NAME
+    - S3_PUBLIC_URL
 
 # Persisted local services on the server (managed by Kamal, not the proxy).
 accessories:
