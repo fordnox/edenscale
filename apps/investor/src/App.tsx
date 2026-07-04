@@ -21,9 +21,14 @@ import ProfilePage from './pages/ProfilePage'
 import InvitationAcceptPage from './pages/InvitationAcceptPage'
 import LoginPage from './pages/LoginPage'
 
+// The investor app serves only the LP slice of an account. The same login may
+// also be a manager elsewhere, but those memberships and invitations are
+// invisible here — the manager app is a fully separate SPA with its own scope.
+const INVESTOR_ROLES = ['lp'] as const
+
 function ProtectedProviders() {
   return (
-    <ActiveOrganizationProvider>
+    <ActiveOrganizationProvider roles={INVESTOR_ROLES}>
       <PendingInvitationsBannerProvider>
         <Outlet />
       </PendingInvitationsBannerProvider>
@@ -33,7 +38,8 @@ function ProtectedProviders() {
 
 // Bare /investor landing: pre-org-selection state for signed-in LPs. Shows the
 // portfolio home (org picker + cross-org figures), or the "no organization yet"
-// entry point when the user isn't a member of any org.
+// entry point when the user has no LP memberships (manager-only accounts land
+// here too — their manager orgs live in the manager app, not this one).
 function AppRootRoute() {
   const { memberships, isLoading } = useActiveOrganization()
   if (isLoading) return null

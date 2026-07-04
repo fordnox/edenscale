@@ -16,16 +16,6 @@ import { usePendingInvitations } from "@edenscale/shared/hooks/usePendingInvitat
 import { RESERVED_ORG_SLUGS } from "@/lib/managerRoutes"
 import { setLastVisitedOrgSlug } from "@edenscale/shared/active-org"
 
-// The investor app is a separate SPA behind the gateway — a react-router
-// <Navigate> to /investor/* would only hit this app's wildcard route, so the
-// role redirect must be a full document navigation.
-function CrossAppRedirect({ to }: { to: string }) {
-  useEffect(() => {
-    window.location.replace(to)
-  }, [to])
-  return <LoadingState />
-}
-
 function LoadingState() {
   return (
     <main className="flex-1 container mx-auto px-6 py-8">
@@ -71,8 +61,10 @@ function OrgShell() {
 }
 
 // Org view: resolves the :orgSlug param to an organization, syncs it as the
-// active org (so requests carry the right X-Organization-Id header), redirects
-// LPs to the investor app, and then renders the application shell.
+// active org (so requests carry the right X-Organization-Id header), and then
+// renders the application shell. Memberships are already manager-scoped by the
+// provider, so an org where the user is only an LP simply doesn't resolve
+// here — this app never routes to or reasons about the investor app.
 export default function OrgLayout() {
   const { orgSlug } = useParams<{ orgSlug: string }>()
   const {
@@ -137,10 +129,6 @@ export default function OrgLayout() {
         </Card>
       </div>
     )
-  }
-
-  if (membership?.role === "lp" && !isSuperadmin) {
-    return <CrossAppRedirect to={`/investor/${resolvedSlug}`} />
   }
 
   if (activeOrganizationId !== resolvedOrgId) {

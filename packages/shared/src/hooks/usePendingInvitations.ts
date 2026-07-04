@@ -1,5 +1,6 @@
-import { useMemo } from "react"
+import { useContext, useMemo } from "react"
 
+import { ActiveOrganizationContext } from "@edenscale/shared/contexts/ActiveOrganizationContext"
 import { usePendingInvitationsBanner } from "@edenscale/shared/contexts/PendingInvitationsBannerContext"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { useAuth } from "@edenscale/auth/useAuth"
@@ -8,6 +9,11 @@ export function usePendingInvitations() {
   const { isAuthenticated } = useAuth()
   const { bannerDismissed, dismissBanner, declinedIds } =
     usePendingInvitationsBanner()
+  // Invitations follow the app's role scope: an LP invitation is the investor
+  // app's business, a manager invitation the manager app's — the invitation
+  // email already deep-links into the matching SPA (see _build_accept_url on
+  // the backend), so out-of-scope invitations are simply not surfaced here.
+  const appRoles = useContext(ActiveOrganizationContext)?.appRoles ?? null
 
   const pendingInvitationsQuery = useApiQuery(
     "/invitations/pending-for-me",
@@ -18,9 +24,11 @@ export function usePendingInvitations() {
   const visibleInvitations = useMemo(
     () =>
       (pendingInvitationsQuery.data ?? []).filter(
-        (inv) => !declinedIds.has(inv.id),
+        (inv) =>
+          !declinedIds.has(inv.id) &&
+          (!appRoles || appRoles.includes(inv.role)),
       ),
-    [pendingInvitationsQuery.data, declinedIds],
+    [pendingInvitationsQuery.data, declinedIds, appRoles],
   )
 
   const hasPendingInvitations = visibleInvitations.length > 0

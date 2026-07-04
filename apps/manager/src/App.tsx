@@ -33,11 +33,14 @@ import FundLettersPage from './pages/funds/FundLettersPage'
 import LoginPage from './pages/LoginPage'
 import { RequireRole } from './components/RequireRole'
 
+// The manager app serves only the manager slice of an account. The same login
+// may also be an LP elsewhere, but those memberships and invitations are
+// invisible here — the investor app is a fully separate SPA with its own scope.
 const MANAGER_ROLES = ['admin', 'fund_manager', 'superadmin'] as const
 
 function ProtectedProviders() {
   return (
-    <ActiveOrganizationProvider>
+    <ActiveOrganizationProvider roles={MANAGER_ROLES}>
       <PendingInvitationsBannerProvider>
         <Outlet />
       </PendingInvitationsBannerProvider>
@@ -93,8 +96,6 @@ function App() {
           <Route path="/manager/:orgSlug" element={<OrgLayout />}>
             <Route index element={<DashboardPage />} />
             <Route path="funds" element={<FundsPage />} />
-            {/* LPs may open this page too — the backend scopes the register
-                to investors they are a linked contact for. */}
             <Route path="investors" element={<InvestorsPage />} />
             <Route path="calls" element={<CapitalCallsPage />} />
             <Route path="distributions" element={<DistributionsPage />} />

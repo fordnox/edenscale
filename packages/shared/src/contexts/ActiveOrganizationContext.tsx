@@ -17,6 +17,7 @@ import type { components } from "@edenscale/api/schema"
 // TODO: tests pending frontend test harness setup
 
 type MembershipRead = components["schemas"]["MembershipRead"]
+type UserRole = components["schemas"]["UserRole"]
 
 export interface ActiveOrganizationContextValue {
   memberships: MembershipRead[]
@@ -25,6 +26,7 @@ export interface ActiveOrganizationContextValue {
   setActiveOrganizationId: (id: string | null) => void
   isSuperadmin: boolean
   isLoading: boolean
+  appRoles: readonly UserRole[] | null
 }
 
 export const ActiveOrganizationContext =
@@ -32,10 +34,16 @@ export const ActiveOrganizationContext =
 
 interface ActiveOrganizationProviderProps {
   children: ReactNode
+  // The membership roles this app serves. When set, memberships (and pending
+  // invitations — see usePendingInvitations) with other roles are invisible
+  // to the app: each SPA only ever sees its own slice of the account, even
+  // when the same login is an LP in one org and a manager in another.
+  roles?: readonly UserRole[]
 }
 
 export function ActiveOrganizationProvider({
   children,
+  roles,
 }: ActiveOrganizationProviderProps) {
   const queryClient = useQueryClient()
   const meQuery = useApiQuery("/users/me", undefined, {
@@ -49,10 +57,10 @@ export function ActiveOrganizationProvider({
     string | null
   >(() => getActiveOrganizationId())
 
-  const memberships = useMemo<MembershipRead[]>(
-    () => membershipsQuery.data ?? [],
-    [membershipsQuery.data],
-  )
+  const memberships = useMemo<MembershipRead[]>(() => {
+    const all = membershipsQuery.data ?? []
+    return roles ? all.filter((m) => roles.includes(m.role)) : all
+  }, [membershipsQuery.data, roles])
   const isSuperadmin = meQuery.data?.role === "superadmin"
 
   // No auto-heal effect here by design: once inside a scoped app URL, the URL
@@ -88,6 +96,7 @@ export function ActiveOrganizationProvider({
       setActiveOrganizationId,
       isSuperadmin,
       isLoading: meQuery.isLoading || membershipsQuery.isLoading,
+      appRoles: roles ?? null,
     }),
     [
       memberships,
@@ -97,6 +106,7 @@ export function ActiveOrganizationProvider({
       isSuperadmin,
       meQuery.isLoading,
       membershipsQuery.isLoading,
+      roles,
     ],
   )
 

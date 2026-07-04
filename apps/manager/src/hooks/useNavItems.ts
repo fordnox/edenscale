@@ -50,7 +50,7 @@ export type NavEntry = NavItem | NavSection | NavDivider
 
 const SUPERADMIN_ORGANIZATIONS_PATH = "/manager/superadmin/organizations"
 
-function orgItemsForRole(role: UserRole | null | undefined, orgSlug: string): NavItem[] {
+function orgItems(orgSlug: string): NavItem[] {
   const overview: NavItem = {
     to: orgPath(orgSlug),
     label: "Overview",
@@ -95,21 +95,6 @@ function orgItemsForRole(role: UserRole | null | undefined, orgSlug: string): Na
     icon: History,
   }
 
-  if (role === "lp") {
-    // LPs see their own slice of everything: the funds they hold commitments
-    // in, their capital calls and distributions, and the investor record(s)
-    // they are a linked contact for (the backend scopes the register).
-    return [
-      overview,
-      funds,
-      investors,
-      calls,
-      distributions,
-      documents,
-      letters,
-      notifications,
-    ]
-  }
   return [
     overview,
     funds,
@@ -149,7 +134,7 @@ export function useOrgNavItems(): UseNavItemsResult {
       icon: LayoutDashboard,
       end: true,
     }
-    const tenantItems = orgSlug ? orgItemsForRole(role, orgSlug) : []
+    const tenantItems = orgSlug ? orgItems(orgSlug) : []
     if (!isSuperadmin) {
       return orgSlug ? [homeItem, { kind: "divider" }, ...tenantItems] : [homeItem]
     }
@@ -166,7 +151,7 @@ export function useOrgNavItems(): UseNavItemsResult {
     ]
     if (tenantItems.length === 0) return superadminEntries
     return [...superadminEntries, { kind: "divider" }, ...tenantItems]
-  }, [role, isSuperadmin, orgSlug])
+  }, [isSuperadmin, orgSlug])
 
   return { items, role, isLoading }
 }
