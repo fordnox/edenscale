@@ -3,7 +3,9 @@ interface Env {
 }
 
 // Product SPAs assembled under these path prefixes by scripts/assemble.mjs —
-// keep the two lists in sync when adding an app.
+// keep the two lists in sync when adding an app. Fully static apps (e.g. the
+// docs site under /docs) are assembled too but need no mount here: the asset
+// layer serves them directly with no SPA fallback.
 const APP_MOUNTS = ["/manager", "/investor", "/superadmin"]
 
 export default {
