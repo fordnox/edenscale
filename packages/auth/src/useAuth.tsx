@@ -1,4 +1,12 @@
-import { useState, useCallback, useMemo, useEffect } from "react"
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  type ReactNode,
+} from "react"
 import { hanko, getSessionToken } from "@edenscale/auth/hanko"
 
 interface User {
@@ -7,7 +15,17 @@ interface User {
   username?: string | null
 }
 
-export function useAuth() {
+interface AuthContextValue {
+  user: User | null
+  isLoading: boolean
+  isAuthenticated: boolean
+  logout: () => Promise<void>
+  getToken: () => string | null
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null)
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -67,8 +85,18 @@ export function useAuth() {
     return getSessionToken()
   }, [])
 
-  return useMemo(
+  const value = useMemo(
     () => ({ user, isLoading, isAuthenticated, logout, getToken }),
     [user, isLoading, isAuthenticated, logout, getToken],
   )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext)
+  if (!ctx) {
+    throw new Error("useAuth must be used within an <AuthProvider>")
+  }
+  return ctx
 }

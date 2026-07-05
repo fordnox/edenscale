@@ -8,9 +8,9 @@
     "typecheck": "tsc --noEmit"
   },
   "exports": {
-    ".": "./src/useAuth.ts",
+    ".": "./src/useAuth.tsx",
     "./hanko": "./src/hanko.ts",
-    "./useAuth": "./src/useAuth.ts"
+    "./useAuth": "./src/useAuth.tsx"
   },
   "dependencies": {
     "@edenscale/api": "workspace:*",

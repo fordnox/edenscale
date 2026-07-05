@@ -8,6 +8,7 @@ import App from './App'
 import { configureApiClient } from '@edenscale/api/client'
 import { queryClient } from '@edenscale/api/queryClient'
 import { getSessionToken } from '@edenscale/auth/hanko'
+import { AuthProvider } from '@edenscale/auth/useAuth'
 import '@edenscale/ui/styles.css'
 
 configureApiClient({
@@ -19,10 +20,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <App />
-          <Toaster position="bottom-right" richColors />
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <App />
+            <Toaster position="bottom-right" richColors />
+          </BrowserRouter>
+        </AuthProvider>
       </QueryClientProvider>
     </HelmetProvider>
   </React.StrictMode>,
