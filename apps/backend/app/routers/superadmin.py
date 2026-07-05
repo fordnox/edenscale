@@ -35,9 +35,11 @@ from app.schemas.superadmin import (
     SuperadminOrganizationCreate,
     SuperadminOrganizationCreateResponse,
     SuperadminOrganizationRead,
+    SuperadminWelcomeEmailResponse,
 )
 from app.schemas.user import UserRead
 from app.schemas.user_organization_membership import MembershipRead
+from app.services.notifications import notify_welcome
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -97,6 +99,40 @@ async def list_all_users(
     user's orgs and roles without follow-up calls."""
     users = UserRepository(db).list_all()
     return [UserRead.model_validate(user) for user in users]
+
+
+@router.post(
+    "/users/{user_id}/send-welcome-email",
+    response_model=SuperadminWelcomeEmailResponse,
+    dependencies=[Depends(require_superadmin)],
+)
+async def send_welcome_email(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> SuperadminWelcomeEmailResponse:
+    """Re-send the onboarding welcome email to a user on demand. The welcome
+    template is organization-scoped, so the user must belong to at least one
+    organization; the first membership's organization is used."""
+    user = UserRepository(db).get_by_id(user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    membership = next(iter(user.memberships), None)
+    if membership is None or membership.organization is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User has no organization membership to welcome them into",
+        )
+
+    await notify_welcome(db, user=user, organization=membership.organization)
+    return SuperadminWelcomeEmailResponse(
+        user_id=user.id,  # type: ignore[invalid-argument-type]
+        organization_id=membership.organization.id,  # type: ignore[invalid-argument-type]
+        recipient_email=user.email,  # type: ignore[invalid-argument-type]
+    )
 
 
 @router.post(

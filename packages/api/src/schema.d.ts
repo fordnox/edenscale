@@ -271,6 +271,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/superadmin/users/{user_id}/send-welcome-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Welcome Email
+         * @description Re-send the onboarding welcome email to a user on demand. The welcome
+         *     template is organization-scoped, so the user must belong to at least one
+         *     organization; the first membership's organization is used.
+         */
+        post: operations["send_welcome_email_superadmin_users__user_id__send_welcome_email_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/superadmin/organizations/{organization_id}/admins": {
         parameters: {
             query?: never;
@@ -2971,6 +2993,24 @@ export interface components {
             /** Created At */
             created_at: string | null;
         };
+        /** SuperadminWelcomeEmailResponse */
+        SuperadminWelcomeEmailResponse: {
+            /**
+             * User Id
+             * Format: uuid4
+             */
+            user_id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
+            /**
+             * Recipient Email
+             * Format: email
+             */
+            recipient_email: string;
+        };
         /** TaskCreate */
         TaskCreate: {
             /** Fund Id */
@@ -3645,6 +3685,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserRead"][];
+                };
+            };
+        };
+    };
+    send_welcome_email_superadmin_users__user_id__send_welcome_email_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuperadminWelcomeEmailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

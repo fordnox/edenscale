@@ -104,6 +104,7 @@ from app.schemas.superadmin import (
     SuperadminOrganizationCreate,
     SuperadminOrganizationCreateResponse,
     SuperadminOrganizationRead,
+    SuperadminWelcomeEmailResponse,
 )
 from app.schemas.task import (
     TaskCreate,
@@ -205,6 +206,7 @@ __all__ = [
     "SuperadminOrganizationCreate",
     "SuperadminOrganizationCreateResponse",
     "SuperadminOrganizationRead",
+    "SuperadminWelcomeEmailResponse",
     "OrgMemberRead",
     "TaskCreate",
     "TaskRead",

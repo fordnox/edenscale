@@ -1,11 +1,19 @@
 import { Helmet } from "react-helmet-async"
-import { Loader2, Users } from "lucide-react"
+import { Loader2, MoreHorizontal, Users } from "lucide-react"
+import { toast } from "sonner"
 
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Badge } from "@edenscale/ui/badge"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { EmptyState } from "@edenscale/ui/EmptyState"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@edenscale/ui/dropdown-menu"
 import { DataTable, TD, TH, TR } from "@edenscale/ui/table"
+import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { config } from "@edenscale/api/config"
 import { formatDate } from "@edenscale/shared/format"
@@ -24,6 +32,18 @@ export default function UsersPage() {
   const usersQuery = useApiQuery("/superadmin/users")
 
   const users = usersQuery.data ?? []
+
+  const sendWelcomeEmail = useApiMutation(
+    "post",
+    "/superadmin/users/{user_id}/send-welcome-email",
+    {
+      onSuccess: (data) => {
+        toast.success("Welcome email sent", {
+          description: data.recipient_email,
+        })
+      },
+    },
+  )
 
   return (
     <>
@@ -61,6 +81,9 @@ export default function UsersPage() {
                     <TH>Status</TH>
                     <TH>Last login</TH>
                     <TH>Created</TH>
+                    <TH>
+                      <span className="sr-only">Actions</span>
+                    </TH>
                   </tr>
                 </thead>
                 <tbody>
@@ -108,6 +131,36 @@ export default function UsersPage() {
                         </TD>
                         <TD>
                           {user.created_at ? formatDate(user.created_at) : "—"}
+                        </TD>
+                        <TD align="right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              aria-label="User actions"
+                              className="inline-flex size-7 items-center justify-center text-ink-500 hover:text-ink-900 focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2"
+                            >
+                              <MoreHorizontal
+                                strokeWidth={1.5}
+                                className="size-4"
+                              />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-52">
+                              <DropdownMenuItem
+                                disabled={
+                                  user.memberships.length === 0 ||
+                                  sendWelcomeEmail.isPending
+                                }
+                                onSelect={() =>
+                                  sendWelcomeEmail.mutate({
+                                    params: {
+                                      path: { user_id: user.id },
+                                    },
+                                  })
+                                }
+                              >
+                                Send Welcome Email
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TD>
                       </TR>
                     )

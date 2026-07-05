@@ -68,6 +68,12 @@ class SuperadminAdminAssignment(BaseModel):
         return self
 
 
+class SuperadminWelcomeEmailResponse(BaseModel):
+    user_id: UUID4
+    organization_id: UUID4
+    recipient_email: EmailStr
+
+
 class MembershipWithUserRead(BaseModel):
     id: UUID4
     user_id: UUID4
