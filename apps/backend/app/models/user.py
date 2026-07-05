@@ -38,7 +38,6 @@ class User(Base):
         cascade="all, delete-orphan",
     )
     created_fund_groups = relationship("FundGroup", back_populates="created_by_user")
-    fund_team_memberships = relationship("FundTeamMember", back_populates="user")
     investor_contacts = relationship("InvestorContact", back_populates="user")
     created_capital_calls = relationship(
         "CapitalCall", back_populates="created_by_user"

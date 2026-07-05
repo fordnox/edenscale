@@ -28,13 +28,13 @@ with or without a reachable Redis.
 import uuid
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
-from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import (
     Organization,
@@ -87,7 +87,9 @@ def hanko_email_mock():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.commit()
         return org.id
@@ -158,8 +160,7 @@ def _seed_invitation(
             role=role,
             token=token,
             status=status,
-            expires_at=expires_at
-            or (datetime.now(timezone.utc) + timedelta(days=14)),
+            expires_at=expires_at or (datetime.now(timezone.utc) + timedelta(days=14)),
             invited_by_user_id=invited_by_user_id,
         )
         db.add(invitation)
@@ -216,21 +217,12 @@ class TestCreateInvitation:
         finally:
             db.close()
 
-    @pytest.mark.parametrize(
-        "role,subject",
-        [
-            (UserRole.fund_manager, "hanko-fm"),
-            (UserRole.lp, "hanko-lp"),
-        ],
-    )
-    def test_non_admin_membership_gets_403(
-        self, client, override_user, hanko_email_mock, role, subject
-    ):
+    def test_lp_membership_cannot_invite(self, client, override_user, hanko_email_mock):
         org_id = _seed_org()
         _seed_user(
-            subject, role, email=f"{subject}@example.com", organization_id=org_id
+            "hanko-lp", UserRole.lp, email="lp@example.com", organization_id=org_id
         )
-        override_user(subject)
+        override_user("hanko-lp")
 
         response = client.post(
             "/invitations",
@@ -238,6 +230,52 @@ class TestCreateInvitation:
                 "organization_id": str(org_id),
                 "email": "x@example.com",
                 "role": "lp",
+            },
+        )
+        assert response.status_code == 403
+        hanko_email_mock.assert_not_awaited()
+
+    def test_fund_manager_can_invite_lp(self, client, override_user, hanko_email_mock):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+
+        response = client.post(
+            "/invitations",
+            json={
+                "organization_id": str(org_id),
+                "email": "newlp@example.com",
+                "role": "lp",
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["role"] == "lp"
+        hanko_email_mock.assert_awaited_once_with("newlp@example.com")
+
+    @pytest.mark.parametrize("role", ["fund_manager", "admin"])
+    def test_fund_manager_cannot_invite_managers(
+        self, client, override_user, hanko_email_mock, role
+    ):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+
+        response = client.post(
+            "/invitations",
+            json={
+                "organization_id": str(org_id),
+                "email": "staff@example.com",
+                "role": role,
             },
         )
         assert response.status_code == 403
@@ -380,6 +418,30 @@ class TestListInvitations:
         response = client.get("/invitations")
         assert response.status_code == 403
 
+    def test_fund_manager_sees_only_lp_invitations(
+        self, client, override_user, hanko_email_mock
+    ):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        _seed_invitation(org_id, email="lp@example.com", role=UserRole.lp, token="t-lp")
+        _seed_invitation(
+            org_id,
+            email="mgr@example.com",
+            role=UserRole.fund_manager,
+            token="t-mgr",
+        )
+        override_user("hanko-fm")
+
+        response = client.get("/invitations")
+        assert response.status_code == 200
+        roles = {row["role"] for row in response.json()}
+        assert roles == {"lp"}
+
 
 class TestRevokeInvitation:
     def test_admin_revokes_pending_invitation(
@@ -398,6 +460,41 @@ class TestRevokeInvitation:
         response = client.post(f"/invitations/{invite_id}/revoke")
         assert response.status_code == 200
         assert response.json()["status"] == "revoked"
+
+    def test_fund_manager_revokes_lp_invitation(
+        self, client, override_user, hanko_email_mock
+    ):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        invite_id = _seed_invitation(org_id, role=UserRole.lp, token="t-fm-revoke")
+        override_user("hanko-fm")
+
+        response = client.post(f"/invitations/{invite_id}/revoke")
+        assert response.status_code == 200
+        assert response.json()["status"] == "revoked"
+
+    def test_fund_manager_cannot_revoke_manager_invitation(
+        self, client, override_user, hanko_email_mock
+    ):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        invite_id = _seed_invitation(
+            org_id, role=UserRole.fund_manager, token="t-fm-noaccess"
+        )
+        override_user("hanko-fm")
+
+        response = client.post(f"/invitations/{invite_id}/revoke")
+        assert response.status_code == 403
 
     def test_revoke_non_pending_returns_409(
         self, client, override_user, hanko_email_mock
@@ -438,9 +535,7 @@ class TestRevokeInvitation:
         )
         assert response.status_code == 403
 
-    def test_404_when_invitation_missing(
-        self, client, override_user, hanko_email_mock
-    ):
+    def test_404_when_invitation_missing(self, client, override_user, hanko_email_mock):
         org_id = _seed_org()
         _seed_user(
             "hanko-admin",
@@ -535,9 +630,7 @@ class TestAcceptInvitation:
         finally:
             db.close()
 
-    def test_accept_notifies_the_inviter(
-        self, client, override_user, hanko_email_mock
-    ):
+    def test_accept_notifies_the_inviter(self, client, override_user, hanko_email_mock):
         org_id = _seed_org()
         inviter_id = _seed_user(
             "hanko-admin",
@@ -560,9 +653,7 @@ class TestAcceptInvitation:
         db = SessionLocal()
         try:
             rows = (
-                db.query(Notification)
-                .filter(Notification.user_id == inviter_id)
-                .all()
+                db.query(Notification).filter(Notification.user_id == inviter_id).all()
             )
             assert len(rows) == 1
             assert rows[0].title == "Invitation accepted"
@@ -585,9 +676,7 @@ class TestAcceptInvitation:
         )
         override_user("hanko-invitee", email="invitee@example.com")
 
-        response = client.post(
-            "/invitations/accept", json={"token": "t-no-inviter"}
-        )
+        response = client.post("/invitations/accept", json={"token": "t-no-inviter"})
         assert response.status_code == 200
 
         db = SessionLocal()
@@ -600,12 +689,8 @@ class TestAcceptInvitation:
         self, client, override_user, hanko_email_mock
     ):
         org_id = _seed_org()
-        _seed_user(
-            "hanko-invitee", UserRole.lp, email="invitee@example.com"
-        )
-        _seed_invitation(
-            org_id, email="invitee@example.com", token="t-twice"
-        )
+        _seed_user("hanko-invitee", UserRole.lp, email="invitee@example.com")
+        _seed_invitation(org_id, email="invitee@example.com", token="t-twice")
         override_user("hanko-invitee", email="invitee@example.com")
 
         first = client.post("/invitations/accept", json={"token": "t-twice"})
@@ -618,23 +703,15 @@ class TestAcceptInvitation:
     ):
         org_id = _seed_org()
         _seed_user("hanko-other", UserRole.lp, email="other@example.com")
-        _seed_invitation(
-            org_id, email="invitee@example.com", token="t-mismatch"
-        )
+        _seed_invitation(org_id, email="invitee@example.com", token="t-mismatch")
         override_user("hanko-other", email="other@example.com")
 
-        response = client.post(
-            "/invitations/accept", json={"token": "t-mismatch"}
-        )
+        response = client.post("/invitations/accept", json={"token": "t-mismatch"})
         assert response.status_code == 403
 
-    def test_accept_revoked_returns_410(
-        self, client, override_user, hanko_email_mock
-    ):
+    def test_accept_revoked_returns_410(self, client, override_user, hanko_email_mock):
         org_id = _seed_org()
-        _seed_user(
-            "hanko-invitee", UserRole.lp, email="invitee@example.com"
-        )
+        _seed_user("hanko-invitee", UserRole.lp, email="invitee@example.com")
         _seed_invitation(
             org_id,
             email="invitee@example.com",
@@ -643,18 +720,14 @@ class TestAcceptInvitation:
         )
         override_user("hanko-invitee", email="invitee@example.com")
 
-        response = client.post(
-            "/invitations/accept", json={"token": "t-revoked"}
-        )
+        response = client.post("/invitations/accept", json={"token": "t-revoked"})
         assert response.status_code == 410
 
     def test_accept_expired_flips_status_and_returns_410(
         self, client, override_user, hanko_email_mock
     ):
         org_id = _seed_org()
-        _seed_user(
-            "hanko-invitee", UserRole.lp, email="invitee@example.com"
-        )
+        _seed_user("hanko-invitee", UserRole.lp, email="invitee@example.com")
         invite_id = _seed_invitation(
             org_id,
             email="invitee@example.com",
@@ -663,9 +736,7 @@ class TestAcceptInvitation:
         )
         override_user("hanko-invitee", email="invitee@example.com")
 
-        response = client.post(
-            "/invitations/accept", json={"token": "t-stale"}
-        )
+        response = client.post("/invitations/accept", json={"token": "t-stale"})
         assert response.status_code == 410
 
         db = SessionLocal()
@@ -682,14 +753,10 @@ class TestAcceptInvitation:
     def test_accept_unknown_token_returns_404(
         self, client, override_user, hanko_email_mock
     ):
-        _seed_user(
-            "hanko-invitee", UserRole.lp, email="invitee@example.com"
-        )
+        _seed_user("hanko-invitee", UserRole.lp, email="invitee@example.com")
         override_user("hanko-invitee", email="invitee@example.com")
 
-        response = client.post(
-            "/invitations/accept", json={"token": "no-such-token"}
-        )
+        response = client.post("/invitations/accept", json={"token": "no-such-token"})
         assert response.status_code == 404
 
     def test_accept_upgrades_existing_membership_role(
@@ -714,9 +781,7 @@ class TestAcceptInvitation:
         )
         override_user("hanko-invitee", email="invitee@example.com")
 
-        response = client.post(
-            "/invitations/accept", json={"token": "t-upgrade"}
-        )
+        response = client.post("/invitations/accept", json={"token": "t-upgrade"})
         assert response.status_code == 200
         assert response.json()["role"] == "admin"
 

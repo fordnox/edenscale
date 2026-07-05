@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
-import { Link, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
-import { ArrowUpRight, Loader2, LogOut } from "lucide-react"
+import { Loader2, LogOut } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHero } from "@edenscale/ui/PageHero"
@@ -16,24 +16,7 @@ import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { useAuth } from "@edenscale/auth/useAuth"
-import { orgPath } from "@/lib/investorRoutes"
 import { config } from "@edenscale/api/config"
-import { titleCase } from "@edenscale/shared/format"
-import type { components } from "@edenscale/api/schema"
-
-type UserRole = components["schemas"]["UserRole"]
-
-const ROLE_LABELS: Partial<Record<UserRole, string>> = {
-  admin: "Administrator",
-  fund_manager: "Fund manager",
-  lp: "Limited partner",
-}
-
-const ROLE_DESCRIPTIONS: Partial<Record<UserRole, string>> = {
-  admin: "Full access to organization settings, audit log, and all firm data.",
-  fund_manager: "Manages funds, investors, capital activity, and team members.",
-  lp: "Read-only access to your commitments, documents, and letters.",
-}
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -85,10 +68,9 @@ export default function ProfilePage() {
     )
   }, [me, firstName, lastName, phone, title])
 
-  const displayRole: UserRole | null = activeMembership?.role ?? me?.role ?? null
-  const canManageOrg =
-    activeMembership?.role === "admin" ||
-    activeMembership?.role === "fund_manager"
+  // This app only ever holds LP memberships (the provider scopes to roles:
+  // ['lp']), so membership presence is all we need to describe access.
+  const hasMembership = activeMembership != null
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -238,25 +220,26 @@ export default function ProfilePage() {
               <CardSection>
                 <Eyebrow>Role &amp; access</Eyebrow>
                 <div className="mt-4 flex flex-col gap-3">
-                  {displayRole ? (
+                  {hasMembership ? (
                     <>
                       <div className="flex items-center gap-3">
-                        <Badge tone="info">{ROLE_LABELS[displayRole] ?? "Member"}</Badge>
+                        <Badge tone="info">Limited partner</Badge>
                         <span className="font-sans text-[12px] text-ink-500">
-                          {titleCase(displayRole)}
+                          Investor
                         </span>
                       </div>
                       <p className="font-sans text-[13px] leading-[1.55] text-ink-700">
-                        {ROLE_DESCRIPTIONS[displayRole] ?? "Investor portal access."}
+                        Read-only access to your commitments, capital activity,
+                        documents, and letters.
                       </p>
                     </>
                   ) : (
                     <p className="font-sans text-[13px] leading-[1.55] text-ink-700">
-                      No role assigned in the current organization.
+                      You are not currently associated with an organization.
                     </p>
                   )}
                   <p className="font-sans text-[12px] text-ink-500">
-                    Roles are managed by your administrator. Contact them if your
+                    Access is managed by your fund manager. Contact them if your
                     access needs to change.
                   </p>
                 </div>
@@ -283,15 +266,6 @@ export default function ProfilePage() {
                           </span>
                         )}
                     </div>
-                    {canManageOrg && activeMembership && (
-                      <Link
-                        to={orgPath(activeMembership.organization.slug, "settings")}
-                        className="inline-flex w-fit items-center gap-1 font-sans text-[13px] text-conifer-700 underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
-                      >
-                        Manage organization settings
-                        <ArrowUpRight strokeWidth={1.5} className="size-4" />
-                      </Link>
-                    )}
                   </div>
                 )}
               </CardSection>

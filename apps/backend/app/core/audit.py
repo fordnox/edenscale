@@ -41,7 +41,6 @@ from app.models.distribution_item import DistributionItem
 from app.models.document import Document
 from app.models.fund import Fund
 from app.models.fund_group import FundGroup
-from app.models.fund_team_member import FundTeamMember
 from app.models.fund_valuation import FundValuation
 from app.models.investor import Investor
 from app.models.investor_contact import InvestorContact
@@ -63,7 +62,6 @@ _ENTITY_TYPES: dict[type, str] = {
     UserOrganizationMembership: "membership",
     Fund: "fund",
     FundGroup: "fund_group",
-    FundTeamMember: "fund_team_member",
     FundValuation: "fund_valuation",
     Investor: "investor",
     InvestorContact: "investor_contact",

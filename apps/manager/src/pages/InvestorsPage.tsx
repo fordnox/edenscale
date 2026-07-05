@@ -7,6 +7,7 @@ import { toast } from "sonner"
 
 import { PageHero } from "@edenscale/ui/PageHero"
 import { CommitmentCreateDialog } from "@/components/commitments/CommitmentCreateDialog"
+import { ContactEditDialog } from "@/components/investors/ContactEditDialog"
 import { InvestorCreateDialog } from "@/components/investors/InvestorCreateDialog"
 import { InvestorEditDialog } from "@/components/investors/InvestorEditDialog"
 import { InviteContactDialog } from "@/components/investors/InviteContactDialog"
@@ -104,8 +105,12 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
   const { activeMembership } = useActiveOrganization()
   const fundsQuery = useApiQuery("/funds")
   const funds = fundsQuery.data ?? []
+  // Contacts are always invited as LPs, which fund managers are permitted to
+  // do (admins/superadmins can invite any role elsewhere).
   const canInvite =
-    activeMembership?.role === "admin" || activeMembership?.role === "superadmin"
+    activeMembership?.role === "admin" ||
+    activeMembership?.role === "fund_manager" ||
+    activeMembership?.role === "superadmin"
   const canManageCommitments =
     activeMembership?.role === "admin" ||
     activeMembership?.role === "fund_manager" ||
@@ -115,6 +120,9 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [commitmentCreateOpen, setCommitmentCreateOpen] = useState(false)
   const [inviteContact, setInviteContact] = useState<InvestorContactRead | null>(
+    null,
+  )
+  const [editContact, setEditContact] = useState<InvestorContactRead | null>(
     null,
   )
 
@@ -276,6 +284,23 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
         />
       )}
 
+      {editContact && (
+        <ContactEditDialog
+          contact={editContact}
+          investorId={investorId}
+          canInvite={canInvite}
+          open={editContact !== null}
+          onOpenChange={(next) => {
+            if (!next) setEditContact(null)
+          }}
+          onInvite={() => {
+            const contact = editContact
+            setEditContact(null)
+            setInviteContact(contact)
+          }}
+        />
+      )}
+
       <Tabs defaultValue="contacts" className="flex-1 gap-0">
         <div className="px-6 pt-4">
           <TabsList className="bg-parchment-100">
@@ -312,6 +337,7 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
                   <TH>Email</TH>
                   <TH>Phone</TH>
                   <TH>Access</TH>
+                  {canManageCommitments && <TH className="w-10"> </TH>}
                 </tr>
               </thead>
               <tbody>
@@ -369,6 +395,19 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
                           <span className="text-ink-500">—</span>
                         )}
                       </TD>
+                      {canManageCommitments && (
+                        <TD>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            aria-label={`Edit ${contact.first_name} ${contact.last_name}`}
+                            onClick={() => setEditContact(contact)}
+                          >
+                            <Pencil strokeWidth={1.5} className="size-4" />
+                          </Button>
+                        </TD>
+                      )}
                     </TR>
                   )
                 })}

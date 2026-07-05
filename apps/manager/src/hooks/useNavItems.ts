@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   Mail,
   Settings,
-  UserCog,
   Users,
 } from "lucide-react"
 
@@ -172,7 +171,6 @@ export function useFundNavItems(): UseNavItemsResult {
       sectionItem("commitments", "Commitments", Users),
       sectionItem("calls", "Capital Calls", ArrowDownToLine),
       sectionItem("distributions", "Distributions", ArrowUpFromLine),
-      sectionItem("team", "Team", UserCog),
       sectionItem("letters", "Letters", Mail),
       ...(canManageSettings(role)
         ? [sectionItem("settings", "Settings", Settings)]

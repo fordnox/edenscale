@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
-import { useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Loader2, Mail } from "lucide-react"
+
+import api from "@edenscale/api/client"
 
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Card, CardSection } from "@edenscale/ui/card"
@@ -36,16 +38,31 @@ export default function LettersPage() {
   // For LPs, /investors returns only their own investor(s) and
   // /investors/{id}/contacts returns only their own contact rows — so every
   // contact id we collect here belongs to the current user. Used to find the
-  // recipient row that is "theirs" (which may be linked by contact, not user).
+  // recipient row that is "theirs" when it's linked by contact rather than
+  // user_id (letters sent before the LP claimed their contact carry only an
+  // investor_contact_id). An LP can be a contact on more than one investor, so
+  // we gather contacts across all of them, not just the first.
   const investorsQuery = useApiQuery("/investors")
-  const firstInvestorId = investorsQuery.data?.[0]?.id ?? null
-  const contactsQuery = useApiQuery(
-    "/investors/{investor_id}/contacts",
-    { params: { path: { investor_id: firstInvestorId ?? "" } } },
-    { enabled: firstInvestorId !== null },
+  const investorIds = useMemo(
+    () => (investorsQuery.data ?? []).map((i) => i.id),
+    [investorsQuery.data],
   )
+  const contactsQuery = useQuery({
+    queryKey: ["/investors/contacts/mine", investorIds],
+    enabled: investorIds.length > 0,
+    queryFn: async () => {
+      const results = await Promise.all(
+        investorIds.map((id) =>
+          api.GET("/investors/{investor_id}/contacts", {
+            params: { path: { investor_id: id } },
+          }),
+        ),
+      )
+      return results.flatMap(({ data }) => (data ?? []).map((c) => c.id))
+    },
+  })
   const myContactIds = useMemo(
-    () => new Set((contactsQuery.data ?? []).map((c) => c.id)),
+    () => new Set(contactsQuery.data ?? []),
     [contactsQuery.data],
   )
 

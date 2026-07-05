@@ -1,11 +1,13 @@
 import { Helmet } from "react-helmet-async"
-import { Landmark, Mail } from "lucide-react"
+import { Mail } from "lucide-react"
 
-import { Button } from "@edenscale/ui/button"
 import { Card } from "@edenscale/ui/card"
 import { EmptyState } from "@edenscale/ui/EmptyState"
 import { config } from "@edenscale/api/config"
 
+// Shown to a signed-in user with no LP membership. This is the investor
+// portal — access comes by invitation from a fund manager, so there is no
+// firm-creation path here (that lives entirely in the manager app).
 export default function NoOrganizationHomePage() {
   return (
     <>
@@ -16,18 +18,8 @@ export default function NoOrganizationHomePage() {
         <Card className="w-full max-w-xl">
           <EmptyState
             icon={<Mail strokeWidth={1.25} />}
-            title="No organization yet"
-            body="You haven't been invited to an organization yet. Check your email for a pending invitation, or create your own fund manager firm to get started."
-            action={
-              // Firm creation lives in the manager SPA — a hard navigation
-              // is required to cross the /investor → /manager mount.
-              <Button asChild variant="primary" size="md">
-                <a href="/manager/onboarding">
-                  <Landmark strokeWidth={1.5} className="size-4" />
-                  Create your firm
-                </a>
-              </Button>
-            }
+            title="No investments yet"
+            body="You haven't been added to a fund yet. When your fund manager invites you, check your email for the invitation — accepting it will connect your account to your investments here."
           />
         </Card>
       </div>

@@ -28,7 +28,6 @@ from app.models.enums import (
 )
 from app.models.fund import Fund
 from app.models.fund_group import FundGroup
-from app.models.fund_team_member import FundTeamMember
 from app.models.fund_valuation import FundValuation
 from app.models.investor import Investor
 from app.models.investor_contact import InvestorContact
@@ -63,7 +62,6 @@ __all__ = [
     "FundValuation",
     "FundGroup",
     "FundStatus",
-    "FundTeamMember",
     "InvitationStatus",
     "Investor",
     "InvestorContact",
