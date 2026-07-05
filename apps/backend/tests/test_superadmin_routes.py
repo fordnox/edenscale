@@ -194,6 +194,21 @@ class TestNonSuperadminForbidden:
         response = client.get(f"/superadmin/organizations/{org_id}/members")
         assert response.status_code == 403
 
+    @pytest.mark.parametrize(
+        "role,subject,email",
+        [
+            (UserRole.admin, "hanko-admin", "admin@example.com"),
+            (UserRole.fund_manager, "hanko-fm", "fm@example.com"),
+            (UserRole.lp, "hanko-lp", "lp@example.com"),
+        ],
+    )
+    def test_list_users_forbidden(self, client, override_user, role, subject, email):
+        _seed_user(subject, role, email=email)
+        override_user(subject)
+
+        response = client.get("/superadmin/users")
+        assert response.status_code == 403
+
 
 class TestListOrganizations:
     def test_returns_active_and_inactive_with_member_counts(
@@ -228,6 +243,39 @@ class TestListOrganizations:
         response = client.get("/superadmin/organizations")
         assert response.status_code == 200
         assert response.json() == []
+
+
+class TestListUsers:
+    def test_returns_all_users_with_memberships(self, client, override_user):
+        super_id = _login_as_superadmin(override_user)
+        org_id = _seed_org("Roster Co")
+        member_id = _seed_user("hanko-m1", UserRole.lp, email="member1@example.com")
+        loner_id = _seed_user("hanko-m2", UserRole.lp, email="loner@example.com")
+        _seed_membership(member_id, org_id, UserRole.lp)
+
+        response = client.get("/superadmin/users")
+        assert response.status_code == 200
+        rows = response.json()
+
+        assert len(rows) == 3
+        by_id = {row["id"]: row for row in rows}
+        assert by_id[super_id]["is_superadmin"] is True
+        assert by_id[member_id]["email"] == "member1@example.com"
+        assert by_id[member_id]["is_superadmin"] is False
+        assert len(by_id[member_id]["memberships"]) == 1
+        membership = by_id[member_id]["memberships"][0]
+        assert membership["role"] == "lp"
+        assert membership["organization"]["name"] == "Roster Co"
+        # Users with no memberships still appear.
+        assert by_id[loner_id]["memberships"] == []
+
+    def test_returns_only_caller_when_no_other_users(self, client, override_user):
+        super_id = _login_as_superadmin(override_user)
+
+        response = client.get("/superadmin/users")
+        assert response.status_code == 200
+        rows = response.json()
+        assert [row["id"] for row in rows] == [super_id]
 
 
 class TestCreateOrganizationWithAdmin:

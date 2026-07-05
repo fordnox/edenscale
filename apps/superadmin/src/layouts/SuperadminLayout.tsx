@@ -1,6 +1,14 @@
-import { Outlet, useNavigate } from "react-router-dom"
-import { ExternalLink, Landmark, Loader2, LogOut } from "lucide-react"
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
+import {
+  Building2,
+  ExternalLink,
+  Landmark,
+  Loader2,
+  LogOut,
+  Users,
+} from "lucide-react"
 
+import { cn } from "@edenscale/shared/utils"
 import { Button } from "@edenscale/ui/button"
 import { Card } from "@edenscale/ui/card"
 import { EmptyState } from "@edenscale/ui/EmptyState"
@@ -20,8 +28,27 @@ import { deriveInitials } from "@edenscale/shared/userDisplay"
 // Chrome for the whole control surface: slim header plus the superadmin role
 // gate — every routed page renders through the Outlet only after /users/me
 // confirms the global superadmin role.
+const NAV_LINKS = [
+  {
+    to: "/superadmin",
+    label: "Organizations",
+    icon: Building2,
+    // Org detail pages live under /superadmin/organizations/:id.
+    isActive: (pathname: string) =>
+      pathname === "/superadmin" ||
+      pathname.startsWith("/superadmin/organizations"),
+  },
+  {
+    to: "/superadmin/users",
+    label: "Users",
+    icon: Users,
+    isActive: (pathname: string) => pathname.startsWith("/superadmin/users"),
+  },
+]
+
 export default function SuperadminLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, logout } = useAuth()
 
   const meQuery = useApiQuery("/users/me", undefined, {
@@ -102,6 +129,37 @@ export default function SuperadminLayout() {
             </DropdownMenu>
           </div>
         </div>
+        <nav aria-label="Superadmin sections">
+          <ul className="flex items-stretch gap-1 overflow-x-auto px-2 md:px-6">
+            {NAV_LINKS.map(({ to, label, icon: Icon, isActive }) => {
+              const active = isActive(location.pathname)
+              return (
+                <li key={to} className="shrink-0">
+                  <Link
+                    to={to}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "group inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3 text-left",
+                      "font-sans text-[14px] transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+                      active
+                        ? "border-conifer-700 text-ink-900 font-medium"
+                        : "border-transparent text-ink-500 hover:text-ink-900",
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "size-[17px] shrink-0",
+                        active ? "text-conifer-700" : "text-ink-500",
+                      )}
+                      strokeWidth={1.5}
+                    />
+                    <span>{label}</span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
       </header>
       <main className="flex flex-1 flex-col">
         {meQuery.isLoading ? (

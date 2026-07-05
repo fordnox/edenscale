@@ -4,6 +4,7 @@ import SuperadminLayout from './layouts/SuperadminLayout'
 import LoginPage from './pages/LoginPage'
 import OrganizationsPage from './pages/OrganizationsPage'
 import OrganizationDetailPage from './pages/OrganizationDetailPage'
+import UsersPage from './pages/UsersPage'
 
 // The superadmin SPA is the platform control surface, mounted at /superadmin
 // by the gateway. Every page is gated on the global superadmin role inside
@@ -21,6 +22,7 @@ function App() {
             path="/superadmin/organizations/:organizationId"
             element={<OrganizationDetailPage />}
           />
+          <Route path="/superadmin/users" element={<UsersPage />} />
         </Route>
       </Route>
 

@@ -36,6 +36,7 @@ from app.schemas.superadmin import (
     SuperadminOrganizationCreateResponse,
     SuperadminOrganizationRead,
 )
+from app.schemas.user import UserRead
 from app.schemas.user_organization_membership import MembershipRead
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
@@ -81,6 +82,21 @@ async def list_all_organizations(
         )
         for org, member_count in rows
     ]
+
+
+@router.get(
+    "/users",
+    response_model=list[UserRead],
+    dependencies=[Depends(require_superadmin)],
+)
+async def list_all_users(
+    db: Session = Depends(get_db),
+) -> list[UserRead]:
+    """Every user on the platform, across all organizations. `UserRead`
+    already nests memberships → organization, so the UI can show each
+    user's orgs and roles without follow-up calls."""
+    users = UserRepository(db).list_all()
+    return [UserRead.model_validate(user) for user in users]
 
 
 @router.post(

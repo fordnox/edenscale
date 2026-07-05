@@ -2,9 +2,10 @@ import re
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.user import User
+from app.models.user_organization_membership import UserOrganizationMembership
 from app.schemas.user import UserCreate, UserUpdate
 
 
@@ -27,6 +28,21 @@ def _derive_name_from_email(email: str) -> str | None:
 class UserRepository:
     def __init__(self, db: Session):
         self.db = db
+
+    def list_all(self) -> list[User]:
+        """Every user on the platform, memberships (and their organizations)
+        eager-loaded so serializing ``UserRead.memberships`` is not an N+1.
+        Superadmin-only surface — tenant routes must never expose this."""
+        return (
+            self.db.query(User)
+            .options(
+                selectinload(User.memberships).joinedload(
+                    UserOrganizationMembership.organization
+                )
+            )
+            .order_by(User.created_at, User.id)
+            .all()
+        )
 
     def get_by_id(self, user_id: uuid.UUID) -> User | None:
         return self.db.query(User).filter(User.id == user_id).first()
