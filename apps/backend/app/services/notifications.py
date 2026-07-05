@@ -68,7 +68,7 @@ _DOCUMENT_TYPE_LABELS: dict[str, str] = {
 
 
 def _app_base_url() -> str:
-    return settings.APP_DOMAIN_URL.rstrip("/")
+    return settings.app_domain_url
 
 
 def _build_accept_url(token, role) -> str:

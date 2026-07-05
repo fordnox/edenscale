@@ -9,7 +9,6 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     GENERATE_OPENAPI_DOCS: bool = False
     APP_DOMAIN: str = "example.com"
-    APP_DOMAIN_URL: str = "http://localhost:3000"
     APP_DATA_PATH: str = "/tmp"
     APP_DATABASE_DSN: str = "sqlite:////tmp/database.db"
     CORS_ALLOW_ORIGINS: list[str] = ["http://localhost:3000"]
@@ -39,6 +38,18 @@ class Settings(BaseSettings):
     S3_REGION: str = "auto"
     S3_PUBLIC_URL: str = ""
     S3_PREFIX: str = "taven"
+
+    @property
+    def app_domain_url(self) -> str:
+        """Public base URL derived from ``APP_DOMAIN`` (no trailing slash) —
+        used for links in outbound email. A localhost domain means a dev
+        setup: plain http, defaulting to the manager dev port when the
+        domain carries no port of its own."""
+        domain = self.APP_DOMAIN.strip().rstrip("/")
+        host = domain.split(":", 1)[0]
+        if host in ("localhost", "127.0.0.1"):
+            return f"http://{domain if ':' in domain else f'{domain}:3000'}"
+        return f"https://{domain}"
 
     @property
     def superadmin_emails(self) -> frozenset[str]:
