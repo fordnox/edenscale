@@ -181,7 +181,7 @@ function OrganizationSettingsContent() {
   })
 
   const invitationsQuery = useApiQuery("/invitations", undefined, {
-    enabled: orgId !== null && isAdmin,
+    enabled: orgId !== null && (isAdmin || isFundManager),
   })
 
   const resendInvitation = useApiMutation(
@@ -541,8 +541,8 @@ function OrganizationSettingsContent() {
 
             {(isAdmin || isFundManager) && <FundGroupsCard />}
 
-            {isAdmin && (
-              <Card>
+            {(isAdmin || isFundManager) && (
+              <Card id="invitations" className="scroll-mt-24">
                 <div className="flex items-end justify-between gap-4 px-6 pt-6 md:px-8 md:pt-8">
                   <div className="flex flex-col gap-1.5">
                     <Eyebrow>Pending invitations</Eyebrow>
@@ -684,6 +684,7 @@ function OrganizationSettingsContent() {
         onOpenChange={setInviteOpen}
         defaultOrganizationId={orgId}
         isSuperadmin={isSuperadmin}
+        canInviteManagers={isAdmin || isSuperadmin}
       />
     </>
   )
@@ -702,6 +703,9 @@ interface InviteUserDialogProps {
   onOpenChange: (open: boolean) => void
   defaultOrganizationId: string | null
   isSuperadmin: boolean
+  // Admins/superadmins may invite any role; fund managers are limited to LPs
+  // (the backend enforces the same cap).
+  canInviteManagers: boolean
 }
 
 function InviteUserDialog({
@@ -709,11 +713,17 @@ function InviteUserDialog({
   onOpenChange,
   defaultOrganizationId,
   isSuperadmin,
+  canInviteManagers,
 }: InviteUserDialogProps) {
   const queryClient = useQueryClient()
 
+  const availableRoles: readonly InvitableRole[] = canInviteManagers
+    ? INVITABLE_ROLES
+    : ["lp"]
+  const defaultRole: InvitableRole = canInviteManagers ? "fund_manager" : "lp"
+
   const [email, setEmail] = useState("")
-  const [role, setRole] = useState<InvitableRole>("fund_manager")
+  const [role, setRole] = useState<InvitableRole>(defaultRole)
   const [organizationId, setOrganizationId] = useState<string>(
     defaultOrganizationId ?? "",
   )
@@ -721,6 +731,11 @@ function InviteUserDialog({
   useEffect(() => {
     setOrganizationId(defaultOrganizationId ?? "")
   }, [defaultOrganizationId])
+
+  // Keep the selected role within what the caller is allowed to invite.
+  useEffect(() => {
+    if (!availableRoles.includes(role)) setRole(defaultRole)
+  }, [availableRoles, role, defaultRole])
 
   const orgsQuery = useApiQuery("/organizations", undefined, {
     enabled: open && isSuperadmin,
@@ -739,7 +754,7 @@ function InviteUserDialog({
 
   function reset() {
     setEmail("")
-    setRole("fund_manager")
+    setRole(defaultRole)
     setOrganizationId(defaultOrganizationId ?? "")
   }
 
@@ -802,21 +817,36 @@ function InviteUserDialog({
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="invite-role">Role</Label>
-            <Select
-              value={role}
-              onValueChange={(value) => setRole(value as InvitableRole)}
-            >
-              <SelectTrigger id="invite-role" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {INVITABLE_ROLES.map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {ROLE_LABELS[value]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {availableRoles.length === 1 ? (
+              <>
+                <Input
+                  id="invite-role"
+                  value={ROLE_LABELS[availableRoles[0]]}
+                  disabled
+                  readOnly
+                />
+                <span className="font-sans text-[12px] text-ink-500">
+                  Fund managers can invite limited partners. Ask an admin to
+                  invite staff.
+                </span>
+              </>
+            ) : (
+              <Select
+                value={role}
+                onValueChange={(value) => setRole(value as InvitableRole)}
+              >
+                <SelectTrigger id="invite-role" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableRoles.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {ROLE_LABELS[value]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           {isSuperadmin && (
             <div className="flex flex-col gap-2">

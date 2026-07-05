@@ -7,10 +7,13 @@ superadmin / signed-in checks.
 Authorization model:
 
 * ``POST /``, ``GET /``, ``POST /{id}/revoke``, ``POST /{id}/resend`` —
-  caller must be acting through an admin or superadmin membership (the
-  active membership is resolved from ``X-Organization-Id`` via
-  ``get_active_membership``). Non-superadmins additionally must be acting on
-  their own organization; superadmins may act on any.
+  caller must be acting through an admin, fund_manager, or superadmin
+  membership (the active membership is resolved from ``X-Organization-Id``
+  via ``get_active_membership``). Fund managers are scoped to limited-partner
+  invitations only — they may create/list/revoke/resend invitations whose
+  role is ``lp`` but never invitations that would grant manager/admin access.
+  Non-superadmins additionally must be acting on their own organization;
+  superadmins may act on any.
 * ``POST /accept`` and ``GET /pending-for-me`` — any authenticated user
   resolved through ``get_current_user_record``. The accept flow validates
   that the invitation email matches the signed-in user.
@@ -69,6 +72,19 @@ def _ensure_can_act_on_org(
         )
 
 
+def _ensure_can_manage_invitation_role(
+    membership: UserOrganizationMembership, invited_role: UserRole
+) -> None:
+    """Fund managers may only act on limited-partner invitations. Admins and
+    superadmins can manage any (non-superadmin) role. Keeps a fund manager from
+    minting new managers/admins while still letting them onboard their LPs."""
+    if membership.role is UserRole.fund_manager and invited_role is not UserRole.lp:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Fund managers can only invite limited partners",
+        )
+
+
 def _inviter_user_id(membership: UserOrganizationMembership) -> uuid.UUID | None:
     # Synthesized superadmin memberships have no row id; the FK on the
     # invitation is nullable, so record None and rely on `invited_by_user_id`
@@ -87,10 +103,13 @@ async def create_invitation(
     data: InvitationCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(UserRole.admin, UserRole.superadmin)
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
     ),
 ):
     _ensure_can_act_on_org(membership, data.organization_id)
+    _ensure_can_manage_invitation_role(membership, data.role)
 
     organization = OrganizationRepository(db).get(data.organization_id)
     if organization is None:
@@ -118,14 +137,20 @@ async def list_invitations(
     status_filter: InvitationStatus | None = None,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(UserRole.admin, UserRole.superadmin)
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
     ),
 ):
     repo = OrganizationInvitationRepository(db)
-    return repo.list_for_organization(
+    invitations = repo.list_for_organization(
         membership.organization_id,  # type: ignore[invalid-argument-type]
         status=status_filter,
     )
+    # Fund managers only see the LP invitations they're allowed to manage.
+    if membership.role is UserRole.fund_manager:
+        invitations = [i for i in invitations if i.role is UserRole.lp]
+    return invitations
 
 
 @router.get("/pending-for-me", response_model=list[InvitationRead])
@@ -226,7 +251,9 @@ async def revoke_invitation(
     invitation_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(UserRole.admin, UserRole.superadmin)
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
     ),
 ):
     repo = OrganizationInvitationRepository(db)
@@ -236,6 +263,7 @@ async def revoke_invitation(
             status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found"
         )
     _ensure_can_act_on_org(membership, invitation.organization_id)  # type: ignore[invalid-argument-type]
+    _ensure_can_manage_invitation_role(membership, invitation.role)  # type: ignore[invalid-argument-type]
 
     if invitation.status is not InvitationStatus.pending:
         raise HTTPException(
@@ -253,7 +281,9 @@ async def resend_invitation(
     invitation_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(UserRole.admin, UserRole.superadmin)
+        require_membership_roles(
+            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
+        )
     ),
 ):
     repo = OrganizationInvitationRepository(db)
@@ -263,6 +293,7 @@ async def resend_invitation(
             status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found"
         )
     _ensure_can_act_on_org(membership, invitation.organization_id)  # type: ignore[invalid-argument-type]
+    _ensure_can_manage_invitation_role(membership, invitation.role)  # type: ignore[invalid-argument-type]
 
     if invitation.status is not InvitationStatus.pending:
         raise HTTPException(
