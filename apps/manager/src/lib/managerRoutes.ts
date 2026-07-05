@@ -55,6 +55,7 @@ export const FUND_SECTIONS = [
   "distributions",
   "team",
   "letters",
+  "settings",
 ] as const
 
 export type FundSection = (typeof FUND_SECTIONS)[number]

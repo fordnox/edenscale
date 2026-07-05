@@ -7,7 +7,6 @@ import {
   Landmark,
   LogOut,
   Search,
-  Settings,
   User as UserIcon,
 } from "lucide-react"
 
@@ -268,13 +267,7 @@ function FundCrumb({ orgSlug }: { orgSlug: string }) {
   )
 }
 
-function UserMenu({
-  role,
-  orgSlug,
-}: {
-  role: UserRole | null
-  orgSlug: string | null
-}) {
+function UserMenu() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
 
@@ -334,15 +327,6 @@ function UserMenu({
           <UserIcon strokeWidth={1.5} />
           <span>Profile</span>
         </DropdownMenuItem>
-        {orgSlug && (role === "admin" || role === "fund_manager") && (
-          <DropdownMenuItem
-            className="min-h-11 md:min-h-0"
-            onSelect={() => navigate(orgPath(orgSlug, "settings"))}
-          >
-            <Settings strokeWidth={1.5} />
-            <span>Organization settings</span>
-          </DropdownMenuItem>
-        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="min-h-11 md:min-h-0"
@@ -458,7 +442,7 @@ export function Topbar({
               </Kbd>
             </button>
           )}
-          <UserMenu role={role} orgSlug={organization?.slug ?? null} />
+          <UserMenu />
         </div>
       </div>
 

@@ -9,6 +9,7 @@ import {
   Layers,
   LayoutDashboard,
   Mail,
+  Settings,
   UserCog,
   Users,
 } from "lucide-react"
@@ -44,7 +45,13 @@ export interface NavDivider {
 
 export type NavEntry = NavItem | NavSection | NavDivider
 
-function orgItems(orgSlug: string): NavItem[] {
+// Settings pages are for roles that can manage the workspace — mirrors the
+// canManage checks in OrgLayout/FundLayout.
+function canManageSettings(role: UserRole | null): boolean {
+  return role === "admin" || role === "fund_manager" || role === "superadmin"
+}
+
+function orgItems(orgSlug: string, role: UserRole | null): NavItem[] {
   const overview: NavItem = {
     to: orgPath(orgSlug),
     label: "Overview",
@@ -83,6 +90,11 @@ function orgItems(orgSlug: string): NavItem[] {
     label: "Audit Log",
     icon: History,
   }
+  const settings: NavItem = {
+    to: orgPath(orgSlug, "settings"),
+    label: "Settings",
+    icon: Settings,
+  }
 
   return [
     overview,
@@ -94,6 +106,7 @@ function orgItems(orgSlug: string): NavItem[] {
     letters,
     tasks,
     auditLog,
+    ...(canManageSettings(role) ? [settings] : []),
   ]
 }
 
@@ -120,9 +133,9 @@ export function useOrgNavItems(): UseNavItemsResult {
       icon: LayoutDashboard,
       end: true,
     }
-    const tenantItems = orgSlug ? orgItems(orgSlug) : []
+    const tenantItems = orgSlug ? orgItems(orgSlug, role) : []
     return orgSlug ? [homeItem, { kind: "divider" }, ...tenantItems] : [homeItem]
-  }, [orgSlug])
+  }, [orgSlug, role])
 
   return { items, role, isLoading }
 }
@@ -161,8 +174,11 @@ export function useFundNavItems(): UseNavItemsResult {
       sectionItem("distributions", "Distributions", ArrowUpFromLine),
       sectionItem("team", "Team", UserCog),
       sectionItem("letters", "Letters", Mail),
+      ...(canManageSettings(role)
+        ? [sectionItem("settings", "Settings", Settings)]
+        : []),
     ]
-  }, [orgSlug, fundSlug])
+  }, [orgSlug, fundSlug, role])
 
   return { items, role, isLoading }
 }

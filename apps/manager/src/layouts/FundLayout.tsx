@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { Helmet } from "react-helmet-async"
 import {
   Navigate,
@@ -8,28 +7,14 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom"
-import { useQueryClient } from "@tanstack/react-query"
 import { ChevronLeft, Loader2 } from "lucide-react"
-import { toast } from "sonner"
 
 import { PageHero } from "@edenscale/ui/PageHero"
-import { FundEditDialog } from "@/components/funds/FundEditDialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@edenscale/ui/alert-dialog"
 import { Button } from "@edenscale/ui/button"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { Stat } from "@edenscale/ui/stat"
 import { StatusPill } from "@edenscale/ui/StatusPill"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
-import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import {
   FUND_SECTIONS,
@@ -83,11 +68,8 @@ function FundNotFound({ orgSlug }: { orgSlug: string }) {
 
 function FundShell({ fund }: { fund: FundRead }) {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const { orgSlug } = useParams<{ orgSlug: string }>()
   const { activeMembership } = useActiveOrganization()
-  const [editOpen, setEditOpen] = useState(false)
-  const [archiveOpen, setArchiveOpen] = useState(false)
 
   const canManage =
     activeMembership?.role === "admin" ||
@@ -99,16 +81,6 @@ function FundShell({ fund }: { fund: FundRead }) {
   })
   const commitmentsQuery = useApiQuery("/funds/{fund_id}/commitments", {
     params: { path: { fund_id: fund.id } },
-  })
-
-  const archiveFund = useApiMutation("post", "/funds/{fund_id}/archive", {
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/funds"] })
-      queryClient.invalidateQueries({ queryKey: ["/funds/{fund_id}"] })
-      queryClient.invalidateQueries({ queryKey: ["/dashboard"] })
-      toast.success("Fund archived")
-      navigate(orgPath(orgSlug ?? "", "funds"))
-    },
   })
 
   if (overviewQuery.isLoading) {
@@ -134,8 +106,6 @@ function FundShell({ fund }: { fund: FundRead }) {
     fund.currency_code,
   ].filter((part): part is string => Boolean(part))
 
-  const canArchive = canManage && fund.status !== "archived"
-
   return (
     <>
       <Helmet>
@@ -147,34 +117,14 @@ function FundShell({ fund }: { fund: FundRead }) {
         title={fund.name}
         description={fund.description ?? undefined}
         actions={
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(orgPath(orgSlug ?? "", "funds"))}
-            >
-              <ChevronLeft strokeWidth={1.5} className="size-4" />
-              All funds
-            </Button>
-            {canManage && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setEditOpen(true)}
-              >
-                Edit fund
-              </Button>
-            )}
-            {canArchive && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setArchiveOpen(true)}
-              >
-                Archive fund
-              </Button>
-            )}
-          </>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(orgPath(orgSlug ?? "", "funds"))}
+          >
+            <ChevronLeft strokeWidth={1.5} className="size-4" />
+            All funds
+          </Button>
         }
       />
 
@@ -237,37 +187,6 @@ function FundShell({ fund }: { fund: FundRead }) {
           <Outlet context={{ fund, canManage } satisfies FundOutletContext} />
         </div>
       </div>
-
-      <FundEditDialog fund={fund} open={editOpen} onOpenChange={setEditOpen} />
-
-      <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Archive this fund?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {fund.name} will be marked as archived and hidden from active
-              programme views. Existing commitments, calls, and distributions are
-              retained. You can still access it directly.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={archiveFund.isPending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() =>
-                archiveFund.mutate({ params: { path: { fund_id: fund.id } } })
-              }
-              disabled={archiveFund.isPending}
-            >
-              {archiveFund.isPending && (
-                <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
-              )}
-              Archive fund
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   )
 }
