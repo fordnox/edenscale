@@ -1,6 +1,6 @@
 import re
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session, selectinload
 
@@ -169,11 +169,22 @@ class UserRepository:
         self.db.refresh(user)
         return user
 
-    def record_last_login(self, user_id: uuid.UUID) -> User | None:
-        user = self.get_by_id(user_id)
-        if user is None:
-            return None
-        user.last_login_at = datetime.now(UTC)
+    def touch_last_login(
+        self, user: User, *, min_interval: timedelta = timedelta(minutes=15)
+    ) -> None:
+        """Stamp ``last_login_at``, at most once per ``min_interval``.
+
+        Auth is stateless Hanko JWTs — there is no login endpoint — so
+        ``get_current_user`` calls this on every authenticated request. The
+        throttle keeps that from becoming a DB write per request; within the
+        interval this is read-only. Stored naive-UTC to match the column
+        (``DateTime`` without timezone, like the ``func.now()`` defaults).
+        """
+        now = datetime.now(UTC).replace(tzinfo=None)
+        last = user.last_login_at
+        if last is not None and last.tzinfo is not None:
+            last = last.astimezone(UTC).replace(tzinfo=None)
+        if last is not None and now - last < min_interval:
+            return
+        user.last_login_at = now
         self.db.commit()
-        self.db.refresh(user)
-        return user

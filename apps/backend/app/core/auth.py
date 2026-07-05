@@ -151,8 +151,9 @@ async def get_current_user(
     hanko_id = payload["sub"]
     email_address = _extract_email_from_hanko_payload(payload)
 
+    repo = UserRepository(db)
     try:
-        user, is_new = UserRepository(db).get_or_provision_by_hanko_id(
+        user, is_new = repo.get_or_provision_by_hanko_id(
             hanko_id=hanko_id,
             email=email_address,
             first_name=payload.get("given_name") or "",
@@ -163,5 +164,10 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(exc),
         )
+
+    # Stateless JWTs mean there is no login endpoint to hook, so "last
+    # login" is approximated here; the touch is throttled inside the
+    # repository so it is not a write per request.
+    repo.touch_last_login(user)
 
     return user
