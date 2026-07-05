@@ -199,7 +199,7 @@ export default function FundsPage() {
             <CardSection className="flex flex-col items-start gap-4">
               <Eyebrow>No funds yet</Eyebrow>
               <p className="max-w-xl font-sans text-[14px] leading-[1.6] text-ink-700">
-                Once your firm sets up its first fund, it will appear here with committed and
+                Once your organization sets up its first fund, it will appear here with committed and
                 called capital figures.
               </p>
               {canCreateFund && (

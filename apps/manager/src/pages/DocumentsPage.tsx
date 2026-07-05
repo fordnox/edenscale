@@ -257,7 +257,7 @@ export default function DocumentsPage() {
                         </TD>
                         <TD>
                           {linkedTo ?? (
-                            <span className="text-ink-500">Firm</span>
+                            <span className="text-ink-500">Organization</span>
                           )}
                         </TD>
                         <TD>{titleCase(doc.document_type)}</TD>

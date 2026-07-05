@@ -171,7 +171,7 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="sticky top-0 z-10 border-b border-[color:var(--border-hairline)] bg-surface px-6 py-3">
-        <Eyebrow>{fundName ?? "Firm-wide"}</Eyebrow>
+        <Eyebrow>{fundName ?? "Organization-wide"}</Eyebrow>
         <h2 className="es-display mt-2 text-[22px] leading-tight md:text-[28px]">
           {letter.subject}
         </h2>

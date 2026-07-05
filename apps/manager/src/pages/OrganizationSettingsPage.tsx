@@ -73,14 +73,14 @@ const ROLE_LABELS: Record<UserRole, string> = {
 
 const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   superadmin: "Platform-level access across all organizations.",
-  admin: "Full access to organization settings, audit log, and all firm data.",
+  admin: "Full access to organization settings, audit log, and all organization data.",
   fund_manager: "Manages funds, investors, capital activity, and team members.",
   lp: "Read-only access to your commitments, documents, and letters.",
 }
 
 const ORG_TYPE_LABELS: Record<OrganizationType, string> = {
-  fund_manager_firm: "Fund manager firm",
-  investor_firm: "Investor firm",
+  fund_manager_firm: "Fund manager organization",
+  investor_firm: "Investor organization",
   service_provider: "Service provider",
 }
 
@@ -305,7 +305,7 @@ function OrganizationSettingsContent() {
       <PageHero
         eyebrow="Settings"
         title="Organization."
-        description="Update firm details and manage who has access. Changes apply across the workspace."
+        description="Update organization details and manage who has access. Changes apply across the workspace."
       />
 
       <div className="px-4 pb-16 sm:px-6 md:px-8">
@@ -356,7 +356,7 @@ function OrganizationSettingsContent() {
             <Card>
               <CardSection>
                 <div className="flex items-baseline justify-between gap-3">
-                  <Eyebrow>Firm details</Eyebrow>
+                  <Eyebrow>Organization details</Eyebrow>
                   <Badge tone="muted">{ORG_TYPE_LABELS[org.type]}</Badge>
                 </div>
                 <form
@@ -473,7 +473,7 @@ function OrganizationSettingsContent() {
                   <EmptyState
                     icon={<Users strokeWidth={1.25} />}
                     title="No team members yet"
-                    body="Invite the first member of your firm to get started."
+                    body="Invite the first member of your organization to get started."
                   />
                 ) : (
                   <DataTable>

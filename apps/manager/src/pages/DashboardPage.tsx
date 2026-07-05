@@ -108,8 +108,8 @@ export default function DashboardPage() {
       ]
     : [
         {
-          label: "Create firm",
-          caption: activeMembership?.organization.name ?? "Firm workspace is ready.",
+          label: "Create organization",
+          caption: activeMembership?.organization.name ?? "Organization workspace is ready.",
           done: Boolean(activeMembership),
           actionLabel: "Settings",
           to: orgPath(activeOrgSlug, "settings"),
@@ -458,7 +458,7 @@ export default function DashboardPage() {
                   <CardSection className="flex flex-col gap-2">
                     <Eyebrow>No funds yet</Eyebrow>
                     <p className="font-sans text-[14px] text-ink-700 max-w-xl">
-                      Once your firm sets up its first fund, it will appear here with committed and called capital figures.
+                      Once your organization sets up its first fund, it will appear here with committed and called capital figures.
                     </p>
                   </CardSection>
                 </Card>

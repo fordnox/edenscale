@@ -20,7 +20,7 @@ export default function NoOrganizationHomePage() {
           <EmptyState
             icon={<Mail strokeWidth={1.25} />}
             title="No organization yet"
-            body="You haven't been invited to an organization yet. Check your email for a pending invitation, create your own fund manager firm, or explore the demo firm to get started."
+            body="You haven't been invited to an organization yet. Check your email for a pending invitation, create your own fund manager organization, or explore the demo organization to get started."
             action={
               <Button
                 variant="primary"
@@ -28,7 +28,7 @@ export default function NoOrganizationHomePage() {
                 onClick={() => navigate("/manager/onboarding")}
               >
                 <Landmark strokeWidth={1.5} className="size-4" />
-                Create your firm
+                Create your organization
               </Button>
             }
           />

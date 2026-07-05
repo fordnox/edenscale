@@ -219,7 +219,7 @@ export default function LettersPage() {
                           </Badge>
                         </TD>
                         <TD>
-                          {fundName ?? <span className="text-ink-500">Firm</span>}
+                          {fundName ?? <span className="text-ink-500">Organization</span>}
                         </TD>
                         <TD align="right">
                           {letter.sent_at ? (

@@ -159,7 +159,7 @@ export default function TasksPage() {
       </Helmet>
       <PageHero
         eyebrow="Workflow"
-        title="Tasks across the firm."
+        title="Tasks across the organization."
         description="Open items assigned across investor relations, compliance, and finance."
         actions={
           canManage ? (

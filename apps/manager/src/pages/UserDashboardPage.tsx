@@ -110,7 +110,7 @@ export default function UserDashboardPage() {
       ["admin", "fund_manager"].includes(membership.role),
     ) ?? memberships[0]
   const managerOrgSlug = managerMembership?.organization.slug ?? ""
-  const hasFirm = memberships.length > 0
+  const hasOrganization = memberships.length > 0
   const hasFund = totals.funds > 0
   const hasInvestors = totals.investors > 0
   const hasCommitments = totals.commitments > 0
@@ -118,13 +118,13 @@ export default function UserDashboardPage() {
   const hasCommunications = totals.communications > 0
   const onboardingSteps: OnboardingStep[] = [
     {
-      label: "Create firm",
-      caption: hasFirm
+      label: "Create organization",
+      caption: hasOrganization
         ? `${memberships.length} workspace${memberships.length === 1 ? "" : "s"} attached to your account.`
-        : "Create or accept access to a fund manager firm.",
-      done: hasFirm,
-      actionLabel: hasFirm ? "Review organizations" : "Create firm",
-      to: hasFirm ? "/manager" : "/manager/onboarding",
+        : "Create or accept access to a fund manager organization.",
+      done: hasOrganization,
+      actionLabel: hasOrganization ? "Review organizations" : "Create organization",
+      to: hasOrganization ? "/manager" : "/manager/onboarding",
     },
     {
       label: "Create fund",
@@ -135,7 +135,7 @@ export default function UserDashboardPage() {
     },
     {
       label: "Create investors",
-      caption: "Build the limited partner register for the firm.",
+      caption: "Build the limited partner register for the organization.",
       done: hasInvestors,
       actionLabel: "Open investors",
       to: orgPath(managerOrgSlug, "investors"),
@@ -173,7 +173,7 @@ export default function UserDashboardPage() {
       <PageHero
         eyebrow="Account dashboard"
         title="Your workspace overview."
-        description="A cross-organization view of setup progress, activity, and the firms tied to your account."
+        description="A cross-organization view of setup progress, activity, and the organizations tied to your account."
         actions={
           <>
             {visibleInvitations.length > 0 && (
@@ -318,7 +318,7 @@ export default function UserDashboardPage() {
                   size="sm"
                   onClick={() => navigate("/manager/onboarding")}
                 >
-                  Create firm →
+                  Create organization →
                 </Button>
               </div>
 

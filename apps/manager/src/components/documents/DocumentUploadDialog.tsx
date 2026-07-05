@@ -246,10 +246,10 @@ export function DocumentUploadDialog({
               <Label htmlFor="document-fund">Fund (optional)</Label>
               <Select value={fundId} onValueChange={setFundId}>
                 <SelectTrigger id="document-fund" className="w-full">
-                  <SelectValue placeholder="Firm-wide" />
+                  <SelectValue placeholder="Organization-wide" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Firm-wide</SelectItem>
+                  <SelectItem value="none">Organization-wide</SelectItem>
                   {(fundsQuery.data ?? []).map((fund) => (
                     <SelectItem key={fund.id} value={String(fund.id)}>
                       {fund.name}

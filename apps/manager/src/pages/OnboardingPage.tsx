@@ -20,8 +20,8 @@ export default function OnboardingPage() {
   const queryClient = useQueryClient()
   const { setActiveOrganizationId } = useActiveOrganization()
 
-  const [step, setStep] = useState<"firm" | "fund" | "investor">("firm")
-  const [firmName, setFirmName] = useState("")
+  const [step, setStep] = useState<"organization" | "fund" | "investor">("organization")
+  const [organizationName, setOrganizationName] = useState("")
   const [legalName, setLegalName] = useState("")
   const [organizationId, setOrganizationId] = useState<string | null>(null)
   const [organizationSlug, setOrganizationSlug] = useState<string | null>(null)
@@ -33,8 +33,8 @@ export default function OnboardingPage() {
   const [investorName, setInvestorName] = useState("")
   const [investorType, setInvestorType] = useState("")
 
-  // The seeded demo firm, if the deployment has one. Joining it (as a
-  // fund manager) is offered as an alternative to founding an empty firm.
+  // The seeded demo organization, if the deployment has one. Joining it (as a
+  // fund manager) is offered as an alternative to founding an empty organization.
   const demoOrgQuery = useApiQuery("/organizations/demo")
   const demoOrg = demoOrgQuery.data ?? null
 
@@ -90,12 +90,12 @@ export default function OnboardingPage() {
     }
   }
 
-  function handleFirmSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleOrganizationSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!firmName.trim() || createOrganization.isPending) return
+    if (!organizationName.trim() || createOrganization.isPending) return
     createOrganization.mutate({
       body: {
-        name: firmName.trim(),
+        name: organizationName.trim(),
         legal_name: legalName.trim() || null,
       },
     })
@@ -131,7 +131,7 @@ export default function OnboardingPage() {
   return (
     <>
       <Helmet>
-        <title>{`Set up your firm · ${config.VITE_APP_TITLE}`}</title>
+        <title>{`Set up your organization · ${config.VITE_APP_TITLE}`}</title>
       </Helmet>
       <div className="flex min-h-svh items-center justify-center bg-page p-6">
         <div className="w-full max-w-lg">
@@ -145,14 +145,14 @@ export default function OnboardingPage() {
                   >
                     <Landmark />
                   </span>
-                  {step === "firm" ? (
+                  {step === "organization" ? (
                     <>
                       <h1 className="font-display text-[28px] leading-[1.1] font-medium tracking-[-0.015em] text-ink-900">
-                        Set up your firm.
+                        Set up your organization.
                       </h1>
                       <p className="max-w-md font-sans text-[14px] leading-[1.6] text-ink-700">
                         You're not part of an organization yet. Create your own
-                        fund manager firm to get started — you'll be its
+                        fund manager organization to get started — you'll be its
                         administrator.
                       </p>
                     </>
@@ -162,7 +162,7 @@ export default function OnboardingPage() {
                         Create your first fund.
                       </h1>
                       <p className="max-w-md font-sans text-[14px] leading-[1.6] text-ink-700">
-                        {firmName.trim()} is ready. Add a fund now, or skip and
+                        {organizationName.trim()} is ready. Add a fund now, or skip and
                         do it later from the Funds page.
                       </p>
                     </>
@@ -179,29 +179,29 @@ export default function OnboardingPage() {
                   )}
                 </div>
 
-                {step === "firm" ? (
+                {step === "organization" ? (
                   <>
                   <form
-                    onSubmit={handleFirmSubmit}
+                    onSubmit={handleOrganizationSubmit}
                     className="flex flex-col gap-4"
                   >
                     <div className="flex flex-col gap-2">
-                      <Label htmlFor="firm-name">Firm name</Label>
+                      <Label htmlFor="organization-name">Organization name</Label>
                       <Input
-                        id="firm-name"
-                        value={firmName}
-                        onChange={(event) => setFirmName(event.target.value)}
+                        id="organization-name"
+                        value={organizationName}
+                        onChange={(event) => setOrganizationName(event.target.value)}
                         placeholder="NewTaven Capital"
                         autoFocus
                         required
                       />
                     </div>
                     <div className="flex flex-col gap-2">
-                      <Label htmlFor="firm-legal-name">
+                      <Label htmlFor="organization-legal-name">
                         Legal name (optional)
                       </Label>
                       <Input
-                        id="firm-legal-name"
+                        id="organization-legal-name"
                         value={legalName}
                         onChange={(event) => setLegalName(event.target.value)}
                         placeholder="NewTaven Capital, LLC"
@@ -212,7 +212,7 @@ export default function OnboardingPage() {
                       variant="primary"
                       size="md"
                       className="mt-2"
-                      disabled={createOrganization.isPending || !firmName.trim()}
+                      disabled={createOrganization.isPending || !organizationName.trim()}
                     >
                       {createOrganization.isPending && (
                         <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
@@ -242,7 +242,7 @@ export default function OnboardingPage() {
                               Explore {demoOrg.name}
                             </p>
                             <p className="font-sans text-[13px] leading-[1.5] text-ink-700">
-                              Join a shared demo firm as a fund manager and
+                              Join a shared demo organization as a fund manager and
                               look around with pre-seeded funds, investors,
                               capital calls, and distributions — no setup
                               needed.
@@ -265,7 +265,7 @@ export default function OnboardingPage() {
                               className="size-4 animate-spin"
                             />
                           )}
-                          Join the demo firm
+                          Join the demo organization
                         </Button>
                       </div>
                     </>
