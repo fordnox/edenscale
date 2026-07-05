@@ -12,6 +12,8 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@edenscale/brand": "workspace:*",
+    "@edenscale/site-config": "workspace:*",
     "astro": "^7.0.0"
   }
 }

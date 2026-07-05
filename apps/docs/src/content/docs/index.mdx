@@ -1,40 +1,39 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
+title: NewTaven Documentation
+description: Documentation for the NewTaven fund administration platform — investor portal, manager workflows, and platform reference.
+template: splash
 hero:
-  tagline: Congrats on setting up a new Starlight project!
-  image:
-    file: ../../assets/houston.webp
+  tagline: Fund administration for managers and their investors — capital calls, distributions, documents, and reporting in one place.
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Investor documentation
+      link: /docs/investors/overview/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
-      icon: external
+    - text: Guides
+      link: /docs/guides/tasks/
+      icon: open-book
       variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Next steps
+## Explore the docs
 
 <CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
+	<Card title="Investors (LPs)" icon="approve-check">
+		What investors can see and do: the [role and access model](/docs/investors/overview/),
+		[portfolio and funds](/docs/investors/portfolio/), and the full
+		[investor API reference](/docs/investors/api-reference/).
 	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
+	<Card title="Capital calls & distributions" icon="seti:notebook">
+		How cash-flow events reach investors and why LPs only ever see
+		[their own allocation items](/docs/investors/capital-calls-and-distributions/).
 	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
+	<Card title="Documents & communications" icon="document">
+		Document visibility rules, confidentiality, letters, and
+		[read receipts](/docs/investors/documents-and-communications/).
 	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
+	<Card title="Guides" icon="open-book">
+		Platform behavior guides, starting with [how tasks work](/docs/guides/tasks/) —
+		assignment, notifications, and role-based visibility.
 	</Card>
 </CardGrid>

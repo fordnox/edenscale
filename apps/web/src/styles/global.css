@@ -1,4 +1,5 @@
-@import "./tokens.css";
+@import "@edenscale/brand/styles/fonts.css";
+@import "@edenscale/brand/styles/tokens.css";
 
 html {
   scroll-behavior: smooth;

@@ -1,0 +1,12 @@
+{
+  "name": "@edenscale/brand",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./styles/*": "./styles/*",
+    "./components/*": "./components/*",
+    "./assets/*": "./assets/*",
+    "./fonts/*": "./fonts/*"
+  }
+}

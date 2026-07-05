@@ -1,0 +1,64 @@
+/* ============================================================
+   NewTaven Design System — Webfonts
+   Relative URLs so the consuming app's bundler (Vite) emits the
+   font files itself — no dependency on a /fonts/ folder at the
+   site root.
+   ============================================================ */
+
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/CormorantGaramond-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/CormorantGaramond-400Italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/CormorantGaramond-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/CormorantGaramond-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/InterTight-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/InterTight-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/InterTight-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/InterTight-700.woff2") format("woff2");
+}

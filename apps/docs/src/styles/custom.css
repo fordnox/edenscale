@@ -1,0 +1,50 @@
+/* NewTaven brand applied to Starlight — tokens come from the shared
+   @edenscale/brand package; this file only maps them onto Starlight's
+   theme custom properties.
+
+   Starlight builds the whole UI from an accent triple + a gray ramp,
+   where `--sl-color-white` is the strongest text color and
+   `--sl-color-black` is the page background (inverted per theme). */
+@import "@edenscale/brand/styles/fonts.css";
+@import "@edenscale/brand/styles/tokens.css";
+
+:root {
+  --sl-font: "Inter Tight";
+
+  /* Dark theme (Starlight default scope) — built from the website's
+     inverse surfaces: deep conifer greens with parchment text. */
+  --sl-color-accent-low: var(--conifer-800);
+  --sl-color-accent: var(--conifer-400);
+  --sl-color-accent-high: var(--conifer-200);
+
+  --sl-color-white: var(--parchment-50); /* headings / strongest text */
+  --sl-color-gray-1: var(--conifer-100);
+  --sl-color-gray-2: var(--conifer-200); /* body text */
+  --sl-color-gray-3: var(--conifer-300);
+  --sl-color-gray-4: var(--conifer-400);
+  --sl-color-gray-5: var(--conifer-700); /* borders */
+  --sl-color-gray-6: var(--conifer-800); /* raised surfaces */
+  --sl-color-black: var(--conifer-900); /* page background */
+}
+
+:root[data-theme="light"] {
+  /* Light theme — the marketing site's parchment & ink palette. */
+  --sl-color-accent-low: var(--conifer-100);
+  --sl-color-accent: var(--conifer-600);
+  --sl-color-accent-high: var(--conifer-800);
+
+  --sl-color-white: var(--ink-900); /* headings / strongest text */
+  --sl-color-gray-1: var(--ink-700);
+  --sl-color-gray-2: #52514c; /* body text — between ink-700 and ink-500 */
+  --sl-color-gray-3: var(--ink-500);
+  --sl-color-gray-4: var(--ink-300);
+  --sl-color-gray-5: var(--parchment-300); /* borders */
+  --sl-color-gray-6: var(--parchment-100); /* raised surfaces (code blocks) */
+  --sl-color-gray-7: var(--parchment-100);
+  --sl-color-black: var(--parchment-50); /* page background */
+}
+
+/* Brass selection highlight, same as the marketing site. */
+::selection {
+  background: rgba(184, 145, 92, 0.28);
+}
