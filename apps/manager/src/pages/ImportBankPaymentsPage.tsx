@@ -4,8 +4,8 @@ import { Link, useNavigate } from "react-router-dom"
 import { ArrowLeft, CheckCircle2, Loader2, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 
-import { AddInvestorFromPayerDialog } from "@/components/bank-import/AddInvestorFromPayerDialog"
 import { BankStatementDropzone } from "@/components/bank-import/BankStatementDropzone"
+import { OnboardPayerDialog } from "@/components/bank-import/OnboardPayerDialog"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Button } from "@edenscale/ui/button"
@@ -30,6 +30,7 @@ import type { components } from "@edenscale/api/schema"
 
 type BankImportRead = components["schemas"]["BankImportRead"]
 type BankTransactionRead = components["schemas"]["BankTransactionRead"]
+type MatchCandidate = components["schemas"]["MatchCandidate"]
 
 type WizardStep = "upload" | "review" | "summary"
 
@@ -78,9 +79,18 @@ export default function ImportBankPaymentsPage() {
   const [rows, setRows] = useState<Record<string, RowState>>({})
   const [appliedCount, setAppliedCount] = useState(0)
   const [payerDialog, setPayerDialog] = useState<{
+    transactionId: string
     name: string
     iban: string | null
+    amount: string
+    currency: string | null
+    valueDate: string | null
   } | null>(null)
+  // Capital-call items created inline during review, keyed by transaction id,
+  // merged into each row's candidate list so the payment becomes assignable.
+  const [extraCandidates, setExtraCandidates] = useState<
+    Record<string, MatchCandidate[]>
+  >({})
 
   const applyMutation = useApiMutation(
     "post",
@@ -103,6 +113,11 @@ export default function ImportBankPaymentsPage() {
     () => imported?.transactions ?? [],
     [imported],
   )
+
+  const candidatesFor = (txn: BankTransactionRead): MatchCandidate[] => [
+    ...(extraCandidates[txn.id] ?? []),
+    ...(txn.candidates ?? []),
+  ]
 
   if (!canManage) {
     return (
@@ -268,7 +283,8 @@ export default function ImportBankPaymentsPage() {
                   <tbody>
                     {transactions.map((txn) => {
                       const row = rows[txn.id]
-                      const selected = txn.candidates?.find(
+                      const rowCandidates = candidatesFor(txn)
+                      const selected = rowCandidates.find(
                         (c) => c.capital_call_item_id === row?.itemId,
                       )
                       return (
@@ -294,8 +310,12 @@ export default function ImportBankPaymentsPage() {
                                     className="flex items-center gap-1 self-start font-sans text-[11px] font-medium text-conifer-800 hover:underline"
                                     onClick={() =>
                                       setPayerDialog({
+                                        transactionId: txn.id,
                                         name: txn.debtor_name ?? "",
                                         iban: txn.debtor_iban,
+                                        amount: txn.amount,
+                                        currency: txn.currency,
+                                        valueDate: txn.value_date,
                                       })
                                     }
                                   >
@@ -328,7 +348,7 @@ export default function ImportBankPaymentsPage() {
                               <Select
                                 value={row?.itemId ?? UNASSIGNED}
                                 onValueChange={(value) => {
-                                  const cand = txn.candidates?.find(
+                                  const cand = rowCandidates.find(
                                     (c) => c.capital_call_item_id === value,
                                   )
                                   setRow(txn.id, {
@@ -346,7 +366,7 @@ export default function ImportBankPaymentsPage() {
                                   <SelectValue placeholder="Choose a capital call" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {(txn.candidates ?? []).map((c) => (
+                                  {rowCandidates.map((c) => (
                                     <SelectItem
                                       key={c.capital_call_item_id}
                                       value={c.capital_call_item_id}
@@ -473,14 +493,38 @@ export default function ImportBankPaymentsPage() {
         )}
       </div>
 
-      <AddInvestorFromPayerDialog
+      <OnboardPayerDialog
         open={payerDialog !== null}
         onOpenChange={(next) => {
           if (!next) setPayerDialog(null)
         }}
         defaultName={payerDialog?.name ?? ""}
         iban={payerDialog?.iban ?? null}
-        onCreated={() => setPayerDialog(null)}
+        amount={payerDialog?.amount ?? "0"}
+        currency={payerDialog?.currency ?? null}
+        valueDate={payerDialog?.valueDate ?? null}
+        onCompleted={(candidate) => {
+          const txnId = payerDialog?.transactionId
+          if (txnId && candidate) {
+            setExtraCandidates((prev) => ({
+              ...prev,
+              [txnId]: [candidate, ...(prev[txnId] ?? [])],
+            }))
+            // Auto-select the freshly created allocation for this payment.
+            const applied = Math.min(
+              toNumber(payerDialog?.amount),
+              toNumber(candidate.remaining),
+            )
+            setRows((prev) => ({
+              ...prev,
+              [txnId]: {
+                itemId: candidate.capital_call_item_id,
+                amount: applied.toFixed(2),
+              },
+            }))
+          }
+          setPayerDialog(null)
+        }}
       />
     </>
   )
