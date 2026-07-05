@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query"
 import { ArrowUpRight, Loader2, Mail } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@edenscale/ui/badge"
 import { Button } from "@edenscale/ui/button"
 import {
   Dialog,
@@ -16,12 +15,24 @@ import {
 } from "@edenscale/ui/dialog"
 import { Input } from "@edenscale/ui/input"
 import { Label } from "@edenscale/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@edenscale/ui/select"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
+import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { orgPath } from "@/lib/managerRoutes"
 import type { components } from "@edenscale/api/schema"
 
 type InvestorContactRead = components["schemas"]["InvestorContactRead"]
+
+// Sentinel for the "Not linked" option — Radix Select forbids an empty-string
+// value, so unlinked state is carried as this literal and mapped to null.
+const UNLINKED = "none"
 
 interface ContactEditDialogProps {
   contact: InvestorContactRead
@@ -47,6 +58,9 @@ export function ContactEditDialog({
   const [email, setEmail] = useState(contact.email ?? "")
   const [phone, setPhone] = useState(contact.phone ?? "")
   const [title, setTitle] = useState(contact.title ?? "")
+  const [linkedUserId, setLinkedUserId] = useState<string>(
+    contact.user_id ?? UNLINKED,
+  )
 
   useEffect(() => {
     if (!open) return
@@ -55,12 +69,22 @@ export function ContactEditDialog({
     setEmail(contact.email ?? "")
     setPhone(contact.phone ?? "")
     setTitle(contact.title ?? "")
+    setLinkedUserId(contact.user_id ?? UNLINKED)
   }, [open, contact])
 
-  const isLinked = contact.user_id !== null
   // Inviting reads the persisted email, so block it while the field is dirty —
   // the manager should save the new address first.
   const emailDirty = email.trim() !== (contact.email ?? "")
+
+  // Limited partners in this organization are the only users a contact may be
+  // linked to. Managers/admins are never offered here.
+  const membersQuery = useApiQuery("/users", undefined, { enabled: open })
+  const lpMembers = (membersQuery.data ?? []).filter((m) => m.role === "lp")
+  // Keep an already-linked user selectable even if they're not in the LP list
+  // (e.g. a historical link), so saving an unrelated edit never drops the link.
+  const linkedUserMissing =
+    contact.user_id !== null &&
+    !lpMembers.some((m) => m.id === contact.user_id)
 
   const { activeMembership } = useActiveOrganization()
   const orgSlug = activeMembership?.organization.slug ?? null
@@ -97,9 +121,6 @@ export function ContactEditDialog({
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!firstName.trim() || !lastName.trim() || updateContact.isPending) return
-    // We never send user_id: linking is the backend's job — on save it binds
-    // this contact to a user only when the email matches someone who already
-    // has access to the organization. Everyone else is linked by invitation.
     updateContact.mutate({
       params: { path: { investor_id: investorId, contact_id: contact.id } },
       body: {
@@ -108,6 +129,8 @@ export function ContactEditDialog({
         email: email.trim() || null,
         phone: phone.trim() || null,
         title: title.trim() || null,
+        // Explicit link to a limited partner in this org (or null to unlink).
+        user_id: linkedUserId === UNLINKED ? null : linkedUserId,
       },
     })
   }
@@ -118,8 +141,9 @@ export function ContactEditDialog({
         <DialogHeader>
           <DialogTitle className="es-display text-[24px]">Edit contact</DialogTitle>
           <DialogDescription>
-            Update this contact&rsquo;s details. Portal access is linked by email
-            — invite them if they don&rsquo;t have an account yet.
+            Update this contact&rsquo;s details and link them to a limited
+            partner in your organization, or invite them if they don&rsquo;t
+            have an account yet.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -173,23 +197,38 @@ export function ContactEditDialog({
           </div>
 
           <div className="flex flex-col gap-2 border-t border-[color:var(--border-hairline)] pt-4">
-            <Label>Portal access</Label>
-            {isLinked ? (
-              <div className="flex items-center gap-2">
-                <Badge tone="active">Linked</Badge>
-                <span className="font-sans text-[13px] text-ink-700">
-                  This contact can sign in to the investor portal.
-                </span>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <p className="font-sans text-[13px] leading-[1.5] text-ink-700">
-                  Not linked to a user yet. If this email already has access to
-                  your organization, saving will link them automatically.
-                  Otherwise, invite them to set up access.
-                </p>
+            <Label htmlFor="contact-edit-user">Linked user</Label>
+            <Select value={linkedUserId} onValueChange={setLinkedUserId}>
+              <SelectTrigger id="contact-edit-user" className="w-full">
+                <SelectValue placeholder="Not linked" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNLINKED}>Not linked</SelectItem>
+                {linkedUserMissing && contact.user_id && (
+                  <SelectItem value={contact.user_id}>
+                    Currently linked user
+                  </SelectItem>
+                )}
+                {lpMembers.map((member) => (
+                  <SelectItem key={member.id} value={String(member.id)}>
+                    {member.first_name} {member.last_name}
+                    {member.email ? ` · ${member.email}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="font-sans text-[12px] text-ink-500">
+              Only limited partners who already have access to this organization
+              appear here.
+            </p>
+
+            {linkedUserId === UNLINKED && (
+              <div className="mt-1 flex flex-col gap-2">
                 {canInvite ? (
                   <>
+                    <p className="font-sans text-[12px] text-ink-500">
+                      Not in the list? Invite them by email to set up access.
+                    </p>
                     <Button
                       type="button"
                       variant="secondary"
