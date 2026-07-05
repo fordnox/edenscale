@@ -15,9 +15,9 @@ import type { components } from "@edenscale/api/schema"
 
 type UserRole = components["schemas"]["UserRole"]
 
+// This app only ever surfaces LP memberships (the active-org provider scopes
+// to roles: ['lp']), so LP is the only label that can appear here.
 const ROLE_LABELS: Partial<Record<UserRole, string>> = {
-  admin: "Admin",
-  fund_manager: "Fund manager",
   lp: "LP",
 }
 

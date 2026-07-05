@@ -49,13 +49,6 @@ export function fundSlugFromPath(pathname: string): string | undefined {
   return segment
 }
 
-export type FundDetailTab =
-  | "commitments"
-  | "calls"
-  | "distributions"
-  | "team"
-  | "letters"
-
 export function orgPath(orgSlug: string, subpath = ""): string {
   const trimmed = subpath.replace(/^\/+/, "")
   return trimmed ? `/investor/${orgSlug}/${trimmed}` : `/investor/${orgSlug}`
@@ -63,12 +56,4 @@ export function orgPath(orgSlug: string, subpath = ""): string {
 
 export function fundPath(orgSlug: string, fundSlug: string): string {
   return `/investor/${orgSlug}/${fundSlug}`
-}
-
-export function fundTabPath(
-  orgSlug: string,
-  fundSlug: string,
-  tab: FundDetailTab,
-): string {
-  return `${fundPath(orgSlug, fundSlug)}?tab=${tab}`
 }
