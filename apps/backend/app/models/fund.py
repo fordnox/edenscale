@@ -57,7 +57,6 @@ class Fund(Base):
 
     organization = relationship("Organization", back_populates="funds")
     fund_group = relationship("FundGroup", back_populates="funds")
-    team_members = relationship("FundTeamMember", back_populates="fund")
     commitments = relationship("Commitment", back_populates="fund")
     capital_calls = relationship("CapitalCall", back_populates="fund")
     distributions = relationship("Distribution", back_populates="fund")

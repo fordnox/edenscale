@@ -45,7 +45,6 @@ const ENTITY_TYPES = [
   "membership",
   "fund",
   "fund_group",
-  "fund_team_member",
   "fund_valuation",
   "investor",
   "investor_contact",

@@ -15,7 +15,6 @@ from app.routers import (
     distributions,
     documents,
     fund_groups,
-    fund_team_members,
     fund_valuations,
     funds,
     investor_contacts,
@@ -91,11 +90,6 @@ app.include_router(
     fund_valuations.router,
     prefix="/funds",
     tags=["funds"],
-)
-app.include_router(
-    fund_team_members.router,
-    prefix="/funds",
-    tags=["fund-team-members"],
 )
 app.include_router(investors.router, prefix="/investors", tags=["investors"])
 app.include_router(

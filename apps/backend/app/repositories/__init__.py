@@ -8,7 +8,6 @@ from app.repositories.distribution_repository import DistributionRepository
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.fund_group_repository import FundGroupRepository
 from app.repositories.fund_repository import FundRepository
-from app.repositories.fund_team_member_repository import FundTeamMemberRepository
 from app.repositories.fund_valuation_repository import FundValuationRepository
 from app.repositories.investor_contact_repository import InvestorContactRepository
 from app.repositories.investor_repository import InvestorRepository
@@ -38,7 +37,6 @@ __all__ = [
     "DocumentRepository",
     "FundGroupRepository",
     "FundRepository",
-    "FundTeamMemberRepository",
     "FundValuationRepository",
     "InvestorContactRepository",
     "InvestorRepository",
