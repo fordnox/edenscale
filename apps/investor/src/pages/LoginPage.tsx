@@ -106,7 +106,7 @@ export default function LoginPage() {
               <h1 className="font-display text-[48px] font-medium leading-[1.02] text-parchment-50 text-balance xl:text-[60px]">
                 Your fund activity, documents, and letters in one secure place.
               </h1>
-              <p className="mt-6 max-w-md font-sans text-[16px] leading-[1.65] text-parchment-100/80">
+              <p className="mt-6 max-w-md font-sans text-[16px] leading-[1.65] text-parchment-50/80">
                 Review commitments, capital calls, distributions, quarterly
                 letters, and shared documents from the NewTaven investor portal.
               </p>
@@ -179,7 +179,7 @@ function PortalItem({ icon, label, description }: PortalItemProps) {
         <p className="font-sans text-[14px] font-semibold tracking-tight text-parchment-50">
           {label}
         </p>
-        <p className="mt-1 font-sans text-[13px] leading-[1.55] text-parchment-100/70">
+        <p className="mt-1 font-sans text-[13px] leading-[1.55] text-parchment-50/70">
           {description}
         </p>
       </div>

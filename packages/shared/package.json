@@ -11,6 +11,7 @@
     "./active-org": "./src/activeOrg.ts",
     "./contexts/ActiveOrganizationContext": "./src/contexts/ActiveOrganizationContext.tsx",
     "./contexts/PendingInvitationsBannerContext": "./src/contexts/PendingInvitationsBannerContext.tsx",
+    "./contexts/ThemeContext": "./src/contexts/ThemeContext.tsx",
     "./format": "./src/format.ts",
     "./hooks/useActiveOrganization": "./src/hooks/useActiveOrganization.ts",
     "./hooks/usePendingInvitations": "./src/hooks/usePendingInvitations.ts",

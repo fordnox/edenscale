@@ -1,7 +1,23 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- Apply the saved theme before paint to avoid a flash. Mirrors
+         packages/shared/src/contexts/ThemeContext.tsx — keep them in sync. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("newtaven-theme") || "system"
+          var dark =
+            t === "dark" ||
+            (t === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches)
+          document.documentElement.classList.toggle("dark", dark)
+          document.documentElement.style.colorScheme = dark ? "dark" : "light"
+        } catch (e) {}
+      })()
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 
     <title>NewTaven</title>

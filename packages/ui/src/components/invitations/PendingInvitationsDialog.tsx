@@ -80,7 +80,7 @@ export function PendingInvitationsDialog({
             return (
               <li
                 key={invitation.id}
-                className="flex flex-col gap-3 rounded-xs border border-[color:var(--border-hairline)] bg-parchment-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 rounded-xs border border-[color:var(--border-hairline)] bg-raised p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex min-w-0 items-start gap-3">
                   <span

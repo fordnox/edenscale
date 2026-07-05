@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@edenscale/ui/dropdown-menu"
+import { ThemeToggle } from "@edenscale/ui/theme-toggle"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { useAuth } from "@edenscale/auth/useAuth"
 import { usePendingInvitations } from "@edenscale/shared/hooks/usePendingInvitations"
@@ -84,6 +85,13 @@ export default function AccountLayout() {
                     </span>
                   )}
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1.5">
+                  <div className="mb-1.5 font-sans text-[11px] font-medium text-ink-500">
+                    Theme
+                  </div>
+                  <ThemeToggle />
+                </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="min-h-11 md:min-h-0"

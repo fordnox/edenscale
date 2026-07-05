@@ -21,11 +21,11 @@ const toneStyles: Record<Tone, string> = {
   positive:
     "bg-conifer-50 text-[color:var(--status-positive)] border-conifer-100",
   negative:
-    "bg-[#F7E7E3] text-[color:var(--status-negative)] border-[#EAD0CA]",
+    "bg-[color:var(--status-negative)]/12 text-[color:var(--status-negative)] border-[color:var(--status-negative)]/25",
   warning:
     "bg-brass-50 text-brass-700 border-brass-100",
   info:
-    "bg-[#E6ECF2] text-[color:var(--status-info)] border-[#D2DCE6]",
+    "bg-[color:var(--status-info)]/12 text-[color:var(--status-info)] border-[color:var(--status-info)]/25",
   draft:
     "bg-parchment-100 text-ink-500 border-[color:var(--border-hairline)]",
 }

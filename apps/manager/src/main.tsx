@@ -9,6 +9,7 @@ import { configureApiClient } from '@edenscale/api/client'
 import { queryClient } from '@edenscale/api/queryClient'
 import { getSessionToken } from '@edenscale/auth/hanko'
 import { AuthProvider } from '@edenscale/auth/useAuth'
+import { ThemeProvider } from '@edenscale/shared/contexts/ThemeContext'
 import '@edenscale/ui/styles.css'
 
 configureApiClient({
@@ -18,15 +19,17 @@ configureApiClient({
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <HelmetProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <BrowserRouter>
-            <App />
-            <Toaster position="bottom-right" richColors />
-          </BrowserRouter>
-        </AuthProvider>
-      </QueryClientProvider>
-    </HelmetProvider>
+    <ThemeProvider>
+      <HelmetProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <BrowserRouter>
+              <App />
+              <Toaster position="bottom-right" richColors theme="system" />
+            </BrowserRouter>
+          </AuthProvider>
+        </QueryClientProvider>
+      </HelmetProvider>
+    </ThemeProvider>
   </React.StrictMode>,
 )
