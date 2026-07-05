@@ -7,16 +7,18 @@
   ``APP_DATA_PATH/dev_storage`` and returns
   ``http://localhost:8000/dev-storage/{key}`` URLs so the upload-init /
   upload / record flow works end-to-end without an external blob provider.
-* ``s3`` — ``S3Storage`` presigns direct-to-bucket PUT/GET URLs against any
-  S3-compatible endpoint (R2, MinIO, AWS) using the ``S3_*`` settings. The
-  bucket must allow CORS for PUT/GET from the app origins, since the browser
-  uploads straight to the presigned URL.
+* ``s3`` — ``S3Storage`` stores blobs in any S3-compatible bucket (R2,
+  MinIO, AWS) using the ``S3_*`` settings. Uploads are proxied through the
+  API (``PUT /documents/upload/{key}``) and written server-side, so the
+  browser never talks to the bucket and no bucket CORS config is needed;
+  downloads are presigned GETs consumed as plain link navigations, which
+  CORS does not apply to either.
 """
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import quote, unquote
+from urllib.parse import quote, unquote, urlsplit
 
 from app.core.config import settings
 
@@ -40,6 +42,11 @@ class StoragePort(ABC):
     @abstractmethod
     def presign_get(self, key: str) -> str:
         """Return a (possibly time-limited) URL the client can GET to read the file."""
+
+    @abstractmethod
+    def write(self, key: str, content: bytes, mime_type: str | None = None) -> None:
+        """Persist raw bytes under ``key`` (as returned inside upload URLs —
+        already prefixed; implementations must not prefix again)."""
 
 
 def _key_from_url(url: str) -> str:
@@ -79,11 +86,10 @@ class LocalDevStorage(StoragePort):
     def presign_get(self, key: str) -> str:
         return self._url_for(key)
 
-    def write(self, key: str, content: bytes) -> Path:
+    def write(self, key: str, content: bytes, mime_type: str | None = None) -> None:
         path = self.base_dir / key
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(content)
-        return path
 
     def read(self, key: str) -> bytes | None:
         path = self.base_dir / key
@@ -93,19 +99,50 @@ class LocalDevStorage(StoragePort):
 
 
 class S3Storage(StoragePort):
-    """S3-compatible storage (R2 / MinIO / AWS) via presigned URLs.
+    """S3-compatible storage (R2 / MinIO / AWS).
 
-    Presigning is pure local crypto — no network round-trip — so the sync
-    boto3 client is safe to call from request handlers (``presign_get`` runs
-    once per row when listing documents).
+    Uploads are proxied: ``presign_put`` hands the client an API-relative
+    upload URL, and ``PUT /documents/upload/{key}`` calls :meth:`write` to
+    push the bytes to the bucket server-side — no bucket CORS required.
+    Reads stay presigned GETs (pure local crypto, no network round-trip, so
+    the sync boto3 client is safe to call once per row when listing
+    documents) consumed as link navigations.
     """
 
     def __init__(self):
         import boto3
 
+        # Fail fast on partial config. Without this, boto3 silently falls
+        # back to the ambient AWS credential chain (~/.aws, AWS_* env vars)
+        # and the default AWS endpoint — i.e. it starts talking to the wrong
+        # cloud and surfaces only as a confusing AccessDenied at upload time.
+        missing = [
+            name
+            for name, value in (
+                ("S3_ENDPOINT_URL", settings.S3_ENDPOINT_URL),
+                ("S3_ACCESS_KEY_ID", settings.S3_ACCESS_KEY_ID),
+                ("S3_SECRET_ACCESS_KEY", settings.S3_SECRET_ACCESS_KEY),
+                ("S3_BUCKET_NAME", settings.S3_BUCKET_NAME),
+            )
+            if not value
+        ]
+        if missing:
+            raise ValueError(
+                "STORAGE_BACKEND=s3 requires " + ", ".join(missing) + " to be set"
+            )
+        # A path on the endpoint (e.g. the per-bucket "S3 API" URL copied
+        # from the R2 dashboard) makes R2 read that segment as the bucket
+        # name and reject everything with AccessDenied. Host-only, always.
+        endpoint_path = urlsplit(settings.S3_ENDPOINT_URL).path.strip("/")
+        if endpoint_path:
+            raise ValueError(
+                "S3_ENDPOINT_URL must be host-only — remove the trailing "
+                f"'/{endpoint_path}' (the bucket belongs in S3_BUCKET_NAME)"
+            )
+
         self._client = boto3.client(
             "s3",
-            endpoint_url=settings.S3_ENDPOINT_URL or None,
+            endpoint_url=settings.S3_ENDPOINT_URL,
             aws_access_key_id=settings.S3_ACCESS_KEY_ID,
             aws_secret_access_key=settings.S3_SECRET_ACCESS_KEY,
             region_name=settings.S3_REGION,
@@ -131,20 +168,15 @@ class S3Storage(StoragePort):
     ) -> tuple[str, str, datetime]:
         # The S3_PREFIX subdirectory is applied exactly once, here at
         # upload-init time. The canonical file_url therefore carries the full
-        # (prefixed) key, and presign_get — whose keys come back out of
-        # file_urls via key_from_file_url — must never prefix again.
+        # (prefixed) key, and write/presign_get — whose keys come back out of
+        # upload URLs / file_urls — must never prefix again.
+        #
+        # The upload URL is API-relative: the client PUTs the bytes to the
+        # authenticated /documents/upload/{key} proxy, which writes to the
+        # bucket server-side. Expiry is advisory here — the proxy is governed
+        # by bearer auth, not by a signature.
         full_key = _prefixed_key(key)
-        params: dict = {"Bucket": self._bucket, "Key": full_key}
-        # Sign the content type only when known — a signed ContentType forces
-        # the client to send exactly that header, while leaving it unsigned
-        # lets the browser default (application/octet-stream) through.
-        if mime_type:
-            params["ContentType"] = mime_type
-        upload_url = self._client.generate_presigned_url(
-            "put_object",
-            Params=params,
-            ExpiresIn=int(_PRESIGN_TTL.total_seconds()),
-        )
+        upload_url = f"/documents/upload/{quote(full_key, safe='/')}"
         expires_at = datetime.now(timezone.utc) + _PRESIGN_TTL
         return upload_url, self._canonical_url(full_key), expires_at
 
@@ -154,6 +186,10 @@ class S3Storage(StoragePort):
             Params={"Bucket": self._bucket, "Key": key},
             ExpiresIn=int(_PRESIGN_TTL.total_seconds()),
         )
+
+    def write(self, key: str, content: bytes, mime_type: str | None = None) -> None:
+        extra: dict = {"ContentType": mime_type} if mime_type else {}
+        self._client.put_object(Bucket=self._bucket, Key=key, Body=content, **extra)
 
 
 _storage_singleton: StoragePort | None = None

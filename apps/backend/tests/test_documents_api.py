@@ -212,6 +212,44 @@ class TestDocumentUploadFlow:
         assert unauth.status_code == 401
 
 
+class TestUploadProxyEndpoint:
+    """PUT /documents/upload/{key} — the S3-backend upload proxy (the browser
+    never talks to the bucket, so no bucket CORS is needed)."""
+
+    def test_writes_bytes_through_the_storage_backend(
+        self, client, override_user
+    ):
+        _seed_user("hanko-any", UserRole.lp, email="any@example.com")
+        override_user("hanko-any")
+
+        resp = client.put(
+            "/documents/upload/documents/tok/report.pdf",
+            content=b"%PDF-1.7",
+            headers={"Content-Type": "application/pdf"},
+        )
+
+        assert resp.status_code == 204
+        stored = storage_module.get_storage().read("documents/tok/report.pdf")
+        assert stored == b"%PDF-1.7"
+
+    def test_requires_authentication(self, client, override_user):
+        override_user(None)
+        resp = client.put(
+            "/documents/upload/documents/tok/report.pdf", content=b"x"
+        )
+        assert resp.status_code == 401
+
+    def test_rejects_path_traversal_keys(self, client, override_user):
+        _seed_user("hanko-any", UserRole.lp, email="any@example.com")
+        override_user("hanko-any")
+        resp = client.put(
+            "/documents/upload/documents/../../etc/passwd", content=b"x"
+        )
+        # The HTTP layer normalizes ../ away before routing (404); the
+        # handler's own key check (400) backstops anything that gets past it.
+        assert resp.status_code in (400, 404)
+
+
 class TestDocumentRbac:
     def test_lp_cannot_see_confidential_doc_outside_their_investor(
         self, client, override_user

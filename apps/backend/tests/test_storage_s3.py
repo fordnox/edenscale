@@ -33,29 +33,39 @@ def s3_settings(monkeypatch):
 
 
 class TestS3Storage:
-    def test_presign_put_returns_signed_url_and_canonical_file_url(self):
+    def test_presign_put_returns_api_proxy_url_and_canonical_file_url(self):
         storage = S3Storage()
         upload_url, file_url, expires_at = storage.presign_put(
             "documents/abc/report.pdf", "application/pdf"
         )
 
-        parsed = urlparse(upload_url)
-        assert parsed.scheme == "https"
-        assert "documents/abc/report.pdf" in parsed.path
-        query = parse_qs(parsed.query)
-        assert "X-Amz-Signature" in query
-        # Signed ContentType forces the client to send exactly that header.
-        assert "content-type" in query["X-Amz-SignedHeaders"][0]
+        # Uploads are proxied through the API (no bucket CORS): the client
+        # PUTs to this authenticated relative endpoint, never to R2 itself.
+        assert upload_url == "/documents/upload/documents/abc/report.pdf"
 
         assert file_url == "https://cdn.example.com/documents/abc/report.pdf"
         remaining = expires_at - datetime.now(timezone.utc)
         assert timedelta(minutes=13) < remaining <= timedelta(minutes=15)
 
-    def test_presign_put_without_mime_type_leaves_content_type_unsigned(self):
+    def test_write_puts_object_with_content_type(self):
         storage = S3Storage()
-        upload_url, _, _ = storage.presign_put("documents/abc/blob")
-        query = parse_qs(urlparse(upload_url).query)
-        assert "content-type" not in query["X-Amz-SignedHeaders"][0]
+        calls: list[dict] = []
+        storage._client = type(
+            "FakeClient", (), {"put_object": lambda self, **kw: calls.append(kw)}
+        )()
+
+        storage.write("taven/documents/abc/report.pdf", b"%PDF", "application/pdf")
+
+        assert calls == [
+            {
+                "Bucket": "uploads",
+                # The key arrives already prefixed (from the upload URL) —
+                # write must not prefix again.
+                "Key": "taven/documents/abc/report.pdf",
+                "Body": b"%PDF",
+                "ContentType": "application/pdf",
+            }
+        ]
 
     def test_file_url_falls_back_to_endpoint_when_no_public_base(self, monkeypatch):
         monkeypatch.setattr(settings, "S3_PUBLIC_URL", "")
@@ -85,7 +95,7 @@ class TestS3Prefix:
         storage = S3Storage()
         upload_url, file_url, _ = storage.presign_put("documents/abc/report.pdf")
 
-        assert "/taven/documents/abc/report.pdf" in urlparse(upload_url).path
+        assert upload_url == "/documents/upload/taven/documents/abc/report.pdf"
         assert file_url == "https://cdn.example.com/taven/documents/abc/report.pdf"
 
     def test_prefix_is_applied_exactly_once_on_read_back(self, monkeypatch):
@@ -122,6 +132,30 @@ class TestKeyFromFileUrl:
             key_from_file_url("http://localhost:8000/dev-storage/documents/a/b.pdf")
             == "documents/a/b.pdf"
         )
+
+
+class TestS3ConfigValidation:
+    def test_incomplete_config_fails_fast_with_missing_names(self, monkeypatch):
+        monkeypatch.setattr(settings, "S3_ENDPOINT_URL", "")
+        monkeypatch.setattr(settings, "S3_SECRET_ACCESS_KEY", "")
+        with pytest.raises(ValueError) as excinfo:
+            S3Storage()
+        assert "S3_ENDPOINT_URL" in str(excinfo.value)
+        assert "S3_SECRET_ACCESS_KEY" in str(excinfo.value)
+
+    def test_endpoint_with_path_is_rejected(self, monkeypatch):
+        """The per-bucket "S3 API" URL from the R2 dashboard carries a path
+        segment; boto3 would then address the wrong bucket and every call
+        fails with AccessDenied. Reject it with a pointed message instead."""
+        monkeypatch.setattr(
+            settings,
+            "S3_ENDPOINT_URL",
+            "https://acct.r2.cloudflarestorage.com/tace",
+        )
+        with pytest.raises(ValueError) as excinfo:
+            S3Storage()
+        assert "host-only" in str(excinfo.value)
+        assert "/tace" in str(excinfo.value)
 
 
 class TestGetStorageSelection:

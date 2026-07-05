@@ -136,6 +136,39 @@ async def init_document_upload(
     )
 
 
+_MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+
+
+@router.put("/upload/{key:path}", status_code=status.HTTP_204_NO_CONTENT)
+async def upload_document_bytes(
+    key: str,
+    request: Request,
+    # Same bar as upload-init: any authenticated user may push bytes for a
+    # key that upload-init handed them.
+    current_user: User = Depends(get_current_user_record),
+):
+    """Proxy upload: write the raw request body to the storage backend.
+
+    The S3 backend routes uploads here (see ``S3Storage.presign_put``) so the
+    browser never talks to the bucket directly and no bucket CORS
+    configuration is needed — the bytes travel through the API, which already
+    allows the app origins.
+    """
+    if ".." in key.split("/") or key.startswith("/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid storage key"
+        )
+    body = await request.body()
+    if len(body) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File exceeds the 100 MB upload limit",
+        )
+    storage = get_storage()
+    storage.write(key, body, request.headers.get("content-type"))
+    return None
+
+
 @router.post("", response_model=DocumentRead, status_code=status.HTTP_201_CREATED)
 async def create_document(
     data: DocumentCreate,
