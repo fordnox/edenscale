@@ -11,6 +11,7 @@
  * Usage:
  *   RESEND_API_KEY=... pnpm push
  *   RESEND_API_KEY=... pnpm push emails/customer/capital_call.tsx
+ *   RESEND_API_KEY=... pnpm push emails/customer   (a directory pushes every .tsx under it)
  *
  * Template name on Resend = the file path with separators/non-alphanumerics
  * stripped, e.g. `emails/customer/capital_call.tsx` → `customercapitalcall`.
@@ -135,7 +136,12 @@ async function pushOne(filePath: string): Promise<void> {
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const files = args.length
-    ? args.map((a) => resolve(a))
+    ? args.flatMap((a) => {
+        const full = resolve(a);
+        return statSync(full).isDirectory()
+          ? walk(full).filter((f) => !f.includes("/layout/"))
+          : [full];
+      })
     : walk(EMAILS_ROOT).filter((f) => !f.includes("/layout/"));
 
   for (const file of files) {
