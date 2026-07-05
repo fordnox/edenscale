@@ -1,5 +1,10 @@
 from app.services.allocation import allocate_pro_rata
 from app.services.hanko import HankoServiceError, ensure_hanko_user
+from app.services.iso20022 import (
+    Iso20022ParseError,
+    ParsedBankEntry,
+    parse_camt,
+)
 from app.services.metrics import (
     FundMetrics,
     fund_cashflows,
@@ -8,6 +13,7 @@ from app.services.metrics import (
     latest_fund_navs,
     xirr,
 )
+from app.services.payment_matching import suggest_matches
 from app.services.storage import (
     LocalDevStorage,
     S3Storage,
@@ -20,6 +26,10 @@ from app.services.storage import (
 __all__ = [
     "FundMetrics",
     "HankoServiceError",
+    "Iso20022ParseError",
+    "ParsedBankEntry",
+    "parse_camt",
+    "suggest_matches",
     "LocalDevStorage",
     "S3Storage",
     "StoragePort",

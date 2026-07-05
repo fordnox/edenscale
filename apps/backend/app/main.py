@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.middleware.audit_context import AuditContextMiddleware
 from app.routers import (
     audit_logs,
+    bank_imports,
     capital_calls,
     commitments,
     communications,
@@ -126,6 +127,11 @@ app.include_router(
     capital_calls.fund_capital_calls_router,
     prefix="/funds",
     tags=["capital-calls"],
+)
+app.include_router(
+    bank_imports.router,
+    prefix="/capital-call-imports",
+    tags=["capital-call-imports"],
 )
 app.include_router(
     distributions.router,

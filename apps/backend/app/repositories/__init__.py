@@ -1,4 +1,5 @@
 from app.repositories.audit_log_repository import AuditLogRepository
+from app.repositories.bank_import_repository import BankImportRepository
 from app.repositories.capital_call_repository import CapitalCallRepository
 from app.repositories.commitment_repository import CommitmentRepository
 from app.repositories.communication_repository import CommunicationRepository
@@ -28,6 +29,7 @@ from app.repositories.user_repository import UserRepository
 
 __all__ = [
     "AuditLogRepository",
+    "BankImportRepository",
     "CapitalCallRepository",
     "CommitmentRepository",
     "CommunicationRepository",

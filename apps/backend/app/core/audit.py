@@ -29,6 +29,8 @@ from sqlalchemy.orm import Mapper, Session
 
 from app.middleware.audit_context import get_audit_context
 from app.models.audit_log import AuditLog
+from app.models.bank_payment_transaction import BankPaymentTransaction
+from app.models.bank_statement_import import BankStatementImport
 from app.models.capital_call import CapitalCall
 from app.models.capital_call_item import CapitalCallItem
 from app.models.commitment import Commitment
@@ -68,6 +70,8 @@ _ENTITY_TYPES: dict[type, str] = {
     Commitment: "commitment",
     CapitalCall: "capital_call",
     CapitalCallItem: "capital_call_item",
+    BankStatementImport: "bank_statement_import",
+    BankPaymentTransaction: "bank_payment_transaction",
     Distribution: "distribution",
     DistributionItem: "distribution_item",
     Document: "document",

@@ -55,6 +55,19 @@ class DistributionStatus(str, enum.Enum):
     cancelled = "cancelled"
 
 
+class BankStatementImportStatus(str, enum.Enum):
+    pending = "pending"
+    applied = "applied"
+    discarded = "discarded"
+
+
+class BankPaymentTransactionStatus(str, enum.Enum):
+    unmatched = "unmatched"
+    matched = "matched"
+    applied = "applied"
+    ignored = "ignored"
+
+
 class DocumentType(str, enum.Enum):
     legal = "legal"
     kyc_aml = "kyc_aml"

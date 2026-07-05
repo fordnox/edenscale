@@ -1,4 +1,6 @@
 from app.models.audit_log import AuditLog
+from app.models.bank_payment_transaction import BankPaymentTransaction
+from app.models.bank_statement_import import BankStatementImport
 from app.models.capital_call import CapitalCall
 from app.models.capital_call_item import CapitalCallItem
 from app.models.commitment import Commitment
@@ -9,6 +11,8 @@ from app.models.distribution_item import DistributionItem
 from app.models.document import Document
 from app.models.enums import (
     AdminNotificationType,
+    BankPaymentTransactionStatus,
+    BankStatementImportStatus,
     CapitalCallStatus,
     CommitmentStatus,
     CommunicationType,
@@ -38,6 +42,10 @@ from app.models.user_organization_membership import UserOrganizationMembership
 
 __all__ = [
     "AuditLog",
+    "BankPaymentTransaction",
+    "BankPaymentTransactionStatus",
+    "BankStatementImport",
+    "BankStatementImportStatus",
     "CapitalCall",
     "CapitalCallItem",
     "CapitalCallStatus",

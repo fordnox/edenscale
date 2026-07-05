@@ -12,6 +12,7 @@ import NoOrganizationHomePage from './pages/NoOrganizationHomePage'
 import FundsPage from './pages/FundsPage'
 import InvestorsPage from './pages/InvestorsPage'
 import CapitalCallsPage from './pages/CapitalCallsPage'
+import ImportBankPaymentsPage from './pages/ImportBankPaymentsPage'
 import DistributionsPage from './pages/DistributionsPage'
 import DocumentsPage from './pages/DocumentsPage'
 import LettersPage from './pages/LettersPage'
@@ -90,6 +91,14 @@ function App() {
             <Route path="funds" element={<FundsPage />} />
             <Route path="investors" element={<InvestorsPage />} />
             <Route path="calls" element={<CapitalCallsPage />} />
+            <Route
+              path="calls/import"
+              element={
+                <RequireRole allowed={MANAGER_ROLES}>
+                  <ImportBankPaymentsPage />
+                </RequireRole>
+              }
+            />
             <Route path="distributions" element={<DistributionsPage />} />
             <Route path="documents" element={<DocumentsPage />} />
             <Route path="letters" element={<LettersPage />} />

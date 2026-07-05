@@ -936,6 +936,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/capital-call-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Bank Imports */
+        get: operations["list_bank_imports_capital_call_imports_get"];
+        put?: never;
+        /** Create Bank Import */
+        post: operations["create_bank_import_capital_call_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capital-call-imports/{import_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Bank Import */
+        get: operations["get_bank_import_capital_call_imports__import_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capital-call-imports/{import_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Bank Import */
+        post: operations["apply_bank_import_capital_call_imports__import_id__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/distributions": {
         parameters: {
             query?: never;
@@ -1430,6 +1482,28 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ApplyAssignment */
+        ApplyAssignment: {
+            /**
+             * Transaction Id
+             * Format: uuid4
+             */
+            transaction_id: string;
+            /**
+             * Capital Call Item Id
+             * Format: uuid4
+             */
+            capital_call_item_id: string;
+            /** Amount */
+            amount: number | string;
+        };
+        /** ApplyImportRequest */
+        ApplyImportRequest: {
+            /** Assignments */
+            assignments?: components["schemas"]["ApplyAssignment"][];
+            /** Ignore Transaction Ids */
+            ignore_transaction_ids?: string[];
+        };
         /** AuditLogRead */
         AuditLogRead: {
             /**
@@ -1453,6 +1527,112 @@ export interface components {
             ip_address: string | null;
             /** Created At */
             created_at: string | null;
+        };
+        /**
+         * BankImportListItem
+         * @description Lightweight row for the import-history list (no transactions).
+         */
+        BankImportListItem: {
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
+            /** File Name */
+            file_name: string;
+            status: components["schemas"]["BankStatementImportStatus"];
+            /** Transaction Count */
+            transaction_count: number;
+            /** Applied Count */
+            applied_count: number;
+            /** Imported By User Id */
+            imported_by_user_id: string | null;
+            /** Created At */
+            created_at: string | null;
+        };
+        /** BankImportRead */
+        BankImportRead: {
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
+            /** File Name */
+            file_name: string;
+            status: components["schemas"]["BankStatementImportStatus"];
+            /** Transaction Count */
+            transaction_count: number;
+            /** Applied Count */
+            applied_count: number;
+            /** Imported By User Id */
+            imported_by_user_id: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            /** Transactions */
+            transactions?: components["schemas"]["BankTransactionRead"][];
+        };
+        /**
+         * BankPaymentTransactionStatus
+         * @enum {string}
+         */
+        BankPaymentTransactionStatus: "unmatched" | "matched" | "applied" | "ignored";
+        /**
+         * BankStatementImportStatus
+         * @enum {string}
+         */
+        BankStatementImportStatus: "pending" | "applied" | "discarded";
+        /** BankTransactionRead */
+        BankTransactionRead: {
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Import Id
+             * Format: uuid4
+             */
+            import_id: string;
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string | null;
+            /** Value Date */
+            value_date: string | null;
+            /** Debtor Name */
+            debtor_name: string | null;
+            /** Debtor Iban */
+            debtor_iban: string | null;
+            /** Remittance Info */
+            remittance_info: string | null;
+            /** Bank Reference */
+            bank_reference: string;
+            /** Capital Call Item Id */
+            capital_call_item_id: string | null;
+            status: components["schemas"]["BankPaymentTransactionStatus"];
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            /** Candidates */
+            candidates?: components["schemas"]["MatchCandidate"][];
+        };
+        /** Body_create_bank_import_capital_call_imports_post */
+        Body_create_bank_import_capital_call_imports_post: {
+            /** File */
+            file: string;
         };
         /** CapitalCallCreate */
         CapitalCallCreate: {
@@ -2725,6 +2905,55 @@ export interface components {
          * @enum {string}
          */
         InvitationStatus: "pending" | "accepted" | "revoked" | "expired";
+        /**
+         * MatchCandidate
+         * @description A suggested capital-call item a bank transaction could settle.
+         */
+        MatchCandidate: {
+            /**
+             * Capital Call Item Id
+             * Format: uuid4
+             */
+            capital_call_item_id: string;
+            /**
+             * Capital Call Id
+             * Format: uuid4
+             */
+            capital_call_id: string;
+            /** Capital Call Title */
+            capital_call_title: string;
+            /**
+             * Fund Id
+             * Format: uuid4
+             */
+            fund_id: string;
+            /** Fund Name */
+            fund_name: string;
+            /** Currency Code */
+            currency_code: string;
+            /**
+             * Investor Id
+             * Format: uuid4
+             */
+            investor_id: string;
+            /** Investor Name */
+            investor_name: string;
+            /** Amount Due */
+            amount_due: string;
+            /** Amount Paid */
+            amount_paid: string;
+            /** Remaining */
+            remaining: string;
+            /** Score */
+            score: number;
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "high" | "medium" | "low";
+            /** Currency Mismatch */
+            currency_mismatch: boolean;
+        };
         /** MembershipRead */
         MembershipRead: {
             /**
@@ -5565,6 +5794,145 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CapitalCallRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_bank_imports_capital_call_imports_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
+            header?: {
+                "X-Organization-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankImportListItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_bank_import_capital_call_imports_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_bank_import_capital_call_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankImportRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_bank_import_capital_call_imports__import_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+            };
+            path: {
+                import_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankImportRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_bank_import_capital_call_imports__import_id__apply_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+            };
+            path: {
+                import_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankImportRead"];
                 };
             };
             /** @description Validation Error */

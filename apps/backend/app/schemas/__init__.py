@@ -1,4 +1,12 @@
 from app.schemas.audit_log import AuditLogRead
+from app.schemas.bank_import import (
+    ApplyAssignment,
+    ApplyImportRequest,
+    BankImportListItem,
+    BankImportRead,
+    BankTransactionRead,
+    MatchCandidate,
+)
 from app.schemas.capital_call import (
     CapitalCallCreate,
     CapitalCallFundSummary,
@@ -127,7 +135,13 @@ from app.schemas.user_organization_membership import (
 )
 
 __all__ = [
+    "ApplyAssignment",
+    "ApplyImportRequest",
     "AuditLogRead",
+    "BankImportListItem",
+    "BankImportRead",
+    "BankTransactionRead",
+    "MatchCandidate",
     "CapitalCallCreate",
     "CapitalCallFundSummary",
     "CapitalCallItemBulkCreate",

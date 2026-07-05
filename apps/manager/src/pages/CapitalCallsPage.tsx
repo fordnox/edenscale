@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
+import { Link } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
 import { CapitalCallCreateDialog } from "@/components/capital-calls/CapitalCallCreateDialog"
@@ -128,13 +129,18 @@ export default function CapitalCallsPage() {
         description="Drawdowns issued across funds. Status updates as wires settle."
         actions={
           canManage ? (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setCreateOpen(true)}
-            >
-              New capital call
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" asChild>
+                <Link to="import">Import payments</Link>
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setCreateOpen(true)}
+              >
+                New capital call
+              </Button>
+            </div>
           ) : undefined
         }
       />
