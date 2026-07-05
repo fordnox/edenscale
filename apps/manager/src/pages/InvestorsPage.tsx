@@ -626,16 +626,23 @@ export default function InvestorsPage() {
       <PageHero
         eyebrow="Limited partners"
         title="Investors and commitments."
-        description="A small register, kept by hand. Each line is a partner, with their contacts and commitments."
+        description="Each line is a limited partner, with their contacts and commitments."
         actions={
           canManageInvestors ? (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setCreateOpen(true)}
-            >
-              New investor
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" asChild>
+                {/* The bank-payments importer lets you add investors from
+                    unmatched payers — the same page used for capital calls. */}
+                <Link to="../calls/import">Import from Payments</Link>
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setCreateOpen(true)}
+              >
+                New investor
+              </Button>
+            </div>
           ) : undefined
         }
       />
@@ -668,13 +675,18 @@ export default function InvestorsPage() {
                 commitments and contacts.
               </p>
               {canManageInvestors && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setCreateOpen(true)}
-                >
-                  New investor
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setCreateOpen(true)}
+                  >
+                    New investor
+                  </Button>
+                  <Button variant="secondary" size="sm" asChild>
+                    <Link to="../calls/import">Import from Payments</Link>
+                  </Button>
+                </div>
               )}
             </CardSection>
           </Card>
