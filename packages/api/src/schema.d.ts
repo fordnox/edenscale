@@ -1030,6 +1030,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documents/upload/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload Document Bytes
+         * @description Proxy upload: write the raw request body to the storage backend.
+         *
+         *     The S3 backend routes uploads here (see ``S3Storage.presign_put``) so the
+         *     browser never talks to the bucket directly and no bucket CORS
+         *     configuration is needed — the bytes travel through the API, which already
+         *     allows the app origins.
+         */
+        put: operations["upload_document_bytes_documents_upload__key__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/documents": {
         parameters: {
             query?: never;
@@ -5782,6 +5807,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DocumentUploadInitResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_document_bytes_documents_upload__key__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

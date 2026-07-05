@@ -23,6 +23,8 @@ import {
 } from "@edenscale/ui/select"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
+import { getApiBaseUrl } from "@edenscale/api/client"
+import { getSessionToken } from "@edenscale/auth/hanko"
 import { config } from "@edenscale/api/config"
 import type { components } from "@edenscale/api/schema"
 
@@ -121,7 +123,18 @@ export function DocumentUploadDialog({
       if (init.upload_url.includes("/dev-storage/")) {
         headers["x-dev-storage-token"] = config.VITE_DEV_STORAGE_TOKEN
       }
-      const uploadResponse = await fetch(init.upload_url, {
+      // A relative upload_url is the API's authenticated upload proxy
+      // (S3 backend) — resolve it against the API host and attach the
+      // session token, since this raw fetch bypasses the api client.
+      const isApiProxyUpload = init.upload_url.startsWith("/")
+      if (isApiProxyUpload) {
+        const token = getSessionToken()
+        if (token) headers["Authorization"] = `Bearer ${token}`
+      }
+      const uploadTarget = isApiProxyUpload
+        ? `${getApiBaseUrl()}${init.upload_url}`
+        : init.upload_url
+      const uploadResponse = await fetch(uploadTarget, {
         method: "PUT",
         headers,
         body: file,

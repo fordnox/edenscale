@@ -15,6 +15,7 @@ dependencies = [
     "stripe>=14.0.1",
     "alembic>=1.18.4",
     "PyJWT[crypto]>=2.8.0",
+    "boto3>=1.43.40",
 ]
 
 [build-system]

@@ -74,7 +74,7 @@ const myMiddleware: Middleware = {
 // is loaded from (e.g. newtaven.com -> https://api.newtaven.com), so there is no
 // build-time config. Local dev is the only exception: the API runs on a
 // separate port, so a VITE_API_URL override is honored (default localhost:8000).
-function getApiBaseUrl(): string {
+export function getApiBaseUrl(): string {
   const { hostname, protocol } = window.location
   if (hostname === "localhost" || hostname === "127.0.0.1") {
     return import.meta.env.VITE_API_URL || "http://localhost:8000"
