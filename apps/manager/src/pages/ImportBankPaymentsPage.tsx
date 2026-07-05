@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link, useNavigate } from "react-router-dom"
-import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react"
+import { ArrowLeft, CheckCircle2, Loader2, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 
+import { AddInvestorFromPayerDialog } from "@/components/bank-import/AddInvestorFromPayerDialog"
 import { BankStatementDropzone } from "@/components/bank-import/BankStatementDropzone"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { PageHero } from "@edenscale/ui/PageHero"
@@ -20,6 +21,7 @@ import {
 } from "@edenscale/ui/select"
 import { DataTable, TD, TH, TR } from "@edenscale/ui/table"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
+import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { getApiBaseUrl } from "@edenscale/api/client"
 import { getSessionToken } from "@edenscale/auth/hanko"
 import { config } from "@edenscale/api/config"
@@ -75,11 +77,27 @@ export default function ImportBankPaymentsPage() {
   const [imported, setImported] = useState<BankImportRead | null>(null)
   const [rows, setRows] = useState<Record<string, RowState>>({})
   const [appliedCount, setAppliedCount] = useState(0)
+  const [payerDialog, setPayerDialog] = useState<{
+    name: string
+    iban: string | null
+  } | null>(null)
 
   const applyMutation = useApiMutation(
     "post",
     "/capital-call-imports/{import_id}/apply",
   )
+
+  // Existing investor names (normalized) so we can tell which payers are new.
+  const investorsQuery = useApiQuery("/investors", undefined, {
+    enabled: step === "review",
+  })
+  const knownPayerNames = useMemo(() => {
+    const set = new Set<string>()
+    for (const inv of investorsQuery.data ?? []) {
+      set.add(inv.name.trim().toLowerCase())
+    }
+    return set
+  }, [investorsQuery.data])
 
   const transactions = useMemo(
     () => imported?.transactions ?? [],
@@ -263,6 +281,31 @@ export default function ImportBankPaymentsPage() {
                                   {txn.remittance_info}
                                 </span>
                               )}
+                              {txn.debtor_name &&
+                                (knownPayerNames.has(
+                                  txn.debtor_name.trim().toLowerCase(),
+                                ) ? (
+                                  <span className="font-sans text-[11px] font-normal text-ink-500">
+                                    ✓ In investors
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="flex items-center gap-1 self-start font-sans text-[11px] font-medium text-conifer-800 hover:underline"
+                                    onClick={() =>
+                                      setPayerDialog({
+                                        name: txn.debtor_name ?? "",
+                                        iban: txn.debtor_iban,
+                                      })
+                                    }
+                                  >
+                                    <UserPlus
+                                      strokeWidth={1.5}
+                                      className="size-3"
+                                    />
+                                    Add as investor
+                                  </button>
+                                ))}
                             </div>
                           </TD>
                           <TD align="right" primary>
@@ -429,6 +472,16 @@ export default function ImportBankPaymentsPage() {
           </Card>
         )}
       </div>
+
+      <AddInvestorFromPayerDialog
+        open={payerDialog !== null}
+        onOpenChange={(next) => {
+          if (!next) setPayerDialog(null)
+        }}
+        defaultName={payerDialog?.name ?? ""}
+        iban={payerDialog?.iban ?? null}
+        onCreated={() => setPayerDialog(null)}
+      />
     </>
   )
 }
