@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react"
 import { NavLink, useNavigate } from "react-router-dom"
 import { LogOut, Search, User as UserIcon } from "lucide-react"
 
@@ -20,6 +21,40 @@ import { Kbd } from "@edenscale/ui/kbd"
 
 interface TopNavProps {
   onOpenSearch?: () => void
+}
+
+// Which edges of a horizontally scrollable element have content hidden
+// beyond them right now. Drives the fade overlays that signal "more here —
+// scroll" on narrow screens.
+function useScrollEdges<T extends HTMLElement>(contentKey: unknown) {
+  const ref = useRef<T>(null)
+  const [edges, setEdges] = useState({ left: false, right: false })
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => {
+      const maxScroll = el.scrollWidth - el.clientWidth
+      // 1px slack absorbs fractional scroll positions on zoomed displays.
+      setEdges({
+        left: el.scrollLeft > 1,
+        right: el.scrollLeft < maxScroll - 1,
+      })
+    }
+    update()
+    el.addEventListener("scroll", update, { passive: true })
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => {
+      el.removeEventListener("scroll", update)
+      observer.disconnect()
+    }
+    // contentKey re-measures when the rendered content changes (e.g. the
+    // link list), which ResizeObserver alone won't see if the element's own
+    // box size stays the same.
+  }, [contentKey])
+
+  return { ref, edges }
 }
 
 // Horizontal top-bar navigation for the investor app — no sidebar. Tier 1 holds
@@ -51,6 +86,10 @@ export function TopNav({ onOpenSearch }: TopNavProps) {
     await logout()
     navigate("/investor/login")
   }
+
+  const { ref: linksRef, edges } = useScrollEdges<HTMLUListElement>(
+    links.length,
+  )
 
   return (
     <header className="sticky top-0 z-20 border-b border-[color:var(--border-hairline)] bg-page/85 backdrop-blur supports-[backdrop-filter]:bg-page/75">
@@ -130,9 +169,32 @@ export function TopNav({ onOpenSearch }: TopNavProps) {
         </div>
       </div>
 
-      {/* Tier 2 — section links (scroll horizontally on narrow screens) */}
-      <nav className="border-t border-[color:var(--border-hairline)]">
-        <ul className="flex items-stretch gap-1 overflow-x-auto px-2 md:px-6">
+      {/* Tier 2 — section links (scroll horizontally on narrow screens).
+          Edge fades appear only on the side(s) with clipped content, so the
+          scrollability is visible without a scrollbar. */}
+      <nav className="relative border-t border-[color:var(--border-hairline)]">
+        <div
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute inset-y-0 left-0 z-10 w-12",
+            "bg-gradient-to-r from-[color:var(--color-page)] to-transparent",
+            "opacity-0 transition-opacity duration-200",
+            edges.left && "opacity-100",
+          )}
+        />
+        <div
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute inset-y-0 right-0 z-10 w-12",
+            "bg-gradient-to-l from-[color:var(--color-page)] to-transparent",
+            "opacity-0 transition-opacity duration-200",
+            edges.right && "opacity-100",
+          )}
+        />
+        <ul
+          ref={linksRef}
+          className="flex items-stretch gap-1 overflow-x-auto px-2 md:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {links.map(({ to, label, icon: Icon, end }) => (
             <li key={to} className="shrink-0">
               <NavLink
