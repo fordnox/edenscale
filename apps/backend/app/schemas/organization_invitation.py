@@ -27,6 +27,18 @@ class InvitationAccept(BaseModel):
     token: str = Field(min_length=1, max_length=128)
 
 
+class InvitationAcceptResponse(BaseModel):
+    """Result of accepting an invitation.
+
+    Deliberately not a membership: lp (investor) invitations grant portal
+    access purely via contact links and create no membership row at all.
+    """
+
+    organization_id: UUID4
+    role: UserRole
+    organization: OrganizationRead
+
+
 class InvitationRead(BaseModel):
     id: UUID4
     organization_id: UUID4

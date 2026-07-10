@@ -114,7 +114,7 @@ export default function NotificationsPage() {
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["/notifications"] })
-    queryClient.invalidateQueries({ queryKey: ["/dashboard/overview"] })
+    queryClient.invalidateQueries({ queryKey: ["/investor/dashboard/overview"] })
   }
 
   async function handleMarkRead(notificationId: string) {

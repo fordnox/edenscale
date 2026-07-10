@@ -48,12 +48,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const { orgSlug: orgSlugParam } = useParams<{ orgSlug?: string }>()
   const orgSlug = orgSlugParam ?? activeMembership?.organization.slug ?? null
 
-  const fundsQuery = useApiQuery("/funds", undefined, {
+  const fundsQuery = useApiQuery("/investor/funds", undefined, {
     enabled: open,
     staleTime: STALE_FIVE_MIN,
   })
   const documentsQuery = useApiQuery(
-    "/documents",
+    "/investor/documents",
     { params: { query: { limit: 50 } } },
     { enabled: open, staleTime: STALE_FIVE_MIN },
   )

@@ -48,7 +48,7 @@ export default function DashboardPage() {
   const { activeMembership } = useActiveOrganization()
   const orgSlug = activeMembership?.organization.slug ?? null
 
-  const fundsQuery = useApiQuery("/funds")
+  const fundsQuery = useApiQuery("/investor/funds")
   const fundSlugById = useMemo(
     () => new Map((fundsQuery.data ?? []).map((f) => [f.id, f.slug])),
     [fundsQuery.data],
@@ -69,8 +69,8 @@ export default function DashboardPage() {
     [fundsQuery.data],
   )
 
-  const commitmentsQuery = useApiQuery("/commitments")
-  const overviewQuery = useApiQuery("/dashboard/overview", undefined, {
+  const commitmentsQuery = useApiQuery("/investor/commitments")
+  const overviewQuery = useApiQuery("/investor/dashboard/overview", undefined, {
     enabled: Boolean(activeMembership?.organization_id),
   })
   const data = overviewQuery.data

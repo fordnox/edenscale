@@ -21,7 +21,7 @@ function parseDecimal(value: string | null | undefined) {
 }
 
 export default function DistributionsPage() {
-  const distributionsQuery = useApiQuery("/distributions")
+  const distributionsQuery = useApiQuery("/investor/distributions")
   const distributions = useMemo(
     () => distributionsQuery.data ?? [],
     [distributionsQuery.data],

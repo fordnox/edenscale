@@ -83,6 +83,7 @@ from app.schemas.investor_contact import (
     InvestorContactRead,
     InvestorContactUpdate,
 )
+from app.schemas.investor_portal import InvestorOrganizationRead
 from app.schemas.message import Message
 from app.schemas.notification import (
     NotificationRead,
@@ -96,6 +97,7 @@ from app.schemas.organization import (
 )
 from app.schemas.organization_invitation import (
     InvitationAccept,
+    InvitationAcceptResponse,
     InvitationCreate,
     InvitationListItem,
     InvitationRead,
@@ -185,12 +187,14 @@ __all__ = [
     "FundValuationRead",
     "InvestorContactCreate",
     "InvestorContactRead",
+    "InvestorOrganizationRead",
     "InvestorContactUpdate",
     "InvestorCreate",
     "InvestorListItem",
     "InvestorRead",
     "InvestorUpdate",
     "InvitationAccept",
+    "InvitationAcceptResponse",
     "InvitationCreate",
     "InvitationListItem",
     "InvitationRead",

@@ -29,6 +29,14 @@ import { orgPath } from "@/lib/managerRoutes"
 import type { components } from "@edenscale/api/schema"
 
 type InvestorContactRead = components["schemas"]["InvestorContactRead"]
+type UserRole = components["schemas"]["UserRole"]
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  superadmin: "Superadmin",
+  admin: "Admin",
+  fund_manager: "Fund manager",
+  lp: "LP",
+}
 
 // Sentinel for the "Not linked" option — Radix Select forbids an empty-string
 // value, so unlinked state is carried as this literal and mapped to null.
@@ -76,15 +84,16 @@ export function ContactEditDialog({
   // the manager should save the new address first.
   const emailDirty = email.trim() !== (contact.email ?? "")
 
-  // Limited partners in this organization are the only users a contact may be
-  // linked to. Managers/admins are never offered here.
+  // Any member of this organization can be linked — admins and fund managers
+  // included, since a fund's administrator is often also an investor. The link
+  // is what grants the contact-scoped view in the investor portal.
   const membersQuery = useApiQuery("/users", undefined, { enabled: open })
-  const lpMembers = (membersQuery.data ?? []).filter((m) => m.role === "lp")
-  // Keep an already-linked user selectable even if they're not in the LP list
-  // (e.g. a historical link), so saving an unrelated edit never drops the link.
+  const members = membersQuery.data ?? []
+  // Keep an already-linked user selectable even if they're not in the member
+  // list (e.g. a historical link), so saving an unrelated edit never drops the
+  // link.
   const linkedUserMissing =
-    contact.user_id !== null &&
-    !lpMembers.some((m) => m.id === contact.user_id)
+    contact.user_id !== null && !members.some((m) => m.id === contact.user_id)
 
   const { activeMembership } = useActiveOrganization()
   const orgSlug = activeMembership?.organization.slug ?? null
@@ -129,7 +138,7 @@ export function ContactEditDialog({
         email: email.trim() || null,
         phone: phone.trim() || null,
         title: title.trim() || null,
-        // Explicit link to a limited partner in this org (or null to unlink).
+        // Explicit link to a member of this org (or null to unlink).
         user_id: linkedUserId === UNLINKED ? null : linkedUserId,
       },
     })
@@ -141,9 +150,9 @@ export function ContactEditDialog({
         <DialogHeader>
           <DialogTitle className="es-display text-[24px]">Edit contact</DialogTitle>
           <DialogDescription>
-            Update this contact&rsquo;s details and link them to a limited
-            partner in your organization, or invite them if they don&rsquo;t
-            have an account yet.
+            Update this contact&rsquo;s details and link them to a member of
+            your organization, or invite them if they don&rsquo;t have an
+            account yet.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -209,17 +218,19 @@ export function ContactEditDialog({
                     Currently linked user
                   </SelectItem>
                 )}
-                {lpMembers.map((member) => (
+                {members.map((member) => (
                   <SelectItem key={member.id} value={String(member.id)}>
                     {member.first_name} {member.last_name}
                     {member.email ? ` · ${member.email}` : ""}
+                    {` · ${ROLE_LABELS[member.role] ?? member.role}`}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="font-sans text-[12px] text-ink-500">
-              Only limited partners who already have access to this organization
-              appear here.
+              Any member of this organization can be linked — including admins
+              and fund managers who are themselves investors. The linked user
+              sees this investor&rsquo;s data in the investor portal.
             </p>
 
             {linkedUserId === UNLINKED && (

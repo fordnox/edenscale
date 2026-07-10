@@ -13,7 +13,7 @@ export default function FundLayout() {
   // scanning the paginated /funds list, which would miss funds past the
   // default page size.
   const fundQuery = useApiQuery(
-    "/funds/by-slug/{slug}",
+    "/investor/funds/by-slug/{slug}",
     { params: { path: { slug: fundSlug ?? "" } } },
     { enabled: Boolean(fundSlug), retry: false },
   )

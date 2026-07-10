@@ -44,11 +44,11 @@ from app.repositories.user_organization_membership_repository import (
 )
 from app.schemas.organization_invitation import (
     InvitationAccept,
+    InvitationAcceptResponse,
     InvitationCreate,
     InvitationListItem,
     InvitationRead,
 )
-from app.schemas.user_organization_membership import MembershipRead
 from app.services.hanko import ensure_hanko_user
 from app.services.notifications import (
     notify_invitation,
@@ -165,7 +165,7 @@ async def list_pending_for_me(
     return [InvitationRead.model_validate(inv) for inv in invitations]
 
 
-@router.post("/accept", response_model=MembershipRead)
+@router.post("/accept", response_model=InvitationAcceptResponse)
 async def accept_invitation(
     data: InvitationAccept,
     db: Session = Depends(get_db),
@@ -213,22 +213,26 @@ async def accept_invitation(
             detail="Invitation has expired",
         )
 
-    membership_repo = UserOrganizationMembershipRepository(db)
-    existing = membership_repo.get(
-        current_user.id,  # type: ignore[invalid-argument-type]
-        invitation.organization_id,  # type: ignore[invalid-argument-type]
-    )
-    if existing is not None:
-        if existing.role != invitation.role:
-            existing = membership_repo.update_role(existing.id, invitation.role)  # type: ignore[invalid-argument-type,assignment]
-            assert existing is not None
-        new_membership = existing
-    else:
-        new_membership = membership_repo.create(
-            user_id=current_user.id,  # type: ignore[invalid-argument-type]
-            organization_id=invitation.organization_id,  # type: ignore[invalid-argument-type]
-            role=invitation.role,  # type: ignore[invalid-argument-type]
+    # Investor (lp) invitations never create or touch membership rows: portal
+    # access comes from the contact links bound below, and an invitee who is
+    # already staff (e.g. an admin who is personally an investor) must keep
+    # their staff role. Staff invitations still create/update the membership.
+    if invitation.role is not UserRole.lp:
+        membership_repo = UserOrganizationMembershipRepository(db)
+        existing = membership_repo.get(
+            current_user.id,  # type: ignore[invalid-argument-type]
+            invitation.organization_id,  # type: ignore[invalid-argument-type]
         )
+        if existing is not None:
+            if existing.role != invitation.role:
+                existing = membership_repo.update_role(existing.id, invitation.role)  # type: ignore[invalid-argument-type,assignment]
+                assert existing is not None
+        else:
+            membership_repo.create(
+                user_id=current_user.id,  # type: ignore[invalid-argument-type]
+                organization_id=invitation.organization_id,  # type: ignore[invalid-argument-type]
+                role=invitation.role,  # type: ignore[invalid-argument-type]
+            )
 
     repo.mark_accepted(invitation.id)  # type: ignore[invalid-argument-type]
     InvestorContactRepository(db).link_unclaimed_by_email(
@@ -243,7 +247,11 @@ async def accept_invitation(
         await notify_welcome(
             db, user=current_user, organization=invitation.organization
         )
-    return MembershipRead.model_validate(new_membership)
+    return InvitationAcceptResponse(
+        organization_id=invitation.organization_id,  # type: ignore[invalid-argument-type]
+        role=invitation.role,  # type: ignore[invalid-argument-type]
+        organization=invitation.organization,  # type: ignore[invalid-argument-type]
+    )
 
 
 @router.post("/{invitation_id}/revoke", response_model=InvitationRead)

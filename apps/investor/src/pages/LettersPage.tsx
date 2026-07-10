@@ -29,7 +29,7 @@ export default function LettersPage() {
   const queryClient = useQueryClient()
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const lettersQuery = useApiQuery("/communications")
+  const lettersQuery = useApiQuery("/investor/communications")
   const letters = useMemo(() => lettersQuery.data ?? [], [lettersQuery.data])
 
   const meQuery = useApiQuery("/users/me", undefined, { staleTime: 5 * 60 * 1000 })
@@ -42,7 +42,7 @@ export default function LettersPage() {
   // user_id (letters sent before the LP claimed their contact carry only an
   // investor_contact_id). An LP can be a contact on more than one investor, so
   // we gather contacts across all of them, not just the first.
-  const investorsQuery = useApiQuery("/investors")
+  const investorsQuery = useApiQuery("/investor/investors")
   const investorIds = useMemo(
     () => (investorsQuery.data ?? []).map((i) => i.id),
     [investorsQuery.data],
@@ -53,7 +53,7 @@ export default function LettersPage() {
     queryFn: async () => {
       const results = await Promise.all(
         investorIds.map((id) =>
-          api.GET("/investors/{investor_id}/contacts", {
+          api.GET("/investor/investors/{investor_id}/contacts", {
             params: { path: { investor_id: id } },
           }),
         ),
@@ -86,7 +86,7 @@ export default function LettersPage() {
 
   const markRead = useApiMutation(
     "post",
-    "/communications/{communication_id}/recipients/{recipient_id}/read",
+    "/investor/communications/{communication_id}/recipients/{recipient_id}/read",
   )
 
   // Mark the LP's own recipient row read when they open an unread letter.
@@ -104,8 +104,8 @@ export default function LettersPage() {
         },
       })
       .then(() => {
-        queryClient.invalidateQueries({ queryKey: ["/communications"] })
-        queryClient.invalidateQueries({ queryKey: ["/dashboard/overview"] })
+        queryClient.invalidateQueries({ queryKey: ["/investor/communications"] })
+        queryClient.invalidateQueries({ queryKey: ["/investor/dashboard/overview"] })
       })
       .catch(() => {
         // useApiMutation surfaces a toast already

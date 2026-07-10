@@ -138,7 +138,14 @@ class DashboardRepository:
         membership = self.resolve_active_membership(user, header_org_id)
         if membership is None:
             return self._empty_response()
+        return self.get_overview_for_membership(membership)
 
+    def get_overview_for_membership(
+        self, membership: UserOrganizationMembership
+    ) -> DashboardOverviewResponse:
+        """Overview scoped by an already-resolved membership — also the entry
+        point for the investor portal, which resolves access from contact
+        links rather than membership rows."""
         db = self.db
         fund_filter = self._visible_fund_ids(membership)
         investor_filter = self._visible_investor_ids(membership)

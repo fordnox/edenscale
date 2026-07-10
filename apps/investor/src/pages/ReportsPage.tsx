@@ -21,7 +21,7 @@ interface FundReports {
 }
 
 export default function ReportsPage() {
-  const documentsQuery = useApiQuery("/documents")
+  const documentsQuery = useApiQuery("/investor/documents")
 
   const grouped = useMemo<FundReports[]>(() => {
     const reports = (documentsQuery.data ?? []).filter(

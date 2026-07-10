@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models.investor import Investor
 from app.models.investor_contact import InvestorContact
+from app.models.organization import Organization
 from app.models.user import User
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.schemas.investor_contact import (
@@ -150,6 +151,35 @@ class InvestorContactRepository:
         self.db.delete(contact)
         self.db.commit()
         return contact
+
+    def investor_organizations_for_user(self, user_id: uuid.UUID) -> list[Organization]:
+        """Organizations the user has investor-portal access to — i.e. every
+        org containing at least one contact linked to them. This, not
+        membership, is what grants access to the investor portal."""
+        return (
+            self.db.query(Organization)
+            .join(Investor, Investor.organization_id == Organization.id)
+            .join(InvestorContact, InvestorContact.investor_id == Investor.id)
+            .filter(InvestorContact.user_id == user_id)
+            .distinct()
+            .order_by(Organization.name)
+            .all()
+        )
+
+    def user_has_links_in_organization(
+        self, user_id: uuid.UUID, organization_id: uuid.UUID
+    ) -> bool:
+        """True when the user is a linked contact of any investor in the org."""
+        return (
+            self.db.query(InvestorContact.id)
+            .join(Investor, Investor.id == InvestorContact.investor_id)
+            .filter(
+                InvestorContact.user_id == user_id,
+                Investor.organization_id == organization_id,
+            )
+            .first()
+            is not None
+        )
 
     def link_unclaimed_by_email(
         self, organization_id: uuid.UUID, email: str, user_id: uuid.UUID

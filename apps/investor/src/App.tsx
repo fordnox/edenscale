@@ -21,14 +21,15 @@ import ProfilePage from './pages/ProfilePage'
 import InvitationAcceptPage from './pages/InvitationAcceptPage'
 import LoginPage from './pages/LoginPage'
 
-// The investor app serves only the LP slice of an account. The same login may
-// also be a manager elsewhere, but those memberships and invitations are
-// invisible here — the manager app is a fully separate SPA with its own scope.
+// Portal access is contact-link based (/investor/organizations): anyone who
+// is a linked contact of an investor — including fund admins who personally
+// invested — can enter, regardless of membership role. `roles` here only
+// scopes which pending invitations this app surfaces (investor ones).
 const INVESTOR_ROLES = ['lp'] as const
 
 function ProtectedProviders() {
   return (
-    <ActiveOrganizationProvider roles={INVESTOR_ROLES}>
+    <ActiveOrganizationProvider roles={INVESTOR_ROLES} investorPortal>
       <PendingInvitationsBannerProvider>
         <Outlet />
       </PendingInvitationsBannerProvider>

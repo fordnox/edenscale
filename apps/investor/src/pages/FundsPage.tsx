@@ -24,8 +24,8 @@ export default function FundsPage() {
   const { activeMembership } = useActiveOrganization()
   const orgSlug = activeMembership?.organization.slug ?? null
 
-  const fundsQuery = useApiQuery("/funds")
-  const commitmentsQuery = useApiQuery("/commitments")
+  const fundsQuery = useApiQuery("/investor/funds")
+  const commitmentsQuery = useApiQuery("/investor/commitments")
 
   const committedByFund = useMemo(() => {
     const map = new Map<string, number>()

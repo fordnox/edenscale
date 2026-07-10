@@ -30,13 +30,10 @@ export default function ProfilePage() {
   const { activeMembership } = useActiveOrganization()
 
   const orgId = activeMembership?.organization_id ?? null
-  const orgQuery = useApiQuery(
-    "/organizations/{organization_id}",
-    {
-      params: { path: { organization_id: orgId ?? "" } },
-    },
-    { enabled: orgId !== null, staleTime: 5 * 60 * 1000 },
-  )
+  // The org payload rides on /investor/organizations (via the provider) —
+  // /organizations/{id} requires a membership, which link-only investors
+  // don't have.
+  const organization = activeMembership?.organization ?? null
 
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -257,12 +254,12 @@ export default function ProfilePage() {
                   <div className="mt-4 flex flex-col gap-3">
                     <div className="flex items-baseline justify-between gap-3">
                       <h3 className="font-display text-[20px] tracking-tight text-ink-900">
-                        {orgQuery.data?.name ?? (orgQuery.isLoading ? "Loading…" : "—")}
+                        {organization?.name ?? "—"}
                       </h3>
-                      {orgQuery.data?.legal_name &&
-                        orgQuery.data.legal_name !== orgQuery.data.name && (
+                      {organization?.legal_name &&
+                        organization.legal_name !== organization.name && (
                           <span className="font-sans text-[12px] text-ink-500">
-                            {orgQuery.data.legal_name}
+                            {organization.legal_name}
                           </span>
                         )}
                     </div>
