@@ -48,6 +48,11 @@ class StoragePort(ABC):
         """Persist raw bytes under ``key`` (as returned inside upload URLs —
         already prefixed; implementations must not prefix again)."""
 
+    @abstractmethod
+    def delete(self, key: str) -> None:
+        """Remove the object stored under ``key``. Missing objects are a
+        no-op — deletes are best-effort cleanup after the DB row is gone."""
+
 
 def _key_from_url(url: str) -> str:
     marker = "/dev-storage/"
@@ -96,6 +101,11 @@ class LocalDevStorage(StoragePort):
         if not path.exists() or not path.is_file():
             return None
         return path.read_bytes()
+
+    def delete(self, key: str) -> None:
+        path = self.base_dir / key
+        if path.is_file():
+            path.unlink()
 
 
 class S3Storage(StoragePort):
@@ -190,6 +200,10 @@ class S3Storage(StoragePort):
     def write(self, key: str, content: bytes, mime_type: str | None = None) -> None:
         extra: dict = {"ContentType": mime_type} if mime_type else {}
         self._client.put_object(Bucket=self._bucket, Key=key, Body=content, **extra)
+
+    def delete(self, key: str) -> None:
+        # S3 DeleteObject is idempotent — deleting a missing key succeeds.
+        self._client.delete_object(Bucket=self._bucket, Key=key)
 
 
 _storage_singleton: StoragePort | None = None

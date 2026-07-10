@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from sqlalchemy import or_, select
@@ -11,8 +12,11 @@ from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.lp_scope import lp_visible_investor_ids
 from app.schemas.document import DocumentCreate, DocumentUpdate
+from app.services.storage import get_storage, key_from_file_url
 
 _ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentRepository:
@@ -203,6 +207,19 @@ class DocumentRepository:
         document = self.get(document_id)
         if document is None:
             return False
+        file_url = document.file_url
         self.db.delete(document)
         self.db.commit()
+        # Best-effort blob cleanup after the row is gone: the DB is the
+        # source of truth, and an orphaned blob beats a phantom row pointing
+        # at a deleted file.
+        if file_url:
+            try:
+                get_storage().delete(key_from_file_url(file_url))  # type: ignore[invalid-argument-type]
+            except Exception:
+                logger.warning(
+                    "Failed to delete stored file for document %s",
+                    document_id,
+                    exc_info=True,
+                )
         return True

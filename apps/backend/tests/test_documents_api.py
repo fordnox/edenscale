@@ -407,8 +407,15 @@ class TestDocumentMutations:
         assert patched.json()["title"] == "Q1 Report (Final)"
         assert patched.json()["is_confidential"] is False
 
+        # The uploaded bytes exist in storage until the delete.
+        storage = storage_module.get_storage()
+        key = storage_module.key_from_file_url(init["file_url"])
+        assert storage.read(key) == b"report"  # type: ignore[attr-defined]
+
         deleted = client.delete(f"/documents/{created['id']}")
         assert deleted.status_code == 204
 
         gone = client.get(f"/documents/{created['id']}")
         assert gone.status_code == 404
+        # Deleting the document also removes the stored file.
+        assert storage.read(key) is None  # type: ignore[attr-defined]
