@@ -8,7 +8,7 @@ import { Card, CardSection } from "@edenscale/ui/card"
 import { EmptyState } from "@edenscale/ui/EmptyState"
 import { StatusPill } from "@edenscale/ui/StatusPill"
 import { DataTable, TD, TH, TR } from "@edenscale/ui/table"
-import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { fundPath } from "@/lib/investorRoutes"
 import { config } from "@edenscale/api/config"
@@ -21,8 +21,8 @@ function parseDecimal(value: string | null | undefined) {
 }
 
 export default function FundsPage() {
-  const { activeMembership } = useActiveOrganization()
-  const orgSlug = activeMembership?.organization.slug ?? null
+  const { activeOrganization } = useInvestorOrganizations()
+  const orgSlug = activeOrganization?.organization.slug ?? null
 
   const fundsQuery = useApiQuery("/investor/funds")
   const commitmentsQuery = useApiQuery("/investor/commitments")

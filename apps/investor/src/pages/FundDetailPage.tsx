@@ -10,7 +10,7 @@ import { Stat } from "@edenscale/ui/stat"
 import { StatusPill } from "@edenscale/ui/StatusPill"
 import { EmptyState } from "@edenscale/ui/EmptyState"
 import { DataTable, TD, TH, TR } from "@edenscale/ui/table"
-import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { orgPath } from "@/lib/investorRoutes"
 import { config } from "@edenscale/api/config"
@@ -28,8 +28,8 @@ export default function FundDetailPage({
   fundId: string
   fundSlug: string
 }) {
-  const { activeMembership } = useActiveOrganization()
-  const orgSlug = activeMembership?.organization.slug ?? null
+  const { activeOrganization } = useInvestorOrganizations()
+  const orgSlug = activeOrganization?.organization.slug ?? null
 
   const fundQuery = useApiQuery("/investor/funds/{fund_id}", {
     params: { path: { fund_id: fundId } },

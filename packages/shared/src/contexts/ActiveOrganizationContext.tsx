@@ -1,17 +1,11 @@
-import {
-  createContext,
-  useCallback,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react"
-import { useQueryClient } from "@tanstack/react-query"
+import { useMemo, createContext, type ReactNode } from "react"
 
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import {
-  getActiveOrganizationId,
-  setStoredActiveOrganizationId,
-} from "@edenscale/shared/active-org"
+  OrgSelectionContext,
+  useActiveOrganizationIdState,
+  type OrgSelectionContextValue,
+} from "@edenscale/shared/contexts/OrgSelectionContext"
 import type { components } from "@edenscale/api/schema"
 
 // TODO: tests pending frontend test harness setup
@@ -19,6 +13,10 @@ import type { components } from "@edenscale/api/schema"
 type MembershipRead = components["schemas"]["MembershipRead"]
 type UserRole = components["schemas"]["UserRole"]
 
+// Staff org context (manager / superadmin apps): organizations come from
+// membership rows with real roles. The investor app doesn't use this — it
+// has its own contact-link-based provider (InvestorOrganizationsContext in
+// apps/investor); the two share only OrgSelectionContext.
 export interface ActiveOrganizationContextValue {
   memberships: MembershipRead[]
   activeMembership: MembershipRead | null
@@ -26,7 +24,6 @@ export interface ActiveOrganizationContextValue {
   setActiveOrganizationId: (id: string | null) => void
   isSuperadmin: boolean
   isLoading: boolean
-  appRoles: readonly UserRole[] | null
 }
 
 export const ActiveOrganizationContext =
@@ -39,79 +36,27 @@ interface ActiveOrganizationProviderProps {
   // to the app: each SPA only ever sees its own slice of the account, even
   // when the same login is an LP in one org and a manager in another.
   roles?: readonly UserRole[]
-  // Investor-portal mode: organizations come from /investor/organizations
-  // (contact links) instead of membership rows. A fund admin who personally
-  // invested appears here via their links; membership is irrelevant. Each
-  // entry is surfaced as a synthetic lp-role membership so consumers keep
-  // working unchanged.
-  investorPortal?: boolean
 }
 
 export function ActiveOrganizationProvider({
   children,
   roles,
-  investorPortal = false,
 }: ActiveOrganizationProviderProps) {
-  const queryClient = useQueryClient()
   const meQuery = useApiQuery("/users/me", undefined, {
     staleTime: 5 * 60 * 1000,
   })
   const membershipsQuery = useApiQuery("/users/me/memberships", undefined, {
     staleTime: 5 * 60 * 1000,
-    enabled: !investorPortal,
-  })
-  const investorOrgsQuery = useApiQuery("/investor/organizations", undefined, {
-    staleTime: 5 * 60 * 1000,
-    enabled: investorPortal,
   })
 
-  const [activeOrganizationId, setActiveOrganizationIdState] = useState<
-    string | null
-  >(() => getActiveOrganizationId())
+  const [activeOrganizationId, setActiveOrganizationId] =
+    useActiveOrganizationIdState()
 
   const memberships = useMemo<MembershipRead[]>(() => {
-    if (investorPortal) {
-      const me = meQuery.data
-      return (investorOrgsQuery.data ?? []).map((entry) => ({
-        // Synthetic membership: investor-portal access has no membership row,
-        // so the org itself stands in as the identity.
-        id: entry.organization_id,
-        user_id: me?.id ?? entry.organization_id,
-        organization_id: entry.organization_id,
-        role: "lp" as const,
-        organization: entry.organization,
-        created_at: null,
-        updated_at: null,
-      }))
-    }
     const all = membershipsQuery.data ?? []
     return roles ? all.filter((m) => roles.includes(m.role)) : all
-  }, [
-    investorPortal,
-    investorOrgsQuery.data,
-    membershipsQuery.data,
-    meQuery.data,
-    roles,
-  ])
+  }, [membershipsQuery.data, roles])
   const isSuperadmin = meQuery.data?.is_superadmin === true
-
-  // No auto-heal effect here by design: once inside a scoped app URL, the URL
-  // (resolved by OrgScopeLayout) is the source of truth for which org is
-  // active, not this stored id. Falling back to memberships[0] here would
-  // race OrgScopeLayout's own resolution and could stomp the URL's choice.
-  // The localStorage-seeded initial state above is only a pre-mount guess.
-
-  const setActiveOrganizationId = useCallback(
-    (id: string | null) => {
-      const changed = id !== activeOrganizationId
-      setActiveOrganizationIdState(id)
-      setStoredActiveOrganizationId(id)
-      if (changed) {
-        queryClient.invalidateQueries()
-      }
-    },
-    [activeOrganizationId, queryClient],
-  )
 
   const activeMembership = useMemo<MembershipRead | null>(
     () =>
@@ -120,6 +65,8 @@ export function ActiveOrganizationProvider({
     [memberships, activeOrganizationId],
   )
 
+  const isLoading = meQuery.isLoading || membershipsQuery.isLoading
+
   const value = useMemo<ActiveOrganizationContextValue>(
     () => ({
       memberships,
@@ -127,10 +74,7 @@ export function ActiveOrganizationProvider({
       activeOrganizationId,
       setActiveOrganizationId,
       isSuperadmin,
-      isLoading:
-        meQuery.isLoading ||
-        (investorPortal ? investorOrgsQuery.isLoading : membershipsQuery.isLoading),
-      appRoles: roles ?? null,
+      isLoading,
     }),
     [
       memberships,
@@ -138,17 +82,25 @@ export function ActiveOrganizationProvider({
       activeOrganizationId,
       setActiveOrganizationId,
       isSuperadmin,
-      meQuery.isLoading,
-      membershipsQuery.isLoading,
-      investorOrgsQuery.isLoading,
-      investorPortal,
-      roles,
+      isLoading,
     ],
   )
 
+  const selectionValue = useMemo<OrgSelectionContextValue>(
+    () => ({
+      activeOrganizationId,
+      setActiveOrganizationId,
+      appRoles: roles ?? null,
+      isLoading,
+    }),
+    [activeOrganizationId, setActiveOrganizationId, roles, isLoading],
+  )
+
   return (
-    <ActiveOrganizationContext.Provider value={value}>
-      {children}
-    </ActiveOrganizationContext.Provider>
+    <OrgSelectionContext.Provider value={selectionValue}>
+      <ActiveOrganizationContext.Provider value={value}>
+        {children}
+      </ActiveOrganizationContext.Provider>
+    </OrgSelectionContext.Provider>
   )
 }

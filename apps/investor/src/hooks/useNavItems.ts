@@ -12,11 +12,8 @@ import {
   Mail,
 } from "lucide-react"
 
-import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import { fundPath, fundSlugFromPath, orgPath } from "@/lib/investorRoutes"
-import type { components } from "@edenscale/api/schema"
-
-type UserRole = components["schemas"]["UserRole"]
 
 export interface NavItem {
   kind?: "item"
@@ -39,7 +36,6 @@ export type NavEntry = NavItem | NavSection | NavDivider
 
 interface UseNavItemsResult {
   items: NavEntry[]
-  role: UserRole | null
   isLoading: boolean
 }
 
@@ -57,10 +53,9 @@ function orgItems(orgSlug: string): NavItem[] {
 }
 
 export function useOrgNavItems(): UseNavItemsResult {
-  const { activeMembership, isLoading } = useActiveOrganization()
+  const { activeOrganization, isLoading } = useInvestorOrganizations()
   const params = useParams<{ orgSlug?: string }>()
-  const role = activeMembership?.role ?? null
-  const orgSlug = params.orgSlug ?? activeMembership?.organization.slug ?? null
+  const orgSlug = params.orgSlug ?? activeOrganization?.organization.slug ?? null
 
   const items = useMemo<NavEntry[]>(() => {
     const homeItem: NavItem = {
@@ -72,15 +67,14 @@ export function useOrgNavItems(): UseNavItemsResult {
     return orgSlug ? [homeItem, { kind: "divider" }, ...orgItems(orgSlug)] : [homeItem]
   }, [orgSlug])
 
-  return { items, role, isLoading }
+  return { items, isLoading }
 }
 
 export function useFundNavItems(): UseNavItemsResult {
-  const { activeMembership, isLoading } = useActiveOrganization()
+  const { activeOrganization, isLoading } = useInvestorOrganizations()
   const params = useParams<{ orgSlug?: string }>()
   const { pathname } = useLocation()
-  const role = activeMembership?.role ?? null
-  const orgSlug = params.orgSlug ?? activeMembership?.organization.slug
+  const orgSlug = params.orgSlug ?? activeOrganization?.organization.slug
   const fundSlug = fundSlugFromPath(pathname)
 
   const items = useMemo<NavEntry[]>(() => {
@@ -95,13 +89,13 @@ export function useFundNavItems(): UseNavItemsResult {
       { kind: "divider" },
       {
         to: orgPath(orgSlug, "funds"),
-        label: `Back to ${activeMembership?.organization.name ?? "funds"}`,
+        label: `Back to ${activeOrganization?.organization.name ?? "funds"}`,
         icon: ArrowLeft,
       },
     ]
-  }, [orgSlug, fundSlug, activeMembership])
+  }, [orgSlug, fundSlug, activeOrganization])
 
-  return { items, role, isLoading }
+  return { items, isLoading }
 }
 
 export function useInvestorNavItems(): UseNavItemsResult {

@@ -8,7 +8,7 @@ import {
 } from "lucide-react"
 
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
-import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import { useAuth } from "@edenscale/auth/useAuth"
 import { useNavItems } from "@/hooks/useNavItems"
 import { fundPath, orgPath } from "@/lib/investorRoutes"
@@ -44,9 +44,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const { items: navItems } = useNavItems()
-  const { activeMembership } = useActiveOrganization()
+  const { activeOrganization } = useInvestorOrganizations()
   const { orgSlug: orgSlugParam } = useParams<{ orgSlug?: string }>()
-  const orgSlug = orgSlugParam ?? activeMembership?.organization.slug ?? null
+  const orgSlug = orgSlugParam ?? activeOrganization?.organization.slug ?? null
 
   const fundsQuery = useApiQuery("/investor/funds", undefined, {
     enabled: open,

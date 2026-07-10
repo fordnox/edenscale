@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@edenscale/ui/dialog"
-import { useActiveOrganization } from "@edenscale/shared/hooks/useActiveOrganization"
+import { useOrgSelection } from "@edenscale/shared/contexts/OrgSelectionContext"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { formatRelativeDays } from "@edenscale/shared/format"
 import type { components } from "@edenscale/api/schema"
@@ -37,7 +37,7 @@ export function PendingInvitationsDialog({
   onOpenChange,
   invitations,
 }: PendingInvitationsDialogProps) {
-  const { setActiveOrganizationId } = useActiveOrganization()
+  const { setActiveOrganizationId } = useOrgSelection()
   const { decline } = usePendingInvitationsBanner()
 
   const acceptMutation = useApiMutation("post", "/invitations/accept", {

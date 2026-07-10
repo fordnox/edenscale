@@ -1,7 +1,7 @@
 import { Navigate, Routes, Route, Outlet } from 'react-router-dom'
-import { ActiveOrganizationProvider } from '@edenscale/shared/contexts/ActiveOrganizationContext'
+import { InvestorOrganizationsProvider } from '@/contexts/InvestorOrganizationsContext'
 import { PendingInvitationsBannerProvider } from '@edenscale/shared/contexts/PendingInvitationsBannerContext'
-import { useActiveOrganization } from './hooks/useActiveOrganization'
+import { useInvestorOrganizations } from './hooks/useInvestorOrganizations'
 import ProtectedLayout from './layouts/ProtectedLayout'
 import AccountLayout from './layouts/AccountLayout'
 import OrgLayout from './layouts/OrgLayout'
@@ -23,28 +23,25 @@ import LoginPage from './pages/LoginPage'
 
 // Portal access is contact-link based (/investor/organizations): anyone who
 // is a linked contact of an investor — including fund admins who personally
-// invested — can enter, regardless of membership role. `roles` here only
-// scopes which pending invitations this app surfaces (investor ones).
-const INVESTOR_ROLES = ['lp'] as const
-
+// invested — can enter, regardless of membership role.
 function ProtectedProviders() {
   return (
-    <ActiveOrganizationProvider roles={INVESTOR_ROLES} investorPortal>
+    <InvestorOrganizationsProvider>
       <PendingInvitationsBannerProvider>
         <Outlet />
       </PendingInvitationsBannerProvider>
-    </ActiveOrganizationProvider>
+    </InvestorOrganizationsProvider>
   )
 }
 
 // Bare /investor landing: pre-org-selection state for signed-in LPs. Shows the
 // portfolio home (org picker + cross-org figures), or the "no organization yet"
-// entry point when the user has no LP memberships (manager-only accounts land
+// entry point when the user has no LP organizations (manager-only accounts land
 // here too — their manager orgs live in the manager app, not this one).
 function AppRootRoute() {
-  const { memberships, isLoading } = useActiveOrganization()
+  const { organizations, isLoading } = useInvestorOrganizations()
   if (isLoading) return null
-  if (memberships.length === 0) return <NoOrganizationHomePage />
+  if (organizations.length === 0) return <NoOrganizationHomePage />
   return <UserDashboardPage />
 }
 

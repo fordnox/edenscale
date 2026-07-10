@@ -1,6 +1,6 @@
 import { useContext, useMemo } from "react"
 
-import { ActiveOrganizationContext } from "@edenscale/shared/contexts/ActiveOrganizationContext"
+import { OrgSelectionContext } from "@edenscale/shared/contexts/OrgSelectionContext"
 import { usePendingInvitationsBanner } from "@edenscale/shared/contexts/PendingInvitationsBannerContext"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { useAuth } from "@edenscale/auth/useAuth"
@@ -13,7 +13,7 @@ export function usePendingInvitations() {
   // app's business, a manager invitation the manager app's — the invitation
   // email already deep-links into the matching SPA (see _build_accept_url on
   // the backend), so out-of-scope invitations are simply not surfaced here.
-  const appRoles = useContext(ActiveOrganizationContext)?.appRoles ?? null
+  const appRoles = useContext(OrgSelectionContext)?.appRoles ?? null
 
   const pendingInvitationsQuery = useApiQuery(
     "/invitations/pending-for-me",
