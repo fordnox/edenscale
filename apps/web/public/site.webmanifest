@@ -1,0 +1,23 @@
+{
+  "name": "NewTaven",
+  "short_name": "NewTaven",
+  "description": "Fund operations, automated — from LP onboarding to capital distributions.",
+  "icons": [
+    {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "theme_color": "#F5F5F5",
+  "background_color": "#F5F5F5",
+  "start_url": "/",
+  "display": "standalone"
+}

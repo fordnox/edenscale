@@ -53,6 +53,9 @@ start-backend: ## Start the development backend
 start-worker: ## Start arq worker
 	cd apps/backend && uv run arq app.worker.WorkerSettings
 
+start-web: ## Start arq worker
+	pnpm turbo run dev --filter=web
+
 test:
 	cd apps/backend && uv run pytest -v 2>&1
 

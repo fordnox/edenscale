@@ -1,0 +1,436 @@
+---
+import Layout from "../layouts/Layout.astro";
+import LogoIcon from "@edenscale/brand/components/LogoIcon.astro";
+
+const platforms = [
+  {
+    id: "ios",
+    device: "iPhone & iPad",
+    browser: "Safari",
+    steps: [
+      {
+        title: "Open newtaven.com in Safari",
+        body: "The install option is only available in Safari — not in Chrome or in-app browsers.",
+      },
+      {
+        title: "Tap the Share icon",
+        body: "The square with an arrow pointing up, at the bottom of the screen.",
+      },
+      {
+        title: "Tap “Add to Home Screen”",
+        body: "Scroll down the share sheet if you don't see it, then confirm with “Add”.",
+      },
+    ],
+  },
+  {
+    id: "android",
+    device: "Android",
+    browser: "Chrome",
+    steps: [
+      {
+        title: "Open newtaven.com in Chrome",
+        body: "Chrome may offer an “Install app” banner right away — one tap and you're done.",
+      },
+      {
+        title: "Tap the ⋮ menu",
+        body: "The three dots in the top-right corner of the browser.",
+      },
+      {
+        title: "Tap “Add to Home screen”",
+        body: "Choose “Install”, then confirm. The NewTaven icon appears on your home screen.",
+      },
+    ],
+  },
+];
+
+const perks = [
+  {
+    title: "Opens full-screen",
+    body: "No address bar, no browser chrome — NewTaven opens like a native app.",
+  },
+  {
+    title: "Picks up where you left off",
+    body: "Your session is remembered, so the fund dashboard is one tap away.",
+  },
+  {
+    title: "No app store, no updates",
+    body: "Nothing to download or keep up to date. You always get the latest version.",
+  },
+];
+---
+
+<Layout
+  title="Install NewTaven — Add to your home screen"
+  description="Put NewTaven on your home screen. Open your fund dashboard in one tap — no app store, no download, takes 20 seconds."
+>
+  <div class="page">
+    <nav class="navbar" aria-label="Primary">
+      <div class="navbar-row">
+        <a href="/" class="brand">
+          <LogoIcon size={28} />
+          <span>NewTaven</span>
+        </a>
+        <a href="/manager" class="pill pill--nav">Try Now</a>
+      </div>
+    </nav>
+
+    <main class="container">
+      <header class="hero">
+        <span class="eyebrow">Install</span>
+        <h1 class="hero-title">Put NewTaven on your<br /><em>home screen</em>.</h1>
+        <p class="hero-sub">
+          Open your fund dashboard in one tap — no app store, no download, takes about
+          20&nbsp;seconds.
+        </p>
+      </header>
+
+      <div class="platforms">
+        {platforms.map((p) => (
+          <section class="platform-card" aria-labelledby={`platform-${p.id}`}>
+            <div class="platform-head">
+              <h2 class="platform-title" id={`platform-${p.id}`}>{p.device}</h2>
+              <span class="platform-browser">{p.browser}</span>
+            </div>
+            <ol class="steps">
+              {p.steps.map((s, i) => (
+                <li class="step">
+                  <span class="step-num" aria-hidden="true">{i + 1}</span>
+                  <div>
+                    <h3 class="step-title">{s.title}</h3>
+                    <p class="step-body">{s.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))}
+      </div>
+
+      <section class="perks" aria-label="Why install">
+        {perks.map((perk) => (
+          <div class="perk">
+            <h3 class="perk-title">{perk.title}</h3>
+            <p class="perk-body">{perk.body}</p>
+          </div>
+        ))}
+      </section>
+
+      <section class="cta-card nv-dark">
+        <div class="cta-inner">
+          <h2>Already installed?</h2>
+          <p>
+            Open NewTaven from your home screen, or head straight to the manager portal. Questions?
+            We're at <a href="mailto:hello@newtaven.com" class="cta-mail">hello@newtaven.com</a>.
+          </p>
+          <a href="/manager" class="pill pill--invert">
+            <span>Open the app</span>
+            <span class="pill-arrow pill-arrow--dark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+            </span>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-row">
+        <a href="/" class="brand brand--footer">
+          <LogoIcon size={20} />
+          <span>NewTaven</span>
+        </a>
+        <a href="mailto:hello@newtaven.com" class="footer-mail">hello@newtaven.com</a>
+        <span class="footer-copy">© 2026 NewTaven — Fund administration for small managers</span>
+      </div>
+    </footer>
+  </div>
+</Layout>
+
+<style>
+  .page {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+  .container {
+    width: 100%;
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  main.container {
+    flex: 1;
+  }
+
+  /* ---------- Navbar ---------- */
+  .navbar {
+    padding: 20px 24px;
+  }
+  .navbar-row {
+    max-width: 88rem;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #000;
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    background: #000;
+    color: #fff;
+    font-weight: 500;
+    border: 0;
+    font-family: inherit;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color 200ms var(--ease-standard);
+  }
+  .pill:hover {
+    background: #1f2937;
+  }
+  .pill--nav {
+    font-size: 16px;
+    padding: 10px 28px;
+  }
+  .pill--invert {
+    background: #fff;
+    color: #000;
+    gap: 12px;
+    font-size: 16px;
+    padding: 8px 8px 8px 28px;
+  }
+  .pill--invert:hover {
+    background: #e5e7eb;
+  }
+  .pill-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 8px;
+  }
+  .pill-arrow--dark {
+    background: #000;
+    color: #fff;
+  }
+  .pill-arrow svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding: clamp(48px, 9svh, 96px) 0 56px;
+    max-width: 40rem;
+  }
+  .eyebrow {
+    display: block;
+    margin-bottom: 12px;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 14px;
+  }
+  .hero-title {
+    margin: 0 0 16px;
+    color: #000;
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+  }
+  .hero-title em {
+    font-style: italic;
+  }
+  .hero-sub {
+    margin: 0;
+    max-width: 30rem;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: clamp(16px, 1.3vw, 18px);
+    line-height: 1.6;
+  }
+
+  /* ---------- Platform cards ---------- */
+  .platforms {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 768px) {
+    .platforms {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  .platform-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .platform-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .platform-title {
+    margin: 0;
+    color: #000;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .platform-browser {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .step-num {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: #16281f;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .step-title {
+    margin: 3px 0 6px;
+    color: #000;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+  .step-body {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  /* ---------- Perks ---------- */
+  .perks {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 56px 0;
+  }
+  @media (min-width: 640px) {
+    .perks {
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(24px, 4vw, 48px);
+    }
+  }
+  .perk {
+    border-top: 1px solid rgba(0, 0, 0, 0.15);
+    padding-top: 20px;
+  }
+  .perk-title {
+    margin: 0 0 8px;
+    color: #000;
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .perk-body {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  /* ---------- Closing CTA ---------- */
+  .cta-card {
+    border-radius: 24px;
+    overflow: hidden;
+    background: #16281f;
+    margin-bottom: 56px;
+  }
+  .cta-inner {
+    padding: clamp(32px, 5vw, 56px);
+  }
+  .cta-inner h2 {
+    margin: 0 0 12px;
+    color: #fff;
+    font-size: clamp(26px, 3vw, 36px);
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+  .cta-inner p {
+    margin: 0 0 28px;
+    max-width: 32rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .cta-mail {
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    padding-bottom: 1px;
+  }
+
+  /* ---------- Footer ---------- */
+  .footer {
+    padding: 24px 24px 32px;
+  }
+  .footer .container {
+    max-width: 88rem;
+    padding: 0;
+  }
+  .footer-row {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding-top: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .brand--footer {
+    font-size: 16px;
+  }
+  .footer-mail {
+    color: rgba(0, 0, 0, 0.7);
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 200ms var(--ease-standard);
+  }
+  .footer-mail:hover {
+    color: #000;
+  }
+  .footer-copy {
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 13px;
+  }
+</style>
