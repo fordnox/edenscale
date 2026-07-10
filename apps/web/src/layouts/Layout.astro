@@ -4,11 +4,16 @@ import "../styles/global.css";
 interface Props {
   title?: string;
   description?: string;
+  /* Page scope class for global.css — page-specific styles are written as
+     `.page-<name> .selector` so identical class names on different pages
+     (e.g. .hero, .container) never collide in the one shared stylesheet. */
+  bodyClass?: string;
 }
 
 const {
   title = "NewTaven — Fund operations, automated",
   description = "An end-to-end software platform built to streamline the entire lifecycle of your investment fund, from LP onboarding to seamless capital distributions.",
+  bodyClass,
 } = Astro.props;
 ---
 
@@ -49,21 +54,7 @@ const {
       document.documentElement.classList.add("js");
     </script>
   </head>
-  <body>
+  <body class={bodyClass}>
     <slot />
   </body>
 </html>
-
-<style>
-  body {
-    margin: 0;
-    background: #f5f5f5;
-    color: #000;
-    font-family: var(--font-sans);
-    font-size: 16px;
-    line-height: 1.55;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-  }
-</style>
