@@ -72,6 +72,9 @@ class FundListItem(BaseModel):
     target_size: Decimal | None
     current_size: Decimal
     nav: Decimal | None = None
+    dpi: Decimal | None = None
+    tvpi: Decimal | None = None
+    irr: Decimal | None = None
     status: FundStatus
     vintage_year: int | None
 

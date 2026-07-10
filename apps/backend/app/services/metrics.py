@@ -129,21 +129,15 @@ def fund_cashflows(db: Session, fund_id: uuid.UUID) -> list[tuple[date, Decimal]
     return flows
 
 
-def fund_metrics(db: Session, fund_id: uuid.UUID) -> FundMetrics:
-    committed, called, distributed = (
-        Decimal(str(value or 0))
-        for value in db.query(
-            func.coalesce(func.sum(Commitment.committed_amount), 0),
-            func.coalesce(func.sum(Commitment.called_amount), 0),
-            func.coalesce(func.sum(Commitment.distributed_amount), 0),
-        )
-        .filter(Commitment.fund_id == fund_id)
-        .one()
-    )
+def _build_metrics(
+    committed: Decimal,
+    called: Decimal,
+    distributed: Decimal,
+    nav: Decimal | None,
+    flows: list[tuple[date, Decimal]],
+) -> FundMetrics:
     dpi = (distributed / called).quantize(_QUANT) if called > 0 else None
     called_pct = (called / committed).quantize(_QUANT) if committed > 0 else None
-    irr = xirr(fund_cashflows(db, fund_id))
-    nav = latest_fund_nav(db, fund_id)
     tvpi = (
         ((distributed + nav) / called).quantize(_QUANT)
         if nav is not None and called > 0
@@ -156,11 +150,102 @@ def fund_metrics(db: Session, fund_id: uuid.UUID) -> FundMetrics:
         distributed=distributed,
         nav=nav,
         dpi=dpi,
-        irr=irr,
+        irr=xirr(flows),
         tvpi=tvpi,
         rvpi=rvpi,
         called_pct=called_pct,
     )
+
+
+def fund_metrics(db: Session, fund_id: uuid.UUID) -> FundMetrics:
+    committed, called, distributed = (
+        Decimal(str(value or 0))
+        for value in db.query(
+            func.coalesce(func.sum(Commitment.committed_amount), 0),
+            func.coalesce(func.sum(Commitment.called_amount), 0),
+            func.coalesce(func.sum(Commitment.distributed_amount), 0),
+        )
+        .filter(Commitment.fund_id == fund_id)
+        .one()
+    )
+    return _build_metrics(
+        committed,
+        called,
+        distributed,
+        latest_fund_nav(db, fund_id),
+        fund_cashflows(db, fund_id),
+    )
+
+
+def fund_metrics_bulk(
+    db: Session, fund_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, FundMetrics]:
+    """FundMetrics per fund with a fixed number of queries — for list endpoints.
+
+    Every requested fund gets an entry, even ones with no commitments yet.
+    """
+    if not fund_ids:
+        return {}
+    sums = {
+        fund_id: (
+            Decimal(str(committed or 0)),
+            Decimal(str(called or 0)),
+            Decimal(str(distributed or 0)),
+        )
+        for fund_id, committed, called, distributed in db.query(
+            Commitment.fund_id,
+            func.coalesce(func.sum(Commitment.committed_amount), 0),
+            func.coalesce(func.sum(Commitment.called_amount), 0),
+            func.coalesce(func.sum(Commitment.distributed_amount), 0),
+        )
+        .filter(Commitment.fund_id.in_(fund_ids))
+        .group_by(Commitment.fund_id)
+        .all()
+    }
+    call_rows = (
+        db.query(
+            CapitalCall.fund_id, CapitalCallItem.paid_at, CapitalCallItem.amount_paid
+        )
+        .join(CapitalCall, CapitalCall.id == CapitalCallItem.capital_call_id)
+        .filter(
+            CapitalCall.fund_id.in_(fund_ids),
+            CapitalCallItem.paid_at.is_not(None),
+            CapitalCallItem.amount_paid > 0,
+        )
+        .all()
+    )
+    dist_rows = (
+        db.query(
+            Distribution.fund_id, DistributionItem.paid_at, DistributionItem.amount_paid
+        )
+        .join(Distribution, Distribution.id == DistributionItem.distribution_id)
+        .filter(
+            Distribution.fund_id.in_(fund_ids),
+            DistributionItem.paid_at.is_not(None),
+            DistributionItem.amount_paid > 0,
+        )
+        .all()
+    )
+    flows_by_fund: dict[uuid.UUID, list[tuple[date, Decimal]]] = {
+        fund_id: [] for fund_id in fund_ids
+    }
+    for fund_id, paid_at, amount in call_rows:
+        flows_by_fund[fund_id].append((_flow_date(paid_at), -Decimal(str(amount))))
+    for fund_id, paid_at, amount in dist_rows:
+        flows_by_fund[fund_id].append((_flow_date(paid_at), Decimal(str(amount))))
+    navs = latest_fund_navs(db, fund_ids)
+    zero = Decimal("0")
+    out: dict[uuid.UUID, FundMetrics] = {}
+    for fund_id in fund_ids:
+        committed, called, distributed = sums.get(fund_id, (zero, zero, zero))
+        out[fund_id] = _build_metrics(
+            committed,
+            called,
+            distributed,
+            navs.get(fund_id),
+            sorted(flows_by_fund[fund_id], key=lambda f: f[0]),
+        )
+    return out
 
 
 def latest_fund_nav(db: Session, fund_id: uuid.UUID) -> Decimal | None:

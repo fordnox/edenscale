@@ -18,7 +18,12 @@ from app.schemas.fund import (
     FundRead,
     FundUpdate,
 )
-from app.services.metrics import fund_metrics, latest_fund_nav, latest_fund_navs
+from app.services.metrics import (
+    FundMetrics,
+    fund_metrics,
+    fund_metrics_bulk,
+    latest_fund_nav,
+)
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -50,7 +55,7 @@ def _to_read_dict(
 
 
 def _to_list_item(
-    fund: FundModel, current_size: Decimal, nav: Decimal | None = None
+    fund: FundModel, current_size: Decimal, metrics: FundMetrics | None = None
 ) -> dict:
     return {
         "id": fund.id,
@@ -61,7 +66,10 @@ def _to_list_item(
         "currency_code": fund.currency_code,
         "target_size": fund.target_size,
         "current_size": current_size,
-        "nav": nav,
+        "nav": metrics.nav if metrics else None,
+        "dpi": metrics.dpi if metrics else None,
+        "tvpi": metrics.tvpi if metrics else None,
+        "irr": metrics.irr if metrics else None,
         "status": fund.status,
         "vintage_year": fund.vintage_year,
     }
@@ -76,9 +84,9 @@ async def list_funds(
 ):
     repo = FundRepository(db)
     rows = repo.list_for_membership(membership, skip=skip, limit=limit)
-    navs = latest_fund_navs(db, [fund.id for fund, _ in rows])  # type: ignore[invalid-argument-type]
+    metrics = fund_metrics_bulk(db, [fund.id for fund, _ in rows])  # type: ignore[invalid-argument-type]
     return [
-        _to_list_item(fund, current_size, navs.get(fund.id))  # type: ignore[invalid-argument-type]
+        _to_list_item(fund, current_size, metrics.get(fund.id))  # type: ignore[invalid-argument-type]
         for fund, current_size in rows
     ]
 

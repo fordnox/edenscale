@@ -35,6 +35,18 @@ function parseDecimal(value: string | null | undefined) {
   return Number.isFinite(n) ? n : 0
 }
 
+function formatMultiple(value: string | null | undefined) {
+  if (value === null || value === undefined || value === "") return "—"
+  const n = Number(value)
+  return Number.isFinite(n) ? `${n.toFixed(2)}x` : "—"
+}
+
+function formatIrr(value: string | null | undefined) {
+  if (value === null || value === undefined || value === "") return "—"
+  const n = Number(value)
+  return Number.isFinite(n) ? formatPercent(n) : "—"
+}
+
 export default function FundsPage() {
   const { activeMembership, isSuperadmin } = useActiveOrganization()
   const canCreateFund =
@@ -94,6 +106,9 @@ export default function FundsPage() {
                 <TH align="right">Vintage</TH>
                 <TH align="right">Target</TH>
                 <TH align="right">Current</TH>
+                <TH align="right">DPI</TH>
+                <TH align="right">TVPI</TH>
+                <TH align="right">Net IRR</TH>
                 <TH align="right">Status</TH>
               </tr>
             </thead>
@@ -145,6 +160,9 @@ export default function FundsPage() {
                         )}
                       </div>
                     </TD>
+                    <TD align="right">{formatMultiple(fund.dpi)}</TD>
+                    <TD align="right">{formatMultiple(fund.tvpi)}</TD>
+                    <TD align="right">{formatIrr(fund.irr)}</TD>
                     <TD align="right">
                       <StatusPill kind="fund" value={fund.status} />
                     </TD>

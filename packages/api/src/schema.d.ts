@@ -2388,6 +2388,12 @@ export interface components {
             current_size: string;
             /** Nav */
             nav?: string | null;
+            /** Dpi */
+            dpi?: string | null;
+            /** Tvpi */
+            tvpi?: string | null;
+            /** Irr */
+            irr?: string | null;
             status: components["schemas"]["FundStatus"];
             /** Vintage Year */
             vintage_year: number | null;
