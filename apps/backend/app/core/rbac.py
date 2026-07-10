@@ -15,6 +15,8 @@ the decoded payload. The platform also needs a local `User` row keyed by
 * `get_active_membership` — resolves the `UserOrganizationMembership` the
   caller is acting through, based on the `X-Organization-Id` header. Used
   for org-scoped routes where the user may belong to multiple orgs.
+  (Investor-portal routes under `/investor` don't use this — they resolve
+  access from contact links via `app.core.investor_access`.)
 * `require_membership_roles` — dependency factory that 403s when the active
   membership's role is not in the allow-list.
 """

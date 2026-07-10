@@ -10,6 +10,7 @@
   "exports": {
     "./active-org": "./src/activeOrg.ts",
     "./contexts/ActiveOrganizationContext": "./src/contexts/ActiveOrganizationContext.tsx",
+    "./contexts/OrgSelectionContext": "./src/contexts/OrgSelectionContext.tsx",
     "./contexts/PendingInvitationsBannerContext": "./src/contexts/PendingInvitationsBannerContext.tsx",
     "./contexts/ThemeContext": "./src/contexts/ThemeContext.tsx",
     "./format": "./src/format.ts",

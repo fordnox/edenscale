@@ -1,7 +1,7 @@
 import { Navigate, Routes, Route, Outlet } from 'react-router-dom'
-import { ActiveOrganizationProvider } from '@edenscale/shared/contexts/ActiveOrganizationContext'
+import { InvestorOrganizationsProvider } from '@/contexts/InvestorOrganizationsContext'
 import { PendingInvitationsBannerProvider } from '@edenscale/shared/contexts/PendingInvitationsBannerContext'
-import { useActiveOrganization } from './hooks/useActiveOrganization'
+import { useInvestorOrganizations } from './hooks/useInvestorOrganizations'
 import ProtectedLayout from './layouts/ProtectedLayout'
 import AccountLayout from './layouts/AccountLayout'
 import OrgLayout from './layouts/OrgLayout'
@@ -21,29 +21,27 @@ import ProfilePage from './pages/ProfilePage'
 import InvitationAcceptPage from './pages/InvitationAcceptPage'
 import LoginPage from './pages/LoginPage'
 
-// The investor app serves only the LP slice of an account. The same login may
-// also be a manager elsewhere, but those memberships and invitations are
-// invisible here — the manager app is a fully separate SPA with its own scope.
-const INVESTOR_ROLES = ['lp'] as const
-
+// Portal access is contact-link based (/investor/organizations): anyone who
+// is a linked contact of an investor — including fund admins who personally
+// invested — can enter, regardless of membership role.
 function ProtectedProviders() {
   return (
-    <ActiveOrganizationProvider roles={INVESTOR_ROLES}>
+    <InvestorOrganizationsProvider>
       <PendingInvitationsBannerProvider>
         <Outlet />
       </PendingInvitationsBannerProvider>
-    </ActiveOrganizationProvider>
+    </InvestorOrganizationsProvider>
   )
 }
 
 // Bare /investor landing: pre-org-selection state for signed-in LPs. Shows the
 // portfolio home (org picker + cross-org figures), or the "no organization yet"
-// entry point when the user has no LP memberships (manager-only accounts land
+// entry point when the user has no LP organizations (manager-only accounts land
 // here too — their manager orgs live in the manager app, not this one).
 function AppRootRoute() {
-  const { memberships, isLoading } = useActiveOrganization()
+  const { organizations, isLoading } = useInvestorOrganizations()
   if (isLoading) return null
-  if (memberships.length === 0) return <NoOrganizationHomePage />
+  if (organizations.length === 0) return <NoOrganizationHomePage />
   return <UserDashboardPage />
 }
 

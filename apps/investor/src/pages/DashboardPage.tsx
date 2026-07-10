@@ -10,7 +10,7 @@ import { Stat } from "@edenscale/ui/stat"
 import { EmptyState } from "@edenscale/ui/EmptyState"
 import { DataTable, TD, TH, TR } from "@edenscale/ui/table"
 import { UpdatesFeed } from "@/components/UpdatesFeed"
-import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { fundPath } from "@/lib/investorRoutes"
 import { config } from "@edenscale/api/config"
@@ -45,10 +45,10 @@ function money(value: number, currency: string) {
 }
 
 export default function DashboardPage() {
-  const { activeMembership } = useActiveOrganization()
-  const orgSlug = activeMembership?.organization.slug ?? null
+  const { activeOrganization } = useInvestorOrganizations()
+  const orgSlug = activeOrganization?.organization.slug ?? null
 
-  const fundsQuery = useApiQuery("/funds")
+  const fundsQuery = useApiQuery("/investor/funds")
   const fundSlugById = useMemo(
     () => new Map((fundsQuery.data ?? []).map((f) => [f.id, f.slug])),
     [fundsQuery.data],
@@ -69,9 +69,9 @@ export default function DashboardPage() {
     [fundsQuery.data],
   )
 
-  const commitmentsQuery = useApiQuery("/commitments")
-  const overviewQuery = useApiQuery("/dashboard/overview", undefined, {
-    enabled: Boolean(activeMembership?.organization_id),
+  const commitmentsQuery = useApiQuery("/investor/commitments")
+  const overviewQuery = useApiQuery("/investor/dashboard/overview", undefined, {
+    enabled: Boolean(activeOrganization?.organization_id),
   })
   const data = overviewQuery.data
 
@@ -161,7 +161,7 @@ export default function DashboardPage() {
       </Helmet>
       <PageHero
         eyebrow="Investor portal"
-        title={activeMembership?.organization.name ?? "Portfolio overview"}
+        title={activeOrganization?.organization.name ?? "Portfolio overview"}
         description="Your positions, capital activity, and correspondence across the funds you hold. Figures are your share of each fund."
       />
 

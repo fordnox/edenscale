@@ -18,6 +18,7 @@ from app.routers import (
     fund_valuations,
     funds,
     investor_contacts,
+    investor_portal,
     investors,
     invitations,
     notifications,
@@ -90,6 +91,11 @@ app.include_router(
     fund_valuations.router,
     prefix="/funds",
     tags=["funds"],
+)
+app.include_router(
+    investor_portal.router,
+    prefix="/investor",
+    tags=["investor-portal"],
 )
 app.include_router(investors.router, prefix="/investors", tags=["investors"])
 app.include_router(

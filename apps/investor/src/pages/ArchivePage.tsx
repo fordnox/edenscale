@@ -2,14 +2,14 @@ import { Helmet } from "react-helmet-async"
 
 import { PageHero } from "@edenscale/ui/PageHero"
 import { UpdatesFeed } from "@/components/UpdatesFeed"
-import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import { config } from "@edenscale/api/config"
 
 // The full activity history — every capital notice, distribution, and letter,
 // newest first. The dashboard feed is the recent slice of this.
 export default function ArchivePage() {
-  const { activeMembership } = useActiveOrganization()
-  const orgSlug = activeMembership?.organization.slug ?? null
+  const { activeOrganization } = useInvestorOrganizations()
+  const orgSlug = activeOrganization?.organization.slug ?? null
 
   return (
     <>

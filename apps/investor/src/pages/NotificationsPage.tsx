@@ -10,7 +10,7 @@ import { Button } from "@edenscale/ui/button"
 import { Card } from "@edenscale/ui/card"
 import { EmptyState } from "@edenscale/ui/EmptyState"
 import { Eyebrow } from "@edenscale/ui/eyebrow"
-import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { orgPath } from "@/lib/investorRoutes"
@@ -74,8 +74,8 @@ function relatedLink(
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient()
-  const { activeMembership } = useActiveOrganization()
-  const orgSlug = activeMembership?.organization.slug ?? null
+  const { activeOrganization } = useInvestorOrganizations()
+  const orgSlug = activeOrganization?.organization.slug ?? null
 
   const notificationsQuery = useApiQuery("/notifications", {
     params: { query: { limit: 200 } },
@@ -114,7 +114,7 @@ export default function NotificationsPage() {
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["/notifications"] })
-    queryClient.invalidateQueries({ queryKey: ["/dashboard/overview"] })
+    queryClient.invalidateQueries({ queryKey: ["/investor/dashboard/overview"] })
   }
 
   async function handleMarkRead(notificationId: string) {

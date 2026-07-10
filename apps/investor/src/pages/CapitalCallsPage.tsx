@@ -24,7 +24,7 @@ function parseDecimal(value: string | null | undefined) {
 const OPEN_STATUSES = ["scheduled", "sent", "partially_paid", "overdue"]
 
 export default function CapitalCallsPage() {
-  const callsQuery = useApiQuery("/capital-calls")
+  const callsQuery = useApiQuery("/investor/capital-calls")
   const calls = useMemo(() => callsQuery.data ?? [], [callsQuery.data])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected = useMemo(

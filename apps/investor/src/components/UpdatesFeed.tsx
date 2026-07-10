@@ -45,10 +45,10 @@ export function UpdatesFeed({
   limit?: number
   archiveLink?: boolean
 }) {
-  const callsQuery = useApiQuery("/capital-calls")
-  const distributionsQuery = useApiQuery("/distributions")
-  const lettersQuery = useApiQuery("/communications")
-  const fundsQuery = useApiQuery("/funds")
+  const callsQuery = useApiQuery("/investor/capital-calls")
+  const distributionsQuery = useApiQuery("/investor/distributions")
+  const lettersQuery = useApiQuery("/investor/communications")
+  const fundsQuery = useApiQuery("/investor/funds")
 
   const fundNameById = useMemo(
     () => new Map((fundsQuery.data ?? []).map((f) => [f.id, f.name])),

@@ -12,7 +12,7 @@ import { Card, CardSection } from "@edenscale/ui/card"
 import { Eyebrow } from "@edenscale/ui/eyebrow"
 import { Input } from "@edenscale/ui/input"
 import { Label } from "@edenscale/ui/label"
-import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { useAuth } from "@edenscale/auth/useAuth"
@@ -27,16 +27,13 @@ export default function ProfilePage() {
     staleTime: 5 * 60 * 1000,
   })
   const me = meQuery.data
-  const { activeMembership } = useActiveOrganization()
+  const { activeOrganization } = useInvestorOrganizations()
 
-  const orgId = activeMembership?.organization_id ?? null
-  const orgQuery = useApiQuery(
-    "/organizations/{organization_id}",
-    {
-      params: { path: { organization_id: orgId ?? "" } },
-    },
-    { enabled: orgId !== null, staleTime: 5 * 60 * 1000 },
-  )
+  const orgId = activeOrganization?.organization_id ?? null
+  // The org payload rides on /investor/organizations (via the provider) —
+  // /organizations/{id} requires a membership, which link-only investors
+  // don't have.
+  const organization = activeOrganization?.organization ?? null
 
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -68,9 +65,9 @@ export default function ProfilePage() {
     )
   }, [me, firstName, lastName, phone, title])
 
-  // This app only ever holds LP memberships (the provider scopes to roles:
-  // ['lp']), so membership presence is all we need to describe access.
-  const hasMembership = activeMembership != null
+  // Portal access is contact-link based — having an active organization is
+  // all "access" means here.
+  const hasPortalAccess = activeOrganization != null
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -220,13 +217,10 @@ export default function ProfilePage() {
               <CardSection>
                 <Eyebrow>Role &amp; access</Eyebrow>
                 <div className="mt-4 flex flex-col gap-3">
-                  {hasMembership ? (
+                  {hasPortalAccess ? (
                     <>
                       <div className="flex items-center gap-3">
-                        <Badge tone="info">Limited partner</Badge>
-                        <span className="font-sans text-[12px] text-ink-500">
-                          Investor
-                        </span>
+                        <Badge tone="info">Investor</Badge>
                       </div>
                       <p className="font-sans text-[13px] leading-[1.55] text-ink-700">
                         Read-only access to your commitments, capital activity,
@@ -257,12 +251,12 @@ export default function ProfilePage() {
                   <div className="mt-4 flex flex-col gap-3">
                     <div className="flex items-baseline justify-between gap-3">
                       <h3 className="font-display text-[20px] tracking-tight text-ink-900">
-                        {orgQuery.data?.name ?? (orgQuery.isLoading ? "Loading…" : "—")}
+                        {organization?.name ?? "—"}
                       </h3>
-                      {orgQuery.data?.legal_name &&
-                        orgQuery.data.legal_name !== orgQuery.data.name && (
+                      {organization?.legal_name &&
+                        organization.legal_name !== organization.name && (
                           <span className="font-sans text-[12px] text-ink-500">
-                            {orgQuery.data.legal_name}
+                            {organization.legal_name}
                           </span>
                         )}
                     </div>

@@ -24,7 +24,7 @@ function formatBytes(size: number | null | undefined) {
 }
 
 export default function DocumentsPage() {
-  const documentsQuery = useApiQuery("/documents")
+  const documentsQuery = useApiQuery("/investor/documents")
   const documents = useMemo(
     () => documentsQuery.data ?? [],
     [documentsQuery.data],

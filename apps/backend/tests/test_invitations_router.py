@@ -37,6 +37,8 @@ from app.core.database import Base, SessionLocal, engine
 from app.core.slugs import slugify
 from app.main import app
 from app.models import (
+    Investor,
+    InvestorContact,
     Organization,
     OrganizationInvitation,
     OrganizationType,
@@ -614,7 +616,6 @@ class TestAcceptInvitation:
         response = client.post("/invitations/accept", json={"token": "t-accept"})
         assert response.status_code == 200
         body = response.json()
-        assert body["user_id"] == str(invitee_id)
         assert body["organization_id"] == str(org_id)
         assert body["role"] == "fund_manager"
 
@@ -627,6 +628,15 @@ class TestAcceptInvitation:
             )
             assert invitation.status is InvitationStatus.accepted
             assert invitation.accepted_at is not None
+            membership = (
+                db.query(UserOrganizationMembership)
+                .filter(
+                    UserOrganizationMembership.user_id == invitee_id,
+                    UserOrganizationMembership.organization_id == org_id,
+                )
+                .one()
+            )
+            assert membership.role is UserRole.fund_manager
         finally:
             db.close()
 
@@ -758,6 +768,113 @@ class TestAcceptInvitation:
 
         response = client.post("/invitations/accept", json={"token": "no-such-token"})
         assert response.status_code == 404
+
+    def test_accept_lp_invitation_creates_no_membership_and_links_contacts(
+        self, client, override_user, hanko_email_mock
+    ):
+        """Investor invitations grant portal access purely via contact links —
+        accepting one must not create a membership row."""
+        org_id = _seed_org()
+        db = SessionLocal()
+        try:
+            investor = Investor(organization_id=org_id, name="Acme LP")
+            db.add(investor)
+            db.flush()
+            contact = InvestorContact(
+                investor_id=investor.id,
+                first_name="Pat",
+                last_name="Lp",
+                email="invitee@example.com",
+            )
+            db.add(contact)
+            db.commit()
+            contact_id = contact.id
+        finally:
+            db.close()
+
+        invitee_id = _seed_user(
+            "hanko-invitee", UserRole.lp, email="invitee@example.com"
+        )
+        _seed_invitation(
+            org_id, email="invitee@example.com", role=UserRole.lp, token="t-lp"
+        )
+        override_user("hanko-invitee", email="invitee@example.com")
+
+        response = client.post("/invitations/accept", json={"token": "t-lp"})
+        assert response.status_code == 200
+        body = response.json()
+        assert body["organization_id"] == str(org_id)
+        assert body["role"] == "lp"
+        assert body["organization"]["id"] == str(org_id)
+
+        db = SessionLocal()
+        try:
+            memberships = (
+                db.query(UserOrganizationMembership)
+                .filter(UserOrganizationMembership.user_id == invitee_id)
+                .all()
+            )
+            assert memberships == []
+            linked = (
+                db.query(InvestorContact)
+                .filter(InvestorContact.id == contact_id)
+                .one()
+            )
+            assert linked.user_id == invitee_id
+        finally:
+            db.close()
+
+    def test_accept_lp_invitation_preserves_staff_role(
+        self, client, override_user, hanko_email_mock
+    ):
+        """An admin who is personally an investor accepts an lp invitation:
+        their contact gets linked and their admin membership is untouched."""
+        org_id = _seed_org()
+        invitee_id = _seed_user(
+            "hanko-admin-investor",
+            UserRole.admin,
+            email="admin@example.com",
+            organization_id=org_id,
+        )
+        db = SessionLocal()
+        try:
+            investor = Investor(organization_id=org_id, name="Admin Family LP")
+            db.add(investor)
+            db.flush()
+            db.add(
+                InvestorContact(
+                    investor_id=investor.id,
+                    first_name="Ada",
+                    last_name="Admin",
+                    email="admin@example.com",
+                )
+            )
+            db.commit()
+        finally:
+            db.close()
+        _seed_invitation(
+            org_id, email="admin@example.com", role=UserRole.lp, token="t-adm-lp"
+        )
+        override_user("hanko-admin-investor", email="admin@example.com")
+
+        response = client.post("/invitations/accept", json={"token": "t-adm-lp"})
+        assert response.status_code == 200
+
+        db = SessionLocal()
+        try:
+            memberships = (
+                db.query(UserOrganizationMembership)
+                .filter(
+                    UserOrganizationMembership.user_id == invitee_id,
+                    UserOrganizationMembership.organization_id == org_id,
+                )
+                .all()
+            )
+            assert len(memberships) == 1
+            # The staff role survives — no downgrade to lp.
+            assert memberships[0].role is UserRole.admin
+        finally:
+            db.close()
 
     def test_accept_upgrades_existing_membership_role(
         self, client, override_user, hanko_email_mock

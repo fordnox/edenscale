@@ -48,6 +48,7 @@ start-superadmin: ## Start the development superadmin frontend
 	pnpm turbo run dev --filter=superadmin
 
 start-backend: ## Start the development backend
+	#docker run --name postgres-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=taven -p 5432:5432 -v postgres-data:/var/lib/postgresql postgres
 	cd apps/backend && uv run fastapi dev app/main.py --port 8000 --host localhost
 
 start-worker: ## Start arq worker

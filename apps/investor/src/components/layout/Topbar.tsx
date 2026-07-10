@@ -3,7 +3,7 @@ import { ChevronDown } from "lucide-react"
 
 import { cn } from "@edenscale/shared/utils"
 import { orgPath } from "@/lib/investorRoutes"
-import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,27 +11,21 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@edenscale/ui/dropdown-menu"
-import type { components } from "@edenscale/api/schema"
-
-type UserRole = components["schemas"]["UserRole"]
-
-// This app only ever surfaces LP memberships (the active-org provider scopes
-// to roles: ['lp']), so LP is the only label that can appear here.
-const ROLE_LABELS: Partial<Record<UserRole, string>> = {
-  lp: "LP",
-}
+// Everyone in this portal is here as an investor (access is contact-link
+// based), so the secondary label is a constant.
+const ACCESS_LABEL = "Investor"
 
 export function OrganizationSwitcher() {
   const navigate = useNavigate()
-  const { memberships, activeMembership } = useActiveOrganization()
+  const { organizations, activeOrganization } = useInvestorOrganizations()
 
-  if (memberships.length === 0) {
+  if (organizations.length === 0) {
     return null
   }
 
   const triggerLabel =
-    activeMembership?.organization.name ??
-    (memberships.length > 1 ? "All organizations" : "—")
+    activeOrganization?.organization.name ??
+    (organizations.length > 1 ? "All organizations" : "—")
 
   // Only navigate here — OrgLayout is the single place that calls
   // setActiveOrganizationId, triggered by the resulting route change.
@@ -39,8 +33,7 @@ export function OrganizationSwitcher() {
     navigate(orgPath(orgSlug))
   }
 
-  if (memberships.length === 1) {
-    const membership = activeMembership ?? memberships[0]
+  if (organizations.length === 1) {
     return (
       <span
         title={triggerLabel}
@@ -50,7 +43,7 @@ export function OrganizationSwitcher() {
           {triggerLabel}
         </span>
         <span className="truncate font-sans text-[11px] tracking-[0.04em] text-ink-500">
-          {ROLE_LABELS[membership.role]}
+          {ACCESS_LABEL}
         </span>
       </span>
     )
@@ -75,16 +68,16 @@ export function OrganizationSwitcher() {
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        {memberships.length > 0 && (
+        {organizations.length > 0 && (
           <>
             <DropdownMenuLabel className="text-[11px] tracking-[0.06em] text-ink-500 uppercase font-medium">
               Organizations
             </DropdownMenuLabel>
-            {memberships.map((m) => {
-              const isActive = m.organization_id === activeMembership?.organization_id
+            {organizations.map((m) => {
+              const isActive = m.organization_id === activeOrganization?.organization_id
               return (
                 <DropdownMenuItem
-                  key={m.id}
+                  key={m.organization_id}
                   onSelect={() => handleSelect(m.organization.slug)}
                   className={cn(
                     "min-h-11 md:min-h-0 gap-3",
@@ -95,7 +88,7 @@ export function OrganizationSwitcher() {
                     {m.organization.name}
                   </span>
                   <span className="shrink-0 font-sans text-[10px] tracking-[0.06em] uppercase text-ink-500">
-                    {ROLE_LABELS[m.role] ?? "Member"}
+                    {ACCESS_LABEL}
                   </span>
                 </DropdownMenuItem>
               )

@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { Button } from "@edenscale/ui/button"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { EmptyState } from "@edenscale/ui/EmptyState"
-import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { useAuth } from "@edenscale/auth/useAuth"
 import { orgPath } from "@/lib/investorRoutes"
@@ -19,7 +19,7 @@ export default function InvitationAcceptPage() {
   const token = searchParams.get("token")
 
   const { isAuthenticated, isLoading: authLoading } = useAuth()
-  const { setActiveOrganizationId } = useActiveOrganization()
+  const { setActiveOrganizationId } = useInvestorOrganizations()
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 

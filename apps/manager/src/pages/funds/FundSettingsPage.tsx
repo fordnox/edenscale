@@ -31,6 +31,7 @@ import { FundGroupField } from "@/components/funds/FundGroupField"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { useFundContext } from "@/layouts/FundLayout"
 import { fundPath, orgPath } from "@/lib/managerRoutes"
+import { formatCurrency } from "@edenscale/shared/format"
 import type { components } from "@edenscale/api/schema"
 
 type FundStatus = components["schemas"]["FundStatus"]
@@ -57,6 +58,7 @@ export default function FundSettingsPage() {
   const [strategy, setStrategy] = useState(fund.strategy ?? "")
   const [currencyCode, setCurrencyCode] = useState(fund.currency_code)
   const [targetSize, setTargetSize] = useState(fund.target_size ?? "")
+  const [hardCap, setHardCap] = useState(fund.hard_cap ?? "")
   const [status, setStatus] = useState<FundStatus>(fund.status)
   const [description, setDescription] = useState(fund.description ?? "")
   const [fundGroupId, setFundGroupId] = useState(fund.fund_group_id ?? "")
@@ -93,6 +95,7 @@ export default function FundSettingsPage() {
     const trimmedYear = vintageYear.trim()
     const yearNumber = trimmedYear ? Number(trimmedYear) : null
     const trimmedTarget = targetSize.trim()
+    const trimmedHardCap = hardCap.trim()
     const trimmedCurrency = currencyCode.trim().toUpperCase()
 
     updateFund.mutate({
@@ -104,6 +107,7 @@ export default function FundSettingsPage() {
         strategy: strategy.trim() || null,
         currency_code: trimmedCurrency.length === 3 ? trimmedCurrency : fund.currency_code,
         target_size: trimmedTarget ? trimmedTarget : null,
+        hard_cap: trimmedHardCap ? trimmedHardCap : null,
         status,
         description: description.trim() || null,
         fund_group_id: fundGroupId || null,
@@ -181,6 +185,35 @@ export default function FundSettingsPage() {
                   value={targetSize}
                   onChange={(event) => setTargetSize(event.target.value)}
                 />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="fund-settings-hard-cap">Hard cap</Label>
+                <Input
+                  id="fund-settings-hard-cap"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  value={hardCap}
+                  onChange={(event) => setHardCap(event.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="fund-settings-current-size">Current size</Label>
+                <Input
+                  id="fund-settings-current-size"
+                  value={formatCurrency(
+                    Number(fund.current_size) || 0,
+                    fund.currency_code,
+                  )}
+                  readOnly
+                  disabled
+                />
+                <p className="font-sans text-[12px] leading-[1.5] text-ink-500">
+                  Computed from commitments — not directly editable.
+                </p>
               </div>
             </div>
             <div className="flex flex-col gap-2">

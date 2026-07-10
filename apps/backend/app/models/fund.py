@@ -41,9 +41,10 @@ class Fund(Base):
     vintage_year = Column(Integer, nullable=True)
     strategy = Column(String(255), nullable=True)
     currency_code = Column(String(3), nullable=False, default="USD")
+    # Capital the fund aims to raise, in currency_code units.
     target_size = Column(Numeric(18, 2), nullable=True)
+    # Maximum commitments the fund will accept; fundraising stops at this ceiling.
     hard_cap = Column(Numeric(18, 2), nullable=True)
-    current_size = Column(Numeric(18, 2), nullable=True, default=0)
     status = Column(
         Enum(FundStatus, name="fund_status"),
         nullable=False,

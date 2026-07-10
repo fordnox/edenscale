@@ -8,7 +8,7 @@ import { EmptyState } from "@edenscale/ui/EmptyState"
 import { PendingInvitationsBanner } from "@edenscale/ui/invitations/PendingInvitationsBanner"
 import { CommandPalette } from "@/components/layout/CommandPalette"
 import { TopNav } from "@/components/layout/TopNav"
-import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import { useCommandPalette } from "@/hooks/useCommandPalette"
 import { usePendingInvitations } from "@edenscale/shared/hooks/usePendingInvitations"
 import { RESERVED_ORG_SLUGS } from "@/lib/investorRoutes"
@@ -28,7 +28,7 @@ function LoadingState() {
 // command palette — shown once an org slug resolves to a fund the LP can view.
 function OrgShell() {
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette()
-  const { memberships } = useActiveOrganization()
+  const { organizations } = useInvestorOrganizations()
   const { visibleInvitations, showBanner, dismissBanner } =
     usePendingInvitations()
 
@@ -39,7 +39,7 @@ function OrgShell() {
         <PendingInvitationsBanner
           invitations={visibleInvitations}
           onDismiss={dismissBanner}
-          emphasize={memberships.length === 0}
+          emphasize={organizations.length === 0}
         />
       )}
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
@@ -56,13 +56,13 @@ function OrgShell() {
 // here — this app never routes to or reasons about the manager app.
 export default function OrgLayout() {
   const { orgSlug } = useParams<{ orgSlug: string }>()
-  const { memberships, isLoading, activeOrganizationId, setActiveOrganizationId } =
-    useActiveOrganization()
+  const { organizations, isLoading, activeOrganizationId, setActiveOrganizationId } =
+    useInvestorOrganizations()
 
   const isResolvableSlug = Boolean(orgSlug) && !RESERVED_ORG_SLUGS.has(orgSlug!)
 
   const membership = isResolvableSlug
-    ? (memberships.find((m) => m.organization.slug === orgSlug) ?? null)
+    ? (organizations.find((m) => m.organization.slug === orgSlug) ?? null)
     : null
 
   const resolvedOrgId = membership?.organization_id ?? null
