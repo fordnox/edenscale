@@ -30,11 +30,34 @@ import { formatCurrency, titleCase } from "@edenscale/shared/format"
 import type { components } from "@edenscale/api/schema"
 
 type DashboardOverview = components["schemas"]["DashboardOverviewResponse"]
+type CurrencyTotal = components["schemas"]["CurrencyTotal"]
 
 function parseDecimal(value: string | null | undefined) {
   if (value === null || value === undefined || value === "") return 0
   const n = Number(value)
   return Number.isFinite(n) ? n : 0
+}
+
+function mergeCurrencyTotals(
+  totals: Map<string, number>,
+  entries: CurrencyTotal[],
+) {
+  for (const { currency_code, amount } of entries) {
+    totals.set(
+      currency_code,
+      (totals.get(currency_code) ?? 0) + parseDecimal(amount),
+    )
+  }
+}
+
+function formatCurrencyTotalMap(totals: Map<string, number>) {
+  if (totals.size === 0) return "—"
+  return [...totals.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([currency, amount]) =>
+      formatCurrency(amount, currency, { compact: true }),
+    )
+    .join(" · ")
 }
 
 export default function UserDashboardPage() {
@@ -43,7 +66,6 @@ export default function UserDashboardPage() {
     memberships,
     activeOrganizationId,
     setActiveOrganizationId,
-    isSuperadmin,
   } = useActiveOrganization()
   const { visibleInvitations } = usePendingInvitations()
   const [orgScopeCleared, setOrgScopeCleared] = useState(
@@ -86,7 +108,7 @@ export default function UserDashboardPage() {
         const overview = entry.overview as DashboardOverview
         acc.funds += overview.funds_active
         acc.investors += overview.investors_total
-        acc.commitments += parseDecimal(overview.commitments_total_amount)
+        mergeCurrencyTotals(acc.commitments, overview.commitments_by_currency)
         acc.calls += overview.capital_calls_outstanding
         acc.notifications += overview.unread_notifications_count
         acc.tasks += overview.open_tasks_count
@@ -96,7 +118,7 @@ export default function UserDashboardPage() {
       {
         funds: 0,
         investors: 0,
-        commitments: 0,
+        commitments: new Map<string, number>(),
         calls: 0,
         notifications: 0,
         tasks: 0,
@@ -113,7 +135,9 @@ export default function UserDashboardPage() {
   const hasOrganization = memberships.length > 0
   const hasFund = totals.funds > 0
   const hasInvestors = totals.investors > 0
-  const hasCommitments = totals.commitments > 0
+  const hasCommitments = [...totals.commitments.values()].some(
+    (amount) => amount > 0,
+  )
   const hasCapitalCalls = totals.calls > 0
   const hasCommunications = totals.communications > 0
   const onboardingSteps: OnboardingStep[] = [
@@ -210,11 +234,7 @@ export default function UserDashboardPage() {
                   <Stat
                     label="Organizations"
                     value={memberships.length}
-                    caption={
-                      isSuperadmin
-                        ? "Tenant memberships for this account"
-                        : "Workspaces you belong to"
-                    }
+                    caption="Workspaces you belong to"
                   />
                 </CardSection>
                 <CardSection className="border-b border-[color:var(--border-hairline)] md:border-r md:border-b-0">
@@ -227,9 +247,7 @@ export default function UserDashboardPage() {
                 <CardSection className="border-b border-[color:var(--border-hairline)] md:border-r md:border-b-0">
                   <Stat
                     label="Committed capital"
-                    value={formatCurrency(totals.commitments, "USD", {
-                      compact: true,
-                    })}
+                    value={formatCurrencyTotalMap(totals.commitments)}
                     caption="Visible to your memberships"
                   />
                 </CardSection>

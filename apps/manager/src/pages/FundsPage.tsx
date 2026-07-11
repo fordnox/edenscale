@@ -48,9 +48,8 @@ function formatIrr(value: string | null | undefined) {
 }
 
 export default function FundsPage() {
-  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const { activeMembership } = useActiveOrganization()
   const canCreateFund =
-    isSuperadmin ||
     activeMembership?.role === "admin" ||
     activeMembership?.role === "fund_manager"
 

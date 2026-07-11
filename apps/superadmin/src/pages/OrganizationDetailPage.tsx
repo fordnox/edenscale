@@ -68,7 +68,7 @@ function OrganizationDetail({ organizationId }: OrganizationDetailProps) {
   const queryClient = useQueryClient()
   const [assignOpen, setAssignOpen] = useState(false)
 
-  const orgQuery = useApiQuery("/organizations/{organization_id}", {
+  const orgQuery = useApiQuery("/superadmin/organizations/{organization_id}", {
     params: { path: { organization_id: organizationId } },
   })
   const membersQuery = useApiQuery(
@@ -86,7 +86,7 @@ function OrganizationDetail({ organizationId }: OrganizationDetailProps) {
       onSuccess: () => {
         toast.success("Organization disabled")
         queryClient.invalidateQueries({
-          queryKey: ["/organizations/{organization_id}"],
+          queryKey: ["/superadmin/organizations/{organization_id}"],
         })
         queryClient.invalidateQueries({
           queryKey: ["/superadmin/organizations"],
@@ -102,7 +102,7 @@ function OrganizationDetail({ organizationId }: OrganizationDetailProps) {
       onSuccess: () => {
         toast.success("Organization enabled")
         queryClient.invalidateQueries({
-          queryKey: ["/organizations/{organization_id}"],
+          queryKey: ["/superadmin/organizations/{organization_id}"],
         })
         queryClient.invalidateQueries({
           queryKey: ["/superadmin/organizations"],

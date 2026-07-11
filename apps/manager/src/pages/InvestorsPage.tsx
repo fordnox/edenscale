@@ -106,15 +106,13 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
   const fundsQuery = useApiQuery("/funds")
   const funds = fundsQuery.data ?? []
   // Contacts are always invited as LPs, which fund managers are permitted to
-  // do (admins/superadmins can invite any role elsewhere).
+  // do (administrators can invite staff roles elsewhere).
   const canInvite =
     activeMembership?.role === "admin" ||
-    activeMembership?.role === "fund_manager" ||
-    activeMembership?.role === "superadmin"
+    activeMembership?.role === "fund_manager"
   const canManageCommitments =
     activeMembership?.role === "admin" ||
-    activeMembership?.role === "fund_manager" ||
-    activeMembership?.role === "superadmin"
+    activeMembership?.role === "fund_manager"
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -588,10 +586,8 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
 }
 
 export default function InvestorsPage() {
-  const { activeMembership: pageMembership, isSuperadmin } =
-    useActiveOrganization()
+  const { activeMembership: pageMembership } = useActiveOrganization()
   const canManageInvestors =
-    isSuperadmin ||
     pageMembership?.role === "admin" ||
     pageMembership?.role === "fund_manager"
 

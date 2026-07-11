@@ -86,7 +86,9 @@ def _seed_org(
 ) -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=type_, is_active=is_active)
+        org = Organization(
+            name=name, slug=slugify(name), type=type_, is_active=is_active
+        )
         db.add(org)
         db.commit()
         return str(org.id)
@@ -194,6 +196,14 @@ class TestNonSuperadminForbidden:
         response = client.get(f"/superadmin/organizations/{org_id}/members")
         assert response.status_code == 403
 
+    def test_organization_detail_forbidden(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user("hanko-admin", UserRole.admin, email="admin@example.com")
+        override_user("hanko-admin")
+
+        response = client.get(f"/superadmin/organizations/{org_id}")
+        assert response.status_code == 403
+
     @pytest.mark.parametrize(
         "role,subject,email",
         [
@@ -243,6 +253,21 @@ class TestListOrganizations:
         response = client.get("/superadmin/organizations")
         assert response.status_code == 200
         assert response.json() == []
+
+    def test_gets_and_updates_organization_detail(self, client, override_user):
+        org_id = _seed_org("Before")
+        _login_as_superadmin(override_user)
+
+        get_response = client.get(f"/superadmin/organizations/{org_id}")
+        assert get_response.status_code == 200
+        assert get_response.json()["name"] == "Before"
+
+        update_response = client.patch(
+            f"/superadmin/organizations/{org_id}",
+            json={"name": "After"},
+        )
+        assert update_response.status_code == 200
+        assert update_response.json()["name"] == "After"
 
 
 class TestListUsers:
@@ -302,9 +327,7 @@ class TestCreateOrganizationWithAdmin:
         assert body["organization"]["is_active"] is True
         assert body["admin_membership"]["user_id"] == existing_user_id
         assert body["admin_membership"]["role"] == "admin"
-        assert (
-            body["admin_membership"]["organization_id"] == body["organization"]["id"]
-        )
+        assert body["admin_membership"]["organization_id"] == body["organization"]["id"]
 
         db = SessionLocal()
         try:
@@ -543,9 +566,7 @@ class TestDisableEnableOrganization:
         member_id = _seed_user("hanko-m", UserRole.lp, email="m@example.com")
         _seed_membership(member_id, org_id, UserRole.lp)
 
-        disable_response = client.patch(
-            f"/superadmin/organizations/{org_id}/disable"
-        )
+        disable_response = client.patch(f"/superadmin/organizations/{org_id}/disable")
         assert disable_response.status_code == 200
         assert disable_response.json()["is_active"] is False
 
@@ -584,9 +605,7 @@ class TestListOrganizationMembers:
     def test_returns_roster_with_nested_user(self, client, override_user):
         super_id = _login_as_superadmin(override_user)
         org_id = _seed_org()
-        member_one = _seed_user(
-            "hanko-m1", UserRole.lp, email="member1@example.com"
-        )
+        member_one = _seed_user("hanko-m1", UserRole.lp, email="member1@example.com")
         member_two = _seed_user(
             "hanko-m2", UserRole.fund_manager, email="member2@example.com"
         )

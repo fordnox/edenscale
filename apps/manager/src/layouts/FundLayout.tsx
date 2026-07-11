@@ -73,8 +73,7 @@ function FundShell({ fund }: { fund: FundRead }) {
 
   const canManage =
     activeMembership?.role === "admin" ||
-    activeMembership?.role === "fund_manager" ||
-    activeMembership?.role === "superadmin"
+    activeMembership?.role === "fund_manager"
 
   const overviewQuery = useApiQuery("/funds/{fund_id}/overview", {
     params: { path: { fund_id: fund.id } },

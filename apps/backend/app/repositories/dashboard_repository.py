@@ -32,6 +32,7 @@ from app.repositories.user_organization_membership_repository import (
 from app.schemas.dashboard import (
     CapitalCallSummary,
     CommunicationSummary,
+    CurrencyTotal,
     DashboardOverviewResponse,
     FundSummary,
 )
@@ -43,7 +44,7 @@ OUTSTANDING_CAPITAL_CALL_STATUSES = (
     CapitalCallStatus.partially_paid,
 )
 
-_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 
 class DashboardRepository:
@@ -55,9 +56,9 @@ class DashboardRepository:
         return DashboardOverviewResponse(
             funds_active=0,
             investors_total=0,
-            commitments_total_amount=Decimal("0"),
+            commitments_by_currency=[],
             capital_calls_outstanding=0,
-            distributions_ytd_amount=Decimal("0"),
+            distributions_ytd_by_currency=[],
             unread_notifications_count=0,
             open_tasks_count=0,
             recent_funds=[],
@@ -75,24 +76,18 @@ class DashboardRepository:
         instead of raising 400 when the user has zero memberships and didn't pass
         a header.
         """
+        if user.is_superadmin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Superadmins must use /superadmin endpoints",
+            )
         if header_org_id is not None:
             membership = self._memberships.get(user.id, header_org_id)  # type: ignore[invalid-argument-type]
             if membership is not None:
                 return membership
-            if user.is_superadmin:
-                return UserOrganizationMembership(
-                    user_id=user.id,
-                    organization_id=header_org_id,
-                    role=UserRole.superadmin,
-                )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not a member of this organization",
-            )
-        if user.is_superadmin:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="X-Organization-Id required",
             )
         memberships = self._memberships.list_for_user(user.id)  # type: ignore[invalid-argument-type]
         if len(memberships) == 1:
@@ -166,8 +161,9 @@ class DashboardRepository:
         )
 
         commitments_q = db.query(
-            func.coalesce(func.sum(Commitment.committed_amount), 0)
-        )
+            Fund.currency_code,
+            func.coalesce(func.sum(Commitment.committed_amount), 0),
+        ).join(Fund, Fund.id == Commitment.fund_id)
         if membership.role in _ORG_VISIBLE_ROLES:
             commitments_q = self._scope_by_fund(
                 commitments_q, Commitment.fund_id, fund_filter
@@ -176,7 +172,15 @@ class DashboardRepository:
             commitments_q = self._scope_by_investor(
                 commitments_q, Commitment.investor_id, investor_filter
             )
-        commitments_total_amount = commitments_q.scalar()
+        commitment_rows = (
+            commitments_q.group_by(Fund.currency_code)
+            .order_by(Fund.currency_code)
+            .all()
+        )
+        commitments_by_currency = [
+            CurrencyTotal(currency_code=currency, amount=Decimal(str(amount)))
+            for currency, amount in commitment_rows
+        ]
 
         # LPs get figures for their own allocations (calls that include one of
         # their items; distribution items on their commitments) rather than
@@ -200,8 +204,12 @@ class DashboardRepository:
 
         year_start = date(date.today().year, 1, 1)
         distributions_q = (
-            db.query(func.coalesce(func.sum(DistributionItem.amount_paid), 0))
+            db.query(
+                Fund.currency_code,
+                func.coalesce(func.sum(DistributionItem.amount_paid), 0),
+            )
             .join(Distribution, Distribution.id == DistributionItem.distribution_id)
+            .join(Fund, Fund.id == Distribution.fund_id)
             .filter(DistributionItem.paid_at >= year_start)
         )
         if membership.role in _ORG_VISIBLE_ROLES:
@@ -212,7 +220,15 @@ class DashboardRepository:
             distributions_q = distributions_q.join(
                 Commitment, Commitment.id == DistributionItem.commitment_id
             ).filter(Commitment.investor_id.in_(investor_filter))
-        distributions_ytd_amount = distributions_q.scalar()
+        distribution_rows = (
+            distributions_q.group_by(Fund.currency_code)
+            .order_by(Fund.currency_code)
+            .all()
+        )
+        distributions_ytd_by_currency = [
+            CurrencyTotal(currency_code=currency, amount=Decimal(str(amount)))
+            for currency, amount in distribution_rows
+        ]
 
         fund_agg_subq = (
             db.query(
@@ -321,9 +337,9 @@ class DashboardRepository:
         return DashboardOverviewResponse(
             funds_active=funds_active,
             investors_total=investors_total,
-            commitments_total_amount=Decimal(str(commitments_total_amount)),
+            commitments_by_currency=commitments_by_currency,
             capital_calls_outstanding=capital_calls_outstanding,
-            distributions_ytd_amount=Decimal(str(distributions_ytd_amount)),
+            distributions_ytd_by_currency=distributions_ytd_by_currency,
             unread_notifications_count=unread_notifications_count,
             open_tasks_count=open_tasks_count,
             recent_funds=recent_funds,

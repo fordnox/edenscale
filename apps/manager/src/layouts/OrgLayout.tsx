@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react"
+import { useEffect } from "react"
 import { Link, Outlet, useParams } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
@@ -10,7 +10,6 @@ import { CommandPalette } from "@/components/layout/CommandPalette"
 import { Topbar, type TopbarOrganization } from "@/components/layout/Topbar"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useCommandPalette } from "@/hooks/useCommandPalette"
-import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { usePendingInvitations } from "@edenscale/shared/hooks/usePendingInvitations"
 import { RESERVED_ORG_SLUGS } from "@/lib/managerRoutes"
 import { setLastVisitedOrgSlug } from "@edenscale/shared/active-org"
@@ -74,7 +73,6 @@ export default function OrgLayout() {
   const {
     memberships,
     isLoading,
-    isSuperadmin,
     activeOrganizationId,
     setActiveOrganizationId,
   } = useActiveOrganization()
@@ -85,28 +83,10 @@ export default function OrgLayout() {
     ? (memberships.find((m) => m.organization.slug === orgSlug) ?? null)
     : null
 
-  // A superadmin can act on any org even without a tenant membership row (the
-  // backend synthesizes a transient superadmin membership for the header).
-  // Resolve the slug to an org id via the superadmin org list so we can set
-  // the active-org header; only needed when no real membership matched.
-  const needsSuperadminResolve =
-    isResolvableSlug && !membership && isSuperadmin
-  const superadminOrgsQuery = useApiQuery("/superadmin/organizations", undefined, {
-    enabled: needsSuperadminResolve,
-  })
-  const superadminOrg = useMemo(
-    () =>
-      needsSuperadminResolve
-        ? (superadminOrgsQuery.data?.find((o) => o.slug === orgSlug) ?? null)
-        : null,
-    [needsSuperadminResolve, superadminOrgsQuery.data, orgSlug],
-  )
-
-  const resolvedOrgId = membership?.organization_id ?? superadminOrg?.id ?? null
-  const resolvedSlug = membership?.organization.slug ?? superadminOrg?.slug ?? null
-  const resolvedName = membership?.organization.name ?? superadminOrg?.name ?? null
-  const role: UserRole | null =
-    membership?.role ?? (isSuperadmin ? "superadmin" : null)
+  const resolvedOrgId = membership?.organization_id ?? null
+  const resolvedSlug = membership?.organization.slug ?? null
+  const resolvedName = membership?.organization.name ?? null
+  const role: UserRole | null = membership?.role ?? null
 
   useEffect(() => {
     if (!resolvedOrgId || !resolvedSlug) return
@@ -116,7 +96,7 @@ export default function OrgLayout() {
     setLastVisitedOrgSlug(resolvedSlug)
   }, [resolvedOrgId, resolvedSlug, activeOrganizationId, setActiveOrganizationId])
 
-  if (isLoading || (needsSuperadminResolve && superadminOrgsQuery.isLoading)) {
+  if (isLoading) {
     return <LoadingState />
   }
 

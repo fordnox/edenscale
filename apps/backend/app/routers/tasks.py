@@ -16,7 +16,7 @@ from app.services.notifications import notify_task_assigned
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
-_ORG_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+_ORG_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 
 def _load_fund(db: Session, fund_id: uuid.UUID) -> Fund | None:
@@ -91,9 +91,7 @@ async def create_task(
     data: TaskCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     if data.fund_id is not None:

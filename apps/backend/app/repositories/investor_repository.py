@@ -12,7 +12,7 @@ from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.lp_scope import lp_visible_investor_ids
 from app.schemas.investor import InvestorCreate, InvestorUpdate
 
-_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 
 class InvestorRepository:

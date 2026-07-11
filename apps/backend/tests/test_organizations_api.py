@@ -67,8 +67,8 @@ def _seed_org(name: str = "NewTaven Capital", *, is_demo: bool = False) -> int:
         db.close()
 
 
-class TestCreateOrganization:
-    def test_superadmin_can_create_and_read(self, client, override_user):
+class TestLegacyOrganizationMutationsRemoved:
+    def test_superadmin_must_use_superadmin_create_route(self, client, override_user):
         _seed_user("hanko-super", UserRole.superadmin, email="super@example.com")
         override_user("hanko-super")
 
@@ -80,16 +80,7 @@ class TestCreateOrganization:
                 "legal_name": "Adminco LLC",
             },
         )
-        assert create_response.status_code == 201
-        created = create_response.json()
-        assert created["name"] == "Adminco"
-        assert created["type"] == "fund_manager_firm"
-        assert created["is_active"] is True
-        assert created["slug"] == "adminco"
-
-        get_response = client.get(f"/organizations/{created['id']}")
-        assert get_response.status_code == 200
-        assert get_response.json()["id"] == created["id"]
+        assert create_response.status_code == 405
 
     def test_admin_cannot_create(self, client, override_user):
         _seed_user("hanko-admin", UserRole.admin, email="admin@example.com")
@@ -99,7 +90,7 @@ class TestCreateOrganization:
             "/organizations",
             json={"type": "fund_manager_firm", "name": "Adminco"},
         )
-        assert response.status_code == 403
+        assert response.status_code == 405
 
     def test_lp_cannot_create(self, client, override_user):
         _seed_user("hanko-lp", UserRole.lp, email="lp@example.com")
@@ -109,7 +100,7 @@ class TestCreateOrganization:
             "/organizations",
             json={"type": "investor_firm", "name": "Lpco"},
         )
-        assert response.status_code == 403
+        assert response.status_code == 405
 
 
 class TestSelfServeCreateOrganization:
@@ -228,9 +219,7 @@ class TestListAndReadOrganization:
         override_user("hanko-fm")
 
         list_response = client.get("/organizations")
-        assert list_response.status_code == 200
-        ids = [row["id"] for row in list_response.json()]
-        assert org_id in ids
+        assert list_response.status_code == 405
 
         get_response = client.get(f"/organizations/{org_id}")
         assert get_response.status_code == 200
@@ -249,7 +238,7 @@ class TestDeleteOrganization:
         override_user("hanko-fm")
 
         response = client.delete(f"/organizations/{org_id}")
-        assert response.status_code == 403
+        assert response.status_code == 405
 
     def test_admin_cannot_delete(self, client, override_user):
         org_id = _seed_org()
@@ -257,13 +246,12 @@ class TestDeleteOrganization:
         override_user("hanko-admin")
 
         response = client.delete(f"/organizations/{org_id}")
-        assert response.status_code == 403
+        assert response.status_code == 405
 
-    def test_superadmin_can_delete_soft(self, client, override_user):
+    def test_superadmin_must_use_superadmin_disable_route(self, client, override_user):
         org_id = _seed_org()
         _seed_user("hanko-super", UserRole.superadmin, email="super@example.com")
         override_user("hanko-super")
 
         response = client.delete(f"/organizations/{org_id}")
-        assert response.status_code == 200
-        assert response.json()["is_active"] is False
+        assert response.status_code == 405

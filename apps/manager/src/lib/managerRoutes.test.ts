@@ -49,9 +49,6 @@ describe("fundSlugFromPath", () => {
   })
 
   it("returns undefined for reserved second segments", () => {
-    expect(
-      fundSlugFromPath("/manager/superadmin/organizations"),
-    ).toBeUndefined()
     expect(fundSlugFromPath("/manager/invitations/accept")).toBeUndefined()
   })
 

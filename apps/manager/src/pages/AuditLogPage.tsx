@@ -78,7 +78,7 @@ const EMPTY_FILTERS: AuditFilters = {
 
 export default function AuditLogPage() {
   return (
-    <RequireRole allowed={["admin", "fund_manager", "lp", "superadmin"]}>
+    <RequireRole allowed={["admin", "fund_manager", "lp"]}>
       <AuditLogContent />
     </RequireRole>
   )

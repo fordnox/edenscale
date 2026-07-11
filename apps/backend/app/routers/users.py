@@ -69,9 +69,7 @@ async def list_users(
     include_inactive: bool = False,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     """List the active organization's members.
@@ -102,9 +100,7 @@ async def update_user(
     data: UserUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     repo = UserRepository(db)
@@ -114,8 +110,7 @@ async def update_user(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     if (
-        membership.role is not UserRole.superadmin
-        and UserOrganizationMembershipRepository(db).get(
+        UserOrganizationMembershipRepository(db).get(
             user_id,
             membership.organization_id,  # type: ignore[invalid-argument-type]
         )
@@ -134,7 +129,7 @@ async def update_user_role(
     data: UserRoleUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(UserRole.admin, UserRole.superadmin)
+        require_membership_roles(UserRole.admin)
     ),
 ):
     """Change a member's role within the caller's active organization.

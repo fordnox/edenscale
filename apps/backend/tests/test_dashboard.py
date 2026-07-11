@@ -9,13 +9,31 @@ from fastapi.testclient import TestClient
 from app.core.database import Base, SessionLocal, engine
 from app.core.slugs import slugify
 from app.main import app
-from app.models import (CapitalCall, CapitalCallItem, CapitalCallStatus, Commitment,
-                        CommitmentStatus, Communication, CommunicationRecipient,
-                        CommunicationType, Distribution, DistributionItem,
-                        DistributionStatus, Fund, FundStatus, Investor,
-                        InvestorContact, Notification, NotificationStatus,
-                        Organization, OrganizationType, Task, TaskStatus, User,
-                        UserRole)
+from app.models import (
+    CapitalCall,
+    CapitalCallItem,
+    CapitalCallStatus,
+    Commitment,
+    CommitmentStatus,
+    Communication,
+    CommunicationRecipient,
+    CommunicationType,
+    Distribution,
+    DistributionItem,
+    DistributionStatus,
+    Fund,
+    FundStatus,
+    Investor,
+    InvestorContact,
+    Notification,
+    NotificationStatus,
+    Organization,
+    OrganizationType,
+    Task,
+    TaskStatus,
+    User,
+    UserRole,
+)
 from app.models.user_organization_membership import UserOrganizationMembership
 
 
@@ -41,7 +59,9 @@ def _create_org_user(
     db = SessionLocal()
     try:
         org = Organization(
-            name=org_name, slug=slugify(org_name), type=OrganizationType.fund_manager_firm
+            name=org_name,
+            slug=slugify(org_name),
+            type=OrganizationType.fund_manager_firm,
         )
         db.add(org)
         db.flush()
@@ -125,9 +145,9 @@ class TestDashboardOverview:
         data = response.json()
         assert data["funds_active"] == 0
         assert data["investors_total"] == 0
-        assert Decimal(data["commitments_total_amount"]) == Decimal("0")
+        assert data["commitments_by_currency"] == []
         assert data["capital_calls_outstanding"] == 0
-        assert Decimal(data["distributions_ytd_amount"]) == Decimal("0")
+        assert data["distributions_ytd_by_currency"] == []
         assert data["unread_notifications_count"] == 0
         assert data["open_tasks_count"] == 0
         assert data["recent_funds"] == []
@@ -154,6 +174,96 @@ class TestDashboardOverview:
         data = response.json()
         assert data["funds_active"] == 0
         assert data["recent_funds"] == []
+
+    def test_financial_totals_are_grouped_by_fund_currency(self, client, override_user):
+        org_id, _ = _create_org_user("hanko-currencies")
+        db = SessionLocal()
+        try:
+            usd_fund = Fund(
+                organization_id=org_id,
+                name="Dollar Fund",
+                slug="dollar-fund",
+                currency_code="USD",
+                status=FundStatus.active,
+            )
+            eur_fund = Fund(
+                organization_id=org_id,
+                name="Euro Fund",
+                slug="euro-fund",
+                currency_code="EUR",
+                status=FundStatus.active,
+            )
+            investor = Investor(organization_id=org_id, name="Multi Currency LP")
+            db.add_all([usd_fund, eur_fund, investor])
+            db.flush()
+
+            usd_commitment = Commitment(
+                fund_id=usd_fund.id,
+                investor_id=investor.id,
+                committed_amount=Decimal("100.00"),
+                commitment_date=date.today(),
+                status=CommitmentStatus.approved,
+            )
+            eur_commitment = Commitment(
+                fund_id=eur_fund.id,
+                investor_id=investor.id,
+                committed_amount=Decimal("200.00"),
+                commitment_date=date.today(),
+                status=CommitmentStatus.approved,
+            )
+            db.add_all([usd_commitment, eur_commitment])
+            db.flush()
+
+            usd_distribution = Distribution(
+                fund_id=usd_fund.id,
+                title="USD distribution",
+                distribution_date=date.today(),
+                amount=Decimal("10.00"),
+                status=DistributionStatus.paid,
+            )
+            eur_distribution = Distribution(
+                fund_id=eur_fund.id,
+                title="EUR distribution",
+                distribution_date=date.today(),
+                amount=Decimal("20.00"),
+                status=DistributionStatus.paid,
+            )
+            db.add_all([usd_distribution, eur_distribution])
+            db.flush()
+            db.add_all(
+                [
+                    DistributionItem(
+                        distribution_id=usd_distribution.id,
+                        commitment_id=usd_commitment.id,
+                        amount_due=Decimal("10.00"),
+                        amount_paid=Decimal("10.00"),
+                        paid_at=datetime.now(timezone.utc),
+                    ),
+                    DistributionItem(
+                        distribution_id=eur_distribution.id,
+                        commitment_id=eur_commitment.id,
+                        amount_due=Decimal("20.00"),
+                        amount_paid=Decimal("20.00"),
+                        paid_at=datetime.now(timezone.utc),
+                    ),
+                ]
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        override_user("hanko-currencies")
+        response = client.get("/dashboard/overview")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["commitments_by_currency"] == [
+            {"currency_code": "EUR", "amount": "200.00"},
+            {"currency_code": "USD", "amount": "100.00"},
+        ]
+        assert data["distributions_ytd_by_currency"] == [
+            {"currency_code": "EUR", "amount": "20.00"},
+            {"currency_code": "USD", "amount": "10.00"},
+        ]
 
     def test_aggregates_filtered_to_user_organization(self, client, override_user):
         org_id, _ = _create_org_user("hanko-1")
@@ -290,9 +400,13 @@ class TestDashboardOverview:
 
         assert data["funds_active"] == 1
         assert data["investors_total"] == 1
-        assert Decimal(data["commitments_total_amount"]) == Decimal("1000000.00")
+        assert data["commitments_by_currency"] == [
+            {"currency_code": "USD", "amount": "1000000.00"}
+        ]
         assert data["capital_calls_outstanding"] == 1
-        assert Decimal(data["distributions_ytd_amount"]) == Decimal("75000.00")
+        assert data["distributions_ytd_by_currency"] == [
+            {"currency_code": "USD", "amount": "75000.00"}
+        ]
 
         assert len(data["recent_funds"]) == 2
         fund_names = {f["name"] for f in data["recent_funds"]}
@@ -378,7 +492,9 @@ class TestDashboardOverview:
         data_a = response_a.json()
         assert data_a["funds_active"] == 1
         assert {f["name"] for f in data_a["recent_funds"]} == {"Fund A"}
-        assert Decimal(data_a["commitments_total_amount"]) == Decimal("400000.00")
+        assert data_a["commitments_by_currency"] == [
+            {"currency_code": "USD", "amount": "400000.00"}
+        ]
 
         response_b = client.get(
             "/dashboard/overview", headers={"X-Organization-Id": str(org_b)}
@@ -387,7 +503,9 @@ class TestDashboardOverview:
         data_b = response_b.json()
         assert data_b["funds_active"] == 1
         assert {f["name"] for f in data_b["recent_funds"]} == {"Fund B"}
-        assert Decimal(data_b["commitments_total_amount"]) == Decimal("600000.00")
+        assert data_b["commitments_by_currency"] == [
+            {"currency_code": "USD", "amount": "600000.00"}
+        ]
 
     def test_lp_sees_only_their_commitments_and_investors(self, client, override_user):
         org_id, _ = _create_org_user("hanko-mgr")
@@ -523,10 +641,14 @@ class TestDashboardOverview:
 
         assert data["funds_active"] == 1
         assert data["investors_total"] == 1
-        assert Decimal(data["commitments_total_amount"]) == Decimal("250000.00")
+        assert data["commitments_by_currency"] == [
+            {"currency_code": "USD", "amount": "250000.00"}
+        ]
         assert data["capital_calls_outstanding"] == 1
         # Their own receipts only — not the fund-wide 1M.
-        assert Decimal(data["distributions_ytd_amount"]) == Decimal("10000.00")
+        assert data["distributions_ytd_by_currency"] == [
+            {"currency_code": "USD", "amount": "10000.00"}
+        ]
 
         fund_names = {f["name"] for f in data["recent_funds"]}
         assert fund_names == {"Visible Fund"}

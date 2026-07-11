@@ -29,7 +29,7 @@ async def list_audit_logs(
 ):
     """List audit events visible to the caller's active membership.
 
-    Admins/fund managers/superadmins see every event in the org; everyone
+    Admins and fund managers see every event in the org; everyone
     else only sees events they caused themselves.
     """
     repo = AuditLogRepository(db)

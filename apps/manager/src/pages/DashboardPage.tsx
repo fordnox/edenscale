@@ -37,6 +37,9 @@ import {
   formatRelativeDays,
   titleCase,
 } from "@edenscale/shared/format"
+import type { components } from "@edenscale/api/schema"
+
+type CurrencyTotal = components["schemas"]["CurrencyTotal"]
 
 const TODAY = new Date()
 
@@ -46,17 +49,25 @@ function parseDecimal(value: string | null | undefined) {
   return Number.isFinite(n) ? n : 0
 }
 
+function formatCurrencyTotals(totals: CurrencyTotal[]) {
+  if (totals.length === 0) return "—"
+  return totals
+    .map(({ amount, currency_code }) =>
+      formatCurrency(parseDecimal(amount), currency_code, { compact: true }),
+    )
+    .join(" · ")
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const { activeMembership, memberships, isSuperadmin } = useActiveOrganization()
-  const isLp = !isSuperadmin && activeMembership?.role === "lp"
+  const { activeMembership, memberships } = useActiveOrganization()
+  const isLp = activeMembership?.role === "lp"
   const canWriteLetters =
-    isSuperadmin ||
     activeMembership?.role === "admin" ||
     activeMembership?.role === "fund_manager"
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["dashboard", "overview"],
+    queryKey: ["/dashboard"],
     queryFn: async () => {
       const { data, error } = await api.GET("/dashboard/overview")
       if (error) throw error
@@ -65,12 +76,15 @@ export default function DashboardPage() {
   })
 
   const overview = data
-  const totalCommitted = parseDecimal(overview?.commitments_total_amount)
-  const distributionsYtd = parseDecimal(overview?.distributions_ytd_amount)
+  const commitmentsByCurrency = overview?.commitments_by_currency ?? []
+  const distributionsYtdByCurrency =
+    overview?.distributions_ytd_by_currency ?? []
   const activeOrgSlug = activeMembership?.organization.slug ?? ""
   const hasFunds = (overview?.funds_active ?? 0) > 0
   const hasInvestors = (overview?.investors_total ?? 0) > 0
-  const hasCommitments = totalCommitted > 0
+  const hasCommitments = commitmentsByCurrency.some(
+    ({ amount }) => parseDecimal(amount) > 0,
+  )
   const hasCapitalCalls =
     (overview?.capital_calls_outstanding ?? 0) > 0 ||
     (overview?.upcoming_capital_calls.length ?? 0) > 0
@@ -215,7 +229,7 @@ export default function DashboardPage() {
                 <CardSection className="md:border-r border-b md:border-b-0 border-[color:var(--border-hairline)]">
                   <Stat
                     label={isLp ? "Your commitment" : "Total committed"}
-                    value={formatCurrency(totalCommitted, "USD", { compact: true })}
+                    value={formatCurrencyTotals(commitmentsByCurrency)}
                     caption={
                       isLp
                         ? "Across your commitments"
@@ -237,7 +251,7 @@ export default function DashboardPage() {
                     label={
                       isLp ? "Distributions received YTD" : "Distributions YTD"
                     }
-                    value={formatCurrency(distributionsYtd, "USD", { compact: true })}
+                    value={formatCurrencyTotals(distributionsYtdByCurrency)}
                     caption={`Year ${TODAY.getFullYear()}`}
                   />
                 </CardSection>

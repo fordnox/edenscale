@@ -1,19 +1,18 @@
-"""Invitation routes for org admins (and superadmins) plus the accept flow.
+"""Invitation routes for organization staff plus the accept flow.
 
 Mounted under ``/invitations`` (see ``app.main``) behind
 ``Depends(get_current_user)``. Per-route dependencies handle membership /
-superadmin / signed-in checks.
+membership / signed-in checks.
 
 Authorization model:
 
 * ``POST /``, ``GET /``, ``POST /{id}/revoke``, ``POST /{id}/resend`` —
-  caller must be acting through an admin, fund_manager, or superadmin
+  caller must be acting through an admin or fund_manager
   membership (the active membership is resolved from ``X-Organization-Id``
   via ``get_active_membership``). Fund managers are scoped to limited-partner
   invitations only — they may create/list/revoke/resend invitations whose
   role is ``lp`` but never invitations that would grant manager/admin access.
-  Non-superadmins additionally must be acting on their own organization;
-  superadmins may act on any.
+  The caller must be acting on their own organization.
 * ``POST /accept`` and ``GET /pending-for-me`` — any authenticated user
   resolved through ``get_current_user_record``. The accept flow validates
   that the invitation email matches the signed-in user.
@@ -30,6 +29,7 @@ from app.core.database import get_db
 from app.core.rbac import (
     get_current_user_record,
     require_membership_roles,
+    require_tenant_user,
 )
 from app.models.enums import InvitationStatus, UserRole
 from app.models.user import User
@@ -56,15 +56,15 @@ from app.services.notifications import (
     notify_welcome,
 )
 
-router = APIRouter(dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    dependencies=[Depends(get_current_user), Depends(require_tenant_user)]
+)
 
 
 def _ensure_can_act_on_org(
     membership: UserOrganizationMembership, organization_id: uuid.UUID
 ) -> None:
-    """Refuse cross-org actions for non-superadmin callers."""
-    if membership.role is UserRole.superadmin:
-        return
+    """Refuse cross-organization actions."""
     if membership.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -75,8 +75,8 @@ def _ensure_can_act_on_org(
 def _ensure_can_manage_invitation_role(
     membership: UserOrganizationMembership, invited_role: UserRole
 ) -> None:
-    """Fund managers may only act on limited-partner invitations. Admins and
-    superadmins can manage any (non-superadmin) role. Keeps a fund manager from
+    """Fund managers may only act on limited-partner invitations. Admins can
+    manage any non-superadmin role. Keeps a fund manager from
     minting new managers/admins while still letting them onboard their LPs."""
     if membership.role is UserRole.fund_manager and invited_role is not UserRole.lp:
         raise HTTPException(
@@ -86,11 +86,6 @@ def _ensure_can_manage_invitation_role(
 
 
 def _inviter_user_id(membership: UserOrganizationMembership) -> uuid.UUID | None:
-    # Synthesized superadmin memberships have no row id; the FK on the
-    # invitation is nullable, so record None and rely on `invited_by_user_id`
-    # for the persisted-membership case.
-    if membership.id is None:
-        return None
     return membership.user_id  # type: ignore[invalid-return-type]
 
 
@@ -103,9 +98,7 @@ async def create_invitation(
     data: InvitationCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     _ensure_can_act_on_org(membership, data.organization_id)
@@ -137,9 +130,7 @@ async def list_invitations(
     status_filter: InvitationStatus | None = None,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     repo = OrganizationInvitationRepository(db)
@@ -250,7 +241,7 @@ async def accept_invitation(
     return InvitationAcceptResponse(
         organization_id=invitation.organization_id,  # type: ignore[invalid-argument-type]
         role=invitation.role,  # type: ignore[invalid-argument-type]
-        organization=invitation.organization,  # type: ignore[invalid-argument-type]
+        organization=invitation.organization,
     )
 
 
@@ -259,9 +250,7 @@ async def revoke_invitation(
     invitation_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     repo = OrganizationInvitationRepository(db)
@@ -289,9 +278,7 @@ async def resend_invitation(
     invitation_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     repo = OrganizationInvitationRepository(db)

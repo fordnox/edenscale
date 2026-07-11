@@ -11,7 +11,7 @@ from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.lp_scope import lp_visible_investor_ids
 from app.schemas.fund_group import FundGroupCreate, FundGroupUpdate
 
-_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 
 class FundGroupRepository:

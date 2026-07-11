@@ -64,15 +64,13 @@ type OrganizationType = components["schemas"]["OrganizationType"]
 type InvitationListItem = components["schemas"]["InvitationListItem"]
 type InvitationStatus = components["schemas"]["InvitationStatus"]
 
-const ROLE_LABELS: Record<UserRole, string> = {
-  superadmin: "Superadmin",
+const ROLE_LABELS: Partial<Record<UserRole, string>> = {
   admin: "Administrator",
   fund_manager: "Fund manager",
   lp: "Limited partner",
 }
 
-const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  superadmin: "Platform-level access across all organizations.",
+const ROLE_DESCRIPTIONS: Partial<Record<UserRole, string>> = {
   admin: "Full access to organization settings, audit log, and all organization data.",
   fund_manager: "Manages funds, investors, capital activity, and team members.",
   lp: "Read-only access to your commitments, documents, and letters.",
@@ -127,7 +125,6 @@ function OrganizationSettingsContent() {
   const activeRole = activeMembership?.role
   const isAdmin = activeRole === "admin"
   const isFundManager = activeRole === "fund_manager"
-  const isSuperadmin = me?.is_superadmin === true
 
   const orgQuery = useApiQuery(
     "/organizations/{organization_id}",
@@ -683,14 +680,13 @@ function OrganizationSettingsContent() {
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         defaultOrganizationId={orgId}
-        isSuperadmin={isSuperadmin}
-        canInviteManagers={isAdmin || isSuperadmin}
+        canInviteManagers={isAdmin}
       />
     </>
   )
 }
 
-type InvitableRole = Exclude<UserRole, "superadmin">
+type InvitableRole = Extract<UserRole, "admin" | "fund_manager" | "lp">
 
 const INVITABLE_ROLES: readonly InvitableRole[] = [
   "admin",
@@ -702,8 +698,7 @@ interface InviteUserDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   defaultOrganizationId: string | null
-  isSuperadmin: boolean
-  // Admins/superadmins may invite any role; fund managers are limited to LPs
+  // Admins may invite any role; fund managers are limited to LPs
   // (the backend enforces the same cap).
   canInviteManagers: boolean
 }
@@ -712,7 +707,6 @@ function InviteUserDialog({
   open,
   onOpenChange,
   defaultOrganizationId,
-  isSuperadmin,
   canInviteManagers,
 }: InviteUserDialogProps) {
   const queryClient = useQueryClient()
@@ -724,22 +718,10 @@ function InviteUserDialog({
 
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<InvitableRole>(defaultRole)
-  const [organizationId, setOrganizationId] = useState<string>(
-    defaultOrganizationId ?? "",
-  )
-
-  useEffect(() => {
-    setOrganizationId(defaultOrganizationId ?? "")
-  }, [defaultOrganizationId])
-
   // Keep the selected role within what the caller is allowed to invite.
   useEffect(() => {
     if (!availableRoles.includes(role)) setRole(defaultRole)
   }, [availableRoles, role, defaultRole])
-
-  const orgsQuery = useApiQuery("/organizations", undefined, {
-    enabled: open && isSuperadmin,
-  })
 
   const createInvitation = useApiMutation("post", "/invitations", {
     onSuccess: (data) => {
@@ -755,7 +737,6 @@ function InviteUserDialog({
   function reset() {
     setEmail("")
     setRole(defaultRole)
-    setOrganizationId(defaultOrganizationId ?? "")
   }
 
   function handleOpenChange(next: boolean) {
@@ -772,9 +753,7 @@ function InviteUserDialog({
       return
     }
 
-    const orgIdValue = isSuperadmin
-      ? organizationId || null
-      : defaultOrganizationId
+    const orgIdValue = defaultOrganizationId
 
     if (orgIdValue === null) {
       toast.error("Choose an organization for this invitation")
@@ -848,29 +827,6 @@ function InviteUserDialog({
               </Select>
             )}
           </div>
-          {isSuperadmin && (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-org">Organization</Label>
-              <Select
-                value={organizationId}
-                onValueChange={setOrganizationId}
-              >
-                <SelectTrigger id="invite-org" className="w-full">
-                  <SelectValue placeholder="Choose an organization" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(orgsQuery.data ?? []).map((organization) => (
-                    <SelectItem
-                      key={organization.id}
-                      value={String(organization.id)}
-                    >
-                      {organization.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           <DialogFooter>
             <Button
               type="button"

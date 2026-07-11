@@ -6,9 +6,10 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import (
+    get_active_membership,
     get_current_user_record,
     require_membership_roles,
-    require_superadmin,
+    require_tenant_user,
 )
 from app.models.enums import OrganizationType, UserRole
 from app.models.user import User
@@ -25,7 +26,9 @@ from app.schemas.organization import (
 )
 from app.schemas.user_organization_membership import MembershipRead
 
-router = APIRouter(dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    dependencies=[Depends(get_current_user), Depends(require_tenant_user)]
+)
 
 
 @router.post(
@@ -107,22 +110,17 @@ async def join_demo_organization(
     )
 
 
-@router.get("", response_model=list[OrganizationRead])
-async def list_organizations(
-    skip: int = 0,
-    limit: int = 100,
-    include_inactive: bool = False,
-    db: Session = Depends(get_db),
-):
-    repo = OrganizationRepository(db)
-    return repo.list(skip=skip, limit=limit, include_inactive=include_inactive)
-
-
 @router.get("/{organization_id}", response_model=OrganizationRead)
 async def get_organization(
     organization_id: uuid.UUID,
     db: Session = Depends(get_db),
+    membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
+    if membership.organization_id != organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot view an organization outside your membership",
+        )
     repo = OrganizationRepository(db)
     organization = repo.get(organization_id)
     if organization is None:
@@ -130,20 +128,6 @@ async def get_organization(
             status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found"
         )
     return organization
-
-
-@router.post(
-    "",
-    response_model=OrganizationRead,
-    status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_superadmin)],
-)
-async def create_organization(
-    data: OrganizationCreate,
-    db: Session = Depends(get_db),
-):
-    repo = OrganizationRepository(db)
-    return repo.create(data)
 
 
 @router.patch(
@@ -172,30 +156,3 @@ async def update_organization(
             status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found"
         )
     return organization
-
-
-@router.delete(
-    "/{organization_id}",
-    response_model=OrganizationRead,
-    dependencies=[Depends(require_superadmin)],
-)
-async def delete_organization(
-    organization_id: uuid.UUID,
-    db: Session = Depends(get_db),
-):
-    repo = OrganizationRepository(db)
-    organization = repo.get(organization_id)
-    if organization is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found"
-        )
-    # Cascade: delete every membership for this org so re-enabling does not
-    # silently restore old access. Memberships have no `is_active` column,
-    # so hard-delete is the only "deactivate" available — distinct from
-    # PATCH /superadmin/organizations/{id}/disable, which preserves them.
-    UserOrganizationMembershipRepository(db).delete_all_for_organization(
-        organization_id
-    )
-    deactivated = repo.soft_delete(organization_id)
-    assert deactivated is not None
-    return deactivated

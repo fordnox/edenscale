@@ -53,29 +53,29 @@ export default function LoginPage() {
   return (
     <>
       <Helmet>
-        <title>{`Investor portal login | ${config.VITE_APP_TITLE}`}</title>
+        <title>{`Fund manager login | ${config.VITE_APP_TITLE}`}</title>
         <meta
           name="description"
-          content="Sign in to the NewTaven investor portal."
+          content="Sign in to the NewTaven fund manager workspace."
         />
         <link rel="canonical" href={`${config.VITE_APP_URL}/manager/login`} />
         <meta
           property="og:title"
-          content={`Investor portal login | ${config.VITE_APP_TITLE}`}
+          content={`Fund manager login | ${config.VITE_APP_TITLE}`}
         />
         <meta
           property="og:description"
-          content="Sign in to the NewTaven investor portal."
+          content="Sign in to the NewTaven fund manager workspace."
         />
         <meta property="og:url" content={`${config.VITE_APP_URL}/manager/login`} />
         <meta property="og:type" content="website" />
         <meta
           name="twitter:title"
-          content={`Investor portal login | ${config.VITE_APP_TITLE}`}
+          content={`Fund manager login | ${config.VITE_APP_TITLE}`}
         />
         <meta
           name="twitter:description"
-          content="Sign in to the NewTaven investor portal."
+          content="Sign in to the NewTaven fund manager workspace."
         />
       </Helmet>
 
@@ -94,21 +94,21 @@ export default function LoginPage() {
               </span>
             </div>
             <span className="es-eyebrow es-eyebrow-inverse">
-              Investor portal
+              Fund manager workspace
             </span>
           </div>
 
           <div className="flex flex-1 flex-col justify-between px-10 py-12">
             <div className="max-w-xl">
               <p className="es-eyebrow es-eyebrow-inverse mb-5">
-                Limited partner access
+                Fund operations
               </p>
               <h1 className="font-display text-[48px] font-medium leading-[1.02] text-parchment-50 text-balance xl:text-[60px]">
-                Your fund activity, documents, and letters in one secure place.
+                Run your funds, investors, and capital activity in one secure place.
               </h1>
               <p className="mt-6 max-w-md font-sans text-[16px] leading-[1.65] text-parchment-50/80">
-                Review commitments, capital calls, distributions, quarterly
-                letters, and shared documents from the NewTaven investor portal.
+                Manage commitments, capital calls, distributions, investor
+                communications, and shared documents.
               </p>
             </div>
 
@@ -135,16 +135,16 @@ export default function LoginPage() {
         <main className="flex min-h-svh items-center justify-center px-5 py-10 md:px-8">
           <div className="w-full max-w-[440px]">
             <div className="mb-8 lg:hidden">
-              <p className="es-eyebrow mb-4">Investor portal</p>
+              <p className="es-eyebrow mb-4">Fund manager workspace</p>
               <h1 className="font-display text-[42px] font-medium leading-[1.02] text-ink-900 text-balance">
-                Secure access for limited partners.
+                Secure access for fund teams.
               </h1>
             </div>
 
             <div className="mb-7 hidden lg:block">
-              <p className="es-eyebrow mb-4">Investor portal</p>
+              <p className="es-eyebrow mb-4">Fund manager workspace</p>
               <h2 className="font-display text-[44px] font-medium leading-[1.04] text-ink-900">
-                Secure access for limited partners.
+                Secure access for fund teams.
               </h2>
             </div>
 

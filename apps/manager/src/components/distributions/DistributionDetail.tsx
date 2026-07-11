@@ -34,9 +34,8 @@ interface DistributionDetailProps {
 
 export function DistributionDetail({ distributionId }: DistributionDetailProps) {
   const queryClient = useQueryClient()
-  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const { activeMembership } = useActiveOrganization()
   const canManage =
-    isSuperadmin ||
     activeMembership?.role === "admin" ||
     activeMembership?.role === "fund_manager"
 

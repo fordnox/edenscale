@@ -45,8 +45,7 @@ import type { components } from "@edenscale/api/schema"
 
 type UserRole = components["schemas"]["UserRole"]
 
-const ROLE_LABELS: Record<UserRole, string> = {
-  superadmin: "Superadmin",
+const ROLE_LABELS: Partial<Record<UserRole, string>> = {
   admin: "Admin",
   fund_manager: "Fund manager",
   lp: "LP",
@@ -97,13 +96,11 @@ function OrgCrumb({
   role: UserRole | null
 }) {
   const navigate = useNavigate()
-  const { memberships, activeMembership, isSuperadmin } =
-    useActiveOrganization()
+  const { memberships, activeMembership } = useActiveOrganization()
 
   // With an org open the menu is for *switching* (needs somewhere else to
   // go); without one it is for *selecting* (any membership qualifies).
-  const showMenu =
-    isSuperadmin || memberships.length > (organization ? 1 : 0)
+  const showMenu = memberships.length > (organization ? 1 : 0)
 
   if (!organization && !showMenu) return null
 
@@ -169,19 +166,6 @@ function OrgCrumb({
                     </DropdownMenuItem>
                   )
                 })}
-              </>
-            )}
-            {isSuperadmin && (
-              <>
-                {memberships.length > 0 && <DropdownMenuSeparator />}
-                <DropdownMenuItem
-                  // The superadmin console is a separate SPA — full document
-                  // navigation, not a client-side route change.
-                  onSelect={() => window.location.assign("/superadmin")}
-                  className="min-h-11 md:min-h-0 font-sans text-[13px] text-ink-900"
-                >
-                  <span>Manage all organizations →</span>
-                </DropdownMenuItem>
               </>
             )}
           </DropdownMenuContent>
@@ -349,8 +333,7 @@ function UserMenu() {
 }
 
 // Horizontal nav: every former sidebar item scoped to the current org (or the
-// open fund's sections). Cross-workspace entries — the account dashboard and
-// superadmin pages — are reachable via the logo and the org switcher instead.
+// open fund's sections). The account dashboard is reachable via the logo.
 function NavTabs({ orgSlug }: { orgSlug: string }) {
   const { items } = useNavItems()
   const orgRoot = orgPath(orgSlug)
