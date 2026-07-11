@@ -27,6 +27,7 @@ import FundOverviewPage from './pages/funds/FundOverviewPage'
 import FundCommitmentsPage from './pages/funds/FundCommitmentsPage'
 import FundCapitalCallsPage from './pages/funds/FundCapitalCallsPage'
 import FundDistributionsPage from './pages/funds/FundDistributionsPage'
+import FundDocumentsPage from './pages/funds/FundDocumentsPage'
 import FundLettersPage from './pages/funds/FundLettersPage'
 import FundSettingsPage from './pages/funds/FundSettingsPage'
 import LoginPage from './pages/LoginPage'
@@ -133,6 +134,7 @@ function App() {
               <Route path="commitments" element={<FundCommitmentsPage />} />
               <Route path="calls" element={<FundCapitalCallsPage />} />
               <Route path="distributions" element={<FundDistributionsPage />} />
+              <Route path="documents" element={<FundDocumentsPage />} />
               <Route path="letters" element={<FundLettersPage />} />
               <Route path="settings" element={<FundSettingsPage />} />
             </Route>

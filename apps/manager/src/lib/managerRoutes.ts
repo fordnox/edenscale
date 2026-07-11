@@ -52,6 +52,7 @@ export const FUND_SECTIONS = [
   "commitments",
   "calls",
   "distributions",
+  "documents",
   "letters",
   "settings",
 ] as const
