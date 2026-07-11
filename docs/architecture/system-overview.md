@@ -41,7 +41,7 @@ EdenScale is a two-service monorepo wired together through a generated OpenAPI c
 ```
 
 - **Frontend:** React + Vite + TypeScript, Tailwind CSS v4, React Router, TanStack Query, and Radix/shadcn-style primitives. Turborepo orchestrates `apps/manager`, `apps/investor`, `apps/web`, `apps/gateway`, `apps/emails`, and shared packages under `packages/`.
-- **Backend:** FastAPI on Python 3.12, SQLAlchemy ORM, Alembic migrations, `pydantic-settings` config. Single `FastAPI()` instance in `backend/app/main.py`; routers mounted under `/dashboard`, `/users`, `/funds`, `/investors`, `/commitments`, `/capital-calls`, `/distributions`, `/documents`, `/communications`, `/tasks`, `/notifications`, `/audit-logs`, `/organizations`.
+- **Backend:** FastAPI on Python 3.12, SQLAlchemy ORM, Alembic migrations, `pydantic-settings` config. Single `FastAPI()` instance in `backend/app/main.py`; tenant routers are mounted under `/dashboard`, `/users`, `/funds`, `/investors`, `/commitments`, `/capital-calls`, `/distributions`, `/documents`, `/communications`, `/tasks`, `/notifications`, `/audit-logs`, and `/organizations`; platform administration is isolated under `/superadmin`.
 - **Background jobs:** `arq` worker (`app.worker.WorkerSettings`) on a Redis queue named after `settings.APP_DOMAIN`. Enqueue via `app.tasks.enqueue_task` which opens and closes a fresh pool per call.
 - **Storage:** Documents go through a [`StoragePort`](../../backend/app/services/storage.py) abstraction; the shipped default is `LocalDevStorage` writing to `backend/dev_storage/`. See [[ADR-002-Storage-Port-Pattern]].
 
@@ -54,6 +54,8 @@ The OpenAPI schema is the single source of truth for the API surface. The dev lo
 3. Frontend code uses `openapi-fetch` against those generated types via `@edenscale/api`. There are no hand-written request/response types.
 
 A frontend type error after a backend change almost always means `make openapi` was skipped. See the README's pre-commit checklist (test, lint, openapi-sync).
+
+Dashboard monetary aggregates are returned as currency-grouped `{currency_code, amount}` collections. Neither the API nor a frontend may add amounts from different currencies or relabel a mixed-currency total as USD.
 
 ## Authentication and authorisation
 

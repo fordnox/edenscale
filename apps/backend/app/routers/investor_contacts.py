@@ -19,7 +19,7 @@ from app.schemas.investor_contact import (
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
-_ORG_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+_ORG_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 
 def _load_investor_or_404(db: Session, investor_id: uuid.UUID) -> Investor:
@@ -77,9 +77,7 @@ async def create_investor_contact(
     data: InvestorContactCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     investor = _load_investor_or_404(db, investor_id)
@@ -98,9 +96,7 @@ async def update_investor_contact(
     data: InvestorContactUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     investor = _load_investor_or_404(db, investor_id)
@@ -125,9 +121,7 @@ async def delete_investor_contact(
     contact_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     investor = _load_investor_or_404(db, investor_id)

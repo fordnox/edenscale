@@ -14,7 +14,7 @@ from app.repositories.lp_scope import lp_visible_investor_ids
 from app.schemas.document import DocumentCreate, DocumentUpdate
 from app.services.storage import get_storage, key_from_file_url
 
-_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 logger = logging.getLogger(__name__)
 

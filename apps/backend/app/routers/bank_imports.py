@@ -33,7 +33,7 @@ from app.services.storage import get_storage, key_from_file_url
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
-_MANAGE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+_MANAGE_ROLES = (UserRole.admin, UserRole.fund_manager)
 _MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # bank statements are text; 25 MB is ample
 
 

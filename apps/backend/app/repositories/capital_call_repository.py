@@ -15,7 +15,7 @@ from app.repositories.commitment_repository import CommitmentRepository
 from app.repositories.lp_scope import lp_visible_investor_ids
 from app.schemas.capital_call import CapitalCallCreate, CapitalCallUpdate
 
-_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 _SENDABLE_STATUSES = {CapitalCallStatus.draft, CapitalCallStatus.scheduled}
 _TERMINAL_STATUSES = {CapitalCallStatus.cancelled}

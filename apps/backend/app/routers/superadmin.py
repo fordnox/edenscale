@@ -28,7 +28,11 @@ from app.repositories.user_organization_membership_repository import (
     UserOrganizationMembershipRepository,
 )
 from app.repositories.user_repository import UserRepository
-from app.schemas.organization import OrganizationCreate, OrganizationRead
+from app.schemas.organization import (
+    OrganizationCreate,
+    OrganizationRead,
+    OrganizationUpdate,
+)
 from app.schemas.superadmin import (
     MembershipWithUserRead,
     SuperadminAdminAssignment,
@@ -87,6 +91,43 @@ async def list_all_organizations(
 
 
 @router.get(
+    "/organizations/{organization_id}",
+    response_model=OrganizationRead,
+    dependencies=[Depends(require_superadmin)],
+)
+async def get_organization(
+    organization_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> OrganizationRead:
+    organization = OrganizationRepository(db).get(organization_id)
+    if organization is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found",
+        )
+    return OrganizationRead.model_validate(organization)
+
+
+@router.patch(
+    "/organizations/{organization_id}",
+    response_model=OrganizationRead,
+    dependencies=[Depends(require_superadmin)],
+)
+async def update_organization(
+    organization_id: uuid.UUID,
+    data: OrganizationUpdate,
+    db: Session = Depends(get_db),
+) -> OrganizationRead:
+    organization = OrganizationRepository(db).update(organization_id, data)
+    if organization is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found",
+        )
+    return OrganizationRead.model_validate(organization)
+
+
+@router.get(
     "/users",
     response_model=list[UserRead],
     dependencies=[Depends(require_superadmin)],
@@ -130,7 +171,7 @@ async def send_welcome_email(
     await notify_welcome(db, user=user, organization=membership.organization)
     return SuperadminWelcomeEmailResponse(
         user_id=user.id,  # type: ignore[invalid-argument-type]
-        organization_id=membership.organization.id,  # type: ignore[invalid-argument-type]
+        organization_id=membership.organization.id,
         recipient_email=user.email,  # type: ignore[invalid-argument-type]
     )
 

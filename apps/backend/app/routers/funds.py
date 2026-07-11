@@ -178,9 +178,7 @@ async def create_fund(
     data: FundCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     payload = data.model_dump()
@@ -196,9 +194,7 @@ async def update_fund(
     data: FundUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     repo = FundRepository(db)
@@ -227,9 +223,7 @@ async def archive_fund(
     fund_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     repo = FundRepository(db)

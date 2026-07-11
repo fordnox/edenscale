@@ -50,6 +50,10 @@ async def create_fund(...): ...
 
 Routers under `/dashboard` and `/users` are gated by `Depends(get_current_user)` at the `include_router` level in `app/main.py` — individual routes don't re-declare auth. Stricter role gates are layered on per-route as needed.
 
+## Superadmin isolation
+
+Superadmin is a configuration-defined platform identity, not a tenant membership role. Platform operations live exclusively under `/superadmin/*` in `app/routers/superadmin.py` and use `require_superadmin`; they never use `X-Organization-Id` or synthesize tenant memberships. Conversely, `get_active_membership` rejects superadmins even if a matching persisted membership exists. The manager SPA contains no superadmin navigation or authorization branches.
+
 ## Two enforcement layers
 
 RBAC happens in **two** places, on purpose:
@@ -98,7 +102,7 @@ visible_fund_ids = (
 
 Authorisation is **enforced** on the backend; the frontend uses role only to hide UI a user can't act on. Two helpers:
 
-- **Manager nav/guards** (`apps/manager/src/hooks/useNavItems.ts`, `apps/manager/src/components/RequireRole.tsx`) — expose manager/admin/superadmin workflows and gate manager-only pages.
+- **Manager nav/guards** (`apps/manager/src/hooks/useNavItems.ts`, `apps/manager/src/components/RequireRole.tsx`) — expose admin/fund-manager workflows and gate manager-only pages.
 - **Investor nav** (`apps/investor/src/hooks/useNavItems.ts`) — exposes only LP-facing read-only sections. Organization-scoped investor URLs redirect non-LP memberships back to the manager app.
 
 Hiding nav items is a UX nicety; the API always re-checks. If you add a new role-gated page, gate it on **both** sides.

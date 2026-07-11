@@ -36,7 +36,7 @@ from app.services.storage import (
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
-_ORG_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+_ORG_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 
 def _generate_storage_key(file_name: str) -> str:
@@ -238,9 +238,7 @@ async def update_document(
     data: DocumentUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     repo = DocumentRepository(db)
@@ -264,9 +262,7 @@ async def delete_document(
     document_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     repo = DocumentRepository(db)

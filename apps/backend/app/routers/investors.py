@@ -95,9 +95,7 @@ async def create_investor(
     data: InvestorCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     payload = data.model_dump()
@@ -113,9 +111,7 @@ async def update_investor(
     data: InvestorUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     repo = InvestorRepository(db)
@@ -144,9 +140,7 @@ async def delete_investor(
     investor_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     repo = InvestorRepository(db)

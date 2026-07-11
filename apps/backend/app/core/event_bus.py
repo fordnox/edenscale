@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 # Roles that receive admin-facing (org-level) notifications. Mirrors the
 # manager-app role gate — LPs are excluded.
-_ADMIN_ROLES = (UserRole.superadmin, UserRole.admin, UserRole.fund_manager)
+_ADMIN_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 
 async def publish_admin_event(

@@ -98,9 +98,7 @@ async def create_communication(
     data: CommunicationCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     if data.fund_id is not None:
@@ -116,9 +114,7 @@ async def update_communication(
     data: CommunicationUpdate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     repo = CommunicationRepository(db)
@@ -146,9 +142,7 @@ async def send_communication(
     payload: CommunicationSendRequest | None = None,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     repo = CommunicationRepository(db)
@@ -221,7 +215,6 @@ async def mark_recipient_read(
     if membership.role not in (
         UserRole.admin,
         UserRole.fund_manager,
-        UserRole.superadmin,
     ):
         is_owner = recipient.user_id == membership.user_id
         is_contact_owner = False

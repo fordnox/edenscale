@@ -7,7 +7,7 @@ from app.models.audit_log import AuditLog
 from app.models.enums import UserRole
 from app.models.user_organization_membership import UserOrganizationMembership
 
-_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 
 class AuditLogRepository:
@@ -32,7 +32,7 @@ class AuditLogRepository:
     ) -> list[AuditLog]:
         """Audit entries visible to the active membership.
 
-        Admins/fund managers/superadmins see every event in the org; everyone
+        Admins and fund managers see every event in the org; everyone
         else only sees events they themselves caused — the `user_id` filter is
         forced to their own id rather than honoring an arbitrary request, so a
         non-privileged caller can't page through other users' activity.

@@ -5,7 +5,6 @@ export const RESERVED_ORG_SLUGS = new Set([
   "profile",
   "onboarding",
   "settings",
-  "superadmin",
   "invitations",
   "api",
   "funds",

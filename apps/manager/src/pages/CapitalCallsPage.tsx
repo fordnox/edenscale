@@ -52,9 +52,8 @@ function parseDecimal(value: string | null | undefined) {
 }
 
 export default function CapitalCallsPage() {
-  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const { activeMembership } = useActiveOrganization()
   const canManage =
-    isSuperadmin ||
     activeMembership?.role === "admin" ||
     activeMembership?.role === "fund_manager"
 

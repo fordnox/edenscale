@@ -194,24 +194,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/organizations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Organizations */
-        get: operations["list_organizations_organizations_get"];
-        put?: never;
-        /** Create Organization */
-        post: operations["create_organization_organizations_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/organizations/{organization_id}": {
         parameters: {
             query?: never;
@@ -223,8 +205,7 @@ export interface paths {
         get: operations["get_organization_organizations__organization_id__get"];
         put?: never;
         post?: never;
-        /** Delete Organization */
-        delete: operations["delete_organization_organizations__organization_id__delete"];
+        delete?: never;
         options?: never;
         head?: never;
         /** Update Organization */
@@ -247,6 +228,24 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/superadmin/organizations/{organization_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Organization */
+        get: operations["get_organization_superadmin_organizations__organization_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Organization */
+        patch: operations["update_organization_superadmin_organizations__organization_id__patch"];
         trace?: never;
     };
     "/superadmin/users": {
@@ -1655,7 +1654,7 @@ export interface paths {
          * List Audit Logs
          * @description List audit events visible to the caller's active membership.
          *
-         *     Admins/fund managers/superadmins see every event in the org; everyone
+         *     Admins and fund managers see every event in the org; everyone
          *     else only sees events they caused themselves.
          */
         get: operations["list_audit_logs_audit_logs_get"];
@@ -2252,18 +2251,25 @@ export interface components {
             /** Body */
             body?: string | null;
         };
+        /** CurrencyTotal */
+        CurrencyTotal: {
+            /** Currency Code */
+            currency_code: string;
+            /** Amount */
+            amount: string;
+        };
         /** DashboardOverviewResponse */
         DashboardOverviewResponse: {
             /** Funds Active */
             funds_active: number;
             /** Investors Total */
             investors_total: number;
-            /** Commitments Total Amount */
-            commitments_total_amount: string;
+            /** Commitments By Currency */
+            commitments_by_currency: components["schemas"]["CurrencyTotal"][];
             /** Capital Calls Outstanding */
             capital_calls_outstanding: number;
-            /** Distributions Ytd Amount */
-            distributions_ytd_amount: string;
+            /** Distributions Ytd By Currency */
+            distributions_ytd_by_currency: components["schemas"]["CurrencyTotal"][];
             /** Unread Notifications Count */
             unread_notifications_count: number;
             /** Open Tasks Count */
@@ -3266,20 +3272,6 @@ export interface components {
             memberships: components["schemas"]["MembershipRead"][];
             role: components["schemas"]["UserRole"];
         };
-        /** OrganizationCreate */
-        OrganizationCreate: {
-            type: components["schemas"]["OrganizationType"];
-            /** Name */
-            name: string;
-            /** Legal Name */
-            legal_name?: string | null;
-            /** Tax Id */
-            tax_id?: string | null;
-            /** Website */
-            website?: string | null;
-            /** Description */
-            description?: string | null;
-        };
         /**
          * OrganizationOnboardingCreate
          * @description Payload for self-serve onboarding: any signed-in user can found their
@@ -3863,107 +3855,12 @@ export interface operations {
             };
         };
     };
-    list_organizations_organizations_get: {
-        parameters: {
-            query?: {
-                skip?: number;
-                limit?: number;
-                include_inactive?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrganizationRead"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_organization_organizations_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["OrganizationCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrganizationRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_organization_organizations__organization_id__get: {
         parameters: {
             query?: never;
-            header?: never;
-            path: {
-                organization_id: string;
+            header?: {
+                "X-Organization-Id"?: string | null;
             };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrganizationRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_organization_organizations__organization_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
             path: {
                 organization_id: string;
             };
@@ -4068,6 +3965,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SuperadminOrganizationCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_organization_superadmin_organizations__organization_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_organization_superadmin_organizations__organization_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationRead"];
                 };
             };
             /** @description Validation Error */

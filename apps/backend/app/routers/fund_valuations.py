@@ -54,9 +54,7 @@ async def create_fund_valuation(
     data: FundValuationCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     """Record (or overwrite) the fund NAV for a given as-of date. Managers only."""
@@ -77,9 +75,7 @@ async def delete_fund_valuation(
     valuation_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
-        require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
     ),
 ):
     _load_viewable_fund(db, fund_id, membership)

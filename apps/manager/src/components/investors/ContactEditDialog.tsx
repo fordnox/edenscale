@@ -31,8 +31,7 @@ import type { components } from "@edenscale/api/schema"
 type InvestorContactRead = components["schemas"]["InvestorContactRead"]
 type UserRole = components["schemas"]["UserRole"]
 
-const ROLE_LABELS: Record<UserRole, string> = {
-  superadmin: "Superadmin",
+const ROLE_LABELS: Partial<Record<UserRole, string>> = {
   admin: "Admin",
   fund_manager: "Fund manager",
   lp: "LP",

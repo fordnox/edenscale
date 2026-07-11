@@ -10,7 +10,7 @@ from app.models.task import Task
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.schemas.task import TaskCreate, TaskUpdate
 
-_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 
 class TaskRepository:

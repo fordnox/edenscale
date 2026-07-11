@@ -48,9 +48,8 @@ function formatBytes(n: number | null | undefined) {
 }
 
 export default function DocumentsPage() {
-  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const { activeMembership } = useActiveOrganization()
   const canManage =
-    isSuperadmin ||
     activeMembership?.role === "admin" ||
     activeMembership?.role === "fund_manager"
 

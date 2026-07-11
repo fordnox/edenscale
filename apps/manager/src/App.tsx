@@ -35,7 +35,7 @@ import { RequireRole } from './components/RequireRole'
 // The manager app serves only the manager slice of an account. The same login
 // may also be an LP elsewhere, but those memberships and invitations are
 // invisible here — the investor app is a fully separate SPA with its own scope.
-const MANAGER_ROLES = ['admin', 'fund_manager', 'superadmin'] as const
+const MANAGER_ROLES = ['admin', 'fund_manager'] as const
 
 function ProtectedProviders() {
   return (
@@ -51,10 +51,10 @@ function ProtectedProviders() {
 // straight into an org's workspace once one is resolvable; otherwise shows
 // the "no organization yet" onboarding entry point.
 function AppRootRoute() {
-  const { memberships, isSuperadmin, isLoading } = useActiveOrganization()
+  const { memberships, isLoading } = useActiveOrganization()
   if (isLoading) return null
 
-  const hasOrgAccess = memberships.length > 0 || isSuperadmin
+  const hasOrgAccess = memberships.length > 0
   if (!hasOrgAccess) return <NoOrganizationHomePage />
 
   return <UserDashboardPage />

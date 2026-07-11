@@ -5,6 +5,7 @@ import { toast } from "sonner"
 const ACTIVE_ORG_ID_KEY = "newtaven.active_org_id"
 
 let unauthorizedOrganizationFallbackPath = "/"
+let includeActiveOrganization = true
 
 // Injected by the host app so this package doesn't need to depend on
 // @edenscale/auth (which itself depends on @edenscale/api — a hard import here
@@ -14,12 +15,14 @@ let sessionTokenProvider: () => string | null = () => null
 export function configureApiClient(options: {
   unauthorizedOrganizationFallbackPath?: string
   getSessionToken?: () => string | null
+  includeActiveOrganization?: boolean
 }): void {
   unauthorizedOrganizationFallbackPath =
     options.unauthorizedOrganizationFallbackPath ?? "/"
   if (options.getSessionToken) {
     sessionTokenProvider = options.getSessionToken
   }
+  includeActiveOrganization = options.includeActiveOrganization ?? true
 }
 
 function getActiveOrganizationId(): string | null {
@@ -36,9 +39,11 @@ const myMiddleware: Middleware = {
     if (token) {
       request.headers.set("Authorization", `Bearer ${token}`)
     }
-    const activeOrgId = getActiveOrganizationId()
-    if (activeOrgId !== null) {
-      request.headers.set("X-Organization-Id", String(activeOrgId))
+    if (includeActiveOrganization) {
+      const activeOrgId = getActiveOrganizationId()
+      if (activeOrgId !== null) {
+        request.headers.set("X-Organization-Id", String(activeOrgId))
+      }
     }
     return request
   },

@@ -14,6 +14,7 @@ import '@edenscale/ui/styles.css'
 configureApiClient({
   unauthorizedOrganizationFallbackPath: '/superadmin',
   getSessionToken,
+  includeActiveOrganization: false,
 })
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

@@ -66,10 +66,9 @@ function initialRowState(txn: BankTransactionRead): RowState {
 
 export default function ImportBankPaymentsPage() {
   const navigate = useNavigate()
-  const { activeMembership, activeOrganizationId, isSuperadmin } =
+  const { activeMembership, activeOrganizationId } =
     useActiveOrganization()
   const canManage =
-    isSuperadmin ||
     activeMembership?.role === "admin" ||
     activeMembership?.role === "fund_manager"
 

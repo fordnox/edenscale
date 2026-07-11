@@ -46,7 +46,9 @@ def db():
 
 
 def _seed_org(db, name: str = "NewTaven Capital") -> Organization:
-    org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+    org = Organization(
+        name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+    )
     db.add(org)
     db.commit()
     db.refresh(org)
@@ -87,9 +89,7 @@ def test_header_missing_with_single_membership_resolves(db):
     )
     membership = _seed_membership(db, user.id, org.id, UserRole.fund_manager)
 
-    resolved = get_active_membership(
-        x_organization_id=None, current_user=user, db=db
-    )
+    resolved = get_active_membership(x_organization_id=None, current_user=user, db=db)
 
     assert resolved.id == membership.id
     assert resolved.organization_id == org.id
@@ -123,15 +123,13 @@ def test_header_present_no_match_for_non_superadmin_returns_403(db):
     _seed_membership(db, user.id, org_a.id, UserRole.fund_manager)
 
     with pytest.raises(HTTPException) as excinfo:
-        get_active_membership(
-            x_organization_id=org_b.id, current_user=user, db=db
-        )
+        get_active_membership(x_organization_id=org_b.id, current_user=user, db=db)
 
     assert excinfo.value.status_code == 403
     assert "Not a member" in excinfo.value.detail
 
 
-def test_header_present_for_superadmin_synthesizes_membership(db):
+def test_header_present_for_superadmin_rejects_tenant_access(db):
     org = _seed_org(db, "Foreign Org")
     superadmin = _seed_user(
         db,
@@ -140,30 +138,14 @@ def test_header_present_for_superadmin_synthesizes_membership(db):
         subject_id="hanko-root",
     )
 
-    resolved = get_active_membership(
-        x_organization_id=org.id, current_user=superadmin, db=db
-    )
+    with pytest.raises(HTTPException) as excinfo:
+        get_active_membership(x_organization_id=org.id, current_user=superadmin, db=db)
 
-    assert resolved.user_id == superadmin.id
-    assert resolved.organization_id == org.id
-    assert resolved.role is UserRole.superadmin
-    # Synthesized — never persisted to the DB.
-    assert resolved.id is None
-    assert (
-        db.query(UserOrganizationMembership)
-        .filter(
-            UserOrganizationMembership.user_id == superadmin.id,
-            UserOrganizationMembership.organization_id == org.id,
-        )
-        .first()
-        is None
-    )
+    assert excinfo.value.status_code == 403
+    assert "/superadmin" in excinfo.value.detail
 
 
-def test_header_present_for_superadmin_with_real_membership_returns_real_row(db):
-    """When a superadmin happens to also have a real membership row for the
-    given org, the dep returns the persisted row rather than synthesizing —
-    so audit-relevant data (membership.id, role) reflects reality."""
+def test_header_present_for_superadmin_with_real_membership_still_rejects(db):
     org = _seed_org(db)
     superadmin = _seed_user(
         db,
@@ -171,17 +153,15 @@ def test_header_present_for_superadmin_with_real_membership_returns_real_row(db)
         email="root@example.com",
         subject_id="hanko-root",
     )
-    real = _seed_membership(db, superadmin.id, org.id, UserRole.admin)
+    _seed_membership(db, superadmin.id, org.id, UserRole.admin)
 
-    resolved = get_active_membership(
-        x_organization_id=org.id, current_user=superadmin, db=db
-    )
+    with pytest.raises(HTTPException) as excinfo:
+        get_active_membership(x_organization_id=org.id, current_user=superadmin, db=db)
 
-    assert resolved.id == real.id
-    assert resolved.role is UserRole.admin
+    assert excinfo.value.status_code == 403
 
 
-def test_header_missing_for_superadmin_returns_400(db):
+def test_header_missing_for_superadmin_returns_403(db):
     superadmin = _seed_user(
         db,
         UserRole.superadmin,
@@ -190,12 +170,10 @@ def test_header_missing_for_superadmin_returns_400(db):
     )
 
     with pytest.raises(HTTPException) as excinfo:
-        get_active_membership(
-            x_organization_id=None, current_user=superadmin, db=db
-        )
+        get_active_membership(x_organization_id=None, current_user=superadmin, db=db)
 
-    assert excinfo.value.status_code == 400
-    assert "X-Organization-Id" in excinfo.value.detail
+    assert excinfo.value.status_code == 403
+    assert "/superadmin" in excinfo.value.detail
 
 
 def test_header_missing_with_multiple_memberships_returns_400(db):
@@ -208,9 +186,7 @@ def test_header_missing_with_multiple_memberships_returns_400(db):
     _seed_membership(db, user.id, org_b.id, UserRole.admin)
 
     with pytest.raises(HTTPException) as excinfo:
-        get_active_membership(
-            x_organization_id=None, current_user=user, db=db
-        )
+        get_active_membership(x_organization_id=None, current_user=user, db=db)
 
     assert excinfo.value.status_code == 400
     assert "X-Organization-Id" in excinfo.value.detail
@@ -222,9 +198,7 @@ def test_header_missing_with_zero_memberships_returns_400(db):
     )
 
     with pytest.raises(HTTPException) as excinfo:
-        get_active_membership(
-            x_organization_id=None, current_user=user, db=db
-        )
+        get_active_membership(x_organization_id=None, current_user=user, db=db)
 
     assert excinfo.value.status_code == 400
 
@@ -256,16 +230,13 @@ class TestRequireMembershipRoles:
             dep(membership=membership)
         assert excinfo.value.status_code == 403
 
-    def test_synthesized_superadmin_membership_passes_when_listed(self, db):
-        """A superadmin acting through a synthesized membership has
-        ``role=superadmin``; routes that include ``superadmin`` in the
-        allow-list let them through."""
+    def test_superadmin_membership_is_not_a_manager_role(self, db):
         membership = UserOrganizationMembership(
             user_id=1,
             organization_id=1,
             role=UserRole.superadmin,
         )
-        dep = require_membership_roles(
-            UserRole.admin, UserRole.fund_manager, UserRole.superadmin
-        )
-        assert dep(membership=membership) is membership
+        dep = require_membership_roles(UserRole.admin, UserRole.fund_manager)
+        with pytest.raises(HTTPException) as excinfo:
+            dep(membership=membership)
+        assert excinfo.value.status_code == 403

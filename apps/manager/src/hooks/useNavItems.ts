@@ -47,7 +47,7 @@ export type NavEntry = NavItem | NavSection | NavDivider
 // Settings pages are for roles that can manage the workspace — mirrors the
 // canManage checks in OrgLayout/FundLayout.
 function canManageSettings(role: UserRole | null): boolean {
-  return role === "admin" || role === "fund_manager" || role === "superadmin"
+  return role === "admin" || role === "fund_manager"
 }
 
 function orgItems(orgSlug: string, role: UserRole | null): NavItem[] {
@@ -115,9 +115,7 @@ interface UseNavItemsResult {
   isLoading: boolean
 }
 
-/** Nav items for the organization-level workspace (/manager/:orgSlug/...).
- * Superadmin pages live in the separate /superadmin SPA, so there is no
- * superadmin section here. */
+/** Nav items for the organization-level workspace (/manager/:orgSlug/...). */
 export function useOrgNavItems(): UseNavItemsResult {
   const { activeMembership, isLoading } = useActiveOrganization()
   const params = useParams<{ orgSlug?: string }>()

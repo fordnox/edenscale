@@ -50,9 +50,8 @@ const TYPE_TONE: Record<
 }
 
 export default function LettersPage() {
-  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const { activeMembership } = useActiveOrganization()
   const canWriteLetters =
-    isSuperadmin ||
     activeMembership?.role === "admin" ||
     activeMembership?.role === "fund_manager"
 

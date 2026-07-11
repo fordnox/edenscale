@@ -45,12 +45,17 @@ class CommunicationSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class CurrencyTotal(BaseModel):
+    currency_code: str
+    amount: Decimal
+
+
 class DashboardOverviewResponse(BaseModel):
     funds_active: int
     investors_total: int
-    commitments_total_amount: Decimal
+    commitments_by_currency: list[CurrencyTotal]
     capital_calls_outstanding: int
-    distributions_ytd_amount: Decimal
+    distributions_ytd_by_currency: list[CurrencyTotal]
     unread_notifications_count: int
     open_tasks_count: int
     recent_funds: list[FundSummary]

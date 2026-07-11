@@ -73,6 +73,18 @@ def require_superadmin(
     return current_user
 
 
+def require_tenant_user(
+    current_user: User = Depends(get_current_user_record),
+) -> User:
+    """Reject platform administrators from tenant-only, non-membership flows."""
+    if current_user.is_superadmin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Superadmins must use /superadmin endpoints",
+        )
+    return current_user
+
+
 def get_active_membership(
     x_organization_id: uuid.UUID | None = Header(
         default=None, alias="X-Organization-Id"
@@ -82,45 +94,34 @@ def get_active_membership(
 ) -> UserOrganizationMembership:
     """Resolve the membership the caller is currently acting through.
 
+    Superadmins are intentionally rejected here: their complete API surface is
+    mounted under ``/superadmin`` and never impersonates a tenant membership.
+
     Resolution rules:
 
     1. If the `X-Organization-Id` header is present:
        - Return the matching `(user_id, organization_id)` membership row.
-       - If no such row exists and the user is `superadmin`, synthesize a
-         transient (un-persisted) membership with `role=superadmin` so the
-         superadmin can act on any org without an explicit row.
        - Otherwise raise 403 "Not a member of this organization".
     2. If the header is missing:
-       - If the user is `superadmin`, raise 400 — superadmins must be
-         explicit about which org they are acting on.
        - If the user has exactly one membership, use it.
        - If the user has zero or multiple memberships, raise 400 with
          "X-Organization-Id required".
     """
     repo = UserOrganizationMembershipRepository(db)
 
+    if current_user.is_superadmin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Superadmins must use /superadmin endpoints",
+        )
+
     if x_organization_id is not None:
         membership = repo.get(current_user.id, x_organization_id)  # type: ignore[invalid-argument-type]
         if membership is not None:
             return membership
-        if current_user.is_superadmin:
-            # Synthesize a transient membership row — never added to the
-            # session, never persisted. Lets superadmins act on any org by
-            # passing the header without requiring a per-org row.
-            return UserOrganizationMembership(
-                user_id=current_user.id,
-                organization_id=x_organization_id,
-                role=UserRole.superadmin,
-            )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not a member of this organization",
-        )
-
-    if current_user.is_superadmin:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="X-Organization-Id required",
         )
 
     memberships = repo.list_for_user(current_user.id)  # type: ignore[invalid-argument-type]
@@ -139,10 +140,7 @@ def require_membership_roles(
     membership's role is in `allowed`.
 
     A user who is `lp` globally but `admin` of Org B will be treated as
-    `admin` when acting through their Org B membership. Superadmins acting
-    through a synthesized membership pass any role check (their membership
-    role is `superadmin`, which callers should include in the allow-list
-    when they want global-override access).
+    `admin` when acting through their Org B membership.
     """
 
     def _dep(

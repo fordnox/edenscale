@@ -18,7 +18,7 @@ from app.schemas.communication import (
     CommunicationUpdate,
 )
 
-_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager, UserRole.superadmin)
+_ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 
 class CommunicationRepository:

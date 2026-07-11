@@ -63,9 +63,8 @@ interface DocumentDetailProps {
 
 export function DocumentDetail({ documentId, onDeleted }: DocumentDetailProps) {
   const queryClient = useQueryClient()
-  const { activeMembership, isSuperadmin } = useActiveOrganization()
+  const { activeMembership } = useActiveOrganization()
   const canManage =
-    isSuperadmin ||
     activeMembership?.role === "admin" ||
     activeMembership?.role === "fund_manager"
 

@@ -15,6 +15,9 @@ import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { fundPath } from "@/lib/investorRoutes"
 import { config } from "@edenscale/api/config"
 import { formatCurrency, formatPercent } from "@edenscale/shared/format"
+import type { components } from "@edenscale/api/schema"
+
+type CurrencyTotal = components["schemas"]["CurrencyTotal"]
 
 function parseDecimal(value: string | null | undefined) {
   if (value === null || value === undefined || value === "") return 0
@@ -22,8 +25,13 @@ function parseDecimal(value: string | null | undefined) {
   return Number.isFinite(n) ? n : 0
 }
 
-function metric(value: string | null | undefined, currency = "USD") {
-  return formatCurrency(parseDecimal(value), currency, { compact: true })
+function currencyTotals(totals: CurrencyTotal[]) {
+  if (totals.length === 0) return "—"
+  return totals
+    .map(({ amount, currency_code }) =>
+      formatCurrency(parseDecimal(amount), currency_code, { compact: true }),
+    )
+    .join(" · ")
 }
 
 interface Position {
@@ -272,7 +280,7 @@ export default function DashboardPage() {
             <CardSection className="border-r border-b border-[color:var(--border-hairline)] md:border-b-0">
               <Stat
                 label="Committed"
-                value={metric(data?.commitments_total_amount)}
+                value={currencyTotals(data?.commitments_by_currency ?? [])}
                 caption={`${data?.funds_active ?? 0} active funds`}
               />
             </CardSection>
@@ -291,7 +299,7 @@ export default function DashboardPage() {
             <CardSection className="border-r border-[color:var(--border-hairline)]">
               <Stat
                 label="Distributions YTD"
-                value={metric(data?.distributions_ytd_amount)}
+                value={currencyTotals(data?.distributions_ytd_by_currency ?? [])}
               />
             </CardSection>
             <CardSection>
