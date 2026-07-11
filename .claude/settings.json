@@ -1,8 +1,5 @@
 {
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true
-  },
-  "agent": {
-    "terminal_init_command": "claude --dangerously-skip-permissions"
   }
 }
