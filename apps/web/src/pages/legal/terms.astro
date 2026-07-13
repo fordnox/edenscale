@@ -1,0 +1,115 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import LogoIcon from "@edenscale/brand/components/LogoIcon.astro";
+
+const lastUpdated = "July 2026";
+---
+
+<Layout
+  title="Terms of Service — NewTaven"
+  description="The terms governing use of NewTaven, the fund operations platform — accounts, billing, fund and investor data ownership, and acceptable use."
+  bodyClass="page-legal"
+>
+  <div class="page">
+    <nav class="navbar" aria-label="Primary">
+      <div class="navbar-row">
+        <a href="/" class="brand">
+          <LogoIcon size={28} />
+          <span>NewTaven</span>
+        </a>
+        <a href="/manager" class="pill pill--nav">Try Now</a>
+      </div>
+    </nav>
+
+    <main class="container">
+      <header class="legal-hero">
+        <span class="eyebrow">Legal · Terms</span>
+        <h1 class="legal-title">Terms of Service</h1>
+        <p class="legal-updated">Last updated · {lastUpdated}</p>
+        <nav class="legal-nav" aria-label="Legal documents">
+          <a href="/legal/privacy">Privacy</a>
+          <a href="/legal/terms" aria-current="page">Terms</a>
+          <a href="/legal/cookies">Cookies</a>
+        </nav>
+      </header>
+
+      <div class="legal-body">
+        <section>
+          <h2>1. Acceptance of Terms</h2>
+          <p>By accessing or using the NewTaven platform ("Service"), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service.</p>
+        </section>
+
+        <section>
+          <h2>2. Description of Service</h2>
+          <p>NewTaven provides a software-as-a-service (SaaS) platform for investment fund managers to run their back office — managing LP records, capital calls, distributions, investor communications, and reporting. The Service is accessed via the internet and may include web applications, APIs, and related tools.</p>
+        </section>
+
+        <section>
+          <h2>3. Accounts and Registration</h2>
+          <p>To use certain features of the Service, you must create an account. You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. You must notify us immediately of any unauthorized use.</p>
+        </section>
+
+        <section>
+          <h2>4. Payments and Billing</h2>
+          <p>NewTaven offers subscription plans billed monthly or annually. You agree to pay all fees associated with your selected plan. Payments are processed through Stripe. All fees are non-refundable except as required by law or as stated in our refund policy.</p>
+        </section>
+
+        <section>
+          <h2>5. Fund and Investor Data</h2>
+          <p>You retain all rights to your data. NewTaven processes your fund and investor data as a service provider. We do not sell, share, or use it for our own purposes. You may export your data at any time through the platform.</p>
+        </section>
+
+        <section>
+          <h2>6. Acceptable Use</h2>
+          <p>You agree not to use the Service to: (a) violate any applicable law; (b) transmit harmful or malicious code; (c) impersonate any person or entity; (d) interfere with the integrity or performance of the Service; or (e) attempt to gain unauthorized access to any portion of the Service.</p>
+        </section>
+
+        <section>
+          <h2>7. Intellectual Property</h2>
+          <p>The Service and its original content, features, and functionality are owned by NewTaven and are protected by international copyright, trademark, and other intellectual property laws. Our trademarks may not be used without written consent.</p>
+        </section>
+
+        <section>
+          <h2>8. Service Availability</h2>
+          <p>NewTaven aims for 99.9% uptime but does not guarantee uninterrupted service. Scheduled maintenance will be communicated in advance. We reserve the right to temporarily suspend service for emergencies or security issues.</p>
+        </section>
+
+        <section>
+          <h2>9. Limitation of Liability</h2>
+          <p>To the maximum extent permitted by law, NewTaven shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or business opportunities, arising from your use of the Service.</p>
+        </section>
+
+        <section>
+          <h2>10. Termination</h2>
+          <p>We may terminate or suspend your account and access to the Service immediately, without prior notice, for conduct that we believe violates these terms or is harmful to other users, us, or third parties, or for any other reason at our sole discretion.</p>
+        </section>
+
+        <section>
+          <h2>11. Changes to Terms</h2>
+          <p>We reserve the right to modify these terms at any time. We will notify users of material changes via email or through the platform. Continued use of the Service after changes constitutes acceptance of the new terms.</p>
+        </section>
+
+        <section>
+          <h2>12. Contact</h2>
+          <p>For questions about these Terms of Service, contact us at <a href="mailto:hello@newtaven.com">hello@newtaven.com</a>.</p>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-row">
+        <a href="/" class="brand brand--footer">
+          <LogoIcon size={20} />
+          <span>NewTaven</span>
+        </a>
+        <nav class="footer-links" aria-label="Legal">
+          <a href="/legal/privacy">Privacy</a>
+          <a href="/legal/terms">Terms</a>
+          <a href="/legal/cookies">Cookies</a>
+        </nav>
+        <a href="mailto:hello@newtaven.com" class="footer-mail">hello@newtaven.com</a>
+        <span class="footer-copy">© 2026 NewTaven — Fund administration for small managers</span>
+      </div>
+    </footer>
+  </div>
+</Layout>

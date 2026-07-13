@@ -75,6 +75,40 @@ kamal-deploy: kamal-check ## Deploy backend with Kamal — pulls fixed :latest i
 kamal-logs: kamal-check ## Tail logs
 	kamal app logs -f
 
+# ---------------------------------------------------------------------------
+# iOS — the investor app packaged as a native app with Capacitor.
+# Full docs, signing, and submission steps: apps/ios/README.md
+# ---------------------------------------------------------------------------
+IOS_DIR := apps/ios
+
+ios-check: ## Verify iOS build tooling (full Xcode + CocoaPods)
+	@xcodebuild -version >/dev/null 2>&1 || { \
+		echo "🚨 Full Xcode is required — the active developer directory is Command Line Tools, which can't build iOS apps."; \
+		if [ -d /Applications/Xcode.app ]; then \
+			echo "   Xcode is installed but not selected. Run:"; \
+			echo "     sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"; \
+			echo "     sudo xcodebuild -license accept"; \
+		else \
+			echo "   Install Xcode from the Mac App Store (or developer.apple.com/download), then:"; \
+			echo "     sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"; \
+			echo "     sudo xcodebuild -license accept"; \
+		fi; \
+		echo "   Verify with: xcodebuild -version"; \
+		exit 1; \
+	}
+	@command -v pod >/dev/null 2>&1 || { echo "🚨 CocoaPods not found — run: sudo gem install cocoapods"; exit 1; }
+
+ios: ios-check ## Build the investor iOS app and open it in Xcode to sign & run
+	$(IOS_DIR)/scripts/prepare.sh
+	cd $(IOS_DIR) && pnpm exec cap open ios
+	@echo "→ Xcode is open. In Signing & Capabilities pick your Team, then Product ▸ Archive to submit. Or run 'make ios-archive' for a headless signed build."
+
+ios-archive: ios-check ## Build a signed, App Store-ready IPA (needs APPLE_TEAM_ID in apps/ios/.env)
+	$(IOS_DIR)/scripts/prepare.sh
+	$(IOS_DIR)/scripts/archive.sh
+
+.PHONY: ios ios-check ios-archive
+
 .PHONY: help
 .DEFAULT_GOAL := help
 

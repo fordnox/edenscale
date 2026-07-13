@@ -1,0 +1,64 @@
+/* ============================================================
+   App Store screenshot canvas — 414×896 logical, rendered @3x
+   to 1242×2688 (iPhone 6.5" display requirement)
+   ============================================================ */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.canvas {
+  width: 414px; height: 896px; overflow: hidden; position: relative;
+  display: flex; flex-direction: column; align-items: center;
+}
+.canvas.dark {
+  background:
+    radial-gradient(120% 55% at 50% 42%, rgba(184,145,92,0.10), transparent 62%),
+    linear-gradient(180deg, var(--conifer-900) 0%, var(--conifer-800) 100%);
+  color: var(--parchment-50);
+}
+.canvas.light {
+  background: var(--parchment-100);
+  color: var(--ink-900);
+}
+/* faint hairline frame keeps the light canvas from feeling empty */
+.canvas.light::after {
+  content: ""; position: absolute; inset: 12px; pointer-events: none;
+  border: 1px solid rgba(26,26,24,0.07);
+}
+.canvas.dark::after {
+  content: ""; position: absolute; inset: 12px; pointer-events: none;
+  border: 1px solid rgba(251,249,244,0.08);
+}
+
+.head { flex: 0 0 auto; text-align: center; padding: 54px 34px 0; min-height: 162px; }
+.cv-eyebrow {
+  font-size: 12px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.18em; line-height: 1;
+}
+.canvas.dark .cv-eyebrow { color: var(--brass-300); }
+.canvas.light .cv-eyebrow { color: var(--brass-700); }
+.head h1 {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: 42px; line-height: 1.06; letter-spacing: -0.012em;
+  margin: 14px 0 0; text-wrap: balance;
+}
+.canvas.dark .head h1 { color: var(--parchment-50); }
+.canvas.light .head h1 { color: var(--ink-900); }
+.head .sub { margin-top: 12px; font-size: 15px; line-height: 1.5; }
+.canvas.dark .sub { color: var(--parchment-300); }
+.canvas.light .sub { color: var(--ink-500); }
+
+/* device bleeds off the bottom edge — classic store crop */
+.stage { margin-top: 26px; flex: 1 0 auto; display: flex; justify-content: center; }
+.scalewrap { transform: scale(1.06); transform-origin: top center; }
+
+/* marketing frame is wider than the 300px gallery device so list rows
+   and subtitles never truncate at store size */
+.stage .device { width: 340px; height: 745px; border-radius: 50px; padding: 10px; }
+.stage .screen { border-radius: 41px; }
+.stage .island { width: 96px; height: 24px; top: 10px; }
+.stage .status { height: 44px; flex-basis: 44px; }

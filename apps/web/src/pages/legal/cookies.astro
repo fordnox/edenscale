@@ -1,0 +1,98 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import LogoIcon from "@edenscale/brand/components/LogoIcon.astro";
+
+const lastUpdated = "July 2026";
+---
+
+<Layout
+  title="Cookie Policy — NewTaven"
+  description="How NewTaven uses cookies on its fund operations platform — essential, analytics, and functional cookies, and how to manage them in your browser."
+  bodyClass="page-legal"
+>
+  <div class="page">
+    <nav class="navbar" aria-label="Primary">
+      <div class="navbar-row">
+        <a href="/" class="brand">
+          <LogoIcon size={28} />
+          <span>NewTaven</span>
+        </a>
+        <a href="/manager" class="pill pill--nav">Try Now</a>
+      </div>
+    </nav>
+
+    <main class="container">
+      <header class="legal-hero">
+        <span class="eyebrow">Legal · Cookies</span>
+        <h1 class="legal-title">Cookie Policy</h1>
+        <p class="legal-updated">Last updated · {lastUpdated}</p>
+        <nav class="legal-nav" aria-label="Legal documents">
+          <a href="/legal/privacy">Privacy</a>
+          <a href="/legal/terms">Terms</a>
+          <a href="/legal/cookies" aria-current="page">Cookies</a>
+        </nav>
+      </header>
+
+      <div class="legal-body">
+        <section>
+          <h2>1. What Are Cookies</h2>
+          <p>Cookies are small text files stored on your device when you visit a website. They help the site remember your preferences, authenticate your session, and understand how you use the platform. We use both session cookies (deleted when you close your browser) and persistent cookies (remain on your device until they expire or you delete them).</p>
+        </section>
+
+        <section>
+          <h2>2. How We Use Cookies</h2>
+          <p>We use cookies for the following purposes:</p>
+          <ul>
+            <li><strong>Essential cookies:</strong> Required for the platform to function, including authentication, security, and session management. These cannot be disabled.</li>
+            <li><strong>Analytics cookies:</strong> Help us understand how visitors interact with our platform by collecting anonymous usage data. This information helps us improve the Service.</li>
+            <li><strong>Functional cookies:</strong> Remember your preferences such as language, region, and display settings to provide a personalized experience.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>3. Third-Party Cookies</h2>
+          <p>We may use services from trusted third parties that set their own cookies. These may include analytics providers (e.g., Plausible) and payment processors (e.g., Stripe). These third parties have their own privacy policies and cookie practices, which we do not control.</p>
+        </section>
+
+        <section>
+          <h2>4. Managing Cookies</h2>
+          <p>You can control and manage cookies through your browser settings. Most browsers allow you to:</p>
+          <ul>
+            <li>View what cookies are stored and delete them individually</li>
+            <li>Block third-party cookies</li>
+            <li>Block cookies from specific sites</li>
+            <li>Block all cookies</li>
+            <li>Delete all cookies when you close the browser</li>
+          </ul>
+          <p>Please note that blocking or deleting cookies may affect the functionality of the Service.</p>
+        </section>
+
+        <section>
+          <h2>5. Cookie Updates</h2>
+          <p>We may update this Cookie Policy from time to time to reflect changes in technology, regulation, or our business practices. Please check this page periodically for the latest information.</p>
+        </section>
+
+        <section>
+          <h2>6. Contact</h2>
+          <p>For questions about our use of cookies, contact us at <a href="mailto:hello@newtaven.com">hello@newtaven.com</a>.</p>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-row">
+        <a href="/" class="brand brand--footer">
+          <LogoIcon size={20} />
+          <span>NewTaven</span>
+        </a>
+        <nav class="footer-links" aria-label="Legal">
+          <a href="/legal/privacy">Privacy</a>
+          <a href="/legal/terms">Terms</a>
+          <a href="/legal/cookies">Cookies</a>
+        </nav>
+        <a href="mailto:hello@newtaven.com" class="footer-mail">hello@newtaven.com</a>
+        <span class="footer-copy">© 2026 NewTaven — Fund administration for small managers</span>
+      </div>
+    </footer>
+  </div>
+</Layout>
