@@ -401,7 +401,17 @@ html.js [data-reveal].is-visible {
 .page-index .sheet {
   position: relative;
   background: #f5f5f5;
-  border-radius: 24px;
+  border-radius: 24px 24px 0 0;
+  margin: 0 24px;
+}
+/* The footer (defined in Layout.astro) continues the sheet panel: same side
+   gutters and background, rounding the bottom. position/z-index lift it above
+   the fixed background video, which the static footer would otherwise sit under. */
+.page-index .footer {
+  position: relative;
+  z-index: 1;
+  background: #f5f5f5;
+  border-radius: 0 0 24px 24px;
   margin: 0 24px 24px;
 }
 
@@ -1173,8 +1183,13 @@ html.js .page-index .cadence-mail.is-visible {
    Install page (src/pages/install.astro, body.page-install)
    ====================================================================== */
 
-.page-install .page {
+.page-install {
   min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+.page-install .page {
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
@@ -1363,8 +1378,13 @@ html.js .page-index .cadence-mail.is-visible {
    Legal pages (src/pages/legal/*.astro, body.page-legal)
    ====================================================================== */
 
-.page-legal .page {
+.page-legal {
   min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+.page-legal .page {
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
