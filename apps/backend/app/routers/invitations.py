@@ -49,6 +49,7 @@ from app.schemas.organization_invitation import (
     InvitationListItem,
     InvitationRead,
 )
+from app.services.drip import fire_investor_signup
 from app.services.hanko import ensure_hanko_user
 from app.services.notifications import (
     notify_invitation,
@@ -238,6 +239,12 @@ async def accept_invitation(
         await notify_welcome(
             db, user=current_user, organization=invitation.organization
         )
+        # LPs only: the drip walks the reader through the investor portal, which
+        # staff never see.
+        if invitation.role is UserRole.lp:
+            await fire_investor_signup(
+                user=current_user, organization=invitation.organization
+            )
     return InvitationAcceptResponse(
         organization_id=invitation.organization_id,  # type: ignore[invalid-argument-type]
         role=invitation.role,  # type: ignore[invalid-argument-type]

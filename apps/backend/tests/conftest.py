@@ -56,6 +56,13 @@ os.environ["APP_DATABASE_DSN"] = _TEST_DSN
 # monkeypatching ``settings.SUPERADMIN_EMAIL``.
 os.environ["SUPERADMIN_EMAIL"] = ""
 
+# Email delivery is meant to be off in tests (the channel no-ops without a key,
+# and the drip fires no Resend events). A developer's .env has a real key, which
+# without this made the suite send live mail to @example.com recipients — hard
+# bounces that damage the sending domain's reputation. Tests that assert on
+# delivery opt in by monkeypatching ``settings.RESEND_API_KEY``.
+os.environ["RESEND_API_KEY"] = ""
+
 
 def _ensure_test_database() -> None:
     """Create the ``_test`` database if it does not yet exist (Postgres only)."""
@@ -164,3 +171,21 @@ def deliver_notifications_inline(monkeypatch):
     monkeypatch.setattr(
         "app.core.event_bus.enqueue_send_notification", _inline, raising=True
     )
+
+
+@pytest.fixture(autouse=True)
+def deliver_drip_events_inline(monkeypatch):
+    """Run enqueued drip events synchronously in tests.
+
+    Same reasoning as :func:`deliver_notifications_inline`: there is no Redis in
+    tests, and without this the request-path enqueue would burn its timeout on
+    every LP invitation-accept. Patched where ``app.services.drip`` imported the
+    name, so the service's own payload-building still runs.
+    """
+    from app import worker
+
+    async def _inline(**kwargs):
+        await worker.task_fire_drip_event({}, **kwargs)
+        return None
+
+    monkeypatch.setattr("app.services.drip.enqueue_drip_event", _inline, raising=True)

@@ -1,4 +1,9 @@
 from app.services.allocation import allocate_pro_rata
+from app.services.drip import (
+    INVESTOR_SIGNUP_EVENT,
+    deliver_drip_event,
+    fire_investor_signup,
+)
 from app.services.hanko import HankoServiceError, ensure_hanko_user
 from app.services.iso20022 import (
     Iso20022ParseError,
@@ -25,6 +30,7 @@ from app.services.storage import (
 )
 
 __all__ = [
+    "INVESTOR_SIGNUP_EVENT",
     "FundMetrics",
     "HankoServiceError",
     "Iso20022ParseError",
@@ -35,7 +41,9 @@ __all__ = [
     "S3Storage",
     "StoragePort",
     "allocate_pro_rata",
+    "deliver_drip_event",
     "ensure_hanko_user",
+    "fire_investor_signup",
     "fund_cashflows",
     "fund_metrics",
     "fund_metrics_bulk",

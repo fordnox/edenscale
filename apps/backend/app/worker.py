@@ -12,6 +12,7 @@ from app.models.user import User
 from app.repositories.notification_repository import NotificationRepository
 from app.schemas.organization import OrganizationRead
 from app.services.channels.registry import get_default_registry
+from app.services.drip import deliver_drip_event
 from app.tasks import (
     cron_mark_overdue_capital_calls,
     redis_settings,
@@ -148,11 +149,29 @@ async def task_send_notification(
         db.close()
 
 
+async def task_fire_drip_event(
+    ctx: dict,
+    *,
+    event: str,
+    email: str,
+    payload: dict,
+) -> None:
+    """Fire one Resend automation event (e.g. the investor onboarding drip).
+
+    No database work: the payload is built at enqueue time, so unlike
+    ``task_send_notification`` there are no rows to guard against.
+    """
+    result = await deliver_drip_event(event=event, email=email, payload=payload)
+    if result.get("success"):
+        logger.info("Drip event fired: event=%s recipient=%s", event, email)
+
+
 class WorkerSettings:
     queue_name = settings.APP_DOMAIN
     functions = [
         task_ping,
         task_send_notification,
+        task_fire_drip_event,
     ]
     cron_jobs = [
         cron(cron_mark_overdue_capital_calls, hour=6, minute=0)  # type: ignore[invalid-argument-type]

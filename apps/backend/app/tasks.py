@@ -78,6 +78,23 @@ async def enqueue_send_notification(
     )
 
 
+async def enqueue_drip_event(*, event: str, email: str, payload: dict):
+    """Enqueue a Resend automation event (see ``app.services.drip``).
+
+    Bounded like :func:`enqueue_send_notification` so a hung Redis never stalls
+    the request path; the calling helper already swallows failures.
+    """
+    return await asyncio.wait_for(
+        enqueue_task(
+            "task_fire_drip_event",
+            event=event,
+            email=email,
+            payload=payload,
+        ),
+        timeout=_ENQUEUE_TIMEOUT_SECONDS,
+    )
+
+
 # ===== Misc tasks =====
 
 
