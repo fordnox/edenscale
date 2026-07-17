@@ -292,6 +292,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/superadmin/users/{user_id}/start-investor-drip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Investor Drip
+         * @description Fire the investor onboarding drip for a user on demand. The drip walks
+         *     the reader through the investor portal, so the user must have at least one
+         *     LP membership; the first LP membership's organization is used.
+         */
+        post: operations["start_investor_drip_superadmin_users__user_id__start_investor_drip_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/superadmin/organizations/{organization_id}/admins": {
         parameters: {
             query?: never;
@@ -3351,6 +3373,24 @@ export interface components {
             /** Last Name */
             last_name?: string | null;
         };
+        /** SuperadminDripStartResponse */
+        SuperadminDripStartResponse: {
+            /**
+             * User Id
+             * Format: uuid4
+             */
+            user_id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
+            /**
+             * Recipient Email
+             * Format: email
+             */
+            recipient_email: string;
+        };
         /** SuperadminOrganizationCreate */
         SuperadminOrganizationCreate: {
             type: components["schemas"]["OrganizationType"];
@@ -4082,6 +4122,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SuperadminWelcomeEmailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_investor_drip_superadmin_users__user_id__start_investor_drip_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuperadminDripStartResponse"];
                 };
             };
             /** @description Validation Error */

@@ -36,6 +36,7 @@ from app.schemas.organization import (
 from app.schemas.superadmin import (
     MembershipWithUserRead,
     SuperadminAdminAssignment,
+    SuperadminDripStartResponse,
     SuperadminOrganizationCreate,
     SuperadminOrganizationCreateResponse,
     SuperadminOrganizationRead,
@@ -43,6 +44,7 @@ from app.schemas.superadmin import (
 )
 from app.schemas.user import UserRead
 from app.schemas.user_organization_membership import MembershipRead
+from app.services.drip import fire_investor_signup
 from app.services.notifications import notify_welcome
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
@@ -170,6 +172,47 @@ async def send_welcome_email(
 
     await notify_welcome(db, user=user, organization=membership.organization)
     return SuperadminWelcomeEmailResponse(
+        user_id=user.id,  # type: ignore[invalid-argument-type]
+        organization_id=membership.organization.id,
+        recipient_email=user.email,  # type: ignore[invalid-argument-type]
+    )
+
+
+@router.post(
+    "/users/{user_id}/start-investor-drip",
+    response_model=SuperadminDripStartResponse,
+    dependencies=[Depends(require_superadmin)],
+)
+async def start_investor_drip(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> SuperadminDripStartResponse:
+    """Fire the investor onboarding drip for a user on demand. The drip walks
+    the reader through the investor portal, so the user must have at least one
+    LP membership; the first LP membership's organization is used."""
+    user = UserRepository(db).get_by_id(user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    membership = next(
+        (
+            m
+            for m in user.memberships
+            if m.role is UserRole.lp and m.organization is not None
+        ),
+        None,
+    )
+    if membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User has no LP membership to start the investor drip for",
+        )
+
+    await fire_investor_signup(user=user, organization=membership.organization)
+    return SuperadminDripStartResponse(
         user_id=user.id,  # type: ignore[invalid-argument-type]
         organization_id=membership.organization.id,
         recipient_email=user.email,  # type: ignore[invalid-argument-type]

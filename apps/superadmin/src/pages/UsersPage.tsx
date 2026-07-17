@@ -45,6 +45,18 @@ export default function UsersPage() {
     },
   )
 
+  const startInvestorDrip = useApiMutation(
+    "post",
+    "/superadmin/users/{user_id}/start-investor-drip",
+    {
+      onSuccess: (data) => {
+        toast.success("Investor drip started", {
+          description: data.recipient_email,
+        })
+      },
+    },
+  )
+
   return (
     <>
       <Helmet>
@@ -158,6 +170,22 @@ export default function UsersPage() {
                                 }
                               >
                                 Send Welcome Email
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={
+                                  !user.memberships.some(
+                                    (membership) => membership.role === "lp",
+                                  ) || startInvestorDrip.isPending
+                                }
+                                onSelect={() =>
+                                  startInvestorDrip.mutate({
+                                    params: {
+                                      path: { user_id: user.id },
+                                    },
+                                  })
+                                }
+                              >
+                                Start Investor Drip
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
