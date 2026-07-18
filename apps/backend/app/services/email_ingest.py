@@ -21,6 +21,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.enums import DocumentType, UserRole
 from app.models.user import User
 from app.repositories.document_repository import DocumentRepository
@@ -33,6 +34,7 @@ from app.schemas.document import DocumentCreate
 from app.schemas.email_ingest import EmailIngestRequest, EmailIngestResult
 from app.services.notifications import notify_document_uploaded
 from app.services.storage import get_storage, key_from_file_url
+from app.tasks import enqueue_draft_letter
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +48,12 @@ def _safe_name(file_name: str) -> str:
     """Sanitize an attachment filename into a storage-key-safe segment."""
     safe = file_name.strip().replace("/", "_") or "attachment.bin"
     return safe[:255]
+
+
+def _is_pdf(mime_type: str | None, file_name: str) -> bool:
+    """Whether an attachment is a PDF, by declared mime type or extension."""
+    mime = (mime_type or "").split(";", 1)[0].strip().lower()
+    return mime == "application/pdf" or file_name.lower().endswith(".pdf")
 
 
 def _parse_org_tag(recipient: str | None) -> str | None:
@@ -134,6 +142,23 @@ class EmailIngestService:
             )
             await notify_document_uploaded(self.db, document=document)
             created.append(document.id)
+
+            # Auto-draft a letter from an emailed PDF (when the feature is on).
+            # Best-effort: a queue hiccup must not fail an ingest whose document
+            # is already stored — the draft is a follow-on convenience.
+            if settings.letter_drafting_enabled and _is_pdf(
+                attachment.mime_type, safe_name
+            ):
+                try:
+                    await enqueue_draft_letter(
+                        document_id=str(document.id), user_id=str(user.id)
+                    )
+                except Exception:
+                    logger.exception(
+                        "email-ingest: failed to enqueue letter draft for "
+                        "document %s",
+                        document.id,
+                    )
 
         if not created:
             return self._drop("no storable attachments")

@@ -136,6 +136,11 @@ def draft_letter(
         headers={
             "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
             "Content-Type": "application/json",
+            # OpenRouter app attribution (openrouter.ai/docs/app-attribution):
+            # HTTP-Referer identifies the app in rankings; X-OpenRouter-Title
+            # sets its display name.
+            "HTTP-Referer": settings.app_domain_url,
+            "X-OpenRouter-Title": "NewTaven",
         },
         json=payload,
         timeout=_REQUEST_TIMEOUT_SECONDS,

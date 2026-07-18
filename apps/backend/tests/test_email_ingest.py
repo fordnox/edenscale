@@ -287,6 +287,73 @@ def test_undecodable_attachment_is_dropped(client):
     assert _documents() == []
 
 
+@pytest.fixture
+def capture_draft(monkeypatch):
+    """Feature ON + capture every enqueued draft-letter job."""
+    monkeypatch.setattr(settings, "OPENROUTER_API_KEY", "test-key")
+    calls: list[dict] = []
+
+    async def _capture(**kwargs):
+        calls.append(kwargs)
+
+    monkeypatch.setattr(
+        "app.services.email_ingest.enqueue_draft_letter", _capture, raising=True
+    )
+    return calls
+
+
+def test_ingested_pdf_enqueues_letter_draft(client, capture_draft):
+    org = _seed_org("Acme Capital")
+    user_id = _seed_user("jane@acme.test", memberships=[(org, UserRole.admin)])
+    resp = client.post(
+        "/email-ingest/documents", json=_payload("jane@acme.test"), headers=_headers()
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "created"
+    assert len(capture_draft) == 1
+    assert capture_draft[0] == {
+        "document_id": str(_documents()[0].id),
+        "user_id": user_id,
+    }
+
+
+def test_non_pdf_attachment_does_not_enqueue_draft(client, capture_draft):
+    org = _seed_org("Acme Capital")
+    _seed_user("jane@acme.test", memberships=[(org, UserRole.admin)])
+    payload = _payload("jane@acme.test")
+    payload["attachments"][0]["file_name"] = "notes.txt"
+    payload["attachments"][0]["mime_type"] = "text/plain"
+    payload["attachments"][0]["content_base64"] = base64.b64encode(b"hi").decode()
+    resp = client.post(
+        "/email-ingest/documents", json=payload, headers=_headers()
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "created"
+    assert capture_draft == []
+
+
+def test_pdf_ingest_without_feature_does_not_enqueue(client, monkeypatch):
+    # Feature OFF (no OPENROUTER_API_KEY): documents still land, no draft queued.
+    monkeypatch.setattr(settings, "OPENROUTER_API_KEY", "")
+    called = False
+
+    async def _boom(**kwargs):
+        nonlocal called
+        called = True
+
+    monkeypatch.setattr(
+        "app.services.email_ingest.enqueue_draft_letter", _boom, raising=True
+    )
+    org = _seed_org("Acme Capital")
+    _seed_user("jane@acme.test", memberships=[(org, UserRole.admin)])
+    resp = client.post(
+        "/email-ingest/documents", json=_payload("jane@acme.test"), headers=_headers()
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "created"
+    assert called is False
+
+
 def test_happy_path_creates_document(client):
     org = _seed_org("Acme Capital")
     user_id = _seed_user("jane@acme.test", memberships=[(org, UserRole.admin)])
