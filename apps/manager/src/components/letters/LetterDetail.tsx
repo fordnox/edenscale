@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { Loader2 } from "lucide-react"
+import { Loader2, Pencil } from "lucide-react"
 import { toast } from "sonner"
 
+import { LetterComposeDialog } from "@/components/letters/LetterComposeDialog"
 import { Badge } from "@edenscale/ui/badge"
 import { Button } from "@edenscale/ui/button"
 import { Eyebrow } from "@edenscale/ui/eyebrow"
@@ -54,6 +55,15 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
     staleTime: 5 * 60 * 1000,
   })
 
+  const [editOpen, setEditOpen] = useState(false)
+
+  // Preview who a draft would reach (resolved from its fund) before sending.
+  const recipientPreviewQuery = useApiQuery(
+    "/communications/{communication_id}/recipients/preview",
+    { params: { path: { communication_id: letterId } } },
+    { enabled: canSend && letterQuery.data?.sent_at === null },
+  )
+
   const fundName = useMemo(() => {
     const id = letterQuery.data?.fund_id
     if (id === null || id === undefined) return null
@@ -77,6 +87,9 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
         "/communications/{communication_id}",
         { params: { path: { communication_id: letterId } } },
       ],
+    })
+    queryClient.invalidateQueries({
+      queryKey: ["/communications/{communication_id}/recipients/preview"],
     })
     if (letterQuery.data?.fund_id !== null && letterQuery.data?.fund_id !== undefined) {
       queryClient.invalidateQueries({
@@ -150,6 +163,7 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
   const readPct = recipients.length > 0 ? readCount / recipients.length : 0
   const isDraft = letter.sent_at === null
   const showSend = isDraft && canSend
+  const previews = recipientPreviewQuery.data ?? []
 
   function recipientLabel(
     recipient: components["schemas"]["CommunicationRecipientRead"],
@@ -186,7 +200,7 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {canSend && (
+        {canSend && !isDraft && (
         <div className="grid grid-cols-3 gap-4 border-b border-[color:var(--border-hairline)] px-6 py-5">
           <div className="flex flex-col gap-1">
             <Eyebrow>Recipients</Eyebrow>
@@ -217,15 +231,68 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
           </p>
         </div>
 
-        {canSend && (
+        {canSend && isDraft && (
+        <div className="px-6 pb-6 pt-5">
+          <Eyebrow>Recipients preview</Eyebrow>
+          {recipientPreviewQuery.isLoading ? (
+            <div className="mt-4 flex min-h-[80px] items-center justify-center text-ink-500">
+              <Loader2 strokeWidth={1.5} className="size-5 animate-spin" />
+            </div>
+          ) : previews.length === 0 ? (
+            <div className="mt-4 flex flex-col items-start gap-2 border border-dashed border-[color:var(--border-hairline)] p-6">
+              <p className="font-sans text-[13px] text-ink-700">
+                {letter.fund_id === null
+                  ? "Organization-wide drafts don't resolve recipients automatically. Attach a fund so limited partners can be reached on send."
+                  : "No approved investors resolve for this fund yet — nobody would be reached if sent now."}
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="mt-3 font-sans text-[13px] text-ink-700">
+                Sending now would reach {previews.length} recipient
+                {previews.length === 1 ? "" : "s"}.
+              </p>
+              <DataTable className="mt-3">
+                <thead>
+                  <tr>
+                    <TH>Recipient</TH>
+                    <TH>Investor</TH>
+                  </tr>
+                </thead>
+                <tbody>
+                  {previews.map((preview, index) => (
+                    <TR key={`${preview.email ?? preview.name}-${index}`}>
+                      <TD primary>
+                        <div className="flex flex-col gap-1">
+                          <span>{preview.name}</span>
+                          {preview.email && (
+                            <span className="font-sans text-[11px] font-normal text-ink-500">
+                              {preview.email}
+                            </span>
+                          )}
+                        </div>
+                      </TD>
+                      <TD>
+                        {preview.investor_name ?? (
+                          <span className="text-ink-500">—</span>
+                        )}
+                      </TD>
+                    </TR>
+                  ))}
+                </tbody>
+              </DataTable>
+            </>
+          )}
+        </div>
+        )}
+
+        {canSend && !isDraft && (
         <div className="px-6 pb-6 pt-5">
           <Eyebrow>Recipients</Eyebrow>
           {recipients.length === 0 ? (
             <div className="mt-4 flex flex-col items-start gap-2 border border-dashed border-[color:var(--border-hairline)] p-6">
               <p className="font-sans text-[13px] text-ink-700">
-                {isDraft
-                  ? "Recipients are picked up automatically when the letter is sent."
-                  : "No recipients on record."}
+                No recipients on record.
               </p>
             </div>
           ) : (
@@ -278,6 +345,16 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
         <div className="sticky bottom-0 z-10 border-t border-[color:var(--border-hairline)] bg-surface px-6 py-3">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
+              variant="secondary"
+              size="sm"
+              className="min-h-11 w-full md:min-h-9 md:w-auto"
+              disabled={sendLetter.isPending}
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil strokeWidth={1.5} className="size-4" />
+              Edit draft
+            </Button>
+            <Button
               variant="primary"
               size="sm"
               className="min-h-11 w-full md:min-h-9 md:w-auto"
@@ -296,6 +373,15 @@ export function LetterDetail({ letterId, canSend }: LetterDetailProps) {
             </Button>
           </div>
         </div>
+      )}
+
+      {showSend && (
+        <LetterComposeDialog
+          editLetter={letter}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          onCreated={() => invalidate()}
+        />
       )}
     </div>
   )

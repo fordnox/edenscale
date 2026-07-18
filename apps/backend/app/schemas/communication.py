@@ -40,6 +40,19 @@ class CommunicationSendRequest(BaseModel):
     recipients: list[CommunicationRecipientRef] = Field(default_factory=list)
 
 
+class CommunicationRecipientPreview(BaseModel):
+    """A recipient a draft *would* reach if sent now (resolved from the fund).
+
+    Read-only preview for the compose/detail UI — no rows are written. Only
+    fund-scoped drafts resolve recipients; an org-wide draft returns an empty
+    list.
+    """
+
+    name: str
+    email: str | None = None
+    investor_name: str | None = None
+
+
 class CommunicationRecipientRead(BaseModel):
     id: UUID4
     communication_id: UUID4

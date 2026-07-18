@@ -554,3 +554,98 @@ class TestNestedFundRoute:
         assert response.status_code == 200
         subjects = sorted(row["subject"] for row in response.json())
         assert subjects == ["First", "Second"]
+
+
+class TestRecipientPreview:
+    def test_preview_resolves_approved_primary_contacts(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+
+        approved_investor = _seed_investor(org_id, name="Approved LP")
+        _seed_commitment(fund_id, approved_investor, status=CommitmentStatus.approved)
+        _seed_contact(approved_investor, None, is_primary=True)
+        # Non-primary on same investor -> excluded
+        _seed_contact(approved_investor, None, is_primary=False)
+        # Pending investor -> excluded
+        pending_investor = _seed_investor(org_id, name="Pending LP")
+        _seed_commitment(fund_id, pending_investor, status=CommitmentStatus.pending)
+        _seed_contact(pending_investor, None, is_primary=True)
+
+        comm_id = client.post(
+            "/communications",
+            json={
+                "fund_id": fund_id,
+                "type": "announcement",
+                "subject": "Preview me",
+                "body": "Body",
+            },
+        ).json()["id"]
+
+        resp = client.get(f"/communications/{comm_id}/recipients/preview")
+        assert resp.status_code == 200
+        previews = resp.json()
+        assert len(previews) == 1
+        assert previews[0]["name"] == "Lp Contact"
+        assert previews[0]["investor_name"] == "Approved LP"
+
+    def test_preview_org_wide_draft_is_empty(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+
+        comm_id = client.post(
+            "/communications",
+            json={
+                "type": "announcement",
+                "subject": "Org-wide",
+                "body": "No fund",
+            },
+        ).json()["id"]
+
+        resp = client.get(f"/communications/{comm_id}/recipients/preview")
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_preview_forbidden_for_lp(self, client, override_user):
+        org_id = _seed_org()
+        fm_id = _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        comm_id = client.post(
+            "/communications",
+            json={
+                "fund_id": fund_id,
+                "type": "announcement",
+                "subject": "Hi",
+                "body": "B",
+            },
+        ).json()["id"]
+
+        # Switch to an LP in the same org.
+        _seed_user(
+            "hanko-lp",
+            UserRole.lp,
+            email="lp@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-lp")
+        resp = client.get(f"/communications/{comm_id}/recipients/preview")
+        assert resp.status_code == 403
+        assert fm_id  # silence unused

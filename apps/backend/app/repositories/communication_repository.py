@@ -9,6 +9,7 @@ from app.models.communication import Communication
 from app.models.communication_recipient import CommunicationRecipient
 from app.models.enums import CommitmentStatus, CommunicationType, UserRole
 from app.models.fund import Fund
+from app.models.investor import Investor
 from app.models.investor_contact import InvestorContact
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.lp_scope import lp_visible_contact_ids
@@ -221,6 +222,29 @@ class CommunicationRepository:
             .all()
         )
         return [(user_id, contact_id) for contact_id, user_id in rows]
+
+    def default_recipient_contacts(
+        self, fund_id: uuid.UUID
+    ) -> list[tuple[InvestorContact, Investor]]:
+        """The primary contacts a fund-scoped send would reach, with investor.
+
+        The display counterpart to :meth:`resolve_default_recipients` (which
+        returns bare id pairs for insertion): same population — primary contacts
+        of investors holding an approved commitment in the fund — but carrying
+        the contact + investor rows so the UI can preview names and emails.
+        """
+        return (
+            self.db.query(InvestorContact, Investor)
+            .join(Investor, Investor.id == InvestorContact.investor_id)
+            .join(Commitment, Commitment.investor_id == InvestorContact.investor_id)
+            .filter(
+                Commitment.fund_id == fund_id,
+                Commitment.status == CommitmentStatus.approved,
+                InvestorContact.is_primary.is_(True),
+            )
+            .order_by(InvestorContact.created_at, InvestorContact.id)
+            .all()  # type: ignore[invalid-return-type]
+        )
 
     def send(
         self,

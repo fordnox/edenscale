@@ -16,6 +16,7 @@ from app.repositories.fund_repository import FundRepository
 from app.schemas.communication import (
     CommunicationCreate,
     CommunicationRead,
+    CommunicationRecipientPreview,
     CommunicationRecipientRead,
     CommunicationSendRequest,
     CommunicationUpdate,
@@ -91,6 +92,51 @@ async def get_communication(
             detail="Cannot view this communication",
         )
     return communication
+
+
+@router.get(
+    "/{communication_id}/recipients/preview",
+    response_model=list[CommunicationRecipientPreview],
+)
+async def preview_communication_recipients(
+    communication_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
+    ),
+):
+    """Who a draft would reach if sent now — resolved from its fund.
+
+    Lets the compose/detail UI show recipients before sending. Org-wide drafts
+    (no fund) resolve to nobody by default, so the list is empty.
+    """
+    repo = CommunicationRepository(db)
+    communication = repo.get(communication_id)
+    if communication is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Communication not found"
+        )
+    _ensure_can_manage(repo, membership, communication)
+    if communication.fund_id is None:
+        return []
+    seen: set[uuid.UUID] = set()
+    previews: list[CommunicationRecipientPreview] = []
+    for contact, investor in repo.default_recipient_contacts(
+        communication.fund_id  # type: ignore[invalid-argument-type]
+    ):
+        if contact.id in seen:
+            continue
+        seen.add(contact.id)  # type: ignore[invalid-argument-type]
+        email = str(contact.email) if contact.email is not None else None
+        name = f"{contact.first_name or ''} {contact.last_name or ''}".strip()
+        previews.append(
+            CommunicationRecipientPreview(
+                name=name or email or "Investor contact",
+                email=email,
+                investor_name=str(investor.name),
+            )
+        )
+    return previews
 
 
 @router.post("", response_model=CommunicationRead, status_code=status.HTTP_201_CREATED)

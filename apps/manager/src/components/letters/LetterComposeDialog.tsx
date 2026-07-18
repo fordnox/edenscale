@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -27,6 +27,7 @@ import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import type { components } from "@edenscale/api/schema"
 
 type CommunicationType = components["schemas"]["CommunicationType"]
+type CommunicationRead = components["schemas"]["CommunicationRead"]
 
 const TYPE_OPTIONS: Array<{ value: CommunicationType; label: string }> = [
   { value: "announcement", label: "Announcement" },
@@ -39,6 +40,8 @@ interface LetterComposeDialogProps {
   onOpenChange: (open: boolean) => void
   defaultFundId?: string
   onCreated?: (letterId: string) => void
+  /** When set, the dialog edits this existing draft (PATCH) instead of creating. */
+  editLetter?: CommunicationRead | null
 }
 
 export function LetterComposeDialog({
@@ -46,7 +49,9 @@ export function LetterComposeDialog({
   onOpenChange,
   defaultFundId,
   onCreated,
+  editLetter,
 }: LetterComposeDialogProps) {
+  const isEditing = editLetter != null
   const [subject, setSubject] = useState("")
   const [body, setBody] = useState("")
   const [type, setType] = useState<CommunicationType>("announcement")
@@ -54,16 +59,37 @@ export function LetterComposeDialog({
     defaultFundId ? String(defaultFundId) : "none",
   )
 
+  // Seed fields when the dialog opens: from the edited draft, or blank/default.
+  useEffect(() => {
+    if (!open) return
+    if (editLetter) {
+      setSubject(editLetter.subject)
+      setBody(editLetter.body)
+      setType(editLetter.type)
+      setFundId(editLetter.fund_id ? String(editLetter.fund_id) : "none")
+    } else {
+      setSubject("")
+      setBody("")
+      setType("announcement")
+      setFundId(defaultFundId ? String(defaultFundId) : "none")
+    }
+  }, [open, editLetter, defaultFundId])
+
   const queryClient = useQueryClient()
   const fundsQuery = useApiQuery("/funds", undefined, { enabled: open })
 
   const createLetter = useApiMutation("post", "/communications")
+  const updateLetter = useApiMutation(
+    "patch",
+    "/communications/{communication_id}",
+  )
   const sendLetter = useApiMutation(
     "post",
     "/communications/{communication_id}/send",
   )
 
-  const submitting = createLetter.isPending || sendLetter.isPending
+  const submitting =
+    createLetter.isPending || updateLetter.isPending || sendLetter.isPending
 
   function reset() {
     setSubject("")
@@ -99,18 +125,24 @@ export function LetterComposeDialog({
     queryClient.invalidateQueries({ queryKey: ["/dashboard"] })
   }
 
-  async function createDraft(): Promise<string | null> {
+  async function persistDraft(): Promise<string | null> {
     const trimmedSubject = subject.trim()
     const trimmedBody = body.trim()
     if (!trimmedSubject || !trimmedBody) return null
-    const created = await createLetter.mutateAsync({
-      body: {
-        subject: trimmedSubject,
-        body: trimmedBody,
-        type,
-        fund_id: fundId !== "none" ? fundId : null,
-      },
-    })
+    const nextBody = {
+      subject: trimmedSubject,
+      body: trimmedBody,
+      type,
+      fund_id: fundId !== "none" ? fundId : null,
+    }
+    if (editLetter) {
+      await updateLetter.mutateAsync({
+        params: { path: { communication_id: editLetter.id } },
+        body: nextBody,
+      })
+      return editLetter.id
+    }
+    const created = await createLetter.mutateAsync({ body: nextBody })
     return created.id
   }
 
@@ -118,10 +150,10 @@ export function LetterComposeDialog({
     event.preventDefault()
     if (submitting) return
     try {
-      const id = await createDraft()
+      const id = await persistDraft()
       if (id === null) return
       invalidate(id)
-      toast.success("Draft saved")
+      toast.success(isEditing ? "Draft updated" : "Draft saved")
       onCreated?.(id)
       reset()
       onOpenChange(false)
@@ -133,7 +165,7 @@ export function LetterComposeDialog({
   async function handleSend() {
     if (submitting) return
     try {
-      const id = await createDraft()
+      const id = await persistDraft()
       if (id === null) return
       await sendLetter.mutateAsync({
         params: { path: { communication_id: id } },
@@ -154,7 +186,7 @@ export function LetterComposeDialog({
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="es-display text-[24px]">
-            Draft a letter
+            {isEditing ? "Edit draft" : "Draft a letter"}
           </DialogTitle>
           <DialogDescription>
             Send a quarterly letter or quick bulletin to limited partners. Saving
@@ -243,10 +275,11 @@ export function LetterComposeDialog({
               className="min-h-11 md:min-h-9"
               disabled={submitting || !subject.trim() || !body.trim()}
             >
-              {createLetter.isPending && !sendLetter.isPending && (
-                <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
-              )}
-              Save draft
+              {(createLetter.isPending || updateLetter.isPending) &&
+                !sendLetter.isPending && (
+                  <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+                )}
+              {isEditing ? "Save changes" : "Save draft"}
             </Button>
             <Button
               type="button"

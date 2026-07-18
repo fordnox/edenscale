@@ -1524,6 +1524,29 @@ export interface paths {
         patch: operations["update_communication_communications__communication_id__patch"];
         trace?: never;
     };
+    "/communications/{communication_id}/recipients/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Communication Recipients
+         * @description Who a draft would reach if sent now — resolved from its fund.
+         *
+         *     Lets the compose/detail UI show recipients before sending. Org-wide drafts
+         *     (no fund) resolve to nobody by default, so the list is empty.
+         */
+        get: operations["preview_communication_recipients_communications__communication_id__recipients_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/communications/{communication_id}/send": {
         parameters: {
             query?: never;
@@ -2243,6 +2266,22 @@ export interface components {
             updated_at: string | null;
             /** Recipients */
             recipients: components["schemas"]["CommunicationRecipientRead"][];
+        };
+        /**
+         * CommunicationRecipientPreview
+         * @description A recipient a draft *would* reach if sent now (resolved from the fund).
+         *
+         *     Read-only preview for the compose/detail UI — no rows are written. Only
+         *     fund-scoped drafts resolve recipients; an org-wide draft returns an empty
+         *     list.
+         */
+        CommunicationRecipientPreview: {
+            /** Name */
+            name: string;
+            /** Email */
+            email?: string | null;
+            /** Investor Name */
+            investor_name?: string | null;
         };
         /** CommunicationRecipientRead */
         CommunicationRecipientRead: {
@@ -7423,6 +7462,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommunicationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_communication_recipients_communications__communication_id__recipients_preview_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+            };
+            path: {
+                communication_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunicationRecipientPreview"][];
                 };
             };
             /** @description Validation Error */

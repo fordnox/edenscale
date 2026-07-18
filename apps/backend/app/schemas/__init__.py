@@ -28,6 +28,7 @@ from app.schemas.commitment import (
 from app.schemas.communication import (
     CommunicationCreate,
     CommunicationRead,
+    CommunicationRecipientPreview,
     CommunicationRecipientRead,
     CommunicationRecipientRef,
     CommunicationSendRequest,
@@ -162,6 +163,7 @@ __all__ = [
     "CommitmentUpdate",
     "CommunicationCreate",
     "CommunicationRead",
+    "CommunicationRecipientPreview",
     "CommunicationRecipientRead",
     "CommunicationRecipientRef",
     "CommunicationSendRequest",
