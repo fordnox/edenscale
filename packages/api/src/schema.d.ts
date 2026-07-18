@@ -1440,6 +1440,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/email-ingest/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Documents
+         * @description Store an inbound email's attachments as documents for the sender's org.
+         *
+         *     Always returns 200: a "dropped" result (unknown/ambiguous sender, or nothing
+         *     storable) is a normal outcome, not an error. Only a bad/absent shared-secret
+         *     token is rejected (403/404).
+         */
+        post: operations["ingest_documents_email_ingest_documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/communications": {
         parameters: {
             query?: never;
@@ -2560,6 +2584,36 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+        };
+        /** EmailIngestAttachment */
+        EmailIngestAttachment: {
+            /** File Name */
+            file_name: string;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Content Base64 */
+            content_base64: string;
+        };
+        /** EmailIngestRequest */
+        EmailIngestRequest: {
+            /** Sender Email */
+            sender_email: string;
+            /**
+             * Subject
+             * @default
+             */
+            subject: string;
+            /** Attachments */
+            attachments: components["schemas"]["EmailIngestAttachment"][];
+        };
+        /** EmailIngestResult */
+        EmailIngestResult: {
+            /** Status */
+            status: string;
+            /** Reason */
+            reason?: string | null;
+            /** Document Ids */
+            document_ids?: string[];
         };
         /** FundCreate */
         FundCreate: {
@@ -7121,6 +7175,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_documents_email_ingest_documents_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-email-ingest-token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailIngestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailIngestResult"];
+                };
             };
             /** @description Validation Error */
             422: {

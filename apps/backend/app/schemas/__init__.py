@@ -56,6 +56,11 @@ from app.schemas.document import (
     DocumentUploadInit,
     DocumentUploadInitResponse,
 )
+from app.schemas.email_ingest import (
+    EmailIngestAttachment,
+    EmailIngestRequest,
+    EmailIngestResult,
+)
 from app.schemas.fund import (
     FundCreate,
     FundListItem,
@@ -175,6 +180,9 @@ __all__ = [
     "DocumentUpdate",
     "DocumentUploadInit",
     "DocumentUploadInitResponse",
+    "EmailIngestAttachment",
+    "EmailIngestRequest",
+    "EmailIngestResult",
     "FundCreate",
     "FundGroupCreate",
     "FundGroupRead",

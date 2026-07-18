@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     NOTIFICATION_FROM_EMAIL: str = "notifications@updates.newtaven.com"
 
+    # Inbound email → document ingestion (the Cloudflare email-ingest Worker
+    # for cc@<domain>). The Worker authenticates to /email-ingest/documents with
+    # this shared secret in the ``X-Email-Ingest-Token`` header. Empty means the
+    # feature is OFF — the endpoint returns 404 until an operator sets a token.
+    EMAIL_INGEST_TOKEN: str = ""
+
     # S3/R2 storage settings
     STORAGE_BACKEND: str = "local"
     DEV_STORAGE_TOKEN: str = "dev-storage"

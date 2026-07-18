@@ -4,6 +4,7 @@ from app.services.drip import (
     deliver_drip_event,
     fire_investor_signup,
 )
+from app.services.email_ingest import EmailIngestService
 from app.services.hanko import HankoServiceError, ensure_hanko_user
 from app.services.iso20022 import (
     Iso20022ParseError,
@@ -40,6 +41,7 @@ __all__ = [
     "LocalDevStorage",
     "S3Storage",
     "StoragePort",
+    "EmailIngestService",
     "allocate_pro_rata",
     "deliver_drip_event",
     "ensure_hanko_user",

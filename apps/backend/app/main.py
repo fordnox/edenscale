@@ -14,6 +14,7 @@ from app.routers import (
     dashboard,
     distributions,
     documents,
+    email_ingest,
     fund_groups,
     fund_valuations,
     funds,
@@ -151,6 +152,11 @@ app.include_router(
 app.include_router(
     documents.dev_storage_router,
     tags=["dev-storage"],
+)
+app.include_router(
+    email_ingest.router,
+    prefix="/email-ingest",
+    tags=["email-ingest"],
 )
 app.include_router(
     communications.router,

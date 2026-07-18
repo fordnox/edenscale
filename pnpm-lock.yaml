@@ -36,6 +36,22 @@ importers:
         specifier: ^0.34.5
         version: 0.34.5
 
+  apps/email-ingest:
+    dependencies:
+      postal-mime:
+        specifier: ^2.4.4
+        version: 2.7.5
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20260508.1
+        version: 4.20260702.1
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.3
+      wrangler:
+        specifier: ^4.90.0
+        version: 4.107.0(@cloudflare/workers-types@4.20260702.1)
+
   apps/emails:
     dependencies:
       '@react-email/components':
@@ -4422,6 +4438,9 @@ packages:
   pluralize@8.0.0:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
     engines: {node: '>=4'}
+
+  postal-mime@2.7.5:
+    resolution: {integrity: sha512-GNEXKvWFQnbgO5NlrGzVa0FmWzBZ24PersAWErttSg1Hjpf0ATxTwS5DOMGaOpTG6bUh5cTr7xi0jAD942wCJA==}
 
   postcss-nested@6.2.0:
     resolution: {integrity: sha512-HQbt28KulC5AJzG+cZtj9kvKB93CFCdLvog1WFLf1D+xmMvPGlBstkpTEZfK5+AN9hfJocyBFCNiqyS48bpgzQ==}
@@ -9482,6 +9501,8 @@ snapshots:
       xmlbuilder: 15.1.1
 
   pluralize@8.0.0: {}
+
+  postal-mime@2.7.5: {}
 
   postcss-nested@6.2.0(postcss@8.5.16):
     dependencies:
