@@ -17,11 +17,14 @@ import base64
 import binascii
 import logging
 import secrets
+import uuid
 
 from sqlalchemy.orm import Session
 
 from app.models.enums import DocumentType, UserRole
+from app.models.user import User
 from app.repositories.document_repository import DocumentRepository
+from app.repositories.organization_repository import OrganizationRepository
 from app.repositories.user_organization_membership_repository import (
     UserOrganizationMembershipRepository,
 )
@@ -45,6 +48,25 @@ def _safe_name(file_name: str) -> str:
     return safe[:255]
 
 
+def _parse_org_tag(recipient: str | None) -> str | None:
+    """Extract the ``+<org-slug>`` sub-address tag from an envelope recipient.
+
+    ``ingest+acme@newtaven.com`` → ``"acme"``; ``ingest@newtaven.com`` → ``None``.
+    Tolerates a display-name form (``"Name" <ingest+acme@...>``) and normalizes to
+    lowercase so it matches ``Organization.slug``.
+    """
+    if not recipient:
+        return None
+    address = recipient.strip()
+    if "<" in address and ">" in address:
+        address = address[address.rfind("<") + 1 : address.rfind(">")]
+    local = address.split("@", 1)[0]
+    if "+" not in local:
+        return None
+    tag = local.split("+", 1)[1].strip().lower()
+    return tag or None
+
+
 class EmailIngestService:
     def __init__(self, db: Session):
         self.db = db
@@ -62,18 +84,10 @@ class EmailIngestService:
         if user is None:
             return self._drop(f"unknown sender {payload.sender_email!r}")
 
-        # 2. Require exactly one admin/fund_manager membership.
-        eligible = [
-            m
-            for m in self.memberships.list_for_user(user.id)  # type: ignore[invalid-argument-type]
-            if m.role in _INGEST_ROLES
-        ]
-        if len(eligible) != 1:
-            return self._drop(
-                f"sender {payload.sender_email!r} has {len(eligible)} eligible "
-                "memberships (need exactly 1)"
-            )
-        organization_id = eligible[0].organization_id
+        # 2. Resolve the target organization (see _resolve_organization).
+        organization_id, reason = self._resolve_organization(user, payload.recipient)
+        if organization_id is None:
+            return self._drop(reason or "could not resolve organization")
 
         # 3. Store each attachment and create a Document row.
         storage = get_storage()
@@ -107,7 +121,7 @@ class EmailIngestService:
             title = (payload.subject.strip() or safe_name)[:255]
             document = self.documents.create(
                 DocumentCreate(
-                    organization_id=organization_id,  # type: ignore[invalid-argument-type]
+                    organization_id=organization_id,
                     document_type=DocumentType.other,
                     title=title,
                     file_name=safe_name,
@@ -124,6 +138,45 @@ class EmailIngestService:
         if not created:
             return self._drop("no storable attachments")
         return EmailIngestResult(status="created", document_ids=created)
+
+    def _resolve_organization(
+        self, user: User, recipient: str | None
+    ) -> tuple[uuid.UUID | None, str | None]:
+        """Pick the target org for an ingest, returning ``(org_id, drop_reason)``.
+
+        A ``+<org-slug>`` tag on the recipient selects the org explicitly; the
+        sender must hold an eligible (admin/fund_manager) membership there, or
+        the mail is dropped — an invalid tag never silently falls back to
+        another org. Without a tag, a sender with exactly one eligible
+        membership resolves to it; zero or several is ambiguous, so drop and
+        (for the multi-org case) tell them to use the tagged address.
+        """
+        tag = _parse_org_tag(recipient)
+        if tag is not None:
+            org = OrganizationRepository(self.db).get_by_slug(tag)
+            if org is None:
+                return None, f"unknown organization tag {tag!r}"
+            membership = self.memberships.get(user.id, org.id)  # type: ignore[invalid-argument-type]
+            if membership is None or membership.role not in _INGEST_ROLES:
+                return None, (
+                    f"sender {user.email!r} is not authorized for organization "
+                    f"{tag!r}"
+                )
+            return org.id, None  # type: ignore[invalid-return-type]
+
+        eligible = [
+            m
+            for m in self.memberships.list_for_user(user.id)  # type: ignore[invalid-argument-type]
+            if m.role in _INGEST_ROLES
+        ]
+        if len(eligible) == 1:
+            return eligible[0].organization_id, None  # type: ignore[invalid-return-type]
+        if not eligible:
+            return None, f"sender {user.email!r} has no eligible memberships"
+        return None, (
+            f"sender {user.email!r} belongs to {len(eligible)} organizations; "
+            "target one with ingest+<org-slug>@newtaven.com"
+        )
 
     def _drop(self, reason: str) -> EmailIngestResult:
         logger.info("email-ingest drop: %s", reason)

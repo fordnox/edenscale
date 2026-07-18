@@ -84,8 +84,14 @@ def _seed_user(email: str, *, memberships: list[tuple[str, UserRole]] = ()) -> s
         db.close()
 
 
-def _payload(sender: str, *, subject: str = "Q3 report", content: bytes = b"%PDF-1.4"):
-    return {
+def _payload(
+    sender: str,
+    *,
+    recipient: str | None = None,
+    subject: str = "Q3 report",
+    content: bytes = b"%PDF-1.4",
+):
+    payload = {
         "sender_email": sender,
         "subject": subject,
         "attachments": [
@@ -96,6 +102,9 @@ def _payload(sender: str, *, subject: str = "Q3 report", content: bytes = b"%PDF
             }
         ],
     }
+    if recipient is not None:
+        payload["recipient"] = recipient
+    return payload
 
 
 def _headers(token: str = _TOKEN) -> dict:
@@ -161,7 +170,7 @@ def test_lp_only_sender_is_dropped(client):
     assert _documents() == []
 
 
-def test_ambiguous_membership_is_dropped(client):
+def test_ambiguous_membership_without_tag_is_dropped(client):
     org_a = _seed_org("Acme Capital")
     org_b = _seed_org("Beta Partners")
     _seed_user(
@@ -170,12 +179,99 @@ def test_ambiguous_membership_is_dropped(client):
     )
     resp = client.post(
         "/email-ingest/documents",
-        json=_payload("multi@acme.test"),
+        json=_payload("multi@acme.test", recipient="cc@newtaven.com"),
+        headers=_headers(),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "dropped"
+    assert "ingest+" in body["reason"]  # tells the sender how to disambiguate
+    assert _documents() == []
+
+
+def test_plus_tag_routes_multi_org_sender_to_named_org(client):
+    org_a = _seed_org("Acme Capital")
+    org_b = _seed_org("Beta Partners")
+    _seed_user(
+        "multi@acme.test",
+        memberships=[(org_a, UserRole.admin), (org_b, UserRole.fund_manager)],
+    )
+    resp = client.post(
+        "/email-ingest/documents",
+        json=_payload(
+            "multi@acme.test", recipient=f"cc+{slugify('Beta Partners')}@newtaven.com"
+        ),
+        headers=_headers(),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["status"] == "created"
+    docs = _documents()
+    assert len(docs) == 1
+    assert str(docs[0].organization_id) == org_b
+
+
+def test_plus_tag_unknown_org_is_dropped(client):
+    org = _seed_org("Acme Capital")
+    _seed_user("jane@acme.test", memberships=[(org, UserRole.admin)])
+    resp = client.post(
+        "/email-ingest/documents",
+        json=_payload("jane@acme.test", recipient="cc+ghost-org@newtaven.com"),
+        headers=_headers(),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "dropped"
+    assert "unknown organization tag" in body["reason"]
+    assert _documents() == []
+
+
+def test_plus_tag_org_without_membership_is_dropped(client):
+    # Sender is admin of Acme but tags Beta, where they hold no membership:
+    # a valid tag must never fall back to the sender's own org.
+    org_a = _seed_org("Acme Capital")
+    _seed_org("Beta Partners")
+    _seed_user("jane@acme.test", memberships=[(org_a, UserRole.admin)])
+    resp = client.post(
+        "/email-ingest/documents",
+        json=_payload(
+            "jane@acme.test", recipient=f"cc+{slugify('Beta Partners')}@newtaven.com"
+        ),
+        headers=_headers(),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "dropped"
+    assert "not authorized" in body["reason"]
+    assert _documents() == []
+
+
+def test_plus_tag_lp_membership_is_dropped(client):
+    # Membership exists in the tagged org, but only as an LP — not eligible.
+    org = _seed_org("Acme Capital")
+    _seed_user("lp@acme.test", memberships=[(org, UserRole.lp)])
+    resp = client.post(
+        "/email-ingest/documents",
+        json=_payload(
+            "lp@acme.test", recipient=f"cc+{slugify('Acme Capital')}@newtaven.com"
+        ),
         headers=_headers(),
     )
     assert resp.status_code == 200
     assert resp.json()["status"] == "dropped"
     assert _documents() == []
+
+
+def test_plain_recipient_with_no_tag_uses_sole_org(client):
+    org = _seed_org("Acme Capital")
+    _seed_user("jane@acme.test", memberships=[(org, UserRole.admin)])
+    resp = client.post(
+        "/email-ingest/documents",
+        json=_payload("jane@acme.test", recipient="cc@newtaven.com"),
+        headers=_headers(),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["status"] == "created"
+    assert str(_documents()[0].organization_id) == org
 
 
 def test_undecodable_attachment_is_dropped(client):

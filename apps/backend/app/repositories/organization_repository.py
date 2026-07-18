@@ -62,6 +62,9 @@ class OrganizationRepository:
             .first()
         )
 
+    def get_by_slug(self, slug: str) -> Organization | None:
+        return self.db.query(Organization).filter(Organization.slug == slug).first()
+
     def get_demo(self) -> Organization | None:
         """Return the active demo organization, if one is seeded.
 

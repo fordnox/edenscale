@@ -1,30 +1,35 @@
 # Email Ingestion Worker — Implementation Plan
 
-Cloudflare Worker that receives email sent to `cc@newtaven.com`, extracts the
-attachments, and stores them as `Document` rows in the NewTaven backend.
+Cloudflare Worker that receives email sent to `ingest@newtaven.com` (and
+`ingest+<org-slug>@newtaven.com`), extracts the attachments, and stores them as
+`Document` rows in the NewTaven backend.
 
 ## Overview
 
 ```
-Sender ──► cc@newtaven.com
-              │  (Cloudflare Email Routing rule, MX on newtaven.com)
+Sender ──► ingest@newtaven.com  |  ingest+<org-slug>@newtaven.com
+              │  (Cloudflare Email Routing catch-all rule, MX on newtaven.com)
               ▼
         newtaven-email-ingest  (this Worker: email() handler)
               │  1. buffer message.raw (single-use)
               │  2. PostalMime.parse → attachments[]
               │  3. drop inline/CID parts (logos, signatures)
-              │  4. POST base64 attachments + sender to backend
+              │  4. POST base64 attachments + sender + recipient to backend
               ▼
         POST {BACKEND_URL}/email-ingest/documents
         header: X-Email-Ingest-Token: <shared secret>
               │
               ▼
-        Backend resolves sender email → org, writes bytes via
-        storage service, creates Document rows.
+        Backend resolves target org (recipient +tag, else sender's sole
+        eligible org), writes bytes via storage service, creates Documents.
 ```
 
 **Decisions already made (do not re-litigate):**
-- Routing target = **by sender email** (sender → `User` → single admin/fund_manager membership → org). No plus-addressing in v1.
+- Routing target = **plus-addressing with a sender-email fallback**. A
+  `+<org-slug>` tag on the recipient (`ingest+acme@`) selects the org; the sender
+  must hold an `admin`/`fund_manager` membership there. Without a tag, a sender
+  with exactly one eligible org resolves to it; multiple → drop with a hint to
+  use the tagged address. An invalid/unauthorized tag never falls back.
 - Unauthorized/unknown/ambiguous sender = **drop silently**, but always `console.log` the outcome so drops are traceable in Worker logs (`observability` on).
 - Worker is **separate** from `newtaven-gateway` (gateway stays a pure static-asset worker).
 
@@ -183,8 +188,10 @@ Worker contract is unambiguous):
     ]
   }
   ```
-- Behavior: resolve `sender_email` → `User` → require exactly one
-  `admin`/`fund_manager` membership → that org. For each attachment:
+  (plus `"recipient": "ingest+acme@newtaven.com"` — the `+<org-slug>` tag.)
+- Behavior: resolve `sender_email` → `User`; resolve the org from the
+  recipient's `+<org-slug>` tag (sender must be an `admin`/`fund_manager` there),
+  else fall back to the sender's sole eligible membership. For each attachment:
   `storage.write(...)` then `DocumentRepository.create(...)` with
   `document_type=other`, `title = subject || file_name`, `is_confidential=true`,
   `uploaded_by_user_id = user.id`. Fires `notify_document_uploaded`.
@@ -204,14 +211,17 @@ Worker contract is unambiguous):
 1. **Enable Email Routing** on `newtaven.com` (Dashboard → Email Service → Email
    Routing, or `wrangler email routing enable`). This publishes the MX records.
 2. **Deploy the Worker:** `cd apps/email-ingest && pnpm run deploy`.
-3. **Create the routing rule:**
+3. **Route inbound mail to the Worker.** Addresses are `ingest@newtaven.com`
+   (single-org senders) and `ingest+<org-slug>@newtaven.com` (explicit org).
+   Plus-tagged sub-addresses are NOT individually creatable, so route them via a
+   **catch-all** rule to the Worker:
    ```
-   wrangler email routing rules create \
-     --name "cc-ingest" \
-     "cc@newtaven.com" \
-     --worker newtaven-email-ingest
+   wrangler email routing rules catch-all update --worker newtaven-email-ingest
    ```
-   (or via Dashboard → Routing Rules → custom address → send to Worker).
+   (or Dashboard → Email Routing → Catch-all address → Send to Worker). The
+   Worker/backend simply drop mail with no attachments or an unresolvable
+   sender/org, so catch-all is safe — but the handler may optionally ignore any
+   local-part whose base isn't `ingest`.
 4. **Set the shared secret (same value both sides):**
    ```
    cd apps/email-ingest && wrangler secret put EMAIL_INGEST_TOKEN
@@ -230,7 +240,8 @@ Worker contract is unambiguous):
 
 ## Out of scope for v1 (note in code comments)
 
-- Plus-addressing / per-fund or per-investor targeting.
+- Per-fund or per-investor targeting (org-level only; a `+<org-slug>` tag
+  selects the org, but not a fund/investor within it).
 - Storing the email body/message itself as a document (attachments only).
 - Bounce/forward on failure (explicitly chosen: silent drop + log).
 - De-duplication of repeated sends (same file emailed twice ⇒ two documents).

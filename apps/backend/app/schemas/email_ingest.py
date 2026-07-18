@@ -11,8 +11,13 @@ class EmailIngestAttachment(BaseModel):
 
 class EmailIngestRequest(BaseModel):
     # The SMTP envelope sender, as forwarded by the Worker. Resolved against
-    # ``users.email`` to determine the target organization.
+    # ``users.email`` to identify (and authorize) the person ingesting.
     sender_email: str = Field(min_length=3, max_length=320)
+    # The envelope recipient the mail was delivered to, e.g.
+    # ``ingest+acme@newtaven.com``. A ``+<org-slug>`` tag, when present, selects the
+    # target organization (the sender must be a member of it). Optional: without
+    # a tag, a sender with exactly one eligible org still resolves.
+    recipient: str | None = Field(default=None, max_length=320)
     subject: str = Field(default="", max_length=998)
     attachments: list[EmailIngestAttachment] = Field(min_length=1)
 

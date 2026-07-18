@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
-import { Download, FileText, Loader2, Lock } from "lucide-react"
+import { useParams } from "react-router-dom"
+import { toast } from "sonner"
+import { Check, Copy, Download, FileText, Loader2, Lock, Mail } from "lucide-react"
 
 import { DocumentDetail } from "@/components/documents/DocumentDetail"
 import { DocumentUploadDialog } from "@/components/documents/DocumentUploadDialog"
@@ -49,9 +51,28 @@ function formatBytes(n: number | null | undefined) {
 
 export default function DocumentsPage() {
   const { activeMembership } = useActiveOrganization()
+  const { orgSlug } = useParams<{ orgSlug: string }>()
   const canManage =
     activeMembership?.role === "admin" ||
     activeMembership?.role === "fund_manager"
+
+  // Attachments emailed to this address land in this org's library (see the
+  // email-ingest Worker). The +<org-slug> tag selects the org, so the address
+  // is org-specific.
+  const ingestAddress = orgSlug ? `ingest+${orgSlug}@newtaven.com` : null
+  const [addressCopied, setAddressCopied] = useState(false)
+
+  const copyIngestAddress = async () => {
+    if (!ingestAddress) return
+    try {
+      await navigator.clipboard.writeText(ingestAddress)
+      setAddressCopied(true)
+      toast.success("Email address copied")
+      window.setTimeout(() => setAddressCopied(false), 2000)
+    } catch {
+      toast.error("Could not copy — copy the address manually")
+    }
+  }
 
   const [uploadOpen, setUploadOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -134,6 +155,42 @@ export default function DocumentsPage() {
             {documents.length} file{documents.length === 1 ? "" : "s"}
           </span>
         </div>
+
+        {canManage && ingestAddress && (
+          <div className="mb-4 flex flex-col gap-3 border border-[color:var(--border-hairline)] bg-parchment-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center border border-[color:var(--border-hairline)] bg-surface text-ink-700">
+                <Mail strokeWidth={1.5} className="size-4" />
+              </span>
+              <div className="flex flex-col gap-1">
+                <span className="font-sans text-[13px] font-medium text-ink-800">
+                  Upload by email
+                </span>
+                <span className="font-sans text-[12px] leading-relaxed text-ink-500">
+                  Forward or CC any message to{" "}
+                  <code className="rounded-xs bg-surface px-1.5 py-0.5 font-mono text-[12px] text-ink-800">
+                    {ingestAddress}
+                  </code>{" "}
+                  and its attachments are added to this organization's library
+                  automatically.
+                </span>
+              </div>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="shrink-0 gap-2"
+              onClick={copyIngestAddress}
+            >
+              {addressCopied ? (
+                <Check strokeWidth={1.5} className="size-4" />
+              ) : (
+                <Copy strokeWidth={1.5} className="size-4" />
+              )}
+              {addressCopied ? "Copied" : "Copy address"}
+            </Button>
+          </div>
+        )}
 
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">

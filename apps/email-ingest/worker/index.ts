@@ -14,7 +14,8 @@ interface IngestAttachment {
 }
 
 /**
- * Cloudflare Email Routing worker for cc@newtaven.com.
+ * Cloudflare Email Routing worker for ingest@newtaven.com (and
+ * ingest+<org-slug>@newtaven.com).
  *
  * Extracts real file attachments from an inbound email and forwards them to the
  * backend's shared-secret ingestion endpoint, which resolves the sender's
@@ -64,6 +65,9 @@ export default {
 
     const payload = {
       sender_email: from,
+      // Envelope recipient (e.g. ingest+acme@newtaven.com). A +<org-slug> tag here
+      // selects the target org backend-side for senders in multiple orgs.
+      recipient: to,
       subject: parsed.subject ?? "",
       attachments,
     };

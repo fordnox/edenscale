@@ -2598,6 +2598,8 @@ export interface components {
         EmailIngestRequest: {
             /** Sender Email */
             sender_email: string;
+            /** Recipient */
+            recipient?: string | null;
             /**
              * Subject
              * @default
