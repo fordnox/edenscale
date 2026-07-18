@@ -71,6 +71,7 @@ env:
     - S3_SECRET_ACCESS_KEY
     - S3_BUCKET_NAME
     - S3_PUBLIC_URL
+    - EMAIL_INGEST_TOKEN
 
 # Persisted local services on the server (managed by Kamal, not the proxy).
 accessories:
