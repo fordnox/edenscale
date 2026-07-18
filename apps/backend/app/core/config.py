@@ -34,6 +34,16 @@ class Settings(BaseSettings):
     # feature is OFF — the endpoint returns 404 until an operator sets a token.
     EMAIL_INGEST_TOKEN: str = ""
 
+    # AI letter drafting (see app/services/letter_drafting.py). The documents
+    # library exposes a "Draft letter" action that sends a document to an LLM
+    # (via OpenRouter) and saves the result as a Communication draft. OFF until
+    # OPENROUTER_API_KEY is set — the endpoint returns 404 and the feature is
+    # inert without it. OPENROUTER_MODEL is any OpenRouter slug (e.g.
+    # anthropic/claude-sonnet-5) and can be overridden per environment.
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = "anthropic/claude-opus-4.8"
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+
     # S3/R2 storage settings
     STORAGE_BACKEND: str = "local"
     DEV_STORAGE_TOKEN: str = "dev-storage"
@@ -56,6 +66,11 @@ class Settings(BaseSettings):
         if host in ("localhost", "127.0.0.1"):
             return f"http://{domain if ':' in domain else f'{domain}:3000'}"
         return f"https://{domain}"
+
+    @property
+    def letter_drafting_enabled(self) -> bool:
+        """Whether AI letter drafting is configured (an API key is present)."""
+        return bool(self.OPENROUTER_API_KEY.strip())
 
     @property
     def superadmin_emails(self) -> frozenset[str]:

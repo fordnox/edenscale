@@ -51,6 +51,7 @@ from app.schemas.distribution import (
 )
 from app.schemas.document import (
     DocumentCreate,
+    DocumentDraftLetterResponse,
     DocumentRead,
     DocumentUpdate,
     DocumentUploadInit,
@@ -176,6 +177,7 @@ __all__ = [
     "DistributionRead",
     "DistributionUpdate",
     "DocumentCreate",
+    "DocumentDraftLetterResponse",
     "DocumentRead",
     "DocumentUpdate",
     "DocumentUploadInit",

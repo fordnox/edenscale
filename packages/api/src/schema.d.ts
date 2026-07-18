@@ -1415,6 +1415,30 @@ export interface paths {
         patch: operations["update_document_documents__document_id__patch"];
         trace?: never;
     };
+    "/documents/{document_id}/draft-letter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Letter From Document
+         * @description Queue an AI letter draft from a document.
+         *
+         *     Runs in the worker (Claude on a multi-page PDF is slow); the draft lands in
+         *     the Letters area as a Communication and the requester is notified when
+         *     ready. 404 when the feature is off (no ``OPENROUTER_API_KEY``).
+         */
+        post: operations["draft_letter_from_document_documents__document_id__draft_letter_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dev-storage/{key}": {
         parameters: {
             query?: never;
@@ -2499,6 +2523,20 @@ export interface components {
              * @default true
              */
             is_confidential: boolean;
+        };
+        /**
+         * DocumentDraftLetterResponse
+         * @description Ack for the async ``POST /documents/{id}/draft-letter`` action.
+         *
+         *     Drafting runs in the worker; the draft appears in the Letters area once the
+         *     job completes and the requester is notified.
+         */
+        DocumentDraftLetterResponse: {
+            /**
+             * Status
+             * @default queued
+             */
+            status: string;
         };
         /** DocumentRead */
         DocumentRead: {
@@ -7087,6 +7125,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    draft_letter_from_document_documents__document_id__draft_letter_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Organization-Id"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentDraftLetterResponse"];
                 };
             };
             /** @description Validation Error */

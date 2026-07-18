@@ -128,6 +128,7 @@ class CustomerNotificationType(enum.StrEnum):
     COMMITMENT_STATUS = "customer.commitment_status"
     TASK_ASSIGNED = "customer.task_assigned"
     COMMUNICATION = "customer.communication"
+    LETTER_DRAFTED = "customer.letter_drafted"
 
 
 NotificationType = AdminNotificationType | CustomerNotificationType

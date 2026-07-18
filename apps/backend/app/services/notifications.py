@@ -465,6 +465,58 @@ async def notify_task_assigned(db: Session, *, task: Task, assignee_user_id) -> 
         logger.exception("Task %s notify failed", task.id)
 
 
+async def notify_letter_drafted(
+    db: Session,
+    *,
+    communication,
+    recipient_user_id,
+    document_title,
+) -> None:
+    """Tell the manager who requested it that their AI letter draft is ready.
+
+    Single recipient (the requester); links to the manager Letters area where
+    the draft now sits as an unsent Communication.
+    """
+    try:
+        recipient = db.query(User).filter(User.id == recipient_user_id).first()
+        if recipient is None:
+            return
+        # Brand + link with the org the letter belongs to (via its fund, if any).
+        organization = (
+            db.query(Organization)
+            .join(Fund, Fund.organization_id == Organization.id)
+            .filter(Fund.id == communication.fund_id)
+            .first()
+            if communication.fund_id is not None
+            else None
+        )
+        view_url = (
+            f"{_app_base_url()}/manager/{organization.slug}/letters"
+            if organization is not None
+            else f"{_app_base_url()}/manager"
+        )
+        await publish_customer_event(
+            user_id=str(recipient.id),
+            organization_id=(
+                str(organization.id) if organization is not None else None
+            ),
+            event_type=CustomerNotificationType.LETTER_DRAFTED,
+            title="Your letter draft is ready",
+            message=f"A draft letter based on '{document_title}' is ready to review.",
+            data={
+                "recipient_email": recipient.email,
+                "recipient_name": (recipient.first_name or "").strip() or "there",
+                "document_title": document_title,
+                "subject": communication.subject,
+                "view_url": view_url,
+            },
+            reference_type="communication",
+            reference_id=str(communication.id),
+        )
+    except Exception:
+        logger.exception("Letter-drafted notify failed for %s", communication.id)
+
+
 async def notify_communication(
     db: Session,
     *,

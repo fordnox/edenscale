@@ -22,6 +22,7 @@ from app.repositories.investor_repository import InvestorRepository
 from app.repositories.organization_repository import OrganizationRepository
 from app.schemas.document import (
     DocumentCreate,
+    DocumentDraftLetterResponse,
     DocumentRead,
     DocumentUpdate,
     DocumentUploadInit,
@@ -33,6 +34,7 @@ from app.services.storage import (
     get_storage,
     key_from_file_url,
 )
+from app.tasks import enqueue_draft_letter
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -255,6 +257,46 @@ async def update_document(
     updated = repo.update(document_id, data)
     assert updated is not None
     return _to_read(updated)
+
+
+@router.post(
+    "/{document_id}/draft-letter",
+    response_model=DocumentDraftLetterResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def draft_letter_from_document(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    membership: UserOrganizationMembership = Depends(
+        require_membership_roles(UserRole.admin, UserRole.fund_manager)
+    ),
+):
+    """Queue an AI letter draft from a document.
+
+    Runs in the worker (Claude on a multi-page PDF is slow); the draft lands in
+    the Letters area as a Communication and the requester is notified when
+    ready. 404 when the feature is off (no ``OPENROUTER_API_KEY``).
+    """
+    if not settings.letter_drafting_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="AI letter drafting is not enabled",
+        )
+    repo = DocumentRepository(db)
+    document = repo.get(document_id)
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
+    if not repo.membership_can_manage(membership, document):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot draft a letter from this document",
+        )
+    await enqueue_draft_letter(
+        document_id=str(document_id), user_id=str(membership.user_id)
+    )
+    return DocumentDraftLetterResponse()
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)

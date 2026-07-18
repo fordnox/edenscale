@@ -62,3 +62,13 @@ class DocumentUploadInitResponse(BaseModel):
     upload_url: str
     file_url: str
     expires_at: datetime
+
+
+class DocumentDraftLetterResponse(BaseModel):
+    """Ack for the async ``POST /documents/{id}/draft-letter`` action.
+
+    Drafting runs in the worker; the draft appears in the Letters area once the
+    job completes and the requester is notified.
+    """
+
+    status: str = "queued"

@@ -11,6 +11,7 @@ from app.services.iso20022 import (
     ParsedBankEntry,
     parse_camt,
 )
+from app.services.letter_drafting import draft_letter
 from app.services.metrics import (
     FundMetrics,
     fund_cashflows,
@@ -44,6 +45,7 @@ __all__ = [
     "EmailIngestService",
     "allocate_pro_rata",
     "deliver_drip_event",
+    "draft_letter",
     "ensure_hanko_user",
     "fire_investor_signup",
     "fund_cashflows",

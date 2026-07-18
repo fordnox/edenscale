@@ -166,12 +166,93 @@ async def task_fire_drip_event(
         logger.info("Drip event fired: event=%s recipient=%s", event, email)
 
 
+async def task_draft_letter(
+    ctx: dict,
+    *,
+    document_id: str,
+    user_id: str,
+) -> None:
+    """Draft a letter from a document with Claude and save it to Letters.
+
+    The document bytes are read server-side and drafted via
+    ``app.services.letter_drafting`` (blocking Anthropic call — run off the
+    event loop). The result is persisted as an unsent ``Communication`` (type
+    ``announcement``) and the requesting manager is notified. Missing document
+    or a failed draft is logged and dropped, never retried forever.
+    """
+    import asyncio
+
+    from app.models.enums import CommunicationType
+    from app.repositories.communication_repository import CommunicationRepository
+    from app.repositories.document_repository import DocumentRepository
+    from app.schemas.communication import CommunicationCreate
+    from app.services.letter_drafting import draft_letter
+    from app.services.notifications import notify_letter_drafted
+    from app.services.storage import get_storage, key_from_file_url
+
+    db = SessionLocal()
+    try:
+        document = DocumentRepository(db).get(UUID(document_id))
+        if document is None:
+            logger.warning("task_draft_letter: document %s not found", document_id)
+            return
+
+        file_bytes: bytes | None = None
+        if document.file_url:
+            try:
+                file_bytes = get_storage().read(
+                    key_from_file_url(document.file_url)  # type: ignore[invalid-argument-type]
+                )
+            except Exception:
+                logger.exception(
+                    "task_draft_letter: could not read bytes for document %s",
+                    document_id,
+                )
+
+        try:
+            subject, body = await asyncio.to_thread(
+                draft_letter,
+                file_bytes=file_bytes,
+                mime_type=document.mime_type,  # type: ignore[invalid-argument-type]
+                title=document.title,  # type: ignore[invalid-argument-type]
+            )
+        except Exception:
+            logger.exception(
+                "task_draft_letter: drafting failed for document %s", document_id
+            )
+            return
+
+        communication = CommunicationRepository(db).create_draft(
+            CommunicationCreate(
+                fund_id=document.fund_id,  # type: ignore[invalid-argument-type]
+                type=CommunicationType.announcement,
+                subject=subject,
+                body=body,
+            ),
+            sender_user_id=UUID(user_id),
+        )
+        await notify_letter_drafted(
+            db,
+            communication=communication,
+            recipient_user_id=UUID(user_id),
+            document_title=document.title,
+        )
+        logger.info(
+            "task_draft_letter: drafted communication %s from document %s",
+            communication.id,
+            document_id,
+        )
+    finally:
+        db.close()
+
+
 class WorkerSettings:
     queue_name = settings.APP_DOMAIN
     functions = [
         task_ping,
         task_send_notification,
         task_fire_drip_event,
+        task_draft_letter,
     ]
     cron_jobs = [
         cron(cron_mark_overdue_capital_calls, hour=6, minute=0)  # type: ignore[invalid-argument-type]

@@ -72,6 +72,8 @@ env:
     - S3_BUCKET_NAME
     - S3_PUBLIC_URL
     - EMAIL_INGEST_TOKEN
+    - OPENROUTER_API_KEY
+    - OPENROUTER_MODEL
 
 # Persisted local services on the server (managed by Kamal, not the proxy).
 accessories:

@@ -44,6 +44,15 @@ class StoragePort(ABC):
         """Return a (possibly time-limited) URL the client can GET to read the file."""
 
     @abstractmethod
+    def read(self, key: str) -> bytes | None:
+        """Return the raw bytes stored under ``key``, or ``None`` if absent.
+
+        Server-side read of the object (no client round-trip), used where the
+        API itself needs the content — e.g. AI letter drafting. ``key`` comes
+        out of a stored ``file_url`` via :func:`key_from_file_url`, so it is
+        already prefixed; implementations must not prefix again."""
+
+    @abstractmethod
     def write(self, key: str, content: bytes, mime_type: str | None = None) -> None:
         """Persist raw bytes under ``key`` (as returned inside upload URLs —
         already prefixed; implementations must not prefix again)."""
@@ -196,6 +205,17 @@ class S3Storage(StoragePort):
             Params={"Bucket": self._bucket, "Key": key},
             ExpiresIn=int(_PRESIGN_TTL.total_seconds()),
         )
+
+    def read(self, key: str) -> bytes | None:
+        from botocore.exceptions import ClientError
+
+        try:
+            response = self._client.get_object(Bucket=self._bucket, Key=key)
+        except ClientError:
+            # Missing key (NoSuchKey) or any access error — treat as absent so
+            # callers degrade rather than crash the worker.
+            return None
+        return response["Body"].read()
 
     def write(self, key: str, content: bytes, mime_type: str | None = None) -> None:
         extra: dict = {"ContentType": mime_type} if mime_type else {}

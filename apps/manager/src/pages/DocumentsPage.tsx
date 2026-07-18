@@ -2,13 +2,31 @@ import { useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { useParams } from "react-router-dom"
 import { toast } from "sonner"
-import { Check, Copy, Download, FileText, Loader2, Lock, Mail } from "lucide-react"
+import {
+  Check,
+  Copy,
+  Download,
+  FileText,
+  Loader2,
+  Lock,
+  Mail,
+  MoreHorizontal,
+  Pencil,
+  Sparkles,
+} from "lucide-react"
 
 import { DocumentDetail } from "@/components/documents/DocumentDetail"
+import { DocumentEditDialog } from "@/components/documents/DocumentEditDialog"
 import { DocumentUploadDialog } from "@/components/documents/DocumentUploadDialog"
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Button } from "@edenscale/ui/button"
 import { Card, CardSection } from "@edenscale/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@edenscale/ui/dropdown-menu"
 import { EmptyState } from "@edenscale/ui/EmptyState"
 import { Eyebrow } from "@edenscale/ui/eyebrow"
 import {
@@ -26,6 +44,7 @@ import {
 } from "@edenscale/ui/sheet"
 import { DataTable, TD, TH, TR } from "@edenscale/ui/table"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
+import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { config } from "@edenscale/api/config"
 import { formatDate, titleCase } from "@edenscale/shared/format"
@@ -76,9 +95,25 @@ export default function DocumentsPage() {
 
   const [uploadOpen, setUploadOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [editDoc, setEditDoc] = useState<{
+    id: string
+    title: string
+    document_type: DocumentType
+    is_confidential: boolean
+  } | null>(null)
   const [typeFilter, setTypeFilter] = useState<"all" | DocumentType>("all")
   const [fundFilter, setFundFilter] = useState<"all" | string>("all")
   const [investorFilter, setInvestorFilter] = useState<"all" | string>("all")
+
+  const draftLetter = useApiMutation(
+    "post",
+    "/documents/{document_id}/draft-letter",
+    {
+      onSuccess: () => {
+        toast.success("Drafting your letter — it'll appear in Letters shortly")
+      },
+    },
+  )
 
   const fundsQuery = useApiQuery("/funds")
   const investorsQuery = useApiQuery("/investors")
@@ -322,24 +357,73 @@ export default function DocumentsPage() {
                           {doc.created_at ? formatDate(doc.created_at) : "—"}
                         </TD>
                         <TD align="right">
-                          <Button
-                            asChild
-                            variant="ghost"
-                            size="sm"
-                            aria-label="Download"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <a
-                              href={downloadUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              aria-label="Document actions"
+                              onClick={(event) => event.stopPropagation()}
+                              className="inline-flex size-7 items-center justify-center rounded-xs text-ink-500 transition-colors hover:bg-parchment-100 hover:text-ink-800 focus-visible:outline-none"
                             >
-                              <Download
+                              <MoreHorizontal
                                 strokeWidth={1.5}
-                                className="size-4 text-ink-500"
+                                className="size-4"
                               />
-                            </a>
-                          </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-48"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              {canManage && (
+                                <DropdownMenuItem
+                                  onSelect={() =>
+                                    setEditDoc({
+                                      id: doc.id,
+                                      title: doc.title,
+                                      document_type: doc.document_type,
+                                      is_confidential: doc.is_confidential,
+                                    })
+                                  }
+                                >
+                                  <Pencil
+                                    strokeWidth={1.5}
+                                    className="size-4"
+                                  />
+                                  Edit
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem asChild>
+                                <a
+                                  href={downloadUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Download
+                                    strokeWidth={1.5}
+                                    className="size-4"
+                                  />
+                                  Download
+                                </a>
+                              </DropdownMenuItem>
+                              {canManage && (
+                                <DropdownMenuItem
+                                  disabled={draftLetter.isPending}
+                                  onSelect={() =>
+                                    draftLetter.mutate({
+                                      params: {
+                                        path: { document_id: doc.id },
+                                      },
+                                    })
+                                  }
+                                >
+                                  <Sparkles
+                                    strokeWidth={1.5}
+                                    className="size-4"
+                                  />
+                                  Draft letter
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TD>
                       </TR>
                     )
@@ -380,6 +464,16 @@ export default function DocumentsPage() {
         onOpenChange={setUploadOpen}
         onCreated={(id) => setSelectedId(id)}
       />
+
+      {editDoc && (
+        <DocumentEditDialog
+          document={editDoc}
+          open={editDoc !== null}
+          onOpenChange={(next) => {
+            if (!next) setEditDoc(null)
+          }}
+        />
+      )}
     </>
   )
 }

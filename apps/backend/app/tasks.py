@@ -78,6 +78,23 @@ async def enqueue_send_notification(
     )
 
 
+async def enqueue_draft_letter(*, document_id: str, user_id: str):
+    """Enqueue an AI letter draft for a document (see ``app.worker``).
+
+    Bounded by :data:`_ENQUEUE_TIMEOUT_SECONDS` so a hung Redis can't stall the
+    request; unlike the notification helpers, the caller (the draft-letter
+    endpoint) surfaces a failure to the user rather than swallowing it.
+    """
+    return await asyncio.wait_for(
+        enqueue_task(
+            "task_draft_letter",
+            document_id=document_id,
+            user_id=user_id,
+        ),
+        timeout=_ENQUEUE_TIMEOUT_SECONDS,
+    )
+
+
 async def enqueue_drip_event(*, event: str, email: str, payload: dict):
     """Enqueue a Resend automation event (see ``app.services.drip``).
 

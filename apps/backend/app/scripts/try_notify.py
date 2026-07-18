@@ -39,6 +39,7 @@ from app.services.notifications import (
     notify_document_uploaded,
     notify_invitation,
     notify_invitation_accepted,
+    notify_letter_drafted,
     notify_task_assigned,
     notify_welcome,
 )
@@ -164,6 +165,15 @@ async def _send_communication(db: Session) -> None:
     )
 
 
+async def _send_letter_drafted(db: Session) -> None:
+    await notify_letter_drafted(
+        db,
+        communication=_first_communication(db),
+        recipient_user_id=_first_user(db).id,
+        document_title=_first_document(db).title,
+    )
+
+
 DISPATCH: dict[str, Callable[[Session], Awaitable[None]]] = {
     "customer.welcome": _send_welcome,
     "customer.invitation": _send_invitation,
@@ -174,6 +184,7 @@ DISPATCH: dict[str, Callable[[Session], Awaitable[None]]] = {
     "customer.commitment_status": _send_commitment_status,
     "customer.task_assigned": _send_task_assigned,
     "customer.communication": _send_communication,
+    "customer.letter_drafted": _send_letter_drafted,
 }
 
 

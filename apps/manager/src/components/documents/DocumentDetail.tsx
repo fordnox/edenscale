@@ -14,41 +14,12 @@ import {
   AlertDialogTitle,
 } from "@edenscale/ui/alert-dialog"
 import { Button } from "@edenscale/ui/button"
-import { Checkbox } from "@edenscale/ui/checkbox"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@edenscale/ui/dialog"
 import { Eyebrow } from "@edenscale/ui/eyebrow"
-import { Input } from "@edenscale/ui/input"
-import { Label } from "@edenscale/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@edenscale/ui/select"
+import { DocumentEditDialog } from "@/components/documents/DocumentEditDialog"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { formatDate, titleCase } from "@edenscale/shared/format"
-import type { components } from "@edenscale/api/schema"
-
-type DocumentType = components["schemas"]["DocumentType"]
-
-const TYPE_OPTIONS: Array<{ value: DocumentType; label: string }> = [
-  { value: "report", label: "Report" },
-  { value: "financial", label: "Financial" },
-  { value: "notice", label: "Notice" },
-  { value: "legal", label: "Legal" },
-  { value: "kyc_aml", label: "KYC / AML" },
-  { value: "other", label: "Other" },
-]
 
 function formatBytes(n: number | null | undefined) {
   if (!n || n <= 0) return "—"
@@ -74,27 +45,7 @@ export function DocumentDetail({ documentId, onDeleted }: DocumentDetailProps) {
 
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
-  const [editTitle, setEditTitle] = useState("")
-  const [editType, setEditType] = useState<DocumentType>("other")
-  const [editConfidential, setEditConfidential] = useState(true)
 
-  function invalidate() {
-    queryClient.invalidateQueries({ queryKey: ["/documents"] })
-    queryClient.invalidateQueries({
-      queryKey: [
-        "/documents/{document_id}",
-        { params: { path: { document_id: documentId } } },
-      ],
-    })
-  }
-
-  const updateDocument = useApiMutation("patch", "/documents/{document_id}", {
-    onSuccess: () => {
-      toast.success("Document updated")
-      invalidate()
-      setEditOpen(false)
-    },
-  })
   const deleteDocument = useApiMutation("delete", "/documents/{document_id}", {
     onSuccess: () => {
       toast.success("Document deleted")
@@ -113,13 +64,6 @@ export function DocumentDetail({ documentId, onDeleted }: DocumentDetailProps) {
 
   const doc = documentQuery.data
   const downloadUrl = doc.download_url ?? doc.file_url
-
-  function openEdit() {
-    setEditTitle(doc.title)
-    setEditType(doc.document_type)
-    setEditConfidential(doc.is_confidential)
-    setEditOpen(true)
-  }
 
   return (
     <div className="flex h-full flex-col">
@@ -214,7 +158,7 @@ export function DocumentDetail({ documentId, onDeleted }: DocumentDetailProps) {
                 variant="secondary"
                 size="sm"
                 className="min-h-11 w-full md:min-h-9 md:w-auto"
-                onClick={openEdit}
+                onClick={() => setEditOpen(true)}
               >
                 <Pencil strokeWidth={1.5} className="size-4" />
                 Edit
@@ -259,83 +203,16 @@ export function DocumentDetail({ documentId, onDeleted }: DocumentDetailProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit document</DialogTitle>
-            <DialogDescription>
-              Update the title, classification, or confidentiality of this
-              document.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="document-title">Title</Label>
-              <Input
-                id="document-title"
-                value={editTitle}
-                onChange={(event) => setEditTitle(event.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label>Type</Label>
-              <Select
-                value={editType}
-                onValueChange={(value) => setEditType(value as DocumentType)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TYPE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <label className="flex items-center gap-2 font-sans text-[13px] text-ink-700">
-              <Checkbox
-                checked={editConfidential}
-                onCheckedChange={(checked) =>
-                  setEditConfidential(checked === true)
-                }
-              />
-              Confidential (hidden from limited partners on fund-wide shares)
-            </label>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setEditOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={updateDocument.isPending || editTitle.trim() === ""}
-              onClick={() =>
-                updateDocument.mutate({
-                  params: { path: { document_id: documentId } },
-                  body: {
-                    title: editTitle.trim(),
-                    document_type: editType,
-                    is_confidential: editConfidential,
-                  },
-                })
-              }
-            >
-              {updateDocument.isPending && (
-                <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
-              )}
-              Save changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DocumentEditDialog
+        document={{
+          id: doc.id,
+          title: doc.title,
+          document_type: doc.document_type,
+          is_confidential: doc.is_confidential,
+        }}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
     </div>
   )
 }
