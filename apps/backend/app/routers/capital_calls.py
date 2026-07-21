@@ -10,11 +10,11 @@ from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.capital_call import CapitalCall
-from app.models.commitment import Commitment
-from app.models.enums import CapitalCallStatus, CommitmentStatus, UserRole
+from app.models.enums import CapitalCallStatus, UserRole
 from app.models.fund import Fund
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.capital_call_repository import CapitalCallRepository
+from app.repositories.commitment_repository import CommitmentRepository
 from app.repositories.fund_repository import FundRepository
 from app.repositories.lp_scope import lp_visible_commitment_ids
 from app.schemas.capital_call import (
@@ -143,7 +143,10 @@ async def update_capital_call(
             status_code=status.HTTP_404_NOT_FOUND, detail="Capital call not found"
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     updated = repo.update(call_id, data)
     assert updated is not None
@@ -171,18 +174,15 @@ async def add_capital_call_items(
             status_code=status.HTTP_404_NOT_FOUND, detail="Capital call not found"
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     allocations: list[tuple[uuid.UUID, Decimal]]
     if mode == "pro-rata":
-        approved = (
-            db.query(Commitment)
-            .filter(
-                Commitment.fund_id == call.fund_id,
-                Commitment.status == CommitmentStatus.approved,
-            )
-            .order_by(Commitment.created_at, Commitment.id)
-            .all()
+        approved = CommitmentRepository(db).list_approved_for_allocation(
+            call.fund_id  # type: ignore[invalid-argument-type]
         )
         if not approved:
             raise HTTPException(
@@ -233,7 +233,10 @@ async def update_capital_call_item(
             status_code=status.HTTP_404_NOT_FOUND, detail="Capital call not found"
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     item = next((i for i in call.items if i.id == item_id), None)
     if item is None:
@@ -270,7 +273,10 @@ async def send_capital_call(
             status_code=status.HTTP_404_NOT_FOUND, detail="Capital call not found"
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     try:
         sent = repo.send(call_id)
@@ -298,7 +304,10 @@ async def cancel_capital_call(
             status_code=status.HTTP_404_NOT_FOUND, detail="Capital call not found"
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     try:
         cancelled = repo.cancel(call_id)

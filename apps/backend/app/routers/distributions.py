@@ -9,11 +9,11 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
-from app.models.commitment import Commitment
 from app.models.distribution import Distribution
-from app.models.enums import CommitmentStatus, DistributionStatus, UserRole
+from app.models.enums import DistributionStatus, UserRole
 from app.models.fund import Fund
 from app.models.user_organization_membership import UserOrganizationMembership
+from app.repositories.commitment_repository import CommitmentRepository
 from app.repositories.distribution_repository import DistributionRepository
 from app.repositories.fund_repository import FundRepository
 from app.repositories.lp_scope import lp_visible_commitment_ids
@@ -144,7 +144,10 @@ async def update_distribution(
             status_code=status.HTTP_404_NOT_FOUND, detail="Distribution not found"
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     updated = repo.update(distribution_id, data)
     assert updated is not None
@@ -172,18 +175,15 @@ async def add_distribution_items(
             status_code=status.HTTP_404_NOT_FOUND, detail="Distribution not found"
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     allocations: list[tuple[uuid.UUID, Decimal]]
     if mode == "pro-rata":
-        approved = (
-            db.query(Commitment)
-            .filter(
-                Commitment.fund_id == distribution.fund_id,
-                Commitment.status == CommitmentStatus.approved,
-            )
-            .order_by(Commitment.created_at, Commitment.id)
-            .all()
+        approved = CommitmentRepository(db).list_approved_for_allocation(
+            distribution.fund_id  # type: ignore[invalid-argument-type]
         )
         if not approved:
             raise HTTPException(
@@ -234,7 +234,10 @@ async def update_distribution_item(
             status_code=status.HTTP_404_NOT_FOUND, detail="Distribution not found"
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     item = next((i for i in distribution.items if i.id == item_id), None)
     if item is None:
@@ -271,7 +274,10 @@ async def send_distribution(
             status_code=status.HTTP_404_NOT_FOUND, detail="Distribution not found"
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     try:
         sent = repo.send(distribution_id)
@@ -299,7 +305,10 @@ async def cancel_distribution(
             status_code=status.HTTP_404_NOT_FOUND, detail="Distribution not found"
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     try:
         cancelled = repo.cancel(distribution_id)
