@@ -287,9 +287,7 @@ class TestNotificationIdempotency:
         """A channel that failed (never delivered) IS retried — only a
         terminal (``sent``/``skipped``) outcome is treated as already done."""
         org_id, user_id = _seed_org_and_user()
-        channel = _FakeChannel(
-            [{"success": False, "error": "boom"}, {"success": True}]
-        )
+        channel = _FakeChannel([{"success": False, "error": "boom"}, {"success": True}])
         monkeypatch.setattr(
             "app.worker.get_default_registry", lambda: _FakeRegistry(channel)
         )
