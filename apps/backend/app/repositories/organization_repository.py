@@ -24,7 +24,9 @@ class OrganizationRepository:
             is not None,
         )
 
-    def list_with_member_counts(self) -> list[tuple[Organization, int]]:
+    def list_with_member_counts(
+        self, skip: int = 0, limit: int = 100
+    ) -> list[tuple[Organization, int]]:
         return (
             self.db.query(
                 Organization,
@@ -36,6 +38,8 @@ class OrganizationRepository:
             )
             .group_by(Organization.id)
             .order_by(Organization.created_at, Organization.id)
+            .offset(skip)
+            .limit(limit)
             .all()  # type: ignore[invalid-return-type]
         )
 

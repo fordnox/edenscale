@@ -35,13 +35,15 @@ def _load_viewable_fund(
 @router.get("/{fund_id}/valuations", response_model=list[FundValuationRead])
 async def list_fund_valuations(
     fund_id: uuid.UUID,
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
 ):
     """NAV marks for a fund, newest first. Any member who can view the fund
     (LPs included) can read them — the NAV drives their fair-value figures."""
     _load_viewable_fund(db, fund_id, membership)
-    return FundValuationRepository(db).list_for_fund(fund_id)
+    return FundValuationRepository(db).list_for_fund(fund_id, skip=skip, limit=limit)
 
 
 @router.post(

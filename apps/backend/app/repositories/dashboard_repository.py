@@ -36,7 +36,7 @@ from app.schemas.dashboard import (
     DashboardOverviewResponse,
     FundSummary,
 )
-from app.services.metrics import fund_metrics
+from app.services.metrics import fund_metrics_bulk
 
 OUTSTANDING_CAPITAL_CALL_STATUSES = (
     CapitalCallStatus.scheduled,
@@ -240,6 +240,10 @@ class DashboardRepository:
                     "called_amount"
                 ),
             )
+            # Scope to the visible funds inside the subquery rather than
+            # relying on the outer join (via _scope_by_fund) to discard the
+            # rest of the platform's commitment rows. Results are unchanged.
+            .filter(Commitment.fund_id.in_(fund_filter))
             .group_by(Commitment.fund_id)
             .subquery()
         )
@@ -258,11 +262,10 @@ class DashboardRepository:
             .all()
         )
 
-        # Bounded N+1: at most 5 recent funds, each metrics call is a pair of
-        # aggregate queries plus the cashflow scan for IRR.
+        metrics_by_fund = fund_metrics_bulk(db, [fund.id for fund, _, _ in fund_rows])
         recent_funds = []
         for fund, committed, called in fund_rows:
-            metrics = fund_metrics(db, fund.id)
+            metrics = metrics_by_fund[fund.id]
             recent_funds.append(
                 FundSummary(
                     id=fund.id,

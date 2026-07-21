@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import or_, select
-from sqlalchemy.orm import Query, Session, joinedload
+from sqlalchemy.orm import Query, Session, selectinload
 
 from app.models.commitment import Commitment
 from app.models.communication import Communication
@@ -28,7 +28,7 @@ class CommunicationRepository:
 
     def _base_query(self) -> Query:
         return self.db.query(Communication).options(
-            joinedload(Communication.recipients),
+            selectinload(Communication.recipients),
         )
 
     def list_for_membership(
