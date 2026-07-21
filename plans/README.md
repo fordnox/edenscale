@@ -19,6 +19,7 @@ so it does not get re-audited next time.
 |------|-------|----------|--------|------|------------|--------|
 | 001 | Make `make test` green and gate every push with CI | P1 | S | LOW | — | DONE (backend green: 391 passed; frontend CI job blocked by 012) |
 | 012 | Reconcile duplicate `@types/react` so the workspace typechecks | P1 | S | LOW | — | DONE (verified: typecheck 7/7; see follow-up in plan's maintenance notes) |
+| 013 | Drop SQLite support; require PostgreSQL | P1 | S | LOW | — | DONE (verified: 456 passed; missing DSN now fails loudly) |
 | 002 | Close dev-storage path traversal; make storage config fail closed | P1 | S | LOW | 001 | DONE (verified: 395 passed + 9 new; GET token gate dropped as unimplementable — see plan) |
 | 003 | Make bank-statement apply atomic and surface its errors | P1 | M | MED | 001 | DONE (verified: regression test fails pre-fix, passes post-fix) |
 | 004 | Bind upload keys to the caller who was issued them | P1 | M | MED | 001, 002 | DONE (verified: 391 passed; cross-user PUT 204→403 proven) |
@@ -47,10 +48,12 @@ Flagging them so they get a deliberate review rather than passing silently.
    The counter-reading: if "outstanding" was meant as "awaiting payment, not yet
    late" and a separate overdue metric was simply never built, then the right fix
    is a new metric, not folding it in. Reversible either way.
-2. **The SQLite divergence** (see deferred list): fix ~168 test call sites to
-   preserve zero-dependency onboarding, or drop the SQLite fallback and require
-   Postgres with a loud startup failure. Currently the documented default is
-   broken.
+2. ~~The SQLite divergence~~ — **RESOLVED.** The maintainer chose to drop
+   SQLite. Plan 013 removed the fallback; a missing or non-PostgreSQL
+   `APP_DATABASE_DSN` now fails immediately at conftest import with a message
+   naming the variable. The ~168 `str`-into-`Uuid` test call sites were
+   deliberately left alone (masked by psycopg2 coercion) — low-priority
+   cleanup, noted in plan 013.
 3. **The notification retry** (see deferred list): removing the blanket catch
    requires a `NotificationLog` migration first. Until then, notifications can
    still be lost silently.
@@ -96,22 +99,6 @@ Flagging them so they get a deliberate review rather than passing silently.
 
 These were confirmed but need a human decision or a larger project than a single
 plan. Listed so they are not lost.
-
-- **The documented local-dev database path is broken.** `CLAUDE.md:57` says the
-  app "Defaults to SQLite for local dev", and `tests/conftest.py:30` falls back
-  to `sqlite:////tmp/database.db` when no DSN is set. But the suite does not run
-  on SQLite: measured at `77985cfe`, SQLite gives **168 failed, 224 passed**
-  where Postgres gives **2 failed, 390 passed**. The cause is test helpers
-  passing `str` into `Uuid(as_uuid=True)` columns — psycopg2 coerces, SQLite's
-  binder rejects. So a new contributor following the documented setup gets a
-  massively red suite and no indication why. Two possible resolutions, and the
-  choice is a real decision: (a) fix the ~168 call sites to pass `uuid.UUID`,
-  making SQLite genuinely work and keeping zero-dependency onboarding, or (b)
-  drop the SQLite fallback entirely, make Postgres a hard requirement, and fail
-  loudly at startup when it is absent. Option (b) is smaller and matches
-  production; option (a) preserves the onboarding benefit CLAUDE.md advertises.
-  Discovered while executing plan 001. Plan 001 now hard-requires Postgres in
-  CI as a result; the underlying divergence is untouched.
 
 - **Four more architecture docs describe the pre-membership RBAC model as
   current.** Found while executing plan 010, which was scoped to the ADRs.
