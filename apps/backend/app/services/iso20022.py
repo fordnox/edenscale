@@ -33,6 +33,18 @@ _STATEMENT_CONTAINERS = {
     "BkToCstmrDbtCdtNtfctn",  # camt.054
 }
 
+# Prefix marking a composed (non-bank-issued) fallback reference, used when an
+# entry carries no bank reference of its own. Unlike a real bank reference, a
+# synthetic key is not proof that two entries are the *same* transaction —
+# see the callers in `bank_import_repository.py`, which must not treat a
+# matching synthetic reference as evidence a payment already settled.
+SYNTHETIC_REFERENCE_PREFIX = "synthetic:"
+
+
+def is_synthetic_reference(bank_reference: str) -> bool:
+    """True if ``bank_reference`` was composed by us, not issued by the bank."""
+    return bank_reference.startswith(SYNTHETIC_REFERENCE_PREFIX)
+
 
 class Iso20022ParseError(ValueError):
     """Raised when the uploaded file is not a parseable camt statement."""
@@ -130,12 +142,16 @@ def _entry_amount(scope) -> tuple[Decimal, str] | None:
     return amount, currency
 
 
-def _extract(scope, ntry, value_date: date | None) -> ParsedBankEntry | None:
+def _extract(
+    scope, ntry, value_date: date | None, ordinal: int
+) -> ParsedBankEntry | None:
     """Build a credit entry from a ``TxDtls`` (or the ``Ntry`` itself).
 
     ``scope`` is the element carrying the transaction fields (a ``TxDtls`` when
     present, else the ``Ntry``); ``ntry`` is the enclosing entry used only as a
-    fallback for fields banks sometimes place at entry level.
+    fallback for fields banks sometimes place at entry level. ``ordinal`` is
+    this entry's position within the statement, used to keep composed
+    fallback references distinct — see ``SYNTHETIC_REFERENCE_PREFIX``.
     """
     cdt_dbt = _text(scope, "CdtDbtInd") or _text(ntry, "CdtDbtInd")
     if (cdt_dbt or "").upper() != "CRDT":
@@ -161,7 +177,10 @@ def _extract(scope, ntry, value_date: date | None) -> ParsedBankEntry | None:
 
     # Reference for dedupe: prefer a bank-assigned unique id, then end-to-end
     # id, then entry-level refs; fall back to a composed key so re-imports of
-    # the same statement still collide.
+    # the same statement still collide. The ordinal is included so two
+    # genuinely distinct entries sharing date+amount+payer (e.g. two equal
+    # tranches from the same investor) still get distinct keys instead of
+    # colliding and silently dropping the second payment.
     reference = (
         _text(scope, "AcctSvcrRef")
         or _text(scope, "EndToEndId")
@@ -169,7 +188,10 @@ def _extract(scope, ntry, value_date: date | None) -> ParsedBankEntry | None:
         or _text(ntry, "NtryRef")
     )
     if not reference:
-        reference = f"{value_date}|{amount[0]}|{debtor_name or ''}"
+        reference = (
+            f"{SYNTHETIC_REFERENCE_PREFIX}{ordinal}|{value_date}|"
+            f"{amount[0]}|{debtor_name or ''}"
+        )
 
     return ParsedBankEntry(
         amount=amount[0],
@@ -201,6 +223,7 @@ def parse_camt(xml_bytes: bytes) -> list[ParsedBankEntry]:
         )
 
     entries: list[ParsedBankEntry] = []
+    ordinal = 0
     for ntry in _iter(root, "Ntry"):
         value_date = _parse_date(_first(ntry, "ValDt")) or _parse_date(
             _first(ntry, "BookgDt")
@@ -208,7 +231,11 @@ def parse_camt(xml_bytes: bytes) -> list[ParsedBankEntry]:
         tx_details = [tx for tx in _iter(ntry, "TxDtls") if tx is not ntry]
         scopes = tx_details or [ntry]
         for scope in scopes:
-            parsed = _extract(scope, ntry, value_date)
+            # Ordinal tracks position within the statement (every scope
+            # examined, credit or debit) so it's stable and unambiguous
+            # regardless of how many entries turn out to be credits.
+            parsed = _extract(scope, ntry, value_date, ordinal)
+            ordinal += 1
             if parsed is not None:
                 entries.append(parsed)
     return entries
