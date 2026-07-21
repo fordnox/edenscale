@@ -10,7 +10,6 @@ from app.models import (
     Organization,
     OrganizationType,
     User,
-    UserOrganizationMembership,
     UserRole,
 )
 from app.repositories.user_organization_membership_repository import (

@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push: {}
+  pull_request: {}
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      # Postgres is mandatory: the suite does not work on SQLite. Measured at
+      # plan 001's commit, SQLite yields 168 failed / 224 passed versus
+      # 2 failed / 390 passed on Postgres — test helpers pass `str` where a
+      # `Uuid(as_uuid=True)` column is declared, and SQLite's stricter binder
+      # rejects it while psycopg2 coerces it. A job without this service would
+      # be permanently and confusingly red.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: edenscale
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # apps/backend/tests/conftest.py rewrites this to a sibling `_test`
+      # database (e.g. edenscale -> edenscale_test) and creates it itself if
+      # missing, so this only needs to name a reachable server + base db.
+      APP_DATABASE_DSN: postgresql://postgres:postgres@localhost:5432/edenscale
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: apps/backend
+        run: uv sync
+
+      - name: Run tests
+        working-directory: apps/backend
+        run: uv run pytest -q
+
+      - name: Lint
+        working-directory: apps/backend
+        run: uv run ruff check .
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm turbo run typecheck
+
+      - name: Test
+        run: pnpm turbo run test
