@@ -365,6 +365,51 @@ class TestUploadGrantVerification:
         assert not self.put_calls
 
 
+class TestUploadSizeEnforcement:
+    """The 100 MB cap must bound memory, not just be checked after the whole
+    body is already buffered (plans/015-input-hardening.md, item (b))."""
+
+    def test_oversized_declared_length_rejected_before_buffering(
+        self, client, override_user
+    ):
+        _seed_user("hanko-any", UserRole.lp, email="any@example.com")
+        override_user("hanko-any")
+
+        # The real body is tiny, but the declared Content-Length is over the
+        # cap. If the fast-path header check weren't running before any body
+        # consumption, this small body would upload successfully -- so a 413
+        # here, with nothing written to storage, proves the header is
+        # checked up front.
+        resp = client.put(
+            "/documents/upload/documents/tok/oversized.bin",
+            content=b"tiny",
+            headers={"content-length": str(200 * 1024 * 1024)},
+        )
+        assert resp.status_code == 413
+        assert storage_module.get_storage().read("documents/tok/oversized.bin") is None
+
+    def test_stream_exceeding_cap_is_aborted_mid_transfer(
+        self, client, override_user, monkeypatch
+    ):
+        # Lower the cap so the test doesn't need to push 100 MB of real
+        # bytes through the client. Content-Length is declared *under* the
+        # (lowered) cap, so the fast path lets the request through -- only
+        # the streaming counter, reading the actual oversized body, should
+        # catch this.
+        monkeypatch.setattr("app.routers.documents._MAX_UPLOAD_BYTES", 10, raising=True)
+        _seed_user("hanko-any", UserRole.lp, email="any@example.com")
+        override_user("hanko-any")
+
+        oversized = b"x" * 1000
+        resp = client.put(
+            "/documents/upload/documents/tok/streamed.bin",
+            content=oversized,
+            headers={"content-length": "5"},
+        )
+        assert resp.status_code == 413
+        assert storage_module.get_storage().read("documents/tok/streamed.bin") is None
+
+
 class TestDocumentRbac:
     def test_lp_cannot_see_confidential_doc_outside_their_investor(
         self, client, override_user

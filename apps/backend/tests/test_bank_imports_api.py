@@ -458,3 +458,30 @@ class TestImportFlow:
         _seed_user("fm-b", UserRole.fund_manager, org_b)
         override_user("fm-b")
         assert client.get(f"/capital-call-imports/{import_id}").status_code == 404
+
+
+class TestUploadSizeEnforcement:
+    """The 25 MB cap must bound memory, not just be checked after the whole
+    file is already buffered (plans/015-input-hardening.md, item (b))."""
+
+    def test_stream_exceeding_cap_is_aborted_mid_transfer(
+        self, client, override_user, monkeypatch
+    ):
+        # Lower the cap so the test doesn't need to push real multi-MB
+        # payloads through the client. `_read_upload_within_limit` reads in
+        # fixed-size chunks and aborts once the running total crosses the
+        # cap -- this proves that streaming counter, not a check on the
+        # final buffered size, is what raises.
+        monkeypatch.setattr(
+            "app.routers.bank_imports._MAX_UPLOAD_BYTES", 10, raising=True
+        )
+        org_id = _seed_org()
+        _seed_user("fm", UserRole.fund_manager, org_id)
+        override_user("fm")
+
+        oversized = b"<Document>" + b"x" * 1000
+        resp = client.post(
+            "/capital-call-imports",
+            files={"file": ("statement.xml", oversized, "application/xml")},
+        )
+        assert resp.status_code == 413
