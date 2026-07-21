@@ -166,6 +166,14 @@ class DistributionRepository:
         )
         if distribution is None:
             raise ValueError("Distribution not found")
+        if distribution.status in (
+            DistributionStatus.paid,
+            DistributionStatus.cancelled,
+        ):
+            raise ValueError(
+                f"Cannot add items to a distribution in status "
+                f"'{distribution.status.value}'"
+            )
         if not allocations:
             return []
         commitment_ids = [c_id for c_id, _ in allocations]
@@ -205,6 +213,7 @@ class DistributionRepository:
         self.db.flush()
         for commitment_id, _ in allocations:
             self._commitments.recompute_totals(commitment_id)
+        self.recompute_status(distribution_id)
         self.db.commit()
         for item in items:
             self.db.refresh(item)

@@ -428,6 +428,150 @@ class TestCapitalCallValidation:
         )
         assert second.status_code == 400
 
+    def test_add_item_to_paid_call_rejected(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_a = _seed_investor(org_id, name="LP A")
+        investor_b = _seed_investor(org_id, name="LP B")
+        commitment_a = _seed_commitment(
+            fund_id, investor_a, committed_amount=Decimal("1000.00")
+        )
+        commitment_b = _seed_commitment(
+            fund_id, investor_b, committed_amount=Decimal("500.00")
+        )
+
+        create_resp = client.post(
+            "/capital-calls",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1 Call",
+                "due_date": "2026-06-01",
+                "amount": "1000.00",
+            },
+        )
+        call_id = create_resp.json()["id"]
+
+        items_resp = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={
+                "items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]
+            },
+        )
+        item_id = items_resp.json()[0]["id"]
+        assert client.post(f"/capital-calls/{call_id}/send").status_code == 200
+
+        pay_resp = client.patch(
+            f"/capital-calls/{call_id}/items/{item_id}",
+            json={"amount_paid": "1000.00"},
+        )
+        assert pay_resp.status_code == 200
+        assert client.get(f"/capital-calls/{call_id}").json()["status"] == "paid"
+
+        # Adding a new allocation to a fully-paid call would push total_due
+        # above total_paid while the row still reads `paid` — reject outright
+        # rather than letting the call silently disagree with its own totals.
+        rejected = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={
+                "items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]
+            },
+        )
+        assert rejected.status_code == 400
+
+    def test_add_item_to_cancelled_call_rejected(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id)
+        commitment_id = _seed_commitment(fund_id, investor_id)
+
+        create_resp = client.post(
+            "/capital-calls",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1 Call",
+                "due_date": "2026-06-01",
+                "amount": "1000.00",
+            },
+        )
+        call_id = create_resp.json()["id"]
+        assert client.post(f"/capital-calls/{call_id}/cancel").status_code == 200
+
+        # Adding to a call explicitly withdrawn from collection would inflate
+        # committed/called aggregates for money no longer being pursued.
+        response = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={
+                "items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]
+            },
+        )
+        assert response.status_code == 400
+
+    def test_add_item_to_sent_call_succeeds_and_recomputes_status(
+        self, client, override_user
+    ):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_a = _seed_investor(org_id, name="LP A")
+        investor_b = _seed_investor(org_id, name="LP B")
+        commitment_a = _seed_commitment(
+            fund_id, investor_a, committed_amount=Decimal("1000.00")
+        )
+        commitment_b = _seed_commitment(
+            fund_id, investor_b, committed_amount=Decimal("500.00")
+        )
+
+        create_resp = client.post(
+            "/capital-calls",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1 Call",
+                "due_date": "2026-06-01",
+                "amount": "1000.00",
+            },
+        )
+        call_id = create_resp.json()["id"]
+
+        first_items = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={
+                "items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]
+            },
+        )
+        assert first_items.status_code == 201
+        assert client.post(f"/capital-calls/{call_id}/send").status_code == 200
+        assert client.get(f"/capital-calls/{call_id}").json()["status"] == "sent"
+
+        second_items = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={
+                "items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]
+            },
+        )
+        assert second_items.status_code == 201
+        # Still unpaid — recompute_status must preserve `sent`, not corrupt it.
+        assert client.get(f"/capital-calls/{call_id}").json()["status"] == "sent"
+
 
 class TestCapitalCallSendCancel:
     def test_cancel_from_draft(self, client, override_user):

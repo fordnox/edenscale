@@ -42,6 +42,7 @@ OUTSTANDING_CAPITAL_CALL_STATUSES = (
     CapitalCallStatus.scheduled,
     CapitalCallStatus.sent,
     CapitalCallStatus.partially_paid,
+    CapitalCallStatus.overdue,
 )
 
 _ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
