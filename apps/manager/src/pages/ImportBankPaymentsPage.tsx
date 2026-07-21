@@ -77,6 +77,7 @@ export default function ImportBankPaymentsPage() {
   const [imported, setImported] = useState<BankImportRead | null>(null)
   const [rows, setRows] = useState<Record<string, RowState>>({})
   const [appliedCount, setAppliedCount] = useState(0)
+  const [applyError, setApplyError] = useState<string | null>(null)
   const [payerDialog, setPayerDialog] = useState<{
     transactionId: string
     name: string
@@ -212,6 +213,7 @@ export default function ImportBankPaymentsPage() {
       return
     }
 
+    setApplyError(null)
     try {
       const result = await applyMutation.mutateAsync({
         params: { path: { import_id: imported.id } },
@@ -222,8 +224,16 @@ export default function ImportBankPaymentsPage() {
       toast.success("Payments recorded", {
         description: `${result.applied_count} payment${result.applied_count === 1 ? "" : "s"} applied.`,
       })
-    } catch {
-      // The api client surfaces the error toast; keep the wizard on review.
+    } catch (error) {
+      // The api client also toasts this, but a wizard the user is actively
+      // looking at needs the failure surfaced inline, not just in a toast
+      // that can be missed — keep the wizard on review either way.
+      const detail = (error as { detail?: unknown } | null)?.detail
+      setApplyError(
+        typeof detail === "string"
+          ? detail
+          : "Could not apply these payments. Check the assignments and try again.",
+      )
     }
   }
 
@@ -428,6 +438,11 @@ export default function ImportBankPaymentsPage() {
               </CardSection>
             </Card>
             <div className="mt-6 flex items-center justify-end gap-3">
+              {applyError && (
+                <span className="rounded bg-red-100 px-1.5 py-0.5 font-sans text-[10px] font-medium uppercase tracking-wide text-red-800">
+                  {applyError}
+                </span>
+              )}
               <Button
                 variant="secondary"
                 size="sm"
@@ -435,6 +450,7 @@ export default function ImportBankPaymentsPage() {
                   setStep("upload")
                   setImported(null)
                   setRows({})
+                  setApplyError(null)
                 }}
                 disabled={applyMutation.isPending}
               >
