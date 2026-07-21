@@ -160,14 +160,37 @@ async def upload_document_bytes(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid storage key"
         )
-    body = await request.body()
-    if len(body) > _MAX_UPLOAD_BYTES:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="File exceeds the 100 MB upload limit",
-        )
+
+    # Fast path: reject a declared oversized payload before reading any body
+    # bytes. This is only a courtesy -- Content-Length can be absent or lied
+    # about by the caller -- so it must not be the only check; the streaming
+    # counter below is the real enforcement.
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            declared_length = int(content_length)
+        except ValueError:
+            declared_length = None
+        if declared_length is not None and declared_length > _MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="File exceeds the 100 MB upload limit",
+            )
+
+    # Real enforcement: read the body in chunks and abort as soon as the
+    # running total crosses the cap, instead of `await request.body()`
+    # (which buffers the entire payload in memory before any size check
+    # runs, so the cap does not bound resident memory).
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > _MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="File exceeds the 100 MB upload limit",
+            )
     storage = get_storage()
-    storage.write(key, body, request.headers.get("content-type"))
+    storage.write(key, bytes(body), request.headers.get("content-type"))
     return None
 
 

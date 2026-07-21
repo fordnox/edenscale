@@ -35,6 +35,27 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 
 _MANAGE_ROLES = (UserRole.admin, UserRole.fund_manager)
 _MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # bank statements are text; 25 MB is ample
+_UPLOAD_CHUNK_BYTES = 1024 * 1024
+
+
+async def _read_upload_within_limit(file: UploadFile, max_bytes: int) -> bytes:
+    """Read ``file`` in chunks, aborting with 413 once ``max_bytes`` is
+    exceeded, instead of one unbounded ``await file.read()`` that would
+    already hold an oversized payload in memory before any size check runs.
+    Mirrors the streaming enforcement in ``documents.py``'s upload proxy.
+    """
+    chunks = bytearray()
+    while True:
+        chunk = await file.read(_UPLOAD_CHUNK_BYTES)
+        if not chunk:
+            break
+        chunks.extend(chunk)
+        if len(chunks) > max_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="File exceeds the 25 MB upload limit",
+            )
+    return bytes(chunks)
 
 
 def _generate_storage_key(file_name: str) -> str:
@@ -103,15 +124,10 @@ async def create_bank_import(
         require_membership_roles(*_MANAGE_ROLES)
     ),
 ):
-    content = await file.read()
+    content = await _read_upload_within_limit(file, _MAX_UPLOAD_BYTES)
     if not content:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is empty"
-        )
-    if len(content) > _MAX_UPLOAD_BYTES:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="File exceeds the 25 MB upload limit",
         )
     try:
         entries = parse_camt(content)
