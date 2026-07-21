@@ -208,6 +208,8 @@ class CapitalCallRepository:
         item_id: uuid.UUID,
         amount_paid: Decimal,
         paid_at: datetime | None = None,
+        *,
+        commit: bool = True,
     ) -> CapitalCallItem | None:
         item = (
             self.db.query(CapitalCallItem).filter(CapitalCallItem.id == item_id).first()
@@ -219,8 +221,9 @@ class CapitalCallRepository:
         self.db.flush()
         self._commitments.recompute_totals(item.commitment_id)  # type: ignore[invalid-argument-type]
         self.recompute_status(item.capital_call_id)  # type: ignore[invalid-argument-type]
-        self.db.commit()
-        self.db.refresh(item)
+        if commit:
+            self.db.commit()
+            self.db.refresh(item)
         return item
 
     def update_item(

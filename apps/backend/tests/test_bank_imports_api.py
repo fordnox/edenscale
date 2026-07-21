@@ -355,6 +355,84 @@ class TestImportFlow:
         finally:
             db.close()
 
+    def test_partial_failure_does_not_apply_any_payment(self, client, override_user):
+        """A 400 from a bad assignment must not leave an earlier one applied.
+
+        Regression test for plans/003-atomic-bank-apply.md: before the fix,
+        the loop in ``apply()`` committed each assignment's payment as it was
+        written, so a later assignment raising ``ValueError`` left the first
+        payment committed while the transaction's own ``applied`` status was
+        rolled back — making a retry of the same (still-invalid) request
+        double-pay the first item.
+        """
+        org_id = _seed_org()
+        _seed_user("fm", UserRole.fund_manager, org_id)
+        override_user("fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id, name="Acme LP")
+        commitment_id = _seed_commitment(fund_id, investor_id)
+        _call_id, item_id = _seed_sent_call(client, fund_id, commitment_id, "1000.00")
+
+        xml = _camt_053(
+            [
+                {"amount": "1000.00", "name": "Acme LP", "ref": "REF-OK"},
+                {"amount": "500.00", "name": "Someone Else", "ref": "REF-BAD"},
+            ]
+        )
+        upload = client.post(
+            "/capital-call-imports",
+            files={"file": ("statement.xml", xml, "application/xml")},
+        )
+        assert upload.status_code == 201, upload.text
+        transactions = upload.json()["transactions"]
+        import_id = upload.json()["id"]
+        txn_ok = next(t for t in transactions if t["bank_reference"] == "REF-OK")
+        txn_bad = next(t for t in transactions if t["bank_reference"] == "REF-BAD")
+
+        missing_item_id = str(uuid.uuid4())
+        body = {
+            "assignments": [
+                {
+                    "transaction_id": txn_ok["id"],
+                    "capital_call_item_id": item_id,
+                    "amount": "1000.00",
+                },
+                {
+                    "transaction_id": txn_bad["id"],
+                    "capital_call_item_id": missing_item_id,
+                    "amount": "500.00",
+                },
+            ]
+        }
+
+        response = client.post(
+            f"/capital-call-imports/{import_id}/apply", json=body
+        )
+        assert response.status_code == 400, response.text
+
+        db = SessionLocal()
+        try:
+            item = db.get(CapitalCallItem, item_id)
+            # The first (valid) assignment must not have been applied either —
+            # the whole call is one atomic unit.
+            assert item.amount_paid == Decimal("0")
+        finally:
+            db.close()
+
+        # Re-submitting the same (still-invalid) request must not accumulate
+        # anything either — proving there's nothing left over to double-pay.
+        retry = client.post(
+            f"/capital-call-imports/{import_id}/apply", json=body
+        )
+        assert retry.status_code == 400, retry.text
+
+        db = SessionLocal()
+        try:
+            item = db.get(CapitalCallItem, item_id)
+            assert item.amount_paid == Decimal("0")
+        finally:
+            db.close()
+
     def test_upload_with_no_credits_is_rejected(self, client, override_user):
         org_id = _seed_org()
         _seed_user("fm", UserRole.fund_manager, org_id)
