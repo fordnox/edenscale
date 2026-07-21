@@ -2,7 +2,7 @@
   "name": "edenscale",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@10.25.0",
+  "packageManager": "pnpm@11.15.1",
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
@@ -14,7 +14,7 @@
     "build:gateway": "turbo run build --filter=gateway"
   },
   "devDependencies": {
-    "turbo": "^2.7.0"
+    "turbo": "^2.10.5"
   },
   "pnpm": {
     "overrides": {
