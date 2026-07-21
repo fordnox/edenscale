@@ -26,7 +26,6 @@ from app.models import (
     Organization,
     OrganizationType,
     User,
-    UserRole,
 )
 from app.repositories.capital_call_repository import CapitalCallRepository
 from app.worker import task_send_notification
