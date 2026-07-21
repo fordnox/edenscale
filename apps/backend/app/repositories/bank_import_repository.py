@@ -16,7 +16,7 @@ from app.models.enums import (
 from app.models.fund import Fund
 from app.repositories.capital_call_repository import CapitalCallRepository
 from app.schemas.bank_import import ApplyAssignment
-from app.services.iso20022 import ParsedBankEntry
+from app.services.iso20022 import ParsedBankEntry, is_synthetic_reference
 
 
 @dataclass
@@ -136,7 +136,17 @@ class BankImportRepository:
         Guards against a re-uploaded statement double-paying: even in a fresh
         import batch, a transaction whose reference already settled an item is
         skipped.
+
+        A *synthetic* reference (composed by us from value_date|amount|payer
+        when the bank didn't supply one — see `iso20022.py`) is excluded from
+        this check: two distinct real payments can legitimately share those
+        three values (e.g. two equal tranches from the same investor, or two
+        LPs behind one corporate payer), so a matching synthetic reference is
+        not evidence the same payment already settled. Such transactions are
+        left `unmatched` for manual review instead of being auto-ignored.
         """
+        if is_synthetic_reference(bank_reference):
+            return False
         return (
             self.db.query(BankPaymentTransaction.id)
             .join(

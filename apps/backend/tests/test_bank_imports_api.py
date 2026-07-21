@@ -101,6 +101,25 @@ class TestParser:
         with pytest.raises(Iso20022ParseError):
             parse_camt(b"not xml at all {")
 
+    def test_identical_unreferenced_entries_get_distinct_synthetic_refs(self):
+        """plans/017: two real credits sharing date+amount+payer (e.g. an
+        investor paying two equal tranches) must not collapse onto the same
+        composed fallback reference just because the bank left both
+        unreferenced. Must fail pre-fix (both entries got the same
+        ``value_date|amount|payer`` key)."""
+        xml = _camt_053(
+            [
+                {"amount": "1000.00", "name": "Acme LP", "ref": ""},
+                {"amount": "1000.00", "name": "Acme LP", "ref": ""},
+            ]
+        )
+        entries = parse_camt(xml)
+        assert len(entries) == 2
+        assert entries[0].bank_reference != entries[1].bank_reference
+        # Still composed from the same underlying fields, positionally keyed.
+        assert entries[0].bank_reference.endswith("|2026-07-01|1000.00|Acme LP")
+        assert entries[1].bank_reference.endswith("|2026-07-01|1000.00|Acme LP")
+
 
 # ---------------------------------------------------------------------------
 # Seed helpers
@@ -355,6 +374,90 @@ class TestImportFlow:
         try:
             item = db.get(CapitalCallItem, item_id)
             assert item.amount_paid == Decimal("1000.00")  # not 2000
+        finally:
+            db.close()
+
+    def test_two_identical_unreferenced_entries_import_as_distinct_transactions(
+        self, client, override_user
+    ):
+        """plans/017: two genuinely distinct credits — e.g. an investor
+        paying two equal tranches, or two LPs behind one corporate payer —
+        sharing value_date+amount+payer and lacking a bank reference must not
+        collapse into a single imported transaction. Must fail pre-fix (the
+        composed fallback reference collided and the second was dropped in
+        `create_import`'s same-file `seen` dedupe)."""
+        org_id = _seed_org()
+        _seed_user("fm", UserRole.fund_manager, org_id)
+        override_user("fm")
+
+        xml = _camt_053(
+            [
+                {"amount": "1000.00", "name": "Acme LP", "ref": ""},
+                {"amount": "1000.00", "name": "Acme LP", "ref": ""},
+            ]
+        )
+        upload = client.post(
+            "/capital-call-imports",
+            files={"file": ("statement.xml", xml, "application/xml")},
+        )
+        assert upload.status_code == 201, upload.text
+        data = upload.json()
+        assert data["transaction_count"] == 2
+        refs = {t["bank_reference"] for t in data["transactions"]}
+        assert len(refs) == 2, "both credits must be recorded, not deduped away"
+
+    def test_synthetic_reference_is_not_auto_ignored_across_imports(
+        self, client, override_user
+    ):
+        """A *synthetic* (unreferenced) match across imports is not proof of
+        a duplicate the way a real bank reference is — two LPs, or one LP in
+        two tranches, can coincidentally share value_date+amount+payer. Unlike
+        `test_reupload_same_reference_is_skipped` (real ref -> silently
+        ignored), a matching synthetic reference must still be applicable so
+        the second real payment isn't lost."""
+        org_id = _seed_org()
+        _seed_user("fm", UserRole.fund_manager, org_id)
+        override_user("fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id, name="Acme LP")
+        commitment_id = _seed_commitment(fund_id, investor_id)
+        _call_id, item_id = _seed_sent_call(client, fund_id, commitment_id, "2000.00")
+
+        # Same fields, no reference, in two separate single-entry statements —
+        # e.g. two distinct tranches wired on the same day.
+        xml = _camt_053([{"amount": "1000.00", "name": "Acme LP", "ref": ""}])
+
+        def _upload_and_apply() -> dict:
+            imp = client.post(
+                "/capital-call-imports",
+                files={"file": ("s.xml", xml, "application/xml")},
+            ).json()
+            txn = imp["transactions"][0]
+            return client.post(
+                f"/capital-call-imports/{imp['id']}/apply",
+                json={
+                    "assignments": [
+                        {
+                            "transaction_id": txn["id"],
+                            "capital_call_item_id": item_id,
+                            "amount": "1000.00",
+                        }
+                    ]
+                },
+            ).json()
+
+        first = _upload_and_apply()
+        second = _upload_and_apply()
+        assert first["transactions"][0]["status"] == "applied"
+        # Not auto-ignored like a real-reference duplicate would be.
+        assert second["transactions"][0]["status"] == "applied"
+        assert second["applied_count"] == 1
+
+        db = SessionLocal()
+        try:
+            item = db.get(CapitalCallItem, item_id)
+            # Both real credits are recorded — 2000, not silently capped at 1000.
+            assert item.amount_paid == Decimal("2000.00")
         finally:
             db.close()
 
