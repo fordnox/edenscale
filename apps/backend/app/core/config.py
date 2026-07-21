@@ -60,6 +60,29 @@ class Settings(BaseSettings):
     S3_PUBLIC_URL: str = ""
     S3_PREFIX: str = "taven"
 
+    # HMAC secret used to sign the upload grant appended to `upload_url`
+    # (see app/routers/documents.py) so `PUT /documents/upload/{key}` can
+    # verify the key was actually issued to the caller. Empty disables
+    # verification — only acceptable in local dev; the validator below
+    # refuses to start with an empty secret in a production-shaped config.
+    UPLOAD_SIGNING_SECRET: str = ""
+
+    @model_validator(mode="after")
+    def _require_upload_signing_secret_in_production(self) -> "Settings":
+        """Refuse to start in a production-shaped configuration (DEBUG is
+        false and APP_DOMAIN is not localhost) with no upload signing
+        secret — that would silently disable the upload-grant check in
+        `PUT /documents/upload/{key}`. Local development keeps working with
+        an empty secret; see the DEV_STORAGE_TOKEN validator this mirrors."""
+        domain_host = self.APP_DOMAIN.strip().split(":", 1)[0].lower()
+        is_local = self.DEBUG or domain_host in ("localhost", "127.0.0.1")
+        if not is_local and not self.UPLOAD_SIGNING_SECRET.strip():
+            raise ValueError(
+                "UPLOAD_SIGNING_SECRET must be set in a production-shaped "
+                "configuration (DEBUG=false and APP_DOMAIN is not localhost)."
+            )
+        return self
+
     @property
     def app_domain_url(self) -> str:
         """Public base URL derived from ``APP_DOMAIN`` (no trailing slash) —

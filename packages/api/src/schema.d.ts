@@ -6976,7 +6976,10 @@ export interface operations {
     };
     upload_document_bytes_documents_upload__key__put: {
         parameters: {
-            query?: never;
+            query?: {
+                expires?: number | null;
+                sig?: string | null;
+            };
             header?: never;
             path: {
                 key: string;

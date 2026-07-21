@@ -204,8 +204,11 @@ class S3Storage(StoragePort):
         #
         # The upload URL is API-relative: the client PUTs the bytes to the
         # authenticated /documents/upload/{key} proxy, which writes to the
-        # bucket server-side. Expiry is advisory here — the proxy is governed
-        # by bearer auth, not by a signature.
+        # bucket server-side. The caller (app/routers/documents.py) appends
+        # an expires/sig grant to this URL, signed over this exact (prefixed)
+        # key plus the caller's user id, so the proxy can verify the key was
+        # actually issued to whoever is PUTting to it — not just that they
+        # are some authenticated user.
         full_key = _prefixed_key(key)
         upload_url = f"/documents/upload/{quote(full_key, safe='/')}"
         expires_at = datetime.now(timezone.utc) + _PRESIGN_TTL
