@@ -9,9 +9,10 @@ row when done.
 **Selection note**: no human selected these findings — the audit ran
 non-interactively, so the default rule applied: plan the highest-leverage
 findings, plus everything that blocks them. The audit surfaced ~45 findings
-across nine categories; these 11 plans cover the ones worth doing. The
-"considered and rejected" section below records what was deliberately left out,
-so it does not get re-audited next time.
+across nine categories. Twenty plans were written and executed, covering the
+findings worth acting on. The "considered and rejected" section records what was
+deliberately left out (including two findings refuted outright), and the
+"deferred" section records what remains and why.
 
 ## Execution order & status
 
@@ -61,9 +62,37 @@ Flagging them so they get a deliberate review rather than passing silently.
    naming the variable. The ~168 `str`-into-`Uuid` test call sites were
    deliberately left alone (masked by psycopg2 coercion) — low-priority
    cleanup, noted in plan 013.
-3. **The notification retry** (see deferred list): removing the blanket catch
-   requires a `NotificationLog` migration first. Until then, notifications can
-   still be lost silently.
+3. ~~The notification retry~~ — **RESOLVED.** Plan 014 added the
+   `NotificationLog` idempotency key (unique over
+   `(notification_type, reference_type, reference_id, channel, recipient)`,
+   using `""` sentinels because PostgreSQL treats NULLs as distinct and would
+   silently fail to dedupe exactly the notification types lacking a reference),
+   then removed the blanket catch. `max_tries=3` is now explicit. A retry no
+   longer re-sends an already-delivered channel — pinned by test.
+
+## Still open — needs information outside this repository
+
+Two findings could not be responsibly closed. Both are recorded rather than
+guessed at.
+
+1. **Email ingest trusts a self-asserted sender.** `POST /email-ingest/documents`
+   resolves the acting user, and therefore the target organization, from a
+   `sender_email` field in the request body, with no DKIM/SPF verdict anywhere in
+   the payload. Whether this is exploitable depends entirely on whether the
+   Cloudflare Worker in `apps/email-ingest` verifies the envelope sender — **that
+   Worker was never audited and is not covered by this work.** The fix is to add a
+   `dkim_verified` field (and signing domain) to `EmailIngestRequest` and drop
+   messages failing it — but shipping that without updating the Worker in lockstep
+   would drop every ingest. Someone must read the Worker first.
+2. **CSRF posture is undecided.** `app/core/auth.py::_extract_token` accepts the
+   `hanko` cookie as a credential when no `Authorization` header is present, and
+   several state-changing POSTs take no request body (so no preflight is
+   triggered). CORS blocks reading the *response* but not sending the *request*.
+   Exploitability hinges on the `SameSite` attribute Hanko sets on its cookie,
+   which this repo neither controls nor can observe. If it is not `Strict`/`Lax`,
+   the fix is likely one line — drop the cookie fallback, since all three
+   frontends already send the bearer header. Verify Hanko's cookie config, then
+   decide.
 
 ## Dependency notes
 
