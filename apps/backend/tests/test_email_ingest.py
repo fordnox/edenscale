@@ -90,6 +90,7 @@ def _payload(
     recipient: str | None = None,
     subject: str = "Q3 report",
     content: bytes = b"%PDF-1.4",
+    message_id: str | None = None,
 ):
     payload = {
         "sender_email": sender,
@@ -104,7 +105,28 @@ def _payload(
     }
     if recipient is not None:
         payload["recipient"] = recipient
+    if message_id is not None:
+        payload["message_id"] = message_id
     return payload
+
+
+def _multi_payload(sender: str, *, count: int) -> dict:
+    """A payload with ``count`` distinct attachments, for testing the
+    all-or-nothing write path."""
+    return {
+        "sender_email": sender,
+        "subject": "Batch",
+        "attachments": [
+            {
+                "file_name": f"doc-{i}.pdf",
+                "mime_type": "application/pdf",
+                "content_base64": base64.b64encode(
+                    f"%PDF-1.4 doc {i}".encode()
+                ).decode(),
+            }
+            for i in range(count)
+        ],
+    }
 
 
 def _headers(token: str = _TOKEN) -> dict:
@@ -394,3 +416,124 @@ def test_title_falls_back_to_filename_when_no_subject(client):
     assert resp.status_code == 200
     assert resp.json()["status"] == "created"
     assert _documents()[0].title == "q3-report.pdf"
+
+
+class TestMessageIdIdempotency:
+    """Plan 020(a): a message_id, once seen, must not be reprocessed. Must
+    FAIL pre-fix — pre-fix, ``EmailIngestRequest`` has no ``message_id``
+    field at all, so passing one is simply ignored by pydantic and every
+    repost creates a fresh Document; see the plan 020 report for the
+    before/after."""
+
+    def test_repeat_message_id_is_a_noop(self, client, capture_draft):
+        org = _seed_org("Acme Capital")
+        _seed_user("jane@acme.test", memberships=[(org, UserRole.admin)])
+        payload = _payload("jane@acme.test", message_id="<abc123@mail.example>")
+
+        first = client.post("/email-ingest/documents", json=payload, headers=_headers())
+        assert first.status_code == 200
+        assert first.json()["status"] == "created"
+        assert len(_documents()) == 1
+        assert len(capture_draft) == 1
+
+        second = client.post(
+            "/email-ingest/documents", json=payload, headers=_headers()
+        )
+        assert second.status_code == 200
+        # Exact same result handed back, not a fresh document.
+        assert second.json() == first.json()
+        assert len(_documents()) == 1, "repeat message_id created a second document"
+        assert len(capture_draft) == 1, "repeat message_id re-enqueued a draft"
+
+    def test_absent_message_id_never_dedupes(self, client):
+        """The Worker doesn't send message_id yet — every ingest without one
+        must keep being processed fresh, exactly as before this field
+        existed."""
+        org = _seed_org("Acme Capital")
+        _seed_user("jane@acme.test", memberships=[(org, UserRole.admin)])
+        payload = _payload("jane@acme.test")
+
+        for _ in range(2):
+            resp = client.post(
+                "/email-ingest/documents", json=payload, headers=_headers()
+            )
+            assert resp.status_code == 200
+            assert resp.json()["status"] == "created"
+        assert len(_documents()) == 2
+
+
+class TestAtomicIngest:
+    """Plan 020(a): a failure partway through the attachment loop must leave
+    nothing committed. Must FAIL pre-fix — pre-fix, ``storage.write`` then
+    ``documents.create`` (which commits) run per attachment inside the loop,
+    so a failure on attachment 3 leaves attachments 1-2 already committed;
+    see the plan 020 report for the before/after."""
+
+    def test_failure_on_third_attachment_commits_nothing(self, client):
+        org = _seed_org("Acme Capital")
+        _seed_user("jane@acme.test", memberships=[(org, UserRole.admin)])
+
+        storage = storage_module.get_storage()
+        original_write = storage.write
+        calls = {"n": 0}
+
+        def flaky_write(key, content, mime_type=None):
+            calls["n"] += 1
+            if calls["n"] == 3:
+                raise RuntimeError("storage boom on attachment 3")
+            return original_write(key, content, mime_type)
+
+        storage.write = flaky_write
+
+        payload = _multi_payload("jane@acme.test", count=5)
+        with pytest.raises(RuntimeError, match="storage boom on attachment 3"):
+            client.post("/email-ingest/documents", json=payload, headers=_headers())
+
+        assert calls["n"] == 3, "the flaky write should have been reached exactly once"
+        assert _documents() == [], (
+            "attachments 1-2, written before the failure, must not have been "
+            "committed as Documents"
+        )
+
+
+class TestRequestIdCorrelation:
+    """Plan 020(c): the request id round-trips through the middleware
+    contextvar and is echoed on the response."""
+
+    def test_absent_request_id_is_generated(self, client):
+        org = _seed_org("Acme Capital")
+        _seed_user("jane@acme.test", memberships=[(org, UserRole.admin)])
+        resp = client.post(
+            "/email-ingest/documents",
+            json=_payload("jane@acme.test"),
+            headers=_headers(),
+        )
+        assert resp.status_code == 200
+        assert resp.headers.get("x-request-id")
+
+    def test_supplied_request_id_is_echoed_and_reaches_the_contextvar(
+        self, client, monkeypatch
+    ):
+        from app.middleware.request_id import get_request_id
+
+        org = _seed_org("Acme Capital")
+        _seed_user("jane@acme.test", memberships=[(org, UserRole.admin)])
+
+        seen: dict = {}
+
+        async def _capture(**kwargs):
+            seen["request_id"] = get_request_id()
+
+        monkeypatch.setattr(
+            "app.services.email_ingest.enqueue_draft_letter", _capture, raising=True
+        )
+        monkeypatch.setattr(settings, "OPENROUTER_API_KEY", "test-key")
+
+        headers = _headers()
+        headers["X-Request-ID"] = "corr-abc-123"
+        resp = client.post(
+            "/email-ingest/documents", json=_payload("jane@acme.test"), headers=headers
+        )
+        assert resp.status_code == 200
+        assert resp.headers["x-request-id"] == "corr-abc-123"
+        assert seen["request_id"] == "corr-abc-123"

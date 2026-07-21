@@ -182,15 +182,27 @@ class DocumentRepository:
         return []
 
     def create(
-        self, data: DocumentCreate, *, uploaded_by_user_id: uuid.UUID | None = None
+        self,
+        data: DocumentCreate,
+        *,
+        uploaded_by_user_id: uuid.UUID | None = None,
+        commit: bool = True,
     ) -> Document:
+        """Add (and by default commit) one ``Document``.
+
+        ``commit=False`` lets a caller (see ``EmailIngestService.ingest``)
+        fold several of these into one transaction alongside other writes, so
+        a failure partway through leaves nothing committed instead of the
+        earlier rows landing while the rest are lost.
+        """
         document = Document(
             **data.model_dump(),
             uploaded_by_user_id=uploaded_by_user_id,
         )
         self.db.add(document)
-        self.db.commit()
-        self.db.refresh(document)
+        if commit:
+            self.db.commit()
+            self.db.refresh(document)
         return document
 
     def update(self, document_id: uuid.UUID, data: DocumentUpdate) -> Document | None:

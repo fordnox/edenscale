@@ -17,6 +17,7 @@ from arq.connections import RedisSettings
 
 from app.core.config import settings
 from app.core.database import SessionLocal
+from app.middleware.request_id import get_request_id
 
 logger = logging.getLogger(__name__)
 
@@ -84,12 +85,19 @@ async def enqueue_draft_letter(*, document_id: str, user_id: str):
     Bounded by :data:`_ENQUEUE_TIMEOUT_SECONDS` so a hung Redis can't stall the
     request; unlike the notification helpers, the caller (the draft-letter
     endpoint) surfaces a failure to the user rather than swallowing it.
+
+    Copies the current request's correlation id (see
+    ``app.middleware.request_id``) into the job kwargs, so worker log lines
+    for this draft can be traced back to the request that enqueued it —
+    ``task_draft_letter`` treats it as optional, so a rolling deploy never
+    leaves an in-flight job unable to run because of it.
     """
     return await asyncio.wait_for(
         enqueue_task(
             "task_draft_letter",
             document_id=document_id,
             user_id=user_id,
+            request_id=get_request_id(),
         ),
         timeout=_ENQUEUE_TIMEOUT_SECONDS,
     )

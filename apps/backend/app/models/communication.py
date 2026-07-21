@@ -14,6 +14,13 @@ class Communication(Base):
     fund_id = Column(
         Uuid(as_uuid=True), ForeignKey("funds.id"), nullable=True, index=True
     )
+    # Set only for AI-drafted letters (see task_draft_letter): the source
+    # Document the draft was generated from. Lets the worker check "is there
+    # already a draft for this document+requester" before spending another
+    # OpenRouter call on a retried job.
+    document_id = Column(
+        Uuid(as_uuid=True), ForeignKey("documents.id"), nullable=True, index=True
+    )
     sender_user_id = Column(
         Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
     )
