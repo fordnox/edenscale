@@ -2,7 +2,11 @@ import { Navigate, Outlet, useLocation } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 import { useAuth } from "@edenscale/auth/useAuth"
 
-export default function ProtectedLayout() {
+interface ProtectedLayoutProps {
+  loginPath: string
+}
+
+export function ProtectedLayout({ loginPath }: ProtectedLayoutProps) {
   const { isLoading, isAuthenticated } = useAuth()
   const location = useLocation()
 
@@ -20,7 +24,7 @@ export default function ProtectedLayout() {
     const next = `${location.pathname}${location.search}${location.hash}`
     return (
       <Navigate
-        to={`/manager/login?next=${encodeURIComponent(next)}`}
+        to={`${loginPath}?next=${encodeURIComponent(next)}`}
         replace
         state={{ from: location }}
       />

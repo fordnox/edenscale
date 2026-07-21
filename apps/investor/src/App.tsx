@@ -2,7 +2,7 @@ import { Navigate, Routes, Route, Outlet } from 'react-router-dom'
 import { InvestorOrganizationsProvider } from '@/contexts/InvestorOrganizationsContext'
 import { PendingInvitationsBannerProvider } from '@edenscale/shared/contexts/PendingInvitationsBannerContext'
 import { useInvestorOrganizations } from './hooks/useInvestorOrganizations'
-import ProtectedLayout from './layouts/ProtectedLayout'
+import { ProtectedLayout } from '@edenscale/ui/ProtectedLayout'
 import AccountLayout from './layouts/AccountLayout'
 import OrgLayout from './layouts/OrgLayout'
 import FundLayout from './layouts/FundLayout'
@@ -52,7 +52,7 @@ function App() {
       <Route path="/investor/login" element={<LoginPage />} />
 
       {/* Authenticated application routes */}
-      <Route element={<ProtectedLayout />}>
+      <Route element={<ProtectedLayout loginPath="/investor/login" />}>
         <Route element={<ProtectedProviders />}>
           <Route
             path="/investor/invitations/accept"
