@@ -23,7 +23,6 @@ class User(Base):
     email = Column(String(255), nullable=False, unique=True, index=True)
     phone = Column(String(50), nullable=True)
     title = Column(String(150), nullable=True)
-    password_hash = Column(String(255), nullable=False, default="")
     is_active = Column(Boolean, nullable=False, default=True)
     last_login_at = Column(DateTime, nullable=True)
     # Hanko compatibility: indexed external subject id from the Hanko JWT.
