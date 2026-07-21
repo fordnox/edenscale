@@ -1,16 +1,15 @@
 """Unit tests for ``UserOrganizationMembershipRepository``."""
 
 import uuid
-from app.core.slugs import slugify
 
 import pytest
 
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.models import (
     Organization,
     OrganizationType,
     User,
-    UserOrganizationMembership,
     UserRole,
 )
 from app.repositories.user_organization_membership_repository import (
@@ -28,7 +27,9 @@ def setup_database():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.commit()
         return org.id

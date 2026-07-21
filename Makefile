@@ -12,12 +12,26 @@ build: ## Build backend and frontend Docker images
 	@echo "Building backend Docker image..."
 	docker build -f apps/backend/Dockerfile --tag backend:latest apps/backend
 
-lint: ## Run linters
+format: ## Rewrite code style in place (ruff --fix, black, isort) — mutates files
 	@cd apps/backend && uv run python -c "from app import *" || (echo '🚨 import failed, this means you introduced unprotected imports! 🚨'; exit 1)
-	@cd apps/backend && uv run ruff check . --fix --exclude tests --exclude .venv --exclude app/alembic
+	@cd apps/backend && uv run ruff check . --fix --exclude .venv --exclude app/alembic
 	@cd apps/backend && uv run ty check . --exclude 'tests/**' --exclude '.venv/**' --exclude 'app/alembic/**'
-	@cd apps/backend && uv run black . --exclude '/(tests|\.venv|app/alembic)/'
-	@cd apps/backend && uv run isort . --skip tests --skip .venv --skip app/alembic
+	@cd apps/backend && uv run black . --exclude '/(\.venv|app/alembic)/'
+	@cd apps/backend && uv run isort . --skip .venv --skip app/alembic
+
+lint: ## Check code style without writing (CI gate — fails on violations)
+	@cd apps/backend && uv run python -c "from app import *" || (echo '🚨 import failed, this means you introduced unprotected imports! 🚨'; exit 1)
+	@cd apps/backend && uv run ruff check . --exclude .venv --exclude app/alembic
+	@cd apps/backend && uv run black --check . --exclude '/(\.venv|app/alembic)/'
+	@cd apps/backend && uv run isort . --check-only --skip .venv --skip app/alembic
+	@cd apps/backend && uv run ty check app --exclude 'app/alembic/**'
+
+# ty check . (whole tree, tests included) currently reports 246 diagnostics —
+# 241 of them in tests/, hidden from `lint` because folding them in today would
+# make the gate permanently red. Not wired into CI. Goal: drive this to 0, then
+# fold `ty check .` into `lint` and delete this target.
+lint-strict: ## Whole-tree ty check including tests/ (NOT a CI gate — tracks debt, see comment above)
+	@cd apps/backend && uv run ty check .
 
 openapi:  ## Generate OpenAPI schema from FastAPI app
 	cd apps/backend && uv run python -c "import app.main; import json; print(json.dumps(app.main.app.openapi()))" > ./openapi.json

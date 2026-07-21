@@ -7,13 +7,13 @@ else only their own).
 """
 
 import json
-from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.audit import _ENTITY_TYPES, _UNAUDITED_MODELS, record_audit
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.middleware.audit_context import (
     AuditContext,
@@ -59,7 +59,9 @@ def client():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.commit()
         return str(org.id)
@@ -161,7 +163,9 @@ class TestEventListeners:
         fund_id_holder: dict[str, int] = {}
         db = SessionLocal()
         try:
-            fund = Fund(organization_id=org_id, name="Doomed Fund", slug=slugify("Doomed Fund"))
+            fund = Fund(
+                organization_id=org_id, name="Doomed Fund", slug=slugify("Doomed Fund")
+            )
             db.add(fund)
             db.commit()
             fund_id_holder["id"] = fund.id
@@ -180,7 +184,11 @@ class TestEventListeners:
         set_audit_context(user_id=user_id, ip_address="10.0.0.1")
         db = SessionLocal()
         try:
-            fund = Fund(organization_id=org_id, name="Audited Fund", slug=slugify("Audited Fund"))
+            fund = Fund(
+                organization_id=org_id,
+                name="Audited Fund",
+                slug=slugify("Audited Fund"),
+            )
             db.add(fund)
             db.commit()
         finally:
@@ -244,9 +252,7 @@ class TestListenerCoverage:
         org_id = _seed_org()
         db = SessionLocal()
         try:
-            fund = Fund(
-                organization_id=org_id, name="Fund I", slug=slugify("Fund I")
-            )
+            fund = Fund(organization_id=org_id, name="Fund I", slug=slugify("Fund I"))
             investor = Investor(organization_id=org_id, name="LP One")
             db.add_all([fund, investor])
             db.flush()
@@ -323,16 +329,16 @@ class TestAuditLogRoute:
         _seed_user("hanko-admin", UserRole.admin, organization_id=org_id)
         db = SessionLocal()
         try:
-            fund = Fund(organization_id=org_id, name="Filter Fund", slug=slugify("Filter Fund"))
+            fund = Fund(
+                organization_id=org_id, name="Filter Fund", slug=slugify("Filter Fund")
+            )
             db.add(fund)
             db.commit()
             fund_id = str(fund.id)
         finally:
             db.close()
         override_user("hanko-admin")
-        resp = client.get(
-            f"/audit-logs?entity_type=fund&entity_id={fund_id}"
-        )
+        resp = client.get(f"/audit-logs?entity_type=fund&entity_id={fund_id}")
         assert resp.status_code == 200
         rows = resp.json()
         assert rows

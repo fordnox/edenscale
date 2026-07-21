@@ -8,11 +8,11 @@ mirroring ``test_rbac.py``.
 
 import pytest
 from fastapi import HTTPException
-from app.core.slugs import slugify
 
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.core.rbac import get_active_membership, require_membership_roles
+from app.core.slugs import slugify
 from app.models import (
     Organization,
     OrganizationType,

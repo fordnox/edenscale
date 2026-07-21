@@ -16,7 +16,7 @@ Opinionated web project template for building projects with AI.
 ## Rules before each commit
 
 1. Test must pass: run `make test` and fix any errors.
-2. Run `make lint` to check code style.
+2. Run `make lint` to check code style (fails without writing anything). Run `make format` first if you need it to fix things for you.
 3. Run `make openapi` to generate new OpenAPI schema.
 
 # Competitors

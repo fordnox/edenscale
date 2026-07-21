@@ -23,7 +23,10 @@ class TestSlugify:
 
 class TestGenerateUniqueSlug:
     def test_no_collision_returns_root(self):
-        assert generate_unique_slug("Beacon Capital", exists=lambda s: False) == "beacon-capital"
+        assert (
+            generate_unique_slug("Beacon Capital", exists=lambda s: False)
+            == "beacon-capital"
+        )
 
     def test_collision_appends_incrementing_suffix(self):
         taken = {"beacon-capital"}
@@ -44,6 +47,4 @@ class TestGenerateUniqueSlug:
 
     def test_reserved_word_collision_still_increments(self):
         taken = {"app-2"}
-        assert (
-            generate_unique_slug("App", exists=lambda s: s in taken) == "app-3"
-        )
+        assert generate_unique_slug("App", exists=lambda s: s in taken) == "app-3"

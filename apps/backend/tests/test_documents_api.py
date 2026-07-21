@@ -6,13 +6,13 @@ using the LocalDevStorage backend, plus RBAC checks on listing and access.
 
 import tempfile
 from pathlib import Path
-from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import (
     Fund,
@@ -56,7 +56,9 @@ def client():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.commit()
         return str(org.id)
@@ -190,7 +192,9 @@ class TestDocumentUploadFlow:
         assert detail.status_code == 200
         assert detail.json()["download_url"] is not None
 
-        download = client.get(detail.json()["download_url"].replace("http://testserver", ""))
+        download = client.get(
+            detail.json()["download_url"].replace("http://testserver", "")
+        )
         assert download.status_code == 200
         assert download.content == b"hello world"
 
@@ -216,9 +220,7 @@ class TestUploadProxyEndpoint:
     """PUT /documents/upload/{key} — the S3-backend upload proxy (the browser
     never talks to the bucket, so no bucket CORS is needed)."""
 
-    def test_writes_bytes_through_the_storage_backend(
-        self, client, override_user
-    ):
+    def test_writes_bytes_through_the_storage_backend(self, client, override_user):
         _seed_user("hanko-any", UserRole.lp, email="any@example.com")
         override_user("hanko-any")
 
@@ -234,17 +236,13 @@ class TestUploadProxyEndpoint:
 
     def test_requires_authentication(self, client, override_user):
         override_user(None)
-        resp = client.put(
-            "/documents/upload/documents/tok/report.pdf", content=b"x"
-        )
+        resp = client.put("/documents/upload/documents/tok/report.pdf", content=b"x")
         assert resp.status_code == 401
 
     def test_rejects_path_traversal_keys(self, client, override_user):
         _seed_user("hanko-any", UserRole.lp, email="any@example.com")
         override_user("hanko-any")
-        resp = client.put(
-            "/documents/upload/documents/../../etc/passwd", content=b"x"
-        )
+        resp = client.put("/documents/upload/documents/../../etc/passwd", content=b"x")
         # The HTTP layer normalizes ../ away before routing (404); the
         # handler's own key check (400) backstops anything that gets past it.
         assert resp.status_code in (400, 404)

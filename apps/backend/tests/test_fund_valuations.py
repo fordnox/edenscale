@@ -11,8 +11,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.database import Base, SessionLocal, engine
-from app.main import app
 from app.core.slugs import slugify
+from app.main import app
 from app.models import (
     Commitment,
     CommitmentStatus,
@@ -38,7 +38,9 @@ def client():
     return TestClient(app)
 
 
-def _seed_fund_with_commitment(called: str, distributed: str, committed: str = "100000"):
+def _seed_fund_with_commitment(
+    called: str, distributed: str, committed: str = "100000"
+):
     db = SessionLocal()
     try:
         org = Organization(
@@ -49,7 +51,9 @@ def _seed_fund_with_commitment(called: str, distributed: str, committed: str = "
         db.add(org)
         db.flush()
         fund = Fund(
-            organization_id=org.id, name="Fund I", slug=slugify("Fund I"),
+            organization_id=org.id,
+            name="Fund I",
+            slug=slugify("Fund I"),
             currency_code="USD",
         )
         investor = Investor(organization_id=org.id, name="LP One")
@@ -90,15 +94,21 @@ class TestNavMetrics:
         fund_id = _seed_fund_with_commitment(called="60000", distributed="20000")
         db = SessionLocal()
         try:
-            db.add_all([
-                FundValuation(
-                    fund_id=fund_id, as_of_date=date(2026, 3, 31), nav=Decimal("50000")
-                ),
-                # A later mark supersedes the earlier one.
-                FundValuation(
-                    fund_id=fund_id, as_of_date=date(2026, 6, 30), nav=Decimal("70000")
-                ),
-            ])
+            db.add_all(
+                [
+                    FundValuation(
+                        fund_id=fund_id,
+                        as_of_date=date(2026, 3, 31),
+                        nav=Decimal("50000"),
+                    ),
+                    # A later mark supersedes the earlier one.
+                    FundValuation(
+                        fund_id=fund_id,
+                        as_of_date=date(2026, 6, 30),
+                        nav=Decimal("70000"),
+                    ),
+                ]
+            )
             db.commit()
 
             assert latest_fund_nav(db, fund_id) == Decimal("70000")
@@ -113,9 +123,7 @@ class TestNavMetrics:
 
 
 class TestValuationEndpoints:
-    def test_manager_creates_lp_reads_lp_cannot_write(
-        self, client, override_user
-    ):
+    def test_manager_creates_lp_reads_lp_cannot_write(self, client, override_user):
         # Reuse the commitments-test seeding helpers via a fresh org/fund/LP.
         from tests.test_commitments_api import (
             _seed_commitment,

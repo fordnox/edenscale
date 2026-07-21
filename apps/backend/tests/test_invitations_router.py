@@ -816,9 +816,7 @@ class TestAcceptInvitation:
             )
             assert memberships == []
             linked = (
-                db.query(InvestorContact)
-                .filter(InvestorContact.id == contact_id)
-                .one()
+                db.query(InvestorContact).filter(InvestorContact.id == contact_id).one()
             )
             assert linked.user_id == invitee_id
         finally:

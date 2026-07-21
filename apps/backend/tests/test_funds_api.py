@@ -3,12 +3,12 @@
 import uuid
 from datetime import date
 from decimal import Decimal
-from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import (
     Commitment,
@@ -40,7 +40,9 @@ def client():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.commit()
         return str(org.id)
@@ -87,7 +89,12 @@ def _seed_fund(
 ) -> int:
     db = SessionLocal()
     try:
-        fund = Fund(organization_id=organization_id, name=name, slug=slugify(name), status=status)
+        fund = Fund(
+            organization_id=organization_id,
+            name=name,
+            slug=slugify(name),
+            status=status,
+        )
         db.add(fund)
         db.commit()
         return str(fund.id)
@@ -378,9 +385,7 @@ class TestCrossOrgScopingViaHeader:
         )
         override_user("hanko-fm")
 
-        response = client.get(
-            "/funds", headers={"X-Organization-Id": str(other_org)}
-        )
+        response = client.get("/funds", headers={"X-Organization-Id": str(other_org)})
         assert response.status_code == 403
 
 

@@ -2,9 +2,9 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from app.core.slugs import slugify
 
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import Organization, OrganizationType, User, UserRole
 from app.models.user_organization_membership import UserOrganizationMembership
@@ -107,7 +107,9 @@ def _get_membership_role(user_id: str, organization_id: str) -> UserRole:
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.commit()
         return str(org.id)
@@ -149,9 +151,7 @@ class TestReadCurrentUser:
 
 
 class TestListUsers:
-    def test_invited_member_is_listed_with_membership_role(
-        self, client, override_user
-    ):
+    def test_invited_member_is_listed_with_membership_role(self, client, override_user):
         org_id = _seed_org()
         _seed_user(
             "hanko-admin",
@@ -171,9 +171,7 @@ class TestListUsers:
         assert invitee_id in rows
         assert rows[invitee_id]["role"] == "fund_manager"
 
-    def test_members_of_other_organizations_are_not_listed(
-        self, client, override_user
-    ):
+    def test_members_of_other_organizations_are_not_listed(self, client, override_user):
         org_id = _seed_org()
         other_org_id = _seed_org("Other Firm")
         _seed_user(
@@ -213,9 +211,7 @@ class TestUpdateUserRole:
         )
 
         override_user("hanko-fm")
-        response = client.patch(
-            f"/users/{target_id}/role", json={"role": "admin"}
-        )
+        response = client.patch(f"/users/{target_id}/role", json={"role": "admin"})
 
         assert response.status_code == 403
 
@@ -281,9 +277,7 @@ class TestUpdateUserRole:
         )
 
         override_user("hanko-admin")
-        response = client.patch(
-            f"/users/{outsider_id}/role", json={"role": "admin"}
-        )
+        response = client.patch(f"/users/{outsider_id}/role", json={"role": "admin"})
 
         assert response.status_code == 404
         assert _get_membership_role(outsider_id, other_org_id) is UserRole.lp

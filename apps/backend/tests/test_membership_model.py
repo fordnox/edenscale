@@ -34,7 +34,9 @@ def _seed_user_and_org(
     db = SessionLocal()
     try:
         org = Organization(
-            name=org_name, slug=slugify(org_name), type=OrganizationType.fund_manager_firm
+            name=org_name,
+            slug=slugify(org_name),
+            type=OrganizationType.fund_manager_firm,
         )
         db.add(org)
         db.flush()

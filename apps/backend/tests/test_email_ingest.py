@@ -13,10 +13,10 @@ from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import Document, Organization, OrganizationType, User, UserRole
 from app.models.user_organization_membership import UserOrganizationMembership
-from app.core.slugs import slugify
 from app.services import storage as storage_module
 
 _TOKEN = "test-ingest-secret"
@@ -279,9 +279,7 @@ def test_undecodable_attachment_is_dropped(client):
     _seed_user("jane@acme.test", memberships=[(org, UserRole.admin)])
     payload = _payload("jane@acme.test")
     payload["attachments"][0]["content_base64"] = "!!!not-base64!!!"
-    resp = client.post(
-        "/email-ingest/documents", json=payload, headers=_headers()
-    )
+    resp = client.post("/email-ingest/documents", json=payload, headers=_headers())
     assert resp.status_code == 200
     assert resp.json()["status"] == "dropped"
     assert _documents() == []
@@ -324,9 +322,7 @@ def test_non_pdf_attachment_does_not_enqueue_draft(client, capture_draft):
     payload["attachments"][0]["file_name"] = "notes.txt"
     payload["attachments"][0]["mime_type"] = "text/plain"
     payload["attachments"][0]["content_base64"] = base64.b64encode(b"hi").decode()
-    resp = client.post(
-        "/email-ingest/documents", json=payload, headers=_headers()
-    )
+    resp = client.post("/email-ingest/documents", json=payload, headers=_headers())
     assert resp.status_code == 200
     assert resp.json()["status"] == "created"
     assert capture_draft == []

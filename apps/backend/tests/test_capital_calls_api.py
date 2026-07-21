@@ -4,12 +4,12 @@
 import uuid
 from datetime import date
 from decimal import Decimal
-from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import (
     Commitment,
@@ -40,7 +40,9 @@ def client():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.commit()
         return str(org.id)
@@ -414,17 +416,13 @@ class TestCapitalCallValidation:
 
         first = client.post(
             f"/capital-calls/{call_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_id, "amount_due": "500.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "500.00"}]},
         )
         assert first.status_code == 201
 
         second = client.post(
             f"/capital-calls/{call_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_id, "amount_due": "500.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "500.00"}]},
         )
         assert second.status_code == 400
 
@@ -481,9 +479,7 @@ class TestCapitalCallSendCancel:
         call_id = create_resp.json()["id"]
         item_id = client.post(
             f"/capital-calls/{call_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]},
         ).json()[0]["id"]
         client.post(f"/capital-calls/{call_id}/send")
         client.patch(
@@ -569,9 +565,7 @@ class TestCapitalCallRbac:
         client.post(
             f"/capital-calls/{own_call}/items",
             json={
-                "items": [
-                    {"commitment_id": own_commitment, "amount_due": "1000.00"}
-                ]
+                "items": [{"commitment_id": own_commitment, "amount_due": "1000.00"}]
             },
         )
         other_call = client.post(
@@ -586,9 +580,7 @@ class TestCapitalCallRbac:
         client.post(
             f"/capital-calls/{other_call}/items",
             json={
-                "items": [
-                    {"commitment_id": other_commitment, "amount_due": "1000.00"}
-                ]
+                "items": [{"commitment_id": other_commitment, "amount_due": "1000.00"}]
             },
         )
 
@@ -620,7 +612,11 @@ class TestNestedFundRoute:
         fund_id = _seed_fund(org_id)
         other_fund = _seed_fund(org_id, name="Sibling Fund")
 
-        for title, fund in (("First", fund_id), ("Second", fund_id), ("Out", other_fund)):
+        for title, fund in (
+            ("First", fund_id),
+            ("Second", fund_id),
+            ("Out", other_fund),
+        ):
             client.post(
                 "/capital-calls",
                 json={
