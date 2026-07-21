@@ -1,22 +1,44 @@
 {
-  "name": "NewTaven",
-  "short_name": "NewTaven",
+  "name": "NewTaven Manager",
+  "short_name": "Manager",
+  "description": "Fund management portal for NewTaven — funds, capital calls, distributions, investors and documents.",
   "icons": [
     {
-      "src": "/web-app-manifest-192x192.png",
+      "src": "icon-any.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/web-app-manifest-512x512.png",
+      "src": "web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
-  "theme_color": "#000000",
-  "background_color": "#000000",
-  "start_url": "/",
-  "display": "standalone"
+  "theme_color": "#1F3D2E",
+  "background_color": "#FBF9F4",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "en"
 }

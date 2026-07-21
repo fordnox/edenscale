@@ -1,7 +1,11 @@
 packages:
   - "apps/*"
   - "packages/*"
+# These three ship native binaries and need their install scripts to run:
+# esbuild (Vite's bundler), sharp (Astro image pipeline), workerd (Cloudflare
+# Workers runtime for the gateway). Without this, `pnpm install` aborts with
+# ERR_PNPM_IGNORED_BUILDS and every build in the repo fails.
 allowBuilds:
-  esbuild: set this to true or false
-  sharp: set this to true or false
-  workerd: set this to true or false
+  esbuild: true
+  sharp: true
+  workerd: true

@@ -1,0 +1,13 @@
+<!-- NewTaven Investor — manifest icon, purpose "any".
+     Full-bleed tile, mark at 80% so it reads correctly UNCROPPED.
+     Do not use this where the OS applies a mask; see icon-maskable.svg. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NewTaven Investor">
+  <rect width="64" height="64" fill="#8A6A3F"/>
+  <g transform="translate(32 32) scale(0.8) translate(-32 -32)">
+    <path fill="#FBF9F4" d="M32 4 C 18 12, 10 24, 10 36 C 10 49, 20 60, 32 60 C 44 60, 54 49, 54 36 C 54 24, 46 12, 32 4 Z"/>
+    <g fill="#8A6A3F">
+      <path d="M26 19 L 46 19 L 46 39 L 40 39 L 40 25 L 26 25 Z"/>
+      <path d="M22.12 47.12 L 44.12 25.12 L 39.88 20.88 L 17.88 42.88 Z"/>
+    </g>
+  </g>
+</svg>

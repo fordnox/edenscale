@@ -1,0 +1,13 @@
+<!-- NewTaven Superadmin — manifest icon, purpose "any".
+     Full-bleed tile, mark at 80% so it reads correctly UNCROPPED.
+     Do not use this where the OS applies a mask; see icon-maskable.svg. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NewTaven Superadmin">
+  <rect width="64" height="64" fill="#1A1A18"/>
+  <g transform="translate(32 32) scale(0.8) translate(-32 -32)">
+    <path fill="#FBF9F4" d="M32 4 C 18 12, 10 24, 10 36 C 10 49, 20 60, 32 60 C 44 60, 54 49, 54 36 C 54 24, 46 12, 32 4 Z"/>
+    <g fill="#1A1A18">
+      <circle cx="32" cy="30" r="7"/>
+      <path d="M29 34 L 35 34 L 37 48 L 27 48 Z"/>
+    </g>
+  </g>
+</svg>
