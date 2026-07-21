@@ -56,7 +56,7 @@ def _ensure_can_manage(
 
 
 @router.get("", response_model=list[CommunicationRead])
-async def list_communications(
+def list_communications(
     fund_id: uuid.UUID | None = None,
     type: CommunicationType | None = None,
     skip: int = 0,
@@ -75,7 +75,7 @@ async def list_communications(
 
 
 @router.get("/{communication_id}", response_model=CommunicationRead)
-async def get_communication(
+def get_communication(
     communication_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -98,7 +98,7 @@ async def get_communication(
     "/{communication_id}/recipients/preview",
     response_model=list[CommunicationRecipientPreview],
 )
-async def preview_communication_recipients(
+def preview_communication_recipients(
     communication_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -140,7 +140,7 @@ async def preview_communication_recipients(
 
 
 @router.post("", response_model=CommunicationRead, status_code=status.HTTP_201_CREATED)
-async def create_communication(
+def create_communication(
     data: CommunicationCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -155,7 +155,7 @@ async def create_communication(
 
 
 @router.patch("/{communication_id}", response_model=CommunicationRead)
-async def update_communication(
+def update_communication(
     communication_id: uuid.UUID,
     data: CommunicationUpdate,
     db: Session = Depends(get_db),
@@ -239,7 +239,7 @@ async def send_communication(
     "/{communication_id}/recipients/{recipient_id}/read",
     response_model=CommunicationRecipientRead,
 )
-async def mark_recipient_read(
+def mark_recipient_read(
     communication_id: uuid.UUID,
     recipient_id: uuid.UUID,
     db: Session = Depends(get_db),
@@ -290,7 +290,7 @@ fund_communications_router = APIRouter(dependencies=[Depends(get_current_user)])
 @fund_communications_router.get(
     "/{fund_id}/communications", response_model=list[CommunicationRead]
 )
-async def list_communications_for_fund(
+def list_communications_for_fund(
     fund_id: uuid.UUID,
     type: CommunicationType | None = None,
     skip: int = 0,

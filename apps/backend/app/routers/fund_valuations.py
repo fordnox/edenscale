@@ -33,7 +33,7 @@ def _load_viewable_fund(
 
 
 @router.get("/{fund_id}/valuations", response_model=list[FundValuationRead])
-async def list_fund_valuations(
+def list_fund_valuations(
     fund_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -49,7 +49,7 @@ async def list_fund_valuations(
     response_model=FundValuationRead,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_fund_valuation(
+def create_fund_valuation(
     fund_id: uuid.UUID,
     data: FundValuationCreate,
     db: Session = Depends(get_db),
@@ -70,7 +70,7 @@ async def create_fund_valuation(
     "/{fund_id}/valuations/{valuation_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def delete_fund_valuation(
+def delete_fund_valuation(
     fund_id: uuid.UUID,
     valuation_id: uuid.UUID,
     db: Session = Depends(get_db),

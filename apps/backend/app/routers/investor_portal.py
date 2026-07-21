@@ -52,7 +52,7 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("/organizations", response_model=list[InvestorOrganizationRead])
-async def list_investor_organizations(
+def list_investor_organizations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),
 ):
@@ -66,7 +66,7 @@ async def list_investor_organizations(
 
 
 @router.get("/dashboard/overview", response_model=DashboardOverviewResponse)
-async def get_dashboard_overview(
+def get_dashboard_overview(
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
@@ -74,44 +74,44 @@ async def get_dashboard_overview(
 
 
 @router.get("/funds", response_model=list[FundListItem])
-async def list_funds(
+def list_funds(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
-    return await funds.list_funds(skip=skip, limit=limit, db=db, membership=membership)
+    return funds.list_funds(skip=skip, limit=limit, db=db, membership=membership)
 
 
 @router.get("/funds/by-slug/{slug}", response_model=FundRead)
-async def get_fund_by_slug(
+def get_fund_by_slug(
     slug: str,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
-    return await funds.get_fund_by_slug(slug=slug, db=db, membership=membership)
+    return funds.get_fund_by_slug(slug=slug, db=db, membership=membership)
 
 
 @router.get("/funds/{fund_id}", response_model=FundRead)
-async def get_fund(
+def get_fund(
     fund_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
-    return await funds.get_fund(fund_id=fund_id, db=db, membership=membership)
+    return funds.get_fund(fund_id=fund_id, db=db, membership=membership)
 
 
 @router.get("/funds/{fund_id}/overview", response_model=FundOverview)
-async def get_fund_overview(
+def get_fund_overview(
     fund_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
-    return await funds.get_fund_overview(fund_id=fund_id, db=db, membership=membership)
+    return funds.get_fund_overview(fund_id=fund_id, db=db, membership=membership)
 
 
 @router.get("/commitments", response_model=list[CommitmentRead])
-async def list_commitments(
+def list_commitments(
     fund_id: uuid.UUID | None = None,
     investor_id: uuid.UUID | None = None,
     skip: int = 0,
@@ -119,7 +119,7 @@ async def list_commitments(
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
-    return await commitments.list_commitments(
+    return commitments.list_commitments(
         fund_id=fund_id,
         investor_id=investor_id,
         skip=skip,
@@ -130,7 +130,7 @@ async def list_commitments(
 
 
 @router.get("/capital-calls", response_model=list[CapitalCallRead])
-async def list_capital_calls(
+def list_capital_calls(
     fund_id: uuid.UUID | None = None,
     status_filter: CapitalCallStatus | None = None,
     skip: int = 0,
@@ -138,7 +138,7 @@ async def list_capital_calls(
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
-    return await capital_calls.list_capital_calls(
+    return capital_calls.list_capital_calls(
         fund_id=fund_id,
         status_filter=status_filter,
         skip=skip,
@@ -149,7 +149,7 @@ async def list_capital_calls(
 
 
 @router.get("/distributions", response_model=list[DistributionRead])
-async def list_distributions(
+def list_distributions(
     fund_id: uuid.UUID | None = None,
     status_filter: DistributionStatus | None = None,
     skip: int = 0,
@@ -157,7 +157,7 @@ async def list_distributions(
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
-    return await distributions.list_distributions(
+    return distributions.list_distributions(
         fund_id=fund_id,
         status_filter=status_filter,
         skip=skip,
@@ -168,7 +168,7 @@ async def list_distributions(
 
 
 @router.get("/documents", response_model=list[DocumentRead])
-async def list_documents(
+def list_documents(
     fund_id: uuid.UUID | None = None,
     investor_id: uuid.UUID | None = None,
     document_type: DocumentType | None = None,
@@ -177,7 +177,7 @@ async def list_documents(
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
-    return await documents.list_documents(
+    return documents.list_documents(
         organization_id=None,
         fund_id=fund_id,
         investor_id=investor_id,
@@ -190,7 +190,7 @@ async def list_documents(
 
 
 @router.get("/communications", response_model=list[CommunicationRead])
-async def list_communications(
+def list_communications(
     fund_id: uuid.UUID | None = None,
     type: CommunicationType | None = None,
     skip: int = 0,
@@ -198,7 +198,7 @@ async def list_communications(
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
-    return await communications.list_communications(
+    return communications.list_communications(
         fund_id=fund_id,
         type=type,
         skip=skip,
@@ -212,13 +212,13 @@ async def list_communications(
     "/communications/{communication_id}/recipients/{recipient_id}/read",
     response_model=CommunicationRecipientRead,
 )
-async def mark_recipient_read(
+def mark_recipient_read(
     communication_id: uuid.UUID,
     recipient_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
-    return await communications.mark_recipient_read(
+    return communications.mark_recipient_read(
         communication_id=communication_id,
         recipient_id=recipient_id,
         db=db,
@@ -227,13 +227,13 @@ async def mark_recipient_read(
 
 
 @router.get("/investors", response_model=list[InvestorListItem])
-async def list_investors(
+def list_investors(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
-    return await investors.list_investors(
+    return investors.list_investors(
         skip=skip, limit=limit, db=db, membership=membership
     )
 
@@ -242,14 +242,14 @@ async def list_investors(
     "/investors/{investor_id}/contacts",
     response_model=list[InvestorContactRead],
 )
-async def list_investor_contacts(
+def list_investor_contacts(
     investor_id: uuid.UUID,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_investor_membership),
 ):
-    return await investor_contacts.list_investor_contacts(
+    return investor_contacts.list_investor_contacts(
         investor_id=investor_id,
         skip=skip,
         limit=limit,

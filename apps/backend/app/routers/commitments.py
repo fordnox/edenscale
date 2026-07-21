@@ -47,7 +47,7 @@ def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> Non
 
 
 @router.get("", response_model=list[CommitmentRead])
-async def list_commitments(
+def list_commitments(
     fund_id: uuid.UUID | None = None,
     investor_id: uuid.UUID | None = None,
     skip: int = 0,
@@ -66,7 +66,7 @@ async def list_commitments(
 
 
 @router.get("/{commitment_id}", response_model=CommitmentRead)
-async def get_commitment(
+def get_commitment(
     commitment_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -86,7 +86,7 @@ async def get_commitment(
 
 
 @router.post("", response_model=CommitmentRead, status_code=status.HTTP_201_CREATED)
-async def create_commitment(
+def create_commitment(
     data: CommitmentCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -121,7 +121,7 @@ async def create_commitment(
 
 
 @router.patch("/{commitment_id}", response_model=CommitmentRead)
-async def update_commitment(
+def update_commitment(
     commitment_id: uuid.UUID,
     data: CommitmentUpdate,
     db: Session = Depends(get_db),
@@ -178,7 +178,7 @@ fund_commitments_router = APIRouter(dependencies=[Depends(get_current_user)])
 @fund_commitments_router.get(
     "/{fund_id}/commitments", response_model=list[CommitmentRead]
 )
-async def list_commitments_for_fund(
+def list_commitments_for_fund(
     fund_id: uuid.UUID,
     skip: int = 0,
     limit: int = 100,
@@ -200,7 +200,7 @@ investor_commitments_router = APIRouter(dependencies=[Depends(get_current_user)]
 @investor_commitments_router.get(
     "/{investor_id}/commitments", response_model=list[CommitmentRead]
 )
-async def list_commitments_for_investor(
+def list_commitments_for_investor(
     investor_id: uuid.UUID,
     skip: int = 0,
     limit: int = 100,

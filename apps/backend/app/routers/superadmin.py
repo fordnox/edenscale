@@ -74,7 +74,7 @@ def _resolve_or_create_user_or_404(
     response_model=list[SuperadminOrganizationRead],
     dependencies=[Depends(require_superadmin)],
 )
-async def list_all_organizations(
+def list_all_organizations(
     db: Session = Depends(get_db),
 ) -> list[SuperadminOrganizationRead]:
     rows = OrganizationRepository(db).list_with_member_counts()
@@ -97,7 +97,7 @@ async def list_all_organizations(
     response_model=OrganizationRead,
     dependencies=[Depends(require_superadmin)],
 )
-async def get_organization(
+def get_organization(
     organization_id: uuid.UUID,
     db: Session = Depends(get_db),
 ) -> OrganizationRead:
@@ -115,7 +115,7 @@ async def get_organization(
     response_model=OrganizationRead,
     dependencies=[Depends(require_superadmin)],
 )
-async def update_organization(
+def update_organization(
     organization_id: uuid.UUID,
     data: OrganizationUpdate,
     db: Session = Depends(get_db),
@@ -134,7 +134,7 @@ async def update_organization(
     response_model=list[UserRead],
     dependencies=[Depends(require_superadmin)],
 )
-async def list_all_users(
+def list_all_users(
     db: Session = Depends(get_db),
 ) -> list[UserRead]:
     """Every user on the platform, across all organizations. `UserRead`
@@ -225,7 +225,7 @@ async def start_investor_drip(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_superadmin)],
 )
-async def create_organization_with_admin(
+def create_organization_with_admin(
     data: SuperadminOrganizationCreate,
     db: Session = Depends(get_db),
 ) -> SuperadminOrganizationCreateResponse:
@@ -260,7 +260,7 @@ async def create_organization_with_admin(
     response_model=MembershipRead,
     dependencies=[Depends(require_superadmin)],
 )
-async def assign_organization_admin(
+def assign_organization_admin(
     organization_id: uuid.UUID,
     data: SuperadminAdminAssignment,
     db: Session = Depends(get_db),
@@ -301,7 +301,7 @@ async def assign_organization_admin(
     response_model=OrganizationRead,
     dependencies=[Depends(require_superadmin)],
 )
-async def disable_organization(
+def disable_organization(
     organization_id: uuid.UUID,
     db: Session = Depends(get_db),
 ) -> OrganizationRead:
@@ -321,7 +321,7 @@ async def disable_organization(
     response_model=OrganizationRead,
     dependencies=[Depends(require_superadmin)],
 )
-async def enable_organization(
+def enable_organization(
     organization_id: uuid.UUID,
     db: Session = Depends(get_db),
 ) -> OrganizationRead:
@@ -341,7 +341,7 @@ async def enable_organization(
     response_model=list[MembershipWithUserRead],
     dependencies=[Depends(require_superadmin)],
 )
-async def list_organization_members(
+def list_organization_members(
     organization_id: uuid.UUID,
     db: Session = Depends(get_db),
 ) -> list[MembershipWithUserRead]:

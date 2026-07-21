@@ -42,7 +42,7 @@ def _ensure_org_scope(
 
 
 @router.get("/{investor_id}/contacts", response_model=list[InvestorContactRead])
-async def list_investor_contacts(
+def list_investor_contacts(
     investor_id: uuid.UUID,
     skip: int = 0,
     limit: int = 100,
@@ -72,7 +72,7 @@ async def list_investor_contacts(
     response_model=InvestorContactRead,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_investor_contact(
+def create_investor_contact(
     investor_id: uuid.UUID,
     data: InvestorContactCreate,
     db: Session = Depends(get_db),
@@ -90,7 +90,7 @@ async def create_investor_contact(
     "/{investor_id}/contacts/{contact_id}",
     response_model=InvestorContactRead,
 )
-async def update_investor_contact(
+def update_investor_contact(
     investor_id: uuid.UUID,
     contact_id: uuid.UUID,
     data: InvestorContactUpdate,
@@ -116,7 +116,7 @@ async def update_investor_contact(
     "/{investor_id}/contacts/{contact_id}",
     response_model=InvestorContactRead,
 )
-async def delete_investor_contact(
+def delete_investor_contact(
     investor_id: uuid.UUID,
     contact_id: uuid.UUID,
     db: Session = Depends(get_db),

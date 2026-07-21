@@ -67,7 +67,7 @@ def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> Non
 
 
 @router.get("", response_model=list[CapitalCallRead])
-async def list_capital_calls(
+def list_capital_calls(
     fund_id: uuid.UUID | None = None,
     status_filter: CapitalCallStatus | None = None,
     skip: int = 0,
@@ -87,7 +87,7 @@ async def list_capital_calls(
 
 
 @router.get("/{call_id}", response_model=CapitalCallRead)
-async def get_capital_call(
+def get_capital_call(
     call_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -107,7 +107,7 @@ async def get_capital_call(
 
 
 @router.post("", response_model=CapitalCallRead, status_code=status.HTTP_201_CREATED)
-async def create_capital_call(
+def create_capital_call(
     data: CapitalCallCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -128,7 +128,7 @@ async def create_capital_call(
 
 
 @router.patch("/{call_id}", response_model=CapitalCallRead)
-async def update_capital_call(
+def update_capital_call(
     call_id: uuid.UUID,
     data: CapitalCallUpdate,
     db: Session = Depends(get_db),
@@ -158,7 +158,7 @@ async def update_capital_call(
     response_model=list[CapitalCallItemRead],
     status_code=status.HTTP_201_CREATED,
 )
-async def add_capital_call_items(
+def add_capital_call_items(
     call_id: uuid.UUID,
     payload: CapitalCallItemBulkCreate,
     mode: Literal["manual", "pro-rata"] = Query("manual"),
@@ -217,7 +217,7 @@ async def add_capital_call_items(
     "/{call_id}/items/{item_id}",
     response_model=CapitalCallItemRead,
 )
-async def update_capital_call_item(
+def update_capital_call_item(
     call_id: uuid.UUID,
     item_id: uuid.UUID,
     data: CapitalCallItemUpdate,
@@ -290,7 +290,7 @@ async def send_capital_call(
 
 
 @router.post("/{call_id}/cancel", response_model=CapitalCallRead)
-async def cancel_capital_call(
+def cancel_capital_call(
     call_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -325,7 +325,7 @@ fund_capital_calls_router = APIRouter(dependencies=[Depends(get_current_user)])
 @fund_capital_calls_router.get(
     "/{fund_id}/capital-calls", response_model=list[CapitalCallRead]
 )
-async def list_capital_calls_for_fund(
+def list_capital_calls_for_fund(
     fund_id: uuid.UUID,
     status_filter: CapitalCallStatus | None = None,
     skip: int = 0,
