@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "tsc --noEmit",
+    "lint": "eslint src",
     "typecheck": "tsc --noEmit"
   },
   "exports": {
@@ -15,6 +15,7 @@
     "./contexts/ThemeContext": "./src/contexts/ThemeContext.tsx",
     "./format": "./src/format.ts",
     "./hooks/useActiveOrganization": "./src/hooks/useActiveOrganization.ts",
+    "./hooks/useCommandPalette": "./src/hooks/useCommandPalette.ts",
     "./hooks/usePendingInvitations": "./src/hooks/usePendingInvitations.ts",
     "./userDisplay": "./src/userDisplay.ts",
     "./utils": "./src/utils.ts"
