@@ -1,14 +1,14 @@
 import logging
 from uuid import UUID
 
-from arq import cron
+from arq import cron, func
 
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.models.enums import coerce_notification_type
-from app.models.notification_log import NotificationLog
 from app.models.organization import Organization
 from app.models.user import User
+from app.repositories.notification_log_repository import NotificationLogRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.schemas.organization import OrganizationRead
 from app.services.channels.registry import get_default_registry
@@ -39,6 +39,15 @@ async def task_send_notification(
     ``user_id`` may be ``None`` — an email-only delivery to a recipient with no
     user account (e.g. an invitation). In that case no in-app row is written and
     the email goes to ``data["recipient_email"]``.
+
+    No blanket try/except here: an unexpected failure must propagate so arq
+    retries the job (see ``max_tries`` on ``WorkerSettings``). What makes that
+    safe is ``NotificationLogRepository`` — before sending a channel we check
+    whether it was already delivered for this (type, reference, channel,
+    recipient) key, and the delivery is recorded durably (committed) right
+    after it succeeds, so a retry never re-sends a channel that already went
+    out. Only the FK guards below still return early instead of raising —
+    a genuinely missing user/org row is not retryable.
     """
     db = SessionLocal()
     try:
@@ -98,13 +107,39 @@ async def task_send_notification(
                 org
             ).model_dump(mode="json")
 
+        # Sentinel, not NULL: PostgreSQL treats every NULL as distinct in a
+        # unique constraint, so nullable reference columns would silently stop
+        # deduping exactly the notification types that have no reference.
+        ref_type = reference_type or ""
+        ref_id = reference_id or ""
+        recipient_value = str(recipient_email or "")
+
+        log_repo = NotificationLogRepository(db)
         registry = get_default_registry()
         for channel_name in ("email",):
             channel = registry.get(channel_name)
             if channel is None:
                 continue
+
+            if log_repo.is_delivered(
+                notification_type=str(nt),
+                reference_type=ref_type,
+                reference_id=ref_id,
+                channel=channel_name,
+                recipient=recipient_value,
+            ):
+                logger.info(
+                    "Skipping already-delivered %s channel: type=%s reference=%s/%s recipient=%s",
+                    channel_name,
+                    nt,
+                    ref_type,
+                    ref_id,
+                    recipient_value,
+                )
+                continue
+
             result = await channel.send(
-                recipient_email=str(recipient_email or ""),
+                recipient_email=recipient_value,
                 title=title,
                 message=message or "",
                 event_type=notification_type,
@@ -117,33 +152,29 @@ async def task_send_notification(
             else:
                 status = "failed"
 
-            db.add(
-                NotificationLog(
-                    notification_id=notification.id if notification else None,
-                    user_id=UUID(user_id) if user_id else None,
-                    organization_id=UUID(organization_id) if organization_id else None,
-                    notification_type=str(nt),
-                    channel=channel_name,
-                    recipient=recipient_email or "",
-                    subject=title,
-                    status=status,
-                    provider_response=result,
-                    error_message=result.get("error"),
-                )
+            # Committed inside record_delivery, before the next channel is
+            # attempted — that's what makes the idempotency check durable
+            # across a crash mid-loop.
+            log_repo.record_delivery(
+                notification_id=notification.id if notification else None,  # type: ignore[invalid-argument-type]
+                user_id=UUID(user_id) if user_id else None,
+                organization_id=UUID(organization_id) if organization_id else None,
+                notification_type=str(nt),
+                reference_type=ref_type,
+                reference_id=ref_id,
+                channel=channel_name,
+                recipient=recipient_value,
+                subject=title,
+                status=status,
+                provider_response=result,
+                error_message=result.get("error"),
             )
 
-        db.commit()
         logger.info(
             "Notification handled: type=%s user=%s recipient=%s",
             notification_type,
             user_id,
             recipient_email,
-        )
-    except Exception:
-        logger.exception(
-            "Failed to send notification: type=%s user=%s",
-            notification_type,
-            user_id,
         )
     finally:
         db.close()
@@ -250,7 +281,11 @@ class WorkerSettings:
     queue_name = settings.APP_DOMAIN
     functions = [
         task_ping,
-        task_send_notification,
+        # max_tries set explicitly (arq's default is 5) now that failures
+        # propagate instead of being swallowed: 3 attempts gives a transient
+        # DB/Resend blip room to clear without hammering a genuinely broken
+        # delivery for as long as arq's default budget would.
+        func(task_send_notification, max_tries=3),  # type: ignore[invalid-argument-type]
         task_fire_drip_event,
         task_draft_letter,
     ]

@@ -15,6 +15,7 @@ from app.repositories.lp_scope import (
     lp_visible_contact_ids,
     lp_visible_investor_ids,
 )
+from app.repositories.notification_log_repository import NotificationLogRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.repositories.organization_invitation_repository import (
     OrganizationInvitationRepository,
@@ -40,6 +41,7 @@ __all__ = [
     "FundValuationRepository",
     "InvestorContactRepository",
     "InvestorRepository",
+    "NotificationLogRepository",
     "NotificationRepository",
     "OrganizationInvitationRepository",
     "OrganizationRepository",
