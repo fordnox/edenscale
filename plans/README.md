@@ -24,7 +24,7 @@ so it does not get re-audited next time.
 | 003 | Make bank-statement apply atomic and surface its errors | P1 | M | MED | 001 | DONE (verified: regression test fails pre-fix, passes post-fix) |
 | 004 | Bind upload keys to the caller who was issued them | P1 | M | MED | 001, 002 | DONE (verified: 391 passed; cross-user PUT 204→403 proven) |
 | 005 | Stop overdue calls vanishing; gate allocations on closed calls | P1 | S | LOW | 001 | DONE (verified: 393 passed; **changes product behavior** — see note) |
-| 006 | Stop blocking the event loop on synchronous DB calls | P2 | M | MED | 001 | TODO |
+| 006 | Stop blocking the event loop on synchronous DB calls | P2 | M | MED | 001 | DONE (verified: 20 router files, 17 handlers kept async; openapi unchanged) |
 | 007 | Extract the duplicated pro-rata commitment query | P2 | S | LOW | 001 | DONE (verified: 386 passed, zero test files touched) |
 | 008 | Test the two untested money-critical modules | P2 | S | LOW | 001 | DONE (verified: 427 passed, +40 tests, zero production changes) |
 | 009 | Survive Hanko key rotation; stop losing notifications | P2 | M | MED | 001 | PARTIAL (JWKS + async send DONE, verified 388 passed; step 4 correctly STOPPED — see deferred) |
