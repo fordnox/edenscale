@@ -20,6 +20,13 @@ so it does not get re-audited next time.
 | 001 | Make `make test` green and gate every push with CI | P1 | S | LOW | — | DONE (backend green: 391 passed; frontend CI job blocked by 012) |
 | 012 | Reconcile duplicate `@types/react` so the workspace typechecks | P1 | S | LOW | — | DONE (verified: typecheck 7/7; see follow-up in plan's maintenance notes) |
 | 013 | Drop SQLite support; require PostgreSQL | P1 | S | LOW | — | DONE (verified: 456 passed; missing DSN now fails loudly) |
+| 014 | Give notifications an idempotency key so retries are safe | P1 | M | MED | 009 | DONE (verified: 461 passed; retry no longer re-sends) |
+| 015 | Harden untrusted-input boundaries (LLM prompt, upload size) | P2 | M | LOW | — | DONE (verified: 468 passed; content-type allowlist STOPPED — no UI accept list) |
+| 016 | Scope aggregates to tenant, batch eager loads, bound lists | P2 | M | MED | — | DONE (verified: 472 passed; EXPLAIN 35.5ms→0.034ms at 100k rows) |
+| 017 | Let payments unwind, enforce transition table, fix dedupe key | P2 | M | MED | 003,005 | DONE (verified: 480 passed; both regressions fail pre-fix) |
+| 018 | Finish docs reconciliation, remove dead configuration | P3 | M | LOW | 010,012 | DONE (verified: 480 passed; password_hash dropped) |
+| 019 | Frontend linter, bundle splitting, lift duplicated modules | P2 | L | MED | 012 | DONE (verified: main chunk 1355kB→533kB; 140 lint findings, 0 real bugs) |
+| 020 | Ingest idempotency/atomicity and request correlation | P2 | M | MED | 014 | IN PROGRESS |
 | 002 | Close dev-storage path traversal; make storage config fail closed | P1 | S | LOW | 001 | DONE (verified: 395 passed + 9 new; GET token gate dropped as unimplementable — see plan) |
 | 003 | Make bank-statement apply atomic and surface its errors | P1 | M | MED | 001 | DONE (verified: regression test fails pre-fix, passes post-fix) |
 | 004 | Bind upload keys to the caller who was issued them | P1 | M | MED | 001, 002 | DONE (verified: 391 passed; cross-user PUT 204→403 proven) |
