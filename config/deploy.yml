@@ -74,6 +74,7 @@ env:
     - EMAIL_INGEST_TOKEN
     - OPENROUTER_API_KEY
     - OPENROUTER_MODEL
+    - UPLOAD_SIGNING_SECRET
 
 # Persisted local services on the server (managed by Kamal, not the proxy).
 accessories:
