@@ -27,7 +27,7 @@ deliberately left out (including two findings refuted outright), and the
 | 017 | Let payments unwind, enforce transition table, fix dedupe key | P2 | M | MED | 003,005 | DONE (verified: 480 passed; both regressions fail pre-fix) |
 | 018 | Finish docs reconciliation, remove dead configuration | P3 | M | LOW | 010,012 | DONE (verified: 480 passed; password_hash dropped) |
 | 019 | Frontend linter, bundle splitting, lift duplicated modules | P2 | L | MED | 012 | DONE (verified: main chunk 1355kB→533kB; 140 lint findings, 0 real bugs) |
-| 020 | Ingest idempotency/atomicity and request correlation | P2 | M | MED | 014 | IN PROGRESS |
+| 020 | Ingest idempotency/atomicity and request correlation | P2 | M | MED | 014 | DONE (verified: 490 passed; 3 regressions fail pre-fix) |
 | 002 | Close dev-storage path traversal; make storage config fail closed | P1 | S | LOW | 001 | DONE (verified: 395 passed + 9 new; GET token gate dropped as unimplementable — see plan) |
 | 003 | Make bank-statement apply atomic and surface its errors | P1 | M | MED | 001 | DONE (verified: regression test fails pre-fix, passes post-fix) |
 | 004 | Bind upload keys to the caller who was issued them | P1 | M | MED | 001, 002 | DONE (verified: 391 passed; cross-user PUT 204→403 proven) |
@@ -35,7 +35,7 @@ deliberately left out (including two findings refuted outright), and the
 | 006 | Stop blocking the event loop on synchronous DB calls | P2 | M | MED | 001 | DONE (verified: 20 router files, 17 handlers kept async; openapi unchanged) |
 | 007 | Extract the duplicated pro-rata commitment query | P2 | S | LOW | 001 | DONE (verified: 386 passed, zero test files touched) |
 | 008 | Test the two untested money-critical modules | P2 | S | LOW | 001 | DONE (verified: 427 passed, +40 tests, zero production changes) |
-| 009 | Survive Hanko key rotation; stop losing notifications | P2 | M | MED | 001 | PARTIAL (JWKS + async send DONE, verified 388 passed; step 4 correctly STOPPED — see deferred) |
+| 009 | Survive Hanko key rotation; stop losing notifications | P2 | M | MED | 001 | DONE (JWKS + async send here; step 4 completed by plan 014) |
 | 010 | Correct the four stale decision documents | P2 | S | LOW | — | DONE (verified; ADR-003 created, README rewritten) |
 | 011 | Make `make lint` a real gate; document every env var | P2 | M | MED | 001 | DONE (verified: gate is idempotent AND fails on violation) |
 

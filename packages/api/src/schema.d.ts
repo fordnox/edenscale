@@ -2236,6 +2236,8 @@ export interface components {
         CommunicationCreate: {
             /** Fund Id */
             fund_id?: string | null;
+            /** Document Id */
+            document_id?: string | null;
             type: components["schemas"]["CommunicationType"];
             /** Subject */
             subject: string;
@@ -2251,6 +2253,8 @@ export interface components {
             id: string;
             /** Fund Id */
             fund_id: string | null;
+            /** Document Id */
+            document_id?: string | null;
             /** Sender User Id */
             sender_user_id: string | null;
             type: components["schemas"]["CommunicationType"];
@@ -2684,6 +2688,8 @@ export interface components {
             subject: string;
             /** Attachments */
             attachments: components["schemas"]["EmailIngestAttachment"][];
+            /** Message Id */
+            message_id?: string | null;
         };
         /** EmailIngestResult */
         EmailIngestResult: {
