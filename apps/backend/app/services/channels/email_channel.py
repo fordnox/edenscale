@@ -149,7 +149,7 @@ class EmailChannel(NotificationChannel):
         }
         try:
             resend.api_key = settings.RESEND_API_KEY
-            response = resend.Emails.send(params)  # type: ignore[invalid-argument-type]
+            response = await resend.Emails.send_async(params)  # type: ignore[invalid-argument-type]
             return {"success": True, "provider_id": response["id"]}
         except Exception as e:  # noqa: BLE001 - never let a send break the worker
             logger.error("Email send failed for %s: %s", recipient_email, e)
