@@ -1,5 +1,16 @@
 # Investor portal — feature plan (fundrbird gap analysis)
 
+> **Reconciled against code 2026-07-21** (plan 010). The gap table below and
+> "central dependency" section originally described a pre-Phase-2 state (no
+> valuation model). Phase 2 shipped `FundValuation` / NAV / TVPI / RVPI
+> (see `apps/backend/app/models/fund_valuation.py`,
+> `apps/backend/app/services/metrics.py`) and the "Status" section at the
+> bottom of this document already said so — but the gap table and the
+> "central dependency" section had not been updated to match. Both are
+> corrected below. Phases 3–5 were re-checked against the code and are
+> still not built (verified: no `PortfolioCompany`, `PortfolioInvestment`,
+> or `ReportPeriod` models exist under `apps/backend/app/models/`).
+
 Reference: fundrbird's Contrarian Ventures LP portal. This maps its functionality
 to edenscale's `apps/investor` and lays out a phased plan. Structure/feature
 notes only — no competitor content is reproduced.
@@ -35,10 +46,10 @@ login) with three layers:
 | DPI / IRR from cashflows | DONE (fund overview, dashboard) |
 | Capital calls / distributions / documents / letters / notifications | DONE (LP-scoped pages) |
 | Profile | DONE |
-| **NAV / Fair Value, TVPI, RVPI** | **MISSING** — no valuation model (deliberate) |
-| **Portfolio (deal-level) data** | **MISSING** — no portfolio-company domain |
-| **Structured quarterly report + PDF** | **MISSING** |
-| **Individual capital-account statement** | **MISSING** (needs NAV) |
+| **NAV / Fair Value, TVPI, RVPI** | **DONE** — `FundValuation` model + `metrics.fund_metrics` (`nav`, `tvpi`, `rvpi`); investor position table shows Fair Value + TVPI, fund detail shows fund-wide NAV/TVPI/RVPI |
+| **Portfolio (deal-level) data** | **MISSING** — no portfolio-company domain (Phase 3, not started) |
+| **Structured quarterly report + PDF** | **MISSING** (Phase 4, not started) |
+| **Individual capital-account statement** | **MISSING** (Phase 5, not started; needs Phase 3 portfolio data, not just NAV — NAV is done) |
 | Report archive | Partial (Documents page lists report-type docs) |
 | Tokenized no-login share link | Different model (Hanko per-user auth) |
 
@@ -46,9 +57,14 @@ login) with three layers:
 
 Everything fundrbird shows above the DPI/IRR line — Fair Value, TVPI, RVPI,
 the capital-account statement, portfolio marks — depends on a **valuation / NAV
-model**. edenscale intentionally has none (cashflow-only; TVPI was removed).
-Reproducing the report means building that foundation first. This is the
-strategic fork; the phases below are ordered around it.
+model**. **That foundation has been built** (Phase 2, complete): managers
+record fund NAV marks (`FundValuation`), and `nav` / `tvpi` / `rvpi` flow
+through `app/services/metrics.py` to both the manager and investor apps. The
+remaining fundrbird-parity gaps (portfolio/deal-level data, the structured
+quarterly report + PDF, the individual capital-account statement) are
+downstream of this foundation and are now unblocked, not blocked on it. The
+phases below were originally ordered around getting past this fork; Phases
+3–5 are what's left.
 
 ## Phased plan
 

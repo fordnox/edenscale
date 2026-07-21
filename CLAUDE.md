@@ -69,7 +69,7 @@ pnpm + Turborepo monorepo (`pnpm-workspace.yaml`: `apps/*`, `packages/*`). One P
 
 ### Frontend SPAs (`apps/{manager,investor,superadmin}/src/`)
 
-- **Stack**: React 18 + Vite 7 + TypeScript, Tailwind CSS v4 (via `@tailwindcss/vite`), React Router v6, TanStack Query, Radix UI primitives. Shared components come from `@edenscale/ui`; app-specific ones live in each app's `components/`.
+- **Stack**: React 19 + Vite 8 + TypeScript 6, Tailwind CSS v4 (via `@tailwindcss/vite`), React Router v7, TanStack Query, Radix UI primitives. Shared components come from `@edenscale/ui`; app-specific ones live in each app's `components/`.
 - **Structure**: each app has `App.tsx` (routes), `layouts/`, `pages/`, `hooks/`, `lib/`. API access, auth, and org context come from the `@edenscale/*` packages — don't duplicate them per app.
 - **Path alias**: `@/*` resolves to `src/*` (configured in both `vite.config.ts` and `tsconfig.json`).
 

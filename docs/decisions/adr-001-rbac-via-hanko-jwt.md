@@ -14,7 +14,7 @@ related:
 
 # ADR-001: RBAC via local User row keyed on Hanko subject ID
 
-**Status:** Accepted (2026-02 / locked in during Phase 02 of the build)
+**Status:** Superseded by ADR-003 (2026-07-21)
 **Deciders:** Backend team
 **Supersedes:** none
 
