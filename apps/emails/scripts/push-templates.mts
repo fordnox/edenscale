@@ -8,6 +8,11 @@
  *   "Variable '<key>' is used in the template but not defined in the variables list".
  * This script does the same upload, but also declares every variable it finds.
  *
+ * Templates are matched by name and updated in place (`templates.update`), never
+ * removed and recreated — Resend automations reference a template by id, so
+ * recreating one detaches it from every automation using it. A new version is
+ * published on each push; the id stays stable for the life of the template.
+ *
  * Usage:
  *   RESEND_API_KEY=... pnpm push
  *   RESEND_API_KEY=... pnpm push emails/customer/capital_call.tsx
@@ -26,13 +31,10 @@ import { pathToFileURL } from "node:url";
 import { render } from "@react-email/render";
 import { Resend } from "resend";
 
-type VarType = "string" | "number";
-
-interface TemplateVariableInput {
-  key: string;
-  type: VarType;
-  fallbackValue?: string | number | null;
-}
+// Discriminated on `type` so it satisfies both the create and update payloads.
+type TemplateVariableInput =
+  | { key: string; type: "string"; fallbackValue?: string | null }
+  | { key: string; type: "number"; fallbackValue?: number | null };
 
 const EMAILS_ROOT = resolve(import.meta.dirname, "..", "emails");
 const PLACEHOLDER_RE = /\{\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}\}/g;
@@ -67,28 +69,32 @@ function templateNameFor(filePath: string): string {
 function extractVariables(html: string): TemplateVariableInput[] {
   const keys = new Set<string>();
   for (const m of html.matchAll(PLACEHOLDER_RE)) keys.add(m[1]);
-  return [...keys].sort().map((key) => {
-    const type: VarType = NUMBER_KEYS.has(key) ? "number" : "string";
-    return { key, type, fallbackValue: type === "number" ? 0 : "" };
-  });
+  return [...keys].sort().map((key): TemplateVariableInput =>
+    NUMBER_KEYS.has(key)
+      ? { key, type: "number", fallbackValue: 0 }
+      : { key, type: "string", fallbackValue: "" },
+  );
 }
 
-async function findExistingId(name: string): Promise<string | null> {
+// name → id for every template on the account, fetched once per run.
+let existingIds: Map<string, string> | null = null;
+
+async function loadExistingIds(): Promise<Map<string, string>> {
+  if (existingIds) return existingIds;
+  const map = new Map<string, string>();
   let after: string | undefined;
   while (true) {
     const res = await resend.templates.list(
       after ? { limit: 100, after } : { limit: 100 },
     );
-    if (res.error) {
-      console.error("templates.list failed:", res.error);
-      return null;
-    }
+    if (res.error) throw new Error(`templates.list failed: ${res.error.message}`);
     const data = res.data?.data ?? [];
-    const hit = data.find((t) => t.name === name);
-    if (hit) return hit.id;
-    if (!res.data?.has_more || data.length === 0) return null;
+    for (const t of data) map.set(t.name, t.id);
+    if (!res.data?.has_more || data.length === 0) break;
     after = data[data.length - 1].id;
   }
+  existingIds = map;
+  return map;
 }
 
 async function pushOne(filePath: string): Promise<void> {
@@ -104,30 +110,43 @@ async function pushOne(filePath: string): Promise<void> {
   const variables = extractVariables(html);
   const name = templateNameFor(filePath);
 
-  const existingId = await findExistingId(name);
+  const ids = await loadExistingIds();
+  const existingId = ids.get(name);
+
+  // Update in place rather than remove + create: the template id is what Resend
+  // automations reference, so recreating a template silently breaks every
+  // automation wired to it.
+  let id: string;
   if (existingId) {
-    const res = await resend.templates.remove(existingId);
+    const res = await resend.templates.update(existingId, {
+      html,
+      variables,
+    });
     if (res.error) {
-      console.error(`✗ ${name}: failed to remove existing template:`, res.error.message);
+      console.error(`✗ ${name}: failed to update:`, res.error.message);
       return;
     }
+    id = existingId;
+  } else {
+    const res = await resend.templates.create({ name, html, variables });
+    if (res.error || !res.data) {
+      console.error(`✗ ${name}:`, res.error?.message);
+      return;
+    }
+    id = res.data.id;
+    ids.set(name, id);
   }
 
-  const res = await resend.templates.create({ name, html, variables });
-  if (res.error || !res.data) {
-    console.error(`✗ ${name}:`, res.error?.message);
-    return;
-  }
-
-  // Templates are created as drafts; publish so they're sendable.
-  const pub = await resend.templates.publish(res.data.id);
+  // Both create and update leave the change as an unpublished version; publish
+  // so it's the one that actually gets sent.
+  const pub = await resend.templates.publish(id);
   if (pub.error) {
     console.error(`✗ ${name}: failed to publish:`, pub.error.message);
     return;
   }
 
   console.log(
-    `✓ ${existingId ? "replaced" : "created"} & published ${name} (${variables.length} vars: ${variables
+    `✓ ${existingId ? "updated" : "created"} & published ${name} (${id}) (${variables.length} vars: ${variables
       .map((v) => v.key)
       .join(", ")})`,
   );
