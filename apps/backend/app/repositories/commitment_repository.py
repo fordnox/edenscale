@@ -52,6 +52,24 @@ class CommitmentRepository:
             .all()
         )
 
+    def list_approved_for_allocation(self, fund_id: uuid.UUID) -> list[Commitment]:
+        """Approved commitments on a fund, in allocation order.
+
+        The ordering is load-bearing: ``allocate_pro_rata`` assigns the rounding
+        remainder positionally, so this order decides which commitment absorbs
+        the leftover cents. Capital calls and distributions must both use this
+        method so they can never diverge.
+        """
+        return (
+            self.db.query(Commitment)
+            .filter(
+                Commitment.fund_id == fund_id,
+                Commitment.status == CommitmentStatus.approved,
+            )
+            .order_by(Commitment.created_at, Commitment.id)
+            .all()
+        )
+
     def get(self, commitment_id: uuid.UUID) -> Commitment | None:
         return self._base_query().filter(Commitment.id == commitment_id).first()
 
