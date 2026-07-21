@@ -381,6 +381,145 @@ class TestDistributionValidation:
         )
         assert dup.status_code == 400
 
+    def test_add_item_to_paid_distribution_rejected(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_a = _seed_investor(org_id, name="LP A")
+        investor_b = _seed_investor(org_id, name="LP B")
+        commitment_a = _seed_commitment(
+            fund_id, investor_a, committed_amount=Decimal("1000.00")
+        )
+        commitment_b = _seed_commitment(
+            fund_id, investor_b, committed_amount=Decimal("500.00")
+        )
+
+        dist_id = client.post(
+            "/distributions",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1",
+                "distribution_date": "2026-06-01",
+                "amount": "1000.00",
+            },
+        ).json()["id"]
+
+        items_resp = client.post(
+            f"/distributions/{dist_id}/items",
+            json={
+                "items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]
+            },
+        )
+        item_id = items_resp.json()[0]["id"]
+        assert client.post(f"/distributions/{dist_id}/send").status_code == 200
+
+        pay_resp = client.patch(
+            f"/distributions/{dist_id}/items/{item_id}",
+            json={"amount_paid": "1000.00"},
+        )
+        assert pay_resp.status_code == 200
+        assert client.get(f"/distributions/{dist_id}").json()["status"] == "paid"
+
+        # Adding a new allocation to a fully-paid distribution would push
+        # total_due above total_paid while the row still reads `paid` —
+        # reject outright.
+        rejected = client.post(
+            f"/distributions/{dist_id}/items",
+            json={
+                "items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]
+            },
+        )
+        assert rejected.status_code == 400
+
+    def test_add_item_to_cancelled_distribution_rejected(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id)
+        commitment_id = _seed_commitment(fund_id, investor_id)
+
+        dist_id = client.post(
+            "/distributions",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1",
+                "distribution_date": "2026-06-01",
+                "amount": "1000.00",
+            },
+        ).json()["id"]
+        assert client.post(f"/distributions/{dist_id}/cancel").status_code == 200
+
+        response = client.post(
+            f"/distributions/{dist_id}/items",
+            json={
+                "items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]
+            },
+        )
+        assert response.status_code == 400
+
+    def test_add_item_to_sent_distribution_succeeds_and_recomputes_status(
+        self, client, override_user
+    ):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_a = _seed_investor(org_id, name="LP A")
+        investor_b = _seed_investor(org_id, name="LP B")
+        commitment_a = _seed_commitment(
+            fund_id, investor_a, committed_amount=Decimal("1000.00")
+        )
+        commitment_b = _seed_commitment(
+            fund_id, investor_b, committed_amount=Decimal("500.00")
+        )
+
+        dist_id = client.post(
+            "/distributions",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1",
+                "distribution_date": "2026-06-01",
+                "amount": "1000.00",
+            },
+        ).json()["id"]
+
+        first_items = client.post(
+            f"/distributions/{dist_id}/items",
+            json={
+                "items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]
+            },
+        )
+        assert first_items.status_code == 201
+        assert client.post(f"/distributions/{dist_id}/send").status_code == 200
+        assert client.get(f"/distributions/{dist_id}").json()["status"] == "sent"
+
+        second_items = client.post(
+            f"/distributions/{dist_id}/items",
+            json={
+                "items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]
+            },
+        )
+        assert second_items.status_code == 201
+        # Still unpaid — recompute_status must preserve `sent`, not corrupt it.
+        assert client.get(f"/distributions/{dist_id}").json()["status"] == "sent"
+
 
 class TestDistributionRbac:
     def test_lp_cannot_create(self, client, override_user):

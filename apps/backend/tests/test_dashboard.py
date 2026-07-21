@@ -332,8 +332,12 @@ class TestDashboardOverview:
                         amount=Decimal("50000.00"),
                         status=CapitalCallStatus.paid,
                     ),
-                    # `overdue` must NOT count toward outstanding (only scheduled,
-                    # sent, and partially_paid do).
+                    # `overdue` DOES count toward outstanding: it is money that
+                    # has been called but not received, and it is precisely the
+                    # calls a daily cron flips into this status (from `sent`/
+                    # `partially_paid`) that most need collection follow-up.
+                    # `payment_matching` already treats `overdue` as collectible;
+                    # the dashboard must not disagree and hide it.
                     CapitalCall(
                         fund_id=active_fund.id,
                         title="Call 3 (overdue)",
@@ -403,7 +407,8 @@ class TestDashboardOverview:
         assert data["commitments_by_currency"] == [
             {"currency_code": "USD", "amount": "1000000.00"}
         ]
-        assert data["capital_calls_outstanding"] == 1
+        # Call 1 (scheduled) + Call 3 (overdue) — overdue calls stay outstanding.
+        assert data["capital_calls_outstanding"] == 2
         assert data["distributions_ytd_by_currency"] == [
             {"currency_code": "USD", "amount": "75000.00"}
         ]
@@ -423,11 +428,56 @@ class TestDashboardOverview:
         assert "tvpi" not in active_summary
         assert active_summary["dpi"] is not None
 
+        # Ordered by due_date ascending, so the overdue call (most urgent)
+        # surfaces first, ahead of the merely-scheduled one.
+        assert len(data["upcoming_capital_calls"]) == 2
+        overdue_upcoming, scheduled_upcoming = data["upcoming_capital_calls"]
+        assert overdue_upcoming["title"] == "Call 3 (overdue)"
+        assert overdue_upcoming["fund_name"] == "NewTaven Growth I"
+        assert overdue_upcoming["status"] == "overdue"
+        assert scheduled_upcoming["title"] == "Call 1"
+        assert scheduled_upcoming["fund_name"] == "NewTaven Growth I"
+        assert scheduled_upcoming["status"] == "scheduled"
+
+    def test_overdue_capital_call_counts_as_outstanding(self, client, override_user):
+        """A past-due call flipped to `overdue` by the daily cron must stay
+        visible — it is the money that most needs collection follow-up, and
+        `payment_matching` already treats `overdue` as collectible."""
+        org_id, _ = _create_org_user("hanko-overdue")
+        db = SessionLocal()
+        try:
+            fund = Fund(
+                organization_id=org_id,
+                name="Overdue Fund",
+                slug="overdue-fund",
+                currency_code="USD",
+                status=FundStatus.active,
+            )
+            db.add(fund)
+            db.flush()
+
+            db.add(
+                CapitalCall(
+                    fund_id=fund.id,
+                    title="Past-due call",
+                    due_date=date(2025, 1, 1),
+                    amount=Decimal("10000.00"),
+                    status=CapitalCallStatus.overdue,
+                )
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        override_user("hanko-overdue")
+        response = client.get("/dashboard/overview")
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["capital_calls_outstanding"] == 1
         assert len(data["upcoming_capital_calls"]) == 1
-        upcoming = data["upcoming_capital_calls"][0]
-        assert upcoming["title"] == "Call 1"
-        assert upcoming["fund_name"] == "NewTaven Growth I"
-        assert upcoming["status"] == "scheduled"
+        assert data["upcoming_capital_calls"][0]["title"] == "Past-due call"
+        assert data["upcoming_capital_calls"][0]["status"] == "overdue"
 
     def test_admin_with_multi_org_memberships_scopes_per_active_org(
         self, client, override_user

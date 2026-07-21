@@ -160,6 +160,10 @@ class CapitalCallRepository:
         call = self.db.query(CapitalCall).filter(CapitalCall.id == call_id).first()
         if call is None:
             raise ValueError("Capital call not found")
+        if call.status in (CapitalCallStatus.paid, CapitalCallStatus.cancelled):
+            raise ValueError(
+                f"Cannot add items to a capital call in status '{call.status.value}'"
+            )
         if not allocations:
             return []
         commitment_ids = [c_id for c_id, _ in allocations]
@@ -198,6 +202,7 @@ class CapitalCallRepository:
         self.db.flush()
         for commitment_id, _ in allocations:
             self._commitments.recompute_totals(commitment_id)
+        self.recompute_status(call_id)
         self.db.commit()
         for item in items:
             self.db.refresh(item)
