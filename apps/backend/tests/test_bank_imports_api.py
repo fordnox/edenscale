@@ -5,6 +5,7 @@ and its dedupe guard, mirroring the seed helpers in
 ``test_capital_calls_api.py``.
 """
 
+import uuid
 from datetime import date
 from decimal import Decimal
 
