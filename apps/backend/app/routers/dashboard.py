@@ -14,7 +14,7 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("/overview", response_model=DashboardOverviewResponse)
-async def get_overview(
+def get_overview(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),
     x_organization_id: uuid.UUID | None = Header(

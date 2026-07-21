@@ -68,7 +68,7 @@ def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> Non
 
 
 @router.get("", response_model=list[DistributionRead])
-async def list_distributions(
+def list_distributions(
     fund_id: uuid.UUID | None = None,
     status_filter: DistributionStatus | None = None,
     skip: int = 0,
@@ -88,7 +88,7 @@ async def list_distributions(
 
 
 @router.get("/{distribution_id}", response_model=DistributionRead)
-async def get_distribution(
+def get_distribution(
     distribution_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -108,7 +108,7 @@ async def get_distribution(
 
 
 @router.post("", response_model=DistributionRead, status_code=status.HTTP_201_CREATED)
-async def create_distribution(
+def create_distribution(
     data: DistributionCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -129,7 +129,7 @@ async def create_distribution(
 
 
 @router.patch("/{distribution_id}", response_model=DistributionRead)
-async def update_distribution(
+def update_distribution(
     distribution_id: uuid.UUID,
     data: DistributionUpdate,
     db: Session = Depends(get_db),
@@ -156,7 +156,7 @@ async def update_distribution(
     response_model=list[DistributionItemRead],
     status_code=status.HTTP_201_CREATED,
 )
-async def add_distribution_items(
+def add_distribution_items(
     distribution_id: uuid.UUID,
     payload: DistributionItemBulkCreate,
     mode: Literal["manual", "pro-rata"] = Query("manual"),
@@ -218,7 +218,7 @@ async def add_distribution_items(
     "/{distribution_id}/items/{item_id}",
     response_model=DistributionItemRead,
 )
-async def update_distribution_item(
+def update_distribution_item(
     distribution_id: uuid.UUID,
     item_id: uuid.UUID,
     data: DistributionItemUpdate,
@@ -285,7 +285,7 @@ async def send_distribution(
 
 
 @router.post("/{distribution_id}/cancel", response_model=DistributionRead)
-async def cancel_distribution(
+def cancel_distribution(
     distribution_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -317,7 +317,7 @@ fund_distributions_router = APIRouter(dependencies=[Depends(get_current_user)])
 @fund_distributions_router.get(
     "/{fund_id}/distributions", response_model=list[DistributionRead]
 )
-async def list_distributions_for_fund(
+def list_distributions_for_fund(
     fund_id: uuid.UUID,
     status_filter: DistributionStatus | None = None,
     skip: int = 0,

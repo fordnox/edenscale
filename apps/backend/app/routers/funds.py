@@ -76,7 +76,7 @@ def _to_list_item(
 
 
 @router.get("", response_model=list[FundListItem])
-async def list_funds(
+def list_funds(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -92,7 +92,7 @@ async def list_funds(
 
 
 @router.get("/by-slug/{slug}", response_model=FundRead)
-async def get_fund_by_slug(
+def get_fund_by_slug(
     slug: str,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -118,7 +118,7 @@ async def get_fund_by_slug(
 
 
 @router.get("/{fund_id}", response_model=FundRead)
-async def get_fund(
+def get_fund(
     fund_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -139,7 +139,7 @@ async def get_fund(
 
 
 @router.get("/{fund_id}/overview", response_model=FundOverview)
-async def get_fund_overview(
+def get_fund_overview(
     fund_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -174,7 +174,7 @@ async def get_fund_overview(
 
 
 @router.post("", response_model=FundRead, status_code=status.HTTP_201_CREATED)
-async def create_fund(
+def create_fund(
     data: FundCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -189,7 +189,7 @@ async def create_fund(
 
 
 @router.patch("/{fund_id}", response_model=FundRead)
-async def update_fund(
+def update_fund(
     fund_id: uuid.UUID,
     data: FundUpdate,
     db: Session = Depends(get_db),
@@ -219,7 +219,7 @@ async def update_fund(
 
 
 @router.post("/{fund_id}/archive", response_model=FundRead)
-async def archive_fund(
+def archive_fund(
     fund_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(

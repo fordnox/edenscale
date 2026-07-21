@@ -19,7 +19,7 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[FundGroupRead])
-async def list_fund_groups(
+def list_fund_groups(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -30,7 +30,7 @@ async def list_fund_groups(
 
 
 @router.get("/{fund_group_id}", response_model=FundGroupRead)
-async def get_fund_group(
+def get_fund_group(
     fund_group_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -50,7 +50,7 @@ async def get_fund_group(
 
 
 @router.post("", response_model=FundGroupRead, status_code=status.HTTP_201_CREATED)
-async def create_fund_group(
+def create_fund_group(
     data: FundGroupCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -67,7 +67,7 @@ async def create_fund_group(
 
 
 @router.patch("/{fund_group_id}", response_model=FundGroupRead)
-async def update_fund_group(
+def update_fund_group(
     fund_group_id: uuid.UUID,
     data: FundGroupUpdate,
     db: Session = Depends(get_db),
@@ -90,7 +90,7 @@ async def update_fund_group(
 
 
 @router.delete("/{fund_group_id}", response_model=FundGroupRead)
-async def delete_fund_group(
+def delete_fund_group(
     fund_group_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(

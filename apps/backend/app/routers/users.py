@@ -29,14 +29,14 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("/me", response_model=UserRead)
-async def read_current_user(
+def read_current_user(
     current_user: User = Depends(get_current_user_record),
 ):
     return current_user
 
 
 @router.patch("/me", response_model=UserRead)
-async def update_current_user(
+def update_current_user(
     data: UserSelfUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),
@@ -54,7 +54,7 @@ async def update_current_user(
 
 
 @router.get("/me/memberships", response_model=list[MembershipRead])
-async def list_my_memberships(
+def list_my_memberships(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),
 ):
@@ -63,7 +63,7 @@ async def list_my_memberships(
 
 
 @router.get("", response_model=list[OrgMemberRead])
-async def list_users(
+def list_users(
     skip: int = 0,
     limit: int = 100,
     include_inactive: bool = False,
@@ -95,7 +95,7 @@ async def list_users(
 
 
 @router.patch("/{user_id}", response_model=UserRead)
-async def update_user(
+def update_user(
     user_id: uuid.UUID,
     data: UserUpdate,
     db: Session = Depends(get_db),
@@ -124,7 +124,7 @@ async def update_user(
 
 
 @router.patch("/{user_id}/role", response_model=OrgMemberRead)
-async def update_user_role(
+def update_user_role(
     user_id: uuid.UUID,
     data: UserRoleUpdate,
     db: Session = Depends(get_db),

@@ -125,7 +125,7 @@ def _to_read(document) -> DocumentRead:
     response_model=DocumentUploadInitResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def init_document_upload(
+def init_document_upload(
     payload: DocumentUploadInit,
     # Every role may stage an upload — plain authentication is enough.
     current_user: User = Depends(get_current_user_record),
@@ -191,7 +191,7 @@ async def create_document(
 
 
 @router.get("", response_model=list[DocumentRead])
-async def list_documents(
+def list_documents(
     organization_id: uuid.UUID | None = None,
     fund_id: uuid.UUID | None = None,
     investor_id: uuid.UUID | None = None,
@@ -215,7 +215,7 @@ async def list_documents(
 
 
 @router.get("/{document_id}", response_model=DocumentRead)
-async def get_document(
+def get_document(
     document_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -235,7 +235,7 @@ async def get_document(
 
 
 @router.patch("/{document_id}", response_model=DocumentRead)
-async def update_document(
+def update_document(
     document_id: uuid.UUID,
     data: DocumentUpdate,
     db: Session = Depends(get_db),
@@ -300,7 +300,7 @@ async def draft_letter_from_document(
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_document(
+def delete_document(
     document_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -362,7 +362,7 @@ async def dev_storage_upload(key: str, request: Request):
 
 
 @dev_storage_router.get("/dev-storage/{key:path}")
-async def dev_storage_download(key: str):
+def dev_storage_download(key: str):
     storage = _dev_storage_only()
     blob = storage.read(key)
     if blob is None:
