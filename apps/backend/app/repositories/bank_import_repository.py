@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime, time, timezone
 from decimal import Decimal
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.bank_payment_transaction import BankPaymentTransaction
 from app.models.bank_statement_import import BankStatementImport
@@ -87,7 +87,7 @@ class BankImportRepository:
     def get(self, import_id: uuid.UUID) -> BankStatementImport | None:
         return (
             self.db.query(BankStatementImport)
-            .options(joinedload(BankStatementImport.transactions))
+            .options(selectinload(BankStatementImport.transactions))
             .filter(BankStatementImport.id == import_id)
             .first()
         )

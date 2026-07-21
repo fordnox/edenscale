@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Query, Session, joinedload
+from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
 from app.models.capital_call import CapitalCall
 from app.models.capital_call_item import CapitalCallItem
@@ -57,7 +57,7 @@ class CapitalCallRepository:
 
     def _base_query(self) -> Query:
         return self.db.query(CapitalCall).options(
-            joinedload(CapitalCall.items),
+            selectinload(CapitalCall.items),
             joinedload(CapitalCall.fund),
         )
 

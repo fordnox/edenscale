@@ -22,7 +22,10 @@ class UserOrganizationMembershipRepository:
         )
 
     def list_for_organization(
-        self, organization_id: uuid.UUID
+        self,
+        organization_id: uuid.UUID,
+        skip: int = 0,
+        limit: int = 100,
     ) -> list[UserOrganizationMembership]:
         return (
             self.db.query(UserOrganizationMembership)
@@ -30,6 +33,8 @@ class UserOrganizationMembershipRepository:
             .order_by(
                 UserOrganizationMembership.created_at, UserOrganizationMembership.id
             )
+            .offset(skip)
+            .limit(limit)
             .all()
         )
 

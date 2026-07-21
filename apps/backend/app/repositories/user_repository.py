@@ -29,10 +29,11 @@ class UserRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def list_all(self) -> list[User]:
-        """Every user on the platform, memberships (and their organizations)
-        eager-loaded so serializing ``UserRead.memberships`` is not an N+1.
-        Superadmin-only surface — tenant routes must never expose this."""
+    def list_all(self, skip: int = 0, limit: int = 100) -> list[User]:
+        """A page of users on the platform, memberships (and their
+        organizations) eager-loaded so serializing ``UserRead.memberships``
+        is not an N+1. Superadmin-only surface — tenant routes must never
+        expose this."""
         return (
             self.db.query(User)
             .options(
@@ -41,6 +42,8 @@ class UserRepository:
                 )
             )
             .order_by(User.created_at, User.id)
+            .offset(skip)
+            .limit(limit)
             .all()
         )
 

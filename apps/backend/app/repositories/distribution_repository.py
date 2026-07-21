@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Query, Session, joinedload
+from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
 from app.models.commitment import Commitment
 from app.models.distribution import Distribution
@@ -50,7 +50,7 @@ class DistributionRepository:
 
     def _base_query(self) -> Query:
         return self.db.query(Distribution).options(
-            joinedload(Distribution.items),
+            selectinload(Distribution.items),
             joinedload(Distribution.fund),
         )
 

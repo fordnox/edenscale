@@ -10,11 +10,15 @@ class FundValuationRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def list_for_fund(self, fund_id: uuid.UUID) -> list[FundValuation]:
+    def list_for_fund(
+        self, fund_id: uuid.UUID, skip: int = 0, limit: int = 100
+    ) -> list[FundValuation]:
         return (
             self.db.query(FundValuation)
             .filter(FundValuation.fund_id == fund_id)
             .order_by(FundValuation.as_of_date.desc())
+            .offset(skip)
+            .limit(limit)
             .all()
         )
 

@@ -1,9 +1,11 @@
+import { useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
-import { Loader2, MoreHorizontal, Users } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2, MoreHorizontal, Users } from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Badge } from "@edenscale/ui/badge"
+import { Button } from "@edenscale/ui/button"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { EmptyState } from "@edenscale/ui/EmptyState"
 import {
@@ -28,10 +30,27 @@ const ROLE_LABELS: Record<UserRole, string> = {
   lp: "LP",
 }
 
-export default function UsersPage() {
-  const usersQuery = useApiQuery("/superadmin/users")
+// The backend now paginates this route (default limit 100). Page through it
+// rather than assuming a complete roster — the platform's user list can
+// outgrow a single page as the business grows.
+const PAGE_SIZE = 50
 
-  const users = usersQuery.data ?? []
+export default function UsersPage() {
+  const [page, setPage] = useState(0)
+
+  const usersQuery = useApiQuery("/superadmin/users", {
+    params: {
+      query: {
+        skip: page * PAGE_SIZE,
+        // Fetch one extra row so we know whether a next page exists.
+        limit: PAGE_SIZE + 1,
+      },
+    },
+  })
+
+  const allUsers = useMemo(() => usersQuery.data ?? [], [usersQuery.data])
+  const users = useMemo(() => allUsers.slice(0, PAGE_SIZE), [allUsers])
+  const hasNext = allUsers.length > PAGE_SIZE
 
   const sendWelcomeEmail = useApiMutation(
     "post",
@@ -76,7 +95,7 @@ export default function UsersPage() {
                 <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
               </div>
             </CardSection>
-          ) : users.length === 0 ? (
+          ) : users.length === 0 && page === 0 ? (
             <EmptyState
               icon={<Users strokeWidth={1.25} />}
               title="No users yet"
@@ -195,6 +214,37 @@ export default function UsersPage() {
                   })}
                 </tbody>
               </DataTable>
+
+              <div className="flex items-center justify-between gap-4 border-t border-[color:var(--border-hairline)] px-6 py-4 md:px-8">
+                <p className="font-sans text-[12px] text-ink-500">
+                  Showing {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + users.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={page === 0 || usersQuery.isFetching}
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  >
+                    <ChevronLeft strokeWidth={1.5} className="size-4" />
+                    Previous
+                  </Button>
+                  <span className="font-sans text-[12px] text-ink-500">
+                    Page {page + 1}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={!hasNext || usersQuery.isFetching}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Next
+                    <ChevronRight strokeWidth={1.5} className="size-4" />
+                  </Button>
+                </div>
+              </div>
             </CardSection>
           )}
         </Card>
