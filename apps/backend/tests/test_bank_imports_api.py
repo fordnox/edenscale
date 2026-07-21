@@ -408,9 +408,7 @@ class TestImportFlow:
             ]
         }
 
-        response = client.post(
-            f"/capital-call-imports/{import_id}/apply", json=body
-        )
+        response = client.post(f"/capital-call-imports/{import_id}/apply", json=body)
         assert response.status_code == 400, response.text
 
         db = SessionLocal()
@@ -424,9 +422,7 @@ class TestImportFlow:
 
         # Re-submitting the same (still-invalid) request must not accumulate
         # anything either — proving there's nothing left over to double-pay.
-        retry = client.post(
-            f"/capital-call-imports/{import_id}/apply", json=body
-        )
+        retry = client.post(f"/capital-call-imports/{import_id}/apply", json=body)
         assert retry.status_code == 400, retry.text
 
         db = SessionLocal()

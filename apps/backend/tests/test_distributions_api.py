@@ -409,9 +409,7 @@ class TestDistributionValidation:
 
         items_resp = client.post(
             f"/distributions/{dist_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]},
         )
         item_id = items_resp.json()[0]["id"]
         assert client.post(f"/distributions/{dist_id}/send").status_code == 200
@@ -428,9 +426,7 @@ class TestDistributionValidation:
         # reject outright.
         rejected = client.post(
             f"/distributions/{dist_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]},
         )
         assert rejected.status_code == 400
 
@@ -460,9 +456,7 @@ class TestDistributionValidation:
 
         response = client.post(
             f"/distributions/{dist_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]},
         )
         assert response.status_code == 400
 
@@ -499,9 +493,7 @@ class TestDistributionValidation:
 
         first_items = client.post(
             f"/distributions/{dist_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]},
         )
         assert first_items.status_code == 201
         assert client.post(f"/distributions/{dist_id}/send").status_code == 200
@@ -509,9 +501,7 @@ class TestDistributionValidation:
 
         second_items = client.post(
             f"/distributions/{dist_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]},
         )
         assert second_items.status_code == 201
         # Still unpaid — recompute_status must preserve `sent`, not corrupt it.

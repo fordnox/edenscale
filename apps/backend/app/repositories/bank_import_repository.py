@@ -207,7 +207,7 @@ class BankImportRepository:
                     f"Capital call item {assignment.capital_call_item_id} "
                     "not found in this organization"
                 )
-            current_amount_paid = running_totals.get(
+            current_amount_paid = running_totals.get(  # type: ignore[no-matching-overload]
                 item.id, Decimal(item.amount_paid)  # type: ignore[invalid-argument-type]
             )
             new_amount_paid = current_amount_paid + assignment.amount

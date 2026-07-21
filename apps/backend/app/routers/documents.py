@@ -57,6 +57,7 @@ def _reject_unsafe_key(key: str) -> None:
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid storage key"
         )
 
+
 _ORG_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 

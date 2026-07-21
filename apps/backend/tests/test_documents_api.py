@@ -8,8 +8,6 @@ import tempfile
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from app.core.slugs import slugify
-
 import pytest
 from fastapi.testclient import TestClient
 

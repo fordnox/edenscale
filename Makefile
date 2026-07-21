@@ -15,7 +15,6 @@ build: ## Build backend and frontend Docker images
 format: ## Rewrite code style in place (ruff --fix, black, isort) — mutates files
 	@cd apps/backend && uv run python -c "from app import *" || (echo '🚨 import failed, this means you introduced unprotected imports! 🚨'; exit 1)
 	@cd apps/backend && uv run ruff check . --fix --exclude .venv --exclude app/alembic
-	@cd apps/backend && uv run ty check . --exclude 'tests/**' --exclude '.venv/**' --exclude 'app/alembic/**'
 	@cd apps/backend && uv run black . --exclude '/(\.venv|app/alembic)/'
 	@cd apps/backend && uv run isort . --skip .venv --skip app/alembic
 

@@ -34,7 +34,6 @@ from app.services.payment_matching import (
     suggest_matches,
 )
 
-
 # ---------------------------------------------------------------------------
 # Step 2: pure function unit tests (no DB)
 # ---------------------------------------------------------------------------
@@ -169,7 +168,9 @@ def _mk_org(db, name: str = "Matching Org") -> Organization:
     return org
 
 
-def _mk_fund(db, org: Organization, name: str = "Fund X", currency: str = "USD") -> Fund:
+def _mk_fund(
+    db, org: Organization, name: str = "Fund X", currency: str = "USD"
+) -> Fund:
     fund = Fund(
         organization_id=org.id,
         name=name,
@@ -188,7 +189,9 @@ def _mk_investor(db, org: Organization, name: str, code: str | None = None) -> I
     return investor
 
 
-def _mk_commitment(db, fund: Fund, investor: Investor, amount: str = "100000.00") -> Commitment:
+def _mk_commitment(
+    db, fund: Fund, investor: Investor, amount: str = "100000.00"
+) -> Commitment:
     commitment = Commitment(
         fund_id=fund.id,
         investor_id=investor.id,
@@ -202,7 +205,11 @@ def _mk_commitment(db, fund: Fund, investor: Investor, amount: str = "100000.00"
 
 
 def _mk_call(
-    db, fund: Fund, status: CapitalCallStatus, title: str = "Call", amount: str = "1000.00"
+    db,
+    fund: Fund,
+    status: CapitalCallStatus,
+    title: str = "Call",
+    amount: str = "1000.00",
 ) -> CapitalCall:
     call = CapitalCall(
         fund_id=fund.id,
@@ -414,8 +421,14 @@ class TestSuggestMatchesOrdering:
             db.commit()
 
             txn = _mk_txn("1000.00", debtor_name="Twin Capital")
-            first_run = [c.capital_call_item_id for c in suggest_matches(db, org.id, [txn])[txn.id]]
-            second_run = [c.capital_call_item_id for c in suggest_matches(db, org.id, [txn])[txn.id]]
+            first_run = [
+                c.capital_call_item_id
+                for c in suggest_matches(db, org.id, [txn])[txn.id]
+            ]
+            second_run = [
+                c.capital_call_item_id
+                for c in suggest_matches(db, org.id, [txn])[txn.id]
+            ]
 
             assert first_run == second_run
             assert set(first_run) == {item_1.id, item_2.id}

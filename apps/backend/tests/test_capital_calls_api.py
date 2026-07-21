@@ -458,9 +458,7 @@ class TestCapitalCallValidation:
 
         items_resp = client.post(
             f"/capital-calls/{call_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]},
         )
         item_id = items_resp.json()[0]["id"]
         assert client.post(f"/capital-calls/{call_id}/send").status_code == 200
@@ -477,9 +475,7 @@ class TestCapitalCallValidation:
         # rather than letting the call silently disagree with its own totals.
         rejected = client.post(
             f"/capital-calls/{call_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]},
         )
         assert rejected.status_code == 400
 
@@ -512,9 +508,7 @@ class TestCapitalCallValidation:
         # committed/called aggregates for money no longer being pursued.
         response = client.post(
             f"/capital-calls/{call_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]},
         )
         assert response.status_code == 400
 
@@ -552,9 +546,7 @@ class TestCapitalCallValidation:
 
         first_items = client.post(
             f"/capital-calls/{call_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]},
         )
         assert first_items.status_code == 201
         assert client.post(f"/capital-calls/{call_id}/send").status_code == 200
@@ -562,9 +554,7 @@ class TestCapitalCallValidation:
 
         second_items = client.post(
             f"/capital-calls/{call_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]},
         )
         assert second_items.status_code == 201
         # Still unpaid — recompute_status must preserve `sent`, not corrupt it.
