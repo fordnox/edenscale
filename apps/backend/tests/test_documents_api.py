@@ -35,8 +35,15 @@ def setup_database():
 
 
 @pytest.fixture(autouse=True)
-def reset_local_storage():
-    """Each test gets its own temp dir so files do not leak across runs."""
+def reset_local_storage(monkeypatch):
+    """Each test gets its own temp dir so files do not leak across runs.
+
+    ``DEV_STORAGE_TOKEN`` defaults to empty (fail closed — see
+    app/core/config.py), so tests that exercise the dev-storage upload flow
+    need a configured token to authenticate with, same as a real deployment
+    would set one via the environment.
+    """
+    monkeypatch.setattr(settings, "DEV_STORAGE_TOKEN", "test-dev-storage-token")
     with tempfile.TemporaryDirectory() as tmp:
         storage_module.reset_storage()
         storage_module._storage_singleton = storage_module.LocalDevStorage(

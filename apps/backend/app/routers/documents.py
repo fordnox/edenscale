@@ -38,6 +38,18 @@ from app.tasks import enqueue_draft_letter
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
+
+def _reject_unsafe_key(key: str) -> None:
+    """Reject storage keys that could escape the storage root.
+
+    Shared by the proxied upload route and both dev-storage routes so there
+    is one implementation of the ``..`` check rather than three copies.
+    """
+    if ".." in key.split("/") or key.startswith("/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid storage key"
+        )
+
 _ORG_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 
@@ -156,10 +168,7 @@ async def upload_document_bytes(
     configuration is needed — the bytes travel through the API, which already
     allows the app origins.
     """
-    if ".." in key.split("/") or key.startswith("/"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid storage key"
-        )
+    _reject_unsafe_key(key)
     body = await request.body()
     if len(body) > _MAX_UPLOAD_BYTES:
         raise HTTPException(
@@ -348,6 +357,7 @@ def _dev_storage_only() -> LocalDevStorage:
 )
 async def dev_storage_upload(key: str, request: Request):
     """Accept raw bytes for a presigned key. Dev-only; protected by a header token."""
+    _reject_unsafe_key(key)
     storage = _dev_storage_only()
     expected = settings.DEV_STORAGE_TOKEN
     provided = request.headers.get("x-dev-storage-token")
@@ -363,6 +373,7 @@ async def dev_storage_upload(key: str, request: Request):
 
 @dev_storage_router.get("/dev-storage/{key:path}")
 async def dev_storage_download(key: str):
+    _reject_unsafe_key(key)
     storage = _dev_storage_only()
     blob = storage.read(key)
     if blob is None:

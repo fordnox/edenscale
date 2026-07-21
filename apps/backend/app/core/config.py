@@ -1,3 +1,4 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -46,7 +47,11 @@ class Settings(BaseSettings):
 
     # S3/R2 storage settings
     STORAGE_BACKEND: str = "local"
-    DEV_STORAGE_TOKEN: str = "dev-storage"
+    # Empty means "no token configured" — the dev-storage upload/download
+    # routes treat that as a hard deny (see routers/documents.py), so an
+    # unset token now closes the route rather than admitting a published
+    # default credential.
+    DEV_STORAGE_TOKEN: str = ""
     S3_ENDPOINT_URL: str = ""
     S3_ACCESS_KEY_ID: str = ""
     S3_SECRET_ACCESS_KEY: str = ""
@@ -80,6 +85,28 @@ class Settings(BaseSettings):
             for email in self.SUPERADMIN_EMAIL.split(",")
             if email.strip()
         )
+
+    @model_validator(mode="after")
+    def _storage_backend_fails_closed(self) -> "Settings":
+        """Refuse to start on a production-shaped config with local storage.
+
+        ``STORAGE_BACKEND`` defaults to ``"local"`` so onboarding stays
+        trivial (ADR-002), but a deployment that forgets to set it would
+        otherwise silently run ``LocalDevStorage`` — a backend that is
+        documented as unsuitable for production — in production. A
+        non-debug, non-localhost domain is production-shaped; reject that
+        combination with the local backend instead of failing open.
+        """
+        if self.STORAGE_BACKEND.lower() == "local" and not self.DEBUG:
+            domain = self.APP_DOMAIN.strip().rstrip("/")
+            host = domain.split(":", 1)[0]
+            if host not in ("localhost", "127.0.0.1"):
+                raise ValueError(
+                    "STORAGE_BACKEND=local is not allowed outside DEBUG/localhost "
+                    "configurations — set STORAGE_BACKEND=s3 (or DEBUG=1 for local "
+                    "development)"
+                )
+        return self
 
 
 settings = Settings()
