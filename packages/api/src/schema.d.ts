@@ -257,7 +257,7 @@ export interface paths {
         };
         /**
          * List All Users
-         * @description Every user on the platform, across all organizations. `UserRead`
+         * @description A page of users on the platform, across all organizations. `UserRead`
          *     already nests memberships → organization, so the UI can show each
          *     user's orgs and roles without follow-up calls.
          */
@@ -2236,6 +2236,8 @@ export interface components {
         CommunicationCreate: {
             /** Fund Id */
             fund_id?: string | null;
+            /** Document Id */
+            document_id?: string | null;
             type: components["schemas"]["CommunicationType"];
             /** Subject */
             subject: string;
@@ -2251,6 +2253,8 @@ export interface components {
             id: string;
             /** Fund Id */
             fund_id: string | null;
+            /** Document Id */
+            document_id?: string | null;
             /** Sender User Id */
             sender_user_id: string | null;
             type: components["schemas"]["CommunicationType"];
@@ -2684,6 +2688,8 @@ export interface components {
             subject: string;
             /** Attachments */
             attachments: components["schemas"]["EmailIngestAttachment"][];
+            /** Message Id */
+            message_id?: string | null;
         };
         /** EmailIngestResult */
         EmailIngestResult: {
@@ -4100,7 +4106,10 @@ export interface operations {
     };
     list_all_organizations_superadmin_organizations_get: {
         parameters: {
-            query?: never;
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4114,6 +4123,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SuperadminOrganizationRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -4219,7 +4237,10 @@ export interface operations {
     };
     list_all_users_superadmin_users_get: {
         parameters: {
-            query?: never;
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4233,6 +4254,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -4398,7 +4428,10 @@ export interface operations {
     };
     list_organization_members_superadmin_organizations__organization_id__members_get: {
         parameters: {
-            query?: never;
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
             header?: never;
             path: {
                 organization_id: string;
@@ -5026,7 +5059,10 @@ export interface operations {
     };
     list_fund_valuations_funds__fund_id__valuations_get: {
         parameters: {
-            query?: never;
+            query?: {
+                skip?: number;
+                limit?: number;
+            };
             header?: {
                 "X-Organization-Id"?: string | null;
             };
@@ -6976,7 +7012,10 @@ export interface operations {
     };
     upload_document_bytes_documents_upload__key__put: {
         parameters: {
-            query?: never;
+            query?: {
+                expires?: number | null;
+                sig?: string | null;
+            };
             header?: never;
             path: {
                 key: string;

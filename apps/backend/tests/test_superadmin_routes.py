@@ -20,13 +20,13 @@ behind `Depends(get_current_user)` (JWT only) plus per-route
 """
 
 import uuid
-from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import (
     Organization,
@@ -107,6 +107,82 @@ def _seed_membership(user_id: int, organization_id: int, role: UserRole) -> int:
         db.add(m)
         db.commit()
         return str(m.id)
+    finally:
+        db.close()
+
+
+def _seed_orgs_with_created_at(count: int) -> list[str]:
+    """Seed ``count`` organizations with strictly increasing ``created_at``
+    timestamps so pagination order is deterministic (server_default now()
+    can otherwise tie within the same transaction)."""
+    from datetime import datetime, timedelta
+
+    db = SessionLocal()
+    try:
+        base = datetime(2026, 1, 1)
+        ids = []
+        for i in range(count):
+            name = f"Org {i}"
+            org = Organization(
+                name=name,
+                slug=slugify(name),
+                type=OrganizationType.fund_manager_firm,
+                created_at=base + timedelta(minutes=i),
+            )
+            db.add(org)
+            db.flush()
+            ids.append(str(org.id))
+        db.commit()
+        return ids
+    finally:
+        db.close()
+
+
+def _seed_users_with_created_at(count: int) -> list[str]:
+    from datetime import datetime, timedelta
+
+    db = SessionLocal()
+    try:
+        base = datetime(2026, 1, 1)
+        ids = []
+        for i in range(count):
+            user = User(
+                first_name="First",
+                last_name="Last",
+                email=f"user{i}@example.com",
+                hanko_subject_id=f"hanko-u{i}",
+                created_at=base + timedelta(minutes=i),
+            )
+            db.add(user)
+            db.flush()
+            ids.append(str(user.id))
+        db.commit()
+        return ids
+    finally:
+        db.close()
+
+
+def _seed_memberships_with_created_at(
+    organization_id: str, user_ids: list[str]
+) -> list[str]:
+    from datetime import datetime, timedelta
+
+    db = SessionLocal()
+    try:
+        base = datetime(2026, 1, 1)
+        ids = []
+        for i, user_id in enumerate(user_ids):
+            m = UserOrganizationMembership(
+                user_id=user_id,
+                organization_id=organization_id,
+                role=UserRole.lp,
+                created_at=base + timedelta(minutes=i),
+            )
+            db.add(m)
+            db.flush()
+            ids.append(str(m.id))
+        db.commit()
+        return ids
     finally:
         db.close()
 
@@ -254,6 +330,20 @@ class TestListOrganizations:
         assert response.status_code == 200
         assert response.json() == []
 
+    def test_respects_skip_and_limit(self, client, override_user):
+        _login_as_superadmin(override_user)
+        org_ids = _seed_orgs_with_created_at(4)
+
+        limited = client.get("/superadmin/organizations", params={"limit": 2})
+        assert limited.status_code == 200
+        assert [row["id"] for row in limited.json()] == org_ids[:2]
+
+        second_page = client.get(
+            "/superadmin/organizations", params={"skip": 2, "limit": 2}
+        )
+        assert second_page.status_code == 200
+        assert [row["id"] for row in second_page.json()] == org_ids[2:4]
+
     def test_gets_and_updates_organization_detail(self, client, override_user):
         org_id = _seed_org("Before")
         _login_as_superadmin(override_user)
@@ -301,6 +391,24 @@ class TestListUsers:
         assert response.status_code == 200
         rows = response.json()
         assert [row["id"] for row in rows] == [super_id]
+
+    def test_respects_skip_and_limit(self, client, override_user):
+        super_id = _login_as_superadmin(override_user)
+        # These sort before the superadmin (created_at 2026-01-01 vs "now").
+        user_ids = _seed_users_with_created_at(4)
+
+        limited = client.get("/superadmin/users", params={"limit": 2})
+        assert limited.status_code == 200
+        assert [row["id"] for row in limited.json()] == user_ids[:2]
+
+        second_page = client.get("/superadmin/users", params={"skip": 2, "limit": 2})
+        assert second_page.status_code == 200
+        assert [row["id"] for row in second_page.json()] == user_ids[2:4]
+
+        # The superadmin (created after) shows up once we page far enough.
+        last_page = client.get("/superadmin/users", params={"skip": 4, "limit": 100})
+        assert last_page.status_code == 200
+        assert [row["id"] for row in last_page.json()] == [super_id]
 
 
 class TestCreateOrganizationWithAdmin:
@@ -629,3 +737,22 @@ class TestListOrganizationMembers:
 
         response = client.get(f"/superadmin/organizations/{uuid.uuid4()}/members")
         assert response.status_code == 404
+
+    def test_respects_skip_and_limit(self, client, override_user):
+        _login_as_superadmin(override_user)
+        org_id = _seed_org()
+        user_ids = _seed_users_with_created_at(4)
+        _seed_memberships_with_created_at(org_id, user_ids)
+
+        limited = client.get(
+            f"/superadmin/organizations/{org_id}/members", params={"limit": 2}
+        )
+        assert limited.status_code == 200
+        assert [row["user_id"] for row in limited.json()] == user_ids[:2]
+
+        second_page = client.get(
+            f"/superadmin/organizations/{org_id}/members",
+            params={"skip": 2, "limit": 2},
+        )
+        assert second_page.status_code == 200
+        assert [row["user_id"] for row in second_page.json()] == user_ids[2:4]

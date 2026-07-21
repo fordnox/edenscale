@@ -6,13 +6,14 @@ using the LocalDevStorage backend, plus RBAC checks on listing and access.
 
 import tempfile
 from pathlib import Path
-from app.core.slugs import slugify
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import (
     Fund,
@@ -35,8 +36,15 @@ def setup_database():
 
 
 @pytest.fixture(autouse=True)
-def reset_local_storage():
-    """Each test gets its own temp dir so files do not leak across runs."""
+def reset_local_storage(monkeypatch):
+    """Each test gets its own temp dir so files do not leak across runs.
+
+    ``DEV_STORAGE_TOKEN`` defaults to empty (fail closed — see
+    app/core/config.py), so tests that exercise the dev-storage upload flow
+    need a configured token to authenticate with, same as a real deployment
+    would set one via the environment.
+    """
+    monkeypatch.setattr(settings, "DEV_STORAGE_TOKEN", "test-dev-storage-token")
     with tempfile.TemporaryDirectory() as tmp:
         storage_module.reset_storage()
         storage_module._storage_singleton = storage_module.LocalDevStorage(
@@ -56,7 +64,9 @@ def client():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.commit()
         return str(org.id)
@@ -190,7 +200,9 @@ class TestDocumentUploadFlow:
         assert detail.status_code == 200
         assert detail.json()["download_url"] is not None
 
-        download = client.get(detail.json()["download_url"].replace("http://testserver", ""))
+        download = client.get(
+            detail.json()["download_url"].replace("http://testserver", "")
+        )
         assert download.status_code == 200
         assert download.content == b"hello world"
 
@@ -216,9 +228,7 @@ class TestUploadProxyEndpoint:
     """PUT /documents/upload/{key} — the S3-backend upload proxy (the browser
     never talks to the bucket, so no bucket CORS is needed)."""
 
-    def test_writes_bytes_through_the_storage_backend(
-        self, client, override_user
-    ):
+    def test_writes_bytes_through_the_storage_backend(self, client, override_user):
         _seed_user("hanko-any", UserRole.lp, email="any@example.com")
         override_user("hanko-any")
 
@@ -234,20 +244,170 @@ class TestUploadProxyEndpoint:
 
     def test_requires_authentication(self, client, override_user):
         override_user(None)
-        resp = client.put(
-            "/documents/upload/documents/tok/report.pdf", content=b"x"
-        )
+        resp = client.put("/documents/upload/documents/tok/report.pdf", content=b"x")
         assert resp.status_code == 401
 
     def test_rejects_path_traversal_keys(self, client, override_user):
         _seed_user("hanko-any", UserRole.lp, email="any@example.com")
         override_user("hanko-any")
-        resp = client.put(
-            "/documents/upload/documents/../../etc/passwd", content=b"x"
-        )
+        resp = client.put("/documents/upload/documents/../../etc/passwd", content=b"x")
         # The HTTP layer normalizes ../ away before routing (404); the
         # handler's own key check (400) backstops anything that gets past it.
         assert resp.status_code in (400, 404)
+
+
+class TestUploadGrantVerification:
+    """PUT /documents/upload/{key} must also carry the expires/sig grant that
+    upload-init issued to the calling user — plain authentication is not
+    enough, since storage keys are recoverable from file_url by anyone who
+    can view a document (see plans/004-bind-upload-key-to-caller.md).
+
+    Verification only activates when UPLOAD_SIGNING_SECRET is set (it is
+    empty, and therefore bypassed, in every other test in this module) —
+    otherwise these assertions would be vacuous. The S3 backend is used
+    (with a fake boto3 client) because it is the only backend whose
+    upload_url is the /documents/upload/{key} proxy this guard protects.
+    """
+
+    @pytest.fixture(autouse=True)
+    def s3_backend(self, monkeypatch):
+        monkeypatch.setattr(settings, "UPLOAD_SIGNING_SECRET", "test-signing-secret")
+        monkeypatch.setattr(settings, "S3_ENDPOINT_URL", "https://fake.r2.example.com")
+        monkeypatch.setattr(settings, "S3_ACCESS_KEY_ID", "test-key")
+        monkeypatch.setattr(settings, "S3_SECRET_ACCESS_KEY", "test-secret")
+        monkeypatch.setattr(settings, "S3_BUCKET_NAME", "uploads")
+        monkeypatch.setattr(settings, "S3_PREFIX", "")
+        storage_module.reset_storage()
+        storage = storage_module.S3Storage()
+        self.put_calls: list[dict] = []
+        put_calls = self.put_calls
+        storage._client = type(
+            "FakeClient", (), {"put_object": lambda self, **kw: put_calls.append(kw)}
+        )()
+        storage_module._storage_singleton = storage
+        yield
+        storage_module.reset_storage()
+
+    def _init_upload(self, client, file_name: str = "report.pdf") -> dict:
+        resp = client.post(
+            "/documents/upload-init",
+            json={"file_name": file_name, "mime_type": "application/pdf"},
+        )
+        assert resp.status_code == 201, resp.text
+        body = resp.json()
+        assert body["upload_url"].startswith("/documents/upload/")
+        assert "sig=" in body["upload_url"] and "expires=" in body["upload_url"]
+        return body
+
+    def test_upload_with_valid_grant_succeeds(self, client, override_user):
+        _seed_user("hanko-a", UserRole.lp, email="a@example.com")
+        override_user("hanko-a")
+
+        body = self._init_upload(client)
+        resp = client.put(body["upload_url"], content=b"%PDF-1.7")
+
+        assert resp.status_code == 204
+        assert self.put_calls, "storage.write should have reached the backend"
+
+    def test_cross_user_put_is_rejected(self, client, override_user):
+        """The regression test: B cannot use A's upload grant, even though B
+        is a distinct, validly authenticated user."""
+        _seed_user("hanko-a", UserRole.lp, email="a@example.com")
+        _seed_user("hanko-b", UserRole.lp, email="b@example.com")
+
+        override_user("hanko-a")
+        body = self._init_upload(client)
+
+        override_user("hanko-b")
+        resp = client.put(body["upload_url"], content=b"%PDF-1.7")
+
+        assert resp.status_code == 403
+        assert not self.put_calls
+
+    def test_tampered_signature_is_rejected(self, client, override_user):
+        _seed_user("hanko-a", UserRole.lp, email="a@example.com")
+        override_user("hanko-a")
+        body = self._init_upload(client)
+
+        last_char = body["upload_url"][-1]
+        flipped = "0" if last_char != "0" else "1"
+        tampered_url = body["upload_url"][:-1] + flipped
+
+        resp = client.put(tampered_url, content=b"%PDF-1.7")
+
+        assert resp.status_code == 403
+        assert not self.put_calls
+
+    def test_expired_grant_is_rejected(self, client, override_user):
+        _seed_user("hanko-a", UserRole.lp, email="a@example.com")
+        override_user("hanko-a")
+        body = self._init_upload(client)
+
+        parsed = urlsplit(body["upload_url"])
+        query = dict(parse_qsl(parsed.query))
+        query["expires"] = str(int(query["expires"]) - 3600)
+        expired_url = urlunsplit(parsed._replace(query=urlencode(query)))
+
+        resp = client.put(expired_url, content=b"%PDF-1.7")
+
+        assert resp.status_code == 403
+        assert not self.put_calls
+
+    def test_missing_grant_is_rejected(self, client, override_user):
+        _seed_user("hanko-a", UserRole.lp, email="a@example.com")
+        override_user("hanko-a")
+        body = self._init_upload(client)
+
+        bare_url = body["upload_url"].split("?")[0]
+        resp = client.put(bare_url, content=b"%PDF-1.7")
+
+        assert resp.status_code == 403
+        assert not self.put_calls
+
+
+class TestUploadSizeEnforcement:
+    """The 100 MB cap must bound memory, not just be checked after the whole
+    body is already buffered (plans/015-input-hardening.md, item (b))."""
+
+    def test_oversized_declared_length_rejected_before_buffering(
+        self, client, override_user
+    ):
+        _seed_user("hanko-any", UserRole.lp, email="any@example.com")
+        override_user("hanko-any")
+
+        # The real body is tiny, but the declared Content-Length is over the
+        # cap. If the fast-path header check weren't running before any body
+        # consumption, this small body would upload successfully -- so a 413
+        # here, with nothing written to storage, proves the header is
+        # checked up front.
+        resp = client.put(
+            "/documents/upload/documents/tok/oversized.bin",
+            content=b"tiny",
+            headers={"content-length": str(200 * 1024 * 1024)},
+        )
+        assert resp.status_code == 413
+        assert storage_module.get_storage().read("documents/tok/oversized.bin") is None
+
+    def test_stream_exceeding_cap_is_aborted_mid_transfer(
+        self, client, override_user, monkeypatch
+    ):
+        # Lower the cap so the test doesn't need to push 100 MB of real
+        # bytes through the client. Content-Length is declared *under* the
+        # (lowered) cap, so the fast path lets the request through -- only
+        # the streaming counter, reading the actual oversized body, should
+        # catch this.
+        monkeypatch.setattr("app.routers.documents._MAX_UPLOAD_BYTES", 10, raising=True)
+        _seed_user("hanko-any", UserRole.lp, email="any@example.com")
+        override_user("hanko-any")
+
+        oversized = b"x" * 1000
+        resp = client.put(
+            "/documents/upload/documents/tok/streamed.bin",
+            content=oversized,
+            headers={"content-length": "5"},
+        )
+        assert resp.status_code == 413
+        assert storage_module.get_storage().read("documents/tok/streamed.bin") is None
 
 
 class TestDocumentRbac:

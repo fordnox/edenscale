@@ -127,7 +127,7 @@ async def create_invitation(
 
 
 @router.get("", response_model=list[InvitationListItem])
-async def list_invitations(
+def list_invitations(
     status_filter: InvitationStatus | None = None,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -146,7 +146,7 @@ async def list_invitations(
 
 
 @router.get("/pending-for-me", response_model=list[InvitationRead])
-async def list_pending_for_me(
+def list_pending_for_me(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),
 ):
@@ -191,7 +191,8 @@ async def accept_invitation(
 
     now = datetime.now(timezone.utc)
     expires_at = invitation.expires_at
-    # SQLite returns naive datetimes; treat them as UTC for comparison.
+    # ``expires_at`` is a timezone-less ``DateTime`` column, so it comes back
+    # naive; the repo convention stores UTC there. Attach UTC before comparing.
     if expires_at is not None and expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     if invitation.status is InvitationStatus.expired or (
@@ -253,7 +254,7 @@ async def accept_invitation(
 
 
 @router.post("/{invitation_id}/revoke", response_model=InvitationRead)
-async def revoke_invitation(
+def revoke_invitation(
     invitation_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(

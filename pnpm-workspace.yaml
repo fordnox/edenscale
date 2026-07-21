@@ -1,6 +1,15 @@
 packages:
   - "apps/*"
   - "packages/*"
+# pnpm 11 no longer reads the "pnpm.overrides" field from package.json (see the
+# install-time warning it emits otherwise) — overrides must live here instead.
+# Without this, apps/emails' pinned @types/react@19.2.14 and the rest of the
+# workspace's @types/react@19.2.17 coexist, and pnpm's hoisting can link the
+# wrong one into packages/ui, producing a spurious "two different types with
+# this name exist" TS2322 in ui#typecheck (calendar.tsx / spinner.tsx).
+overrides:
+  "@types/react": "19.2.17"
+  "@types/react-dom": "19.2.3"
 # These three ship native binaries and need their install scripts to run:
 # esbuild (Vite's bundler), sharp (Astro image pipeline), workerd (Cloudflare
 # Workers runtime for the gateway). Without this, `pnpm install` aborts with

@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import ProtectedLayout from './layouts/ProtectedLayout'
+import { ProtectedLayout } from '@edenscale/ui/ProtectedLayout'
 import SuperadminLayout from './layouts/SuperadminLayout'
 import LoginPage from './pages/LoginPage'
 import OrganizationsPage from './pages/OrganizationsPage'
@@ -15,7 +15,7 @@ function App() {
     <Routes>
       <Route path="/superadmin/login" element={<LoginPage />} />
 
-      <Route element={<ProtectedLayout />}>
+      <Route element={<ProtectedLayout loginPath="/superadmin/login" />}>
         <Route element={<SuperadminLayout />}>
           <Route path="/superadmin" element={<OrganizationsPage />} />
           <Route

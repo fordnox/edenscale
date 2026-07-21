@@ -112,6 +112,7 @@ class TestS3Prefix:
         assert path.endswith("/taven/documents/abc/report.pdf")
         assert "taven/taven" not in path
 
+
 class TestKeyFromFileUrl:
     def test_public_base_form(self):
         assert (
@@ -121,9 +122,7 @@ class TestKeyFromFileUrl:
 
     def test_endpoint_bucket_form(self):
         assert (
-            key_from_file_url(
-                "https://fake.r2.example.com/uploads/documents/a/b.pdf"
-            )
+            key_from_file_url("https://fake.r2.example.com/uploads/documents/a/b.pdf")
             == "documents/a/b.pdf"
         )
 

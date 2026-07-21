@@ -1,5 +1,10 @@
+import hashlib
+import hmac
+import logging
 import secrets
 import uuid
+from datetime import datetime, timezone
+from urllib.parse import unquote, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import Response
@@ -36,7 +41,22 @@ from app.services.storage import (
 )
 from app.tasks import enqueue_draft_letter
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(dependencies=[Depends(get_current_user)])
+
+
+def _reject_unsafe_key(key: str) -> None:
+    """Reject storage keys that could escape the storage root.
+
+    Shared by the proxied upload route and both dev-storage routes so there
+    is one implementation of the ``..`` check rather than three copies.
+    """
+    if ".." in key.split("/") or key.startswith("/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid storage key"
+        )
+
 
 _ORG_ROLES = (UserRole.admin, UserRole.fund_manager)
 
@@ -46,6 +66,53 @@ def _generate_storage_key(file_name: str) -> str:
     safe_name = file_name.strip().replace("/", "_") or "upload.bin"
     token = secrets.token_urlsafe(16)
     return f"documents/{token}/{safe_name}"
+
+
+def _upload_grant_message(key: str, user_id, expires_at_epoch: int) -> str:
+    """Canonical string signed/verified for an upload grant. Used by both
+    `_sign_upload_key` and `_verify_upload_grant` — a mismatch between the two
+    sides would silently break either signing or verification, so both must
+    build the string here and nowhere else."""
+    return f"{key}\n{user_id}\n{expires_at_epoch}"
+
+
+def _sign_upload_key(key: str, user_id, expires_at_epoch: int) -> str:
+    """Return a hex HMAC-SHA256 over (key, user_id, expiry), keyed on
+    `settings.UPLOAD_SIGNING_SECRET`. `key` must be the key exactly as it
+    appears in the returned `upload_url` (prefixed, for S3Storage)."""
+    message = _upload_grant_message(key, user_id, expires_at_epoch)
+    return hmac.new(
+        settings.UPLOAD_SIGNING_SECRET.encode("utf-8"),
+        message.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def _verify_upload_grant(key: str, user_id, expires: int, signature: str) -> bool:
+    """Recompute the expected signature for `user_id` and compare it to the
+    caller-supplied one in constant time. Also rejects an expired grant."""
+    if expires < int(datetime.now(timezone.utc).timestamp()):
+        return False
+    expected = _sign_upload_key(key, user_id, expires)
+    return hmac.compare_digest(expected, signature)
+
+
+_UPLOAD_PROXY_PREFIX = "/documents/upload/"
+_warned_upload_signing_disabled = False
+
+
+def _warn_upload_signing_disabled_once() -> None:
+    """Log once (not per-request) that upload-grant verification is
+    disabled. Only reachable with an empty UPLOAD_SIGNING_SECRET, which the
+    Settings validator refuses to allow in a production-shaped config."""
+    global _warned_upload_signing_disabled
+    if not _warned_upload_signing_disabled:
+        logger.warning(
+            "UPLOAD_SIGNING_SECRET is empty; skipping upload-grant "
+            "verification on PUT /documents/upload/{key}. This is only "
+            "safe in local development."
+        )
+        _warned_upload_signing_disabled = True
 
 
 def _ensure_can_attach(
@@ -125,7 +192,7 @@ def _to_read(document) -> DocumentRead:
     response_model=DocumentUploadInitResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def init_document_upload(
+def init_document_upload(
     payload: DocumentUploadInit,
     # Every role may stage an upload — plain authentication is enough.
     current_user: User = Depends(get_current_user_record),
@@ -133,6 +200,26 @@ async def init_document_upload(
     storage = get_storage()
     key = _generate_storage_key(payload.file_name)
     upload_url, file_url, expires_at = storage.presign_put(key, payload.mime_type)
+
+    # Sign the key exactly as it appears in `upload_url` — for S3Storage that
+    # is the *prefixed* key (S3_PREFIX is applied inside presign_put). Signing
+    # the unprefixed `key` here while the proxy verifies the prefixed one
+    # would make every signature mismatch, so pull it back out of the URL
+    # rather than reusing the local `key` variable. Backends that don't route
+    # through our proxy (e.g. LocalDevStorage's /dev-storage/{key}) fall back
+    # to signing the unprefixed key — harmless, since that route doesn't
+    # check the grant.
+    upload_path = urlsplit(upload_url).path
+    if upload_path.startswith(_UPLOAD_PROXY_PREFIX):
+        signed_key = unquote(upload_path[len(_UPLOAD_PROXY_PREFIX) :])
+    else:
+        signed_key = key
+
+    expires = int(expires_at.timestamp())
+    sig = _sign_upload_key(signed_key, current_user.id, expires)
+    separator = "&" if "?" in upload_url else "?"
+    upload_url = f"{upload_url}{separator}expires={expires}&sig={sig}"
+
     return DocumentUploadInitResponse(
         upload_url=upload_url, file_url=file_url, expires_at=expires_at
     )
@@ -145,9 +232,13 @@ _MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 async def upload_document_bytes(
     key: str,
     request: Request,
-    # Same bar as upload-init: any authenticated user may push bytes for a
-    # key that upload-init handed them.
+    # Authentication alone is not enough: the caller must also present the
+    # expires/sig grant that upload-init issued for this exact key, verified
+    # below with _verify_upload_grant. Without it, any authenticated user
+    # could overwrite any key they can recover from a file_url.
     current_user: User = Depends(get_current_user_record),
+    expires: int | None = None,
+    sig: str | None = None,
 ):
     """Proxy upload: write the raw request body to the storage backend.
 
@@ -156,18 +247,50 @@ async def upload_document_bytes(
     configuration is needed — the bytes travel through the API, which already
     allows the app origins.
     """
-    if ".." in key.split("/") or key.startswith("/"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid storage key"
-        )
-    body = await request.body()
-    if len(body) > _MAX_UPLOAD_BYTES:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="File exceeds the 100 MB upload limit",
-        )
+    _reject_unsafe_key(key)
+    if settings.UPLOAD_SIGNING_SECRET.strip():
+        if (
+            expires is None
+            or sig is None
+            or not _verify_upload_grant(key, current_user.id, expires, sig)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid or expired upload grant",
+            )
+    else:
+        _warn_upload_signing_disabled_once()
+
+    # Fast path: reject a declared oversized payload before reading any body
+    # bytes. This is only a courtesy -- Content-Length can be absent or lied
+    # about by the caller -- so it must not be the only check; the streaming
+    # counter below is the real enforcement.
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            declared_length = int(content_length)
+        except ValueError:
+            declared_length = None
+        if declared_length is not None and declared_length > _MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="File exceeds the 100 MB upload limit",
+            )
+
+    # Real enforcement: read the body in chunks and abort as soon as the
+    # running total crosses the cap, instead of `await request.body()`
+    # (which buffers the entire payload in memory before any size check
+    # runs, so the cap does not bound resident memory).
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > _MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="File exceeds the 100 MB upload limit",
+            )
     storage = get_storage()
-    storage.write(key, body, request.headers.get("content-type"))
+    storage.write(key, bytes(body), request.headers.get("content-type"))
     return None
 
 
@@ -191,7 +314,7 @@ async def create_document(
 
 
 @router.get("", response_model=list[DocumentRead])
-async def list_documents(
+def list_documents(
     organization_id: uuid.UUID | None = None,
     fund_id: uuid.UUID | None = None,
     investor_id: uuid.UUID | None = None,
@@ -215,7 +338,7 @@ async def list_documents(
 
 
 @router.get("/{document_id}", response_model=DocumentRead)
-async def get_document(
+def get_document(
     document_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -235,7 +358,7 @@ async def get_document(
 
 
 @router.patch("/{document_id}", response_model=DocumentRead)
-async def update_document(
+def update_document(
     document_id: uuid.UUID,
     data: DocumentUpdate,
     db: Session = Depends(get_db),
@@ -300,7 +423,7 @@ async def draft_letter_from_document(
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_document(
+def delete_document(
     document_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -348,6 +471,7 @@ def _dev_storage_only() -> LocalDevStorage:
 )
 async def dev_storage_upload(key: str, request: Request):
     """Accept raw bytes for a presigned key. Dev-only; protected by a header token."""
+    _reject_unsafe_key(key)
     storage = _dev_storage_only()
     expected = settings.DEV_STORAGE_TOKEN
     provided = request.headers.get("x-dev-storage-token")
@@ -362,7 +486,8 @@ async def dev_storage_upload(key: str, request: Request):
 
 
 @dev_storage_router.get("/dev-storage/{key:path}")
-async def dev_storage_download(key: str):
+def dev_storage_download(key: str):
+    _reject_unsafe_key(key)
     storage = _dev_storage_only()
     blob = storage.read(key)
     if blob is None:

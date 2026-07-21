@@ -10,11 +10,11 @@ from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.capital_call import CapitalCall
-from app.models.commitment import Commitment
-from app.models.enums import CapitalCallStatus, CommitmentStatus, UserRole
+from app.models.enums import CapitalCallStatus, UserRole
 from app.models.fund import Fund
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.capital_call_repository import CapitalCallRepository
+from app.repositories.commitment_repository import CommitmentRepository
 from app.repositories.fund_repository import FundRepository
 from app.repositories.lp_scope import lp_visible_commitment_ids
 from app.schemas.capital_call import (
@@ -67,7 +67,7 @@ def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> Non
 
 
 @router.get("", response_model=list[CapitalCallRead])
-async def list_capital_calls(
+def list_capital_calls(
     fund_id: uuid.UUID | None = None,
     status_filter: CapitalCallStatus | None = None,
     skip: int = 0,
@@ -87,7 +87,7 @@ async def list_capital_calls(
 
 
 @router.get("/{call_id}", response_model=CapitalCallRead)
-async def get_capital_call(
+def get_capital_call(
     call_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -107,7 +107,7 @@ async def get_capital_call(
 
 
 @router.post("", response_model=CapitalCallRead, status_code=status.HTTP_201_CREATED)
-async def create_capital_call(
+def create_capital_call(
     data: CapitalCallCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -128,7 +128,7 @@ async def create_capital_call(
 
 
 @router.patch("/{call_id}", response_model=CapitalCallRead)
-async def update_capital_call(
+def update_capital_call(
     call_id: uuid.UUID,
     data: CapitalCallUpdate,
     db: Session = Depends(get_db),
@@ -143,7 +143,10 @@ async def update_capital_call(
             status_code=status.HTTP_404_NOT_FOUND, detail="Capital call not found"
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     updated = repo.update(call_id, data)
     assert updated is not None
@@ -155,7 +158,7 @@ async def update_capital_call(
     response_model=list[CapitalCallItemRead],
     status_code=status.HTTP_201_CREATED,
 )
-async def add_capital_call_items(
+def add_capital_call_items(
     call_id: uuid.UUID,
     payload: CapitalCallItemBulkCreate,
     mode: Literal["manual", "pro-rata"] = Query("manual"),
@@ -171,18 +174,15 @@ async def add_capital_call_items(
             status_code=status.HTTP_404_NOT_FOUND, detail="Capital call not found"
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     allocations: list[tuple[uuid.UUID, Decimal]]
     if mode == "pro-rata":
-        approved = (
-            db.query(Commitment)
-            .filter(
-                Commitment.fund_id == call.fund_id,
-                Commitment.status == CommitmentStatus.approved,
-            )
-            .order_by(Commitment.created_at, Commitment.id)
-            .all()
+        approved = CommitmentRepository(db).list_approved_for_allocation(
+            call.fund_id  # type: ignore[invalid-argument-type]
         )
         if not approved:
             raise HTTPException(
@@ -217,7 +217,7 @@ async def add_capital_call_items(
     "/{call_id}/items/{item_id}",
     response_model=CapitalCallItemRead,
 )
-async def update_capital_call_item(
+def update_capital_call_item(
     call_id: uuid.UUID,
     item_id: uuid.UUID,
     data: CapitalCallItemUpdate,
@@ -233,7 +233,10 @@ async def update_capital_call_item(
             status_code=status.HTTP_404_NOT_FOUND, detail="Capital call not found"
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     item = next((i for i in call.items if i.id == item_id), None)
     if item is None:
@@ -270,7 +273,10 @@ async def send_capital_call(
             status_code=status.HTTP_404_NOT_FOUND, detail="Capital call not found"
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     try:
         sent = repo.send(call_id)
@@ -284,7 +290,7 @@ async def send_capital_call(
 
 
 @router.post("/{call_id}/cancel", response_model=CapitalCallRead)
-async def cancel_capital_call(
+def cancel_capital_call(
     call_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -298,7 +304,10 @@ async def cancel_capital_call(
             status_code=status.HTTP_404_NOT_FOUND, detail="Capital call not found"
         )
     fund = _load_fund(db, call.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     try:
         cancelled = repo.cancel(call_id)
@@ -316,7 +325,7 @@ fund_capital_calls_router = APIRouter(dependencies=[Depends(get_current_user)])
 @fund_capital_calls_router.get(
     "/{fund_id}/capital-calls", response_model=list[CapitalCallRead]
 )
-async def list_capital_calls_for_fund(
+def list_capital_calls_for_fund(
     fund_id: uuid.UUID,
     status_filter: CapitalCallStatus | None = None,
     skip: int = 0,

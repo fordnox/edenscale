@@ -100,19 +100,31 @@ class LocalDevStorage(StoragePort):
     def presign_get(self, key: str) -> str:
         return self._url_for(key)
 
+    def _resolve(self, key: str) -> Path:
+        """Resolve ``key`` inside ``base_dir``, refusing any escape.
+
+        ``pathlib`` does not normalize ``..``; without this check a key like
+        ``../../etc/passwd`` reads outside the storage root.
+        """
+        root = self.base_dir.resolve()
+        path = (root / key).resolve()
+        if not path.is_relative_to(root):
+            raise ValueError(f"Storage key escapes the storage root: {key!r}")
+        return path
+
     def write(self, key: str, content: bytes, mime_type: str | None = None) -> None:
-        path = self.base_dir / key
+        path = self._resolve(key)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(content)
 
     def read(self, key: str) -> bytes | None:
-        path = self.base_dir / key
+        path = self._resolve(key)
         if not path.exists() or not path.is_file():
             return None
         return path.read_bytes()
 
     def delete(self, key: str) -> None:
-        path = self.base_dir / key
+        path = self._resolve(key)
         if path.is_file():
             path.unlink()
 
@@ -192,8 +204,11 @@ class S3Storage(StoragePort):
         #
         # The upload URL is API-relative: the client PUTs the bytes to the
         # authenticated /documents/upload/{key} proxy, which writes to the
-        # bucket server-side. Expiry is advisory here — the proxy is governed
-        # by bearer auth, not by a signature.
+        # bucket server-side. The caller (app/routers/documents.py) appends
+        # an expires/sig grant to this URL, signed over this exact (prefixed)
+        # key plus the caller's user id, so the proxy can verify the key was
+        # actually issued to whoever is PUTting to it — not just that they
+        # are some authenticated user.
         full_key = _prefixed_key(key)
         upload_url = f"/documents/upload/{quote(full_key, safe='/')}"
         expires_at = datetime.now(timezone.utc) + _PRESIGN_TTL

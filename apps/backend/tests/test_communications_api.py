@@ -3,12 +3,12 @@
 
 from datetime import date
 from decimal import Decimal
-from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import (
     Commitment,
@@ -39,7 +39,9 @@ def client():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.commit()
         return str(org.id)
@@ -160,9 +162,7 @@ class TestCommunicationLifecycle:
         fund_id = _seed_fund(org_id)
         # Approved investor with primary contact -> should receive
         approved_investor = _seed_investor(org_id, name="Approved LP")
-        _seed_commitment(
-            fund_id, approved_investor, status=CommitmentStatus.approved
-        )
+        _seed_commitment(fund_id, approved_investor, status=CommitmentStatus.approved)
         lp_user_id = _seed_user(
             "hanko-lp",
             UserRole.lp,
@@ -176,9 +176,7 @@ class TestCommunicationLifecycle:
         _seed_contact(approved_investor, None, is_primary=False)
         # Pending investor -> should NOT receive
         pending_investor = _seed_investor(org_id, name="Pending LP")
-        _seed_commitment(
-            fund_id, pending_investor, status=CommitmentStatus.pending
-        )
+        _seed_commitment(fund_id, pending_investor, status=CommitmentStatus.pending)
         _seed_contact(pending_investor, None, is_primary=True)
 
         create_resp = client.post(
@@ -392,9 +390,7 @@ class TestCommunicationRbac:
         )
         assert response.status_code == 403
 
-    def test_fund_manager_cannot_create_on_other_org_fund(
-        self, client, override_user
-    ):
+    def test_fund_manager_cannot_create_on_other_org_fund(self, client, override_user):
         org_a = _seed_org(name="Org A")
         org_b = _seed_org(name="Org B")
         _seed_user(
@@ -417,17 +413,13 @@ class TestCommunicationRbac:
         )
         assert response.status_code == 403
 
-    def test_lp_only_sees_communications_they_received(
-        self, client, override_user
-    ):
+    def test_lp_only_sees_communications_they_received(self, client, override_user):
         org_id = _seed_org()
         own_investor = _seed_investor(org_id, name="Own LP")
         other_investor = _seed_investor(org_id, name="Other LP")
         fund_id = _seed_fund(org_id)
         _seed_commitment(fund_id, own_investor, status=CommitmentStatus.approved)
-        _seed_commitment(
-            fund_id, other_investor, status=CommitmentStatus.approved
-        )
+        _seed_commitment(fund_id, other_investor, status=CommitmentStatus.approved)
         lp_user_id = _seed_user(
             "hanko-lp",
             UserRole.lp,
@@ -479,9 +471,7 @@ class TestCommunicationRbac:
         other_investor = _seed_investor(org_id, name="Other LP")
         fund_id = _seed_fund(org_id)
         _seed_commitment(fund_id, own_investor, status=CommitmentStatus.approved)
-        _seed_commitment(
-            fund_id, other_investor, status=CommitmentStatus.approved
-        )
+        _seed_commitment(fund_id, other_investor, status=CommitmentStatus.approved)
         lp_user_id = _seed_user(
             "hanko-lp",
             UserRole.lp,
@@ -515,9 +505,7 @@ class TestCommunicationRbac:
         ).json()["id"]
         sent = client.post(f"/communications/{comm_id}/send").json()
         recipients = sent["recipients"]
-        other_recipient = next(
-            r for r in recipients if r["user_id"] == other_user_id
-        )
+        other_recipient = next(r for r in recipients if r["user_id"] == other_user_id)
 
         override_user("hanko-lp")
         resp = client.post(
@@ -539,7 +527,11 @@ class TestNestedFundRoute:
         fund_id = _seed_fund(org_id)
         other_fund = _seed_fund(org_id, name="Sibling Fund")
 
-        for subject, fund in (("First", fund_id), ("Second", fund_id), ("Out", other_fund)):
+        for subject, fund in (
+            ("First", fund_id),
+            ("Second", fund_id),
+            ("Out", other_fund),
+        ):
             client.post(
                 "/communications",
                 json={

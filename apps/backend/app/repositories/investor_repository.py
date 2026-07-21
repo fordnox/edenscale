@@ -19,18 +19,23 @@ class InvestorRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def _base_query(self) -> Query:
-        sub = (
-            self.db.query(
-                Commitment.investor_id.label("investor_id"),
-                func.coalesce(func.sum(Commitment.committed_amount), 0).label(
-                    "total_committed"
-                ),
-                func.count(func.distinct(Commitment.fund_id)).label("fund_count"),
-            )
-            .group_by(Commitment.investor_id)
-            .subquery()
+    def _base_query(self, organization_id: uuid.UUID | None = None) -> Query:
+        sub_query = self.db.query(
+            Commitment.investor_id.label("investor_id"),
+            func.coalesce(func.sum(Commitment.committed_amount), 0).label(
+                "total_committed"
+            ),
+            func.count(func.distinct(Commitment.fund_id)).label("fund_count"),
         )
+        if organization_id is not None:
+            # Scope the aggregate to the tenant inside the subquery so the
+            # planner isn't grouping every commitment row on the platform
+            # before the outer query discards the rest. Results are
+            # unchanged: the outer query still filters on organization_id.
+            sub_query = sub_query.join(
+                Investor, Investor.id == Commitment.investor_id
+            ).filter(Investor.organization_id == organization_id)
+        sub = sub_query.group_by(Commitment.investor_id).subquery()
         return self.db.query(
             Investor,
             func.coalesce(sub.c.total_committed, 0).label("total_committed"),
@@ -43,7 +48,7 @@ class InvestorRepository:
         skip: int = 0,
         limit: int = 100,
     ) -> list[tuple[Investor, Decimal, int]]:
-        query = self._base_query().filter(
+        query = self._base_query(membership.organization_id).filter(  # type: ignore[invalid-argument-type]
             Investor.organization_id == membership.organization_id
         )
         if membership.role not in _ORG_VISIBLE_ROLES:

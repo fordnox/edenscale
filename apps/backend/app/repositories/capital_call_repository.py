@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Query, Session, joinedload
+from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
 from app.models.capital_call import CapitalCall
 from app.models.capital_call_item import CapitalCallItem
@@ -39,13 +39,32 @@ _ALLOWED_TRANSITIONS: dict[CapitalCallStatus, set[CapitalCallStatus]] = {
         CapitalCallStatus.paid,
         CapitalCallStatus.overdue,
         CapitalCallStatus.cancelled,
+        # A corrected/reversed payment can bring total_paid back to 0.
+        # recompute_status must be able to unwind to `sent` (not stay stuck
+        # at partially_paid forever) when the call isn't past due.
+        CapitalCallStatus.sent,
     },
     CapitalCallStatus.overdue: {
         CapitalCallStatus.partially_paid,
         CapitalCallStatus.paid,
         CapitalCallStatus.cancelled,
+        # Same unwind as above, plus: due_date can be edited (via `update`)
+        # to a future date after a call went overdue. The next recompute
+        # (triggered by any item write) must be able to move it back to
+        # `sent` rather than being stuck at overdue with nothing owed.
+        CapitalCallStatus.sent,
     },
-    CapitalCallStatus.paid: set(),
+    # `paid` is terminal for the user-facing send/cancel flows (transition_status
+    # still rejects `paid -> cancelled`), but recompute_status must be able to
+    # unwind it when a manager corrects a mis-recorded payment after the fact —
+    # otherwise the call is permanently mislabeled `paid` with money missing.
+    CapitalCallStatus.paid: {
+        # Payment reduced but not to zero.
+        CapitalCallStatus.partially_paid,
+        # Payment corrected all the way to zero.
+        CapitalCallStatus.sent,
+        CapitalCallStatus.overdue,
+    },
     CapitalCallStatus.cancelled: set(),
 }
 
@@ -57,7 +76,7 @@ class CapitalCallRepository:
 
     def _base_query(self) -> Query:
         return self.db.query(CapitalCall).options(
-            joinedload(CapitalCall.items),
+            selectinload(CapitalCall.items),
             joinedload(CapitalCall.fund),
         )
 
@@ -160,6 +179,10 @@ class CapitalCallRepository:
         call = self.db.query(CapitalCall).filter(CapitalCall.id == call_id).first()
         if call is None:
             raise ValueError("Capital call not found")
+        if call.status in (CapitalCallStatus.paid, CapitalCallStatus.cancelled):
+            raise ValueError(
+                f"Cannot add items to a capital call in status '{call.status.value}'"
+            )
         if not allocations:
             return []
         commitment_ids = [c_id for c_id, _ in allocations]
@@ -198,6 +221,7 @@ class CapitalCallRepository:
         self.db.flush()
         for commitment_id, _ in allocations:
             self._commitments.recompute_totals(commitment_id)
+        self.recompute_status(call_id)
         self.db.commit()
         for item in items:
             self.db.refresh(item)
@@ -208,6 +232,8 @@ class CapitalCallRepository:
         item_id: uuid.UUID,
         amount_paid: Decimal,
         paid_at: datetime | None = None,
+        *,
+        commit: bool = True,
     ) -> CapitalCallItem | None:
         item = (
             self.db.query(CapitalCallItem).filter(CapitalCallItem.id == item_id).first()
@@ -219,8 +245,9 @@ class CapitalCallRepository:
         self.db.flush()
         self._commitments.recompute_totals(item.commitment_id)  # type: ignore[invalid-argument-type]
         self.recompute_status(item.capital_call_id)  # type: ignore[invalid-argument-type]
-        self.db.commit()
-        self.db.refresh(item)
+        if commit:
+            self.db.commit()
+            self.db.refresh(item)
         return item
 
     def update_item(
@@ -273,6 +300,25 @@ class CapitalCallRepository:
         self.db.commit()
         return self.get_with_items(call_id)
 
+    def _write_status(self, call: CapitalCall, new_status: CapitalCallStatus) -> None:
+        """Assign ``call.status``, but only if the move is declared legal.
+
+        Used by ``recompute_status`` so automatic, payment-driven status
+        writes go through the same checked table as ``transition_status`` —
+        no code path may assign ``call.status`` without consulting
+        ``_ALLOWED_TRANSITIONS``.
+        """
+        current = call.status
+        if current == new_status:
+            return
+        allowed = _ALLOWED_TRANSITIONS.get(current, set())  # type: ignore[invalid-argument-type]
+        if new_status not in allowed:
+            raise ValueError(
+                f"Cannot transition capital call from '{current.value}' "
+                f"to '{new_status.value}'"
+            )
+        call.status = new_status
+
     def recompute_status(self, call_id: uuid.UUID) -> CapitalCall | None:
         call = self.db.query(CapitalCall).filter(CapitalCall.id == call_id).first()
         if call is None:
@@ -298,10 +344,18 @@ class CapitalCallRepository:
         elif total_paid > Decimal("0"):
             new_status = CapitalCallStatus.partially_paid
         else:
-            # Preserve overdue / sent state when nothing is paid.
-            new_status = call.status
-        if new_status != call.status:
-            call.status = new_status
+            # Nothing is paid (including a payment corrected back down to
+            # zero). Unwind to `overdue` if the call is past its due date,
+            # else `sent` — this call already passed the draft/scheduled
+            # guard above, so it was sent at some point and must land on
+            # one of the two "awaiting payment" statuses, never stay stuck
+            # at partially_paid/paid with nothing actually paid.
+            new_status = (
+                CapitalCallStatus.overdue
+                if call.due_date < date.today()
+                else CapitalCallStatus.sent
+            )
+        self._write_status(call, new_status)
         self.db.flush()
         return call
 

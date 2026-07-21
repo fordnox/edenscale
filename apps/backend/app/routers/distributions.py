@@ -9,11 +9,11 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
-from app.models.commitment import Commitment
 from app.models.distribution import Distribution
-from app.models.enums import CommitmentStatus, DistributionStatus, UserRole
+from app.models.enums import DistributionStatus, UserRole
 from app.models.fund import Fund
 from app.models.user_organization_membership import UserOrganizationMembership
+from app.repositories.commitment_repository import CommitmentRepository
 from app.repositories.distribution_repository import DistributionRepository
 from app.repositories.fund_repository import FundRepository
 from app.repositories.lp_scope import lp_visible_commitment_ids
@@ -68,7 +68,7 @@ def _ensure_org_scope(membership: UserOrganizationMembership, fund: Fund) -> Non
 
 
 @router.get("", response_model=list[DistributionRead])
-async def list_distributions(
+def list_distributions(
     fund_id: uuid.UUID | None = None,
     status_filter: DistributionStatus | None = None,
     skip: int = 0,
@@ -88,7 +88,7 @@ async def list_distributions(
 
 
 @router.get("/{distribution_id}", response_model=DistributionRead)
-async def get_distribution(
+def get_distribution(
     distribution_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -108,7 +108,7 @@ async def get_distribution(
 
 
 @router.post("", response_model=DistributionRead, status_code=status.HTTP_201_CREATED)
-async def create_distribution(
+def create_distribution(
     data: DistributionCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -129,7 +129,7 @@ async def create_distribution(
 
 
 @router.patch("/{distribution_id}", response_model=DistributionRead)
-async def update_distribution(
+def update_distribution(
     distribution_id: uuid.UUID,
     data: DistributionUpdate,
     db: Session = Depends(get_db),
@@ -144,7 +144,10 @@ async def update_distribution(
             status_code=status.HTTP_404_NOT_FOUND, detail="Distribution not found"
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     updated = repo.update(distribution_id, data)
     assert updated is not None
@@ -156,7 +159,7 @@ async def update_distribution(
     response_model=list[DistributionItemRead],
     status_code=status.HTTP_201_CREATED,
 )
-async def add_distribution_items(
+def add_distribution_items(
     distribution_id: uuid.UUID,
     payload: DistributionItemBulkCreate,
     mode: Literal["manual", "pro-rata"] = Query("manual"),
@@ -172,18 +175,15 @@ async def add_distribution_items(
             status_code=status.HTTP_404_NOT_FOUND, detail="Distribution not found"
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     allocations: list[tuple[uuid.UUID, Decimal]]
     if mode == "pro-rata":
-        approved = (
-            db.query(Commitment)
-            .filter(
-                Commitment.fund_id == distribution.fund_id,
-                Commitment.status == CommitmentStatus.approved,
-            )
-            .order_by(Commitment.created_at, Commitment.id)
-            .all()
+        approved = CommitmentRepository(db).list_approved_for_allocation(
+            distribution.fund_id  # type: ignore[invalid-argument-type]
         )
         if not approved:
             raise HTTPException(
@@ -218,7 +218,7 @@ async def add_distribution_items(
     "/{distribution_id}/items/{item_id}",
     response_model=DistributionItemRead,
 )
-async def update_distribution_item(
+def update_distribution_item(
     distribution_id: uuid.UUID,
     item_id: uuid.UUID,
     data: DistributionItemUpdate,
@@ -234,7 +234,10 @@ async def update_distribution_item(
             status_code=status.HTTP_404_NOT_FOUND, detail="Distribution not found"
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     item = next((i for i in distribution.items if i.id == item_id), None)
     if item is None:
@@ -271,7 +274,10 @@ async def send_distribution(
             status_code=status.HTTP_404_NOT_FOUND, detail="Distribution not found"
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     try:
         sent = repo.send(distribution_id)
@@ -285,7 +291,7 @@ async def send_distribution(
 
 
 @router.post("/{distribution_id}/cancel", response_model=DistributionRead)
-async def cancel_distribution(
+def cancel_distribution(
     distribution_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -299,7 +305,10 @@ async def cancel_distribution(
             status_code=status.HTTP_404_NOT_FOUND, detail="Distribution not found"
         )
     fund = _load_fund(db, distribution.fund_id)  # type: ignore[invalid-argument-type]
-    assert fund is not None
+    if fund is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Fund not found"
+        )
     _ensure_org_scope(membership, fund)
     try:
         cancelled = repo.cancel(distribution_id)
@@ -317,7 +326,7 @@ fund_distributions_router = APIRouter(dependencies=[Depends(get_current_user)])
 @fund_distributions_router.get(
     "/{fund_id}/distributions", response_model=list[DistributionRead]
 )
-async def list_distributions_for_fund(
+def list_distributions_for_fund(
     fund_id: uuid.UUID,
     status_filter: DistributionStatus | None = None,
     skip: int = 0,

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Query, Session, joinedload
+from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
 from app.models.commitment import Commitment
 from app.models.distribution import Distribution
@@ -37,8 +37,23 @@ _ALLOWED_TRANSITIONS: dict[DistributionStatus, set[DistributionStatus]] = {
     DistributionStatus.partially_paid: {
         DistributionStatus.paid,
         DistributionStatus.cancelled,
+        # A corrected/reversed payment can bring total_paid back to 0.
+        # recompute_status must be able to unwind to `sent` (not stay stuck
+        # at partially_paid forever) — distributions have no `overdue`
+        # concept, so `sent` is the only "awaiting payment" status.
+        DistributionStatus.sent,
     },
-    DistributionStatus.paid: set(),
+    # `paid` is terminal for the user-facing send/cancel flows (transition_status
+    # still rejects `paid -> cancelled`), but recompute_status must be able to
+    # unwind it when a manager corrects a mis-recorded payment after the fact —
+    # otherwise the distribution is permanently mislabeled `paid` with money
+    # missing.
+    DistributionStatus.paid: {
+        # Payment reduced but not to zero.
+        DistributionStatus.partially_paid,
+        # Payment corrected all the way to zero.
+        DistributionStatus.sent,
+    },
     DistributionStatus.cancelled: set(),
 }
 
@@ -50,7 +65,7 @@ class DistributionRepository:
 
     def _base_query(self) -> Query:
         return self.db.query(Distribution).options(
-            joinedload(Distribution.items),
+            selectinload(Distribution.items),
             joinedload(Distribution.fund),
         )
 
@@ -166,6 +181,14 @@ class DistributionRepository:
         )
         if distribution is None:
             raise ValueError("Distribution not found")
+        if distribution.status in (
+            DistributionStatus.paid,
+            DistributionStatus.cancelled,
+        ):
+            raise ValueError(
+                f"Cannot add items to a distribution in status "
+                f"'{distribution.status.value}'"
+            )
         if not allocations:
             return []
         commitment_ids = [c_id for c_id, _ in allocations]
@@ -205,6 +228,7 @@ class DistributionRepository:
         self.db.flush()
         for commitment_id, _ in allocations:
             self._commitments.recompute_totals(commitment_id)
+        self.recompute_status(distribution_id)
         self.db.commit()
         for item in items:
             self.db.refresh(item)
@@ -288,6 +312,27 @@ class DistributionRepository:
         self.db.commit()
         return self.get_with_items(distribution_id)
 
+    def _write_status(
+        self, distribution: Distribution, new_status: DistributionStatus
+    ) -> None:
+        """Assign ``distribution.status``, but only if the move is legal.
+
+        Used by ``recompute_status`` so automatic, payment-driven status
+        writes go through the same checked table as ``transition_status`` —
+        no code path may assign ``distribution.status`` without consulting
+        ``_ALLOWED_TRANSITIONS``.
+        """
+        current = distribution.status
+        if current == new_status:
+            return
+        allowed = _ALLOWED_TRANSITIONS.get(current, set())  # type: ignore[invalid-argument-type]
+        if new_status not in allowed:
+            raise ValueError(
+                f"Cannot transition distribution from '{current.value}' "
+                f"to '{new_status.value}'"
+            )
+        distribution.status = new_status
+
     def recompute_status(self, distribution_id: uuid.UUID) -> Distribution | None:
         distribution = (
             self.db.query(Distribution)
@@ -320,9 +365,13 @@ class DistributionRepository:
         elif total_paid > Decimal("0"):
             new_status = DistributionStatus.partially_paid
         else:
-            new_status = distribution.status
-        if new_status != distribution.status:
-            distribution.status = new_status
+            # Nothing is paid (including a payment corrected back down to
+            # zero). Unwind to `sent` — this distribution already passed the
+            # draft/scheduled guard above, so it was sent at some point and
+            # must not stay stuck at partially_paid/paid with nothing
+            # actually paid. Distributions have no `overdue` status.
+            new_status = DistributionStatus.sent
+        self._write_status(distribution, new_status)
         self.db.flush()
         return distribution
 

@@ -15,7 +15,7 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[AuditLogRead])
-async def list_audit_logs(
+def list_audit_logs(
     entity_type: str | None = None,
     entity_id: uuid.UUID | None = None,
     user_id: uuid.UUID | None = None,

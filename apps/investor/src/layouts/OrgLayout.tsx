@@ -9,7 +9,7 @@ import { PendingInvitationsBanner } from "@edenscale/ui/invitations/PendingInvit
 import { CommandPalette } from "@/components/layout/CommandPalette"
 import { TopNav } from "@/components/layout/TopNav"
 import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
-import { useCommandPalette } from "@/hooks/useCommandPalette"
+import { useCommandPalette } from "@edenscale/shared/hooks/useCommandPalette"
 import { usePendingInvitations } from "@edenscale/shared/hooks/usePendingInvitations"
 import { RESERVED_ORG_SLUGS } from "@/lib/investorRoutes"
 import { setLastVisitedOrgSlug } from "@edenscale/shared/active-org"

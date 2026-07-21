@@ -8,18 +8,17 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
     "generate-client": "turbo run generate-client",
     "dev:manager": "turbo run dev --filter=manager",
     "dev:investor": "turbo run dev --filter=investor",
     "build:gateway": "turbo run build --filter=gateway"
   },
   "devDependencies": {
-    "turbo": "^2.10.5"
-  },
-  "pnpm": {
-    "overrides": {
-      "@types/react": "19.2.17",
-      "@types/react-dom": "19.2.3"
-    }
+    "eslint": "^10.7.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
+    "turbo": "^2.10.5",
+    "typescript-eslint": "^8.65.0"
   }
 }

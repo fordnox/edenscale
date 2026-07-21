@@ -43,8 +43,12 @@ export function FundValuationsCard({
   const [asOfDate, setAsOfDate] = useState("")
   const [nav, setNav] = useState("")
 
+  // The backend now paginates this route (default limit 100). NAV marks are
+  // usually monthly or quarterly, but a long-lived fund marked frequently
+  // could exceed the default — request an explicit, generous limit rather
+  // than silently truncating this card's history.
   const valuationsQuery = useApiQuery("/funds/{fund_id}/valuations", {
-    params: { path: { fund_id: fundId } },
+    params: { path: { fund_id: fundId }, query: { limit: 500 } },
   })
   const valuations = valuationsQuery.data ?? []
 

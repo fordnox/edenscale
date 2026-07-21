@@ -4,14 +4,17 @@
 import uuid
 from datetime import date
 from decimal import Decimal
-from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import (
+    CapitalCall,
+    CapitalCallItem,
+    CapitalCallStatus,
     Commitment,
     CommitmentStatus,
     Fund,
@@ -23,6 +26,7 @@ from app.models import (
     UserRole,
 )
 from app.models.user_organization_membership import UserOrganizationMembership
+from app.repositories.capital_call_repository import CapitalCallRepository
 
 
 @pytest.fixture(autouse=True)
@@ -40,7 +44,9 @@ def client():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.commit()
         return str(org.id)
@@ -304,6 +310,262 @@ class TestCapitalCallLifecycle:
             db.close()
 
 
+class TestCapitalCallStatusUnwind:
+    """plans/017-status-machine-and-dedupe.md: recompute_status must be able
+    to unwind out of partially_paid/paid when a payment is corrected back
+    down, instead of getting stuck, and every status write it performs must
+    go through the checked `_ALLOWED_TRANSITIONS` table."""
+
+    def test_correction_to_zero_unwinds_partially_paid_to_sent(
+        self, client, override_user
+    ):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id)
+        commitment_id = _seed_commitment(
+            fund_id, investor_id, committed_amount=Decimal("1000.00")
+        )
+
+        create_resp = client.post(
+            "/capital-calls",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1 Call",
+                "due_date": "2099-06-01",  # far future: never overdue
+                "amount": "1000.00",
+            },
+        )
+        call_id = create_resp.json()["id"]
+        item_id = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]},
+        ).json()[0]["id"]
+        assert client.post(f"/capital-calls/{call_id}/send").status_code == 200
+
+        # A mis-keyed payment is recorded, then corrected back to zero.
+        pay = client.patch(
+            f"/capital-calls/{call_id}/items/{item_id}",
+            json={"amount_paid": "400.00"},
+        )
+        assert pay.status_code == 200
+        assert client.get(f"/capital-calls/{call_id}").json()["status"] == (
+            "partially_paid"
+        )
+
+        correction = client.patch(
+            f"/capital-calls/{call_id}/items/{item_id}",
+            json={"amount_paid": "0.00"},
+        )
+        assert correction.status_code == 200
+
+        # Must unwind back to `sent`, not stay stuck at `partially_paid`
+        # forever with nothing actually paid.
+        detail = client.get(f"/capital-calls/{call_id}").json()
+        assert detail["status"] == "sent"
+
+    def test_correction_to_zero_unwinds_to_overdue_when_past_due(
+        self, client, override_user
+    ):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id)
+        commitment_id = _seed_commitment(
+            fund_id, investor_id, committed_amount=Decimal("1000.00")
+        )
+
+        create_resp = client.post(
+            "/capital-calls",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1 Call",
+                "due_date": "2020-01-01",  # long past
+                "amount": "1000.00",
+            },
+        )
+        call_id = create_resp.json()["id"]
+        item_id = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]},
+        ).json()[0]["id"]
+        assert client.post(f"/capital-calls/{call_id}/send").status_code == 200
+
+        client.patch(
+            f"/capital-calls/{call_id}/items/{item_id}",
+            json={"amount_paid": "400.00"},
+        )
+        assert client.get(f"/capital-calls/{call_id}").json()["status"] == (
+            "partially_paid"
+        )
+
+        correction = client.patch(
+            f"/capital-calls/{call_id}/items/{item_id}",
+            json={"amount_paid": "0.00"},
+        )
+        assert correction.status_code == 200
+
+        detail = client.get(f"/capital-calls/{call_id}").json()
+        assert detail["status"] == "overdue"
+
+    def test_paid_call_reduced_payment_moves_to_partially_paid(
+        self, client, override_user
+    ):
+        """paid -> partially_paid must go through the checked helper without
+        raising: _ALLOWED_TRANSITIONS must be widened (not bypassed) to
+        declare this move legal."""
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id)
+        commitment_id = _seed_commitment(
+            fund_id, investor_id, committed_amount=Decimal("1000.00")
+        )
+
+        create_resp = client.post(
+            "/capital-calls",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1 Call",
+                "due_date": "2099-06-01",
+                "amount": "1000.00",
+            },
+        )
+        call_id = create_resp.json()["id"]
+        item_id = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]},
+        ).json()[0]["id"]
+        assert client.post(f"/capital-calls/{call_id}/send").status_code == 200
+
+        full = client.patch(
+            f"/capital-calls/{call_id}/items/{item_id}",
+            json={"amount_paid": "1000.00"},
+        )
+        assert full.status_code == 200
+        assert client.get(f"/capital-calls/{call_id}").json()["status"] == "paid"
+
+        reduced = client.patch(
+            f"/capital-calls/{call_id}/items/{item_id}",
+            json={"amount_paid": "600.00"},
+        )
+        assert reduced.status_code == 200
+
+        detail = client.get(f"/capital-calls/{call_id}").json()
+        assert detail["status"] == "partially_paid"
+
+    def test_draft_call_with_items_not_promoted(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id)
+        commitment_id = _seed_commitment(
+            fund_id, investor_id, committed_amount=Decimal("1000.00")
+        )
+
+        create_resp = client.post(
+            "/capital-calls",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1 Call",
+                "due_date": "2026-06-01",
+                "amount": "1000.00",
+            },
+        )
+        call_id = create_resp.json()["id"]
+        assert create_resp.json()["status"] == "draft"
+
+        # Allocating items (which triggers recompute_status internally) must
+        # not promote a draft call to `sent` — only `send()` may do that.
+        items = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]},
+        )
+        assert items.status_code == 201
+        assert client.get(f"/capital-calls/{call_id}").json()["status"] == "draft"
+
+    def test_scheduled_call_with_items_not_promoted(self):
+        """No API route drives a call into `scheduled`, so this exercises the
+        repository directly, matching the pattern in
+        tests/test_payment_matching.py."""
+        db = SessionLocal()
+        try:
+            org = Organization(
+                name="Repo Direct Org",
+                slug=slugify("Repo Direct Org" + uuid.uuid4().hex[:6]),
+                type=OrganizationType.fund_manager_firm,
+            )
+            db.add(org)
+            db.flush()
+            fund = Fund(
+                organization_id=org.id,
+                name="Fund",
+                slug=slugify("Fund" + uuid.uuid4().hex[:6]),
+                currency_code="USD",
+            )
+            db.add(fund)
+            db.flush()
+            investor = Investor(organization_id=org.id, name="Acme LP")
+            db.add(investor)
+            db.flush()
+            commitment = Commitment(
+                fund_id=fund.id,
+                investor_id=investor.id,
+                committed_amount=Decimal("1000.00"),
+                commitment_date=date(2026, 1, 1),
+                status=CommitmentStatus.approved,
+            )
+            db.add(commitment)
+            db.flush()
+            call = CapitalCall(
+                fund_id=fund.id,
+                title="Scheduled Call",
+                due_date=date(2026, 6, 1),
+                amount=Decimal("1000.00"),
+                status=CapitalCallStatus.scheduled,
+            )
+            db.add(call)
+            db.flush()
+            item = CapitalCallItem(
+                capital_call_id=call.id,
+                commitment_id=commitment.id,
+                amount_due=Decimal("1000.00"),
+                amount_paid=Decimal("0"),
+            )
+            db.add(item)
+            db.commit()
+
+            CapitalCallRepository(db).recompute_status(call.id)
+            db.refresh(call)
+            assert call.status == CapitalCallStatus.scheduled
+        finally:
+            db.close()
+
+
 class TestCapitalCallValidation:
     def test_create_with_unknown_fund_returns_404(self, client, override_user):
         org_id = _seed_org()
@@ -414,19 +676,153 @@ class TestCapitalCallValidation:
 
         first = client.post(
             f"/capital-calls/{call_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_id, "amount_due": "500.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "500.00"}]},
         )
         assert first.status_code == 201
 
         second = client.post(
             f"/capital-calls/{call_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_id, "amount_due": "500.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "500.00"}]},
         )
         assert second.status_code == 400
+
+    def test_add_item_to_paid_call_rejected(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_a = _seed_investor(org_id, name="LP A")
+        investor_b = _seed_investor(org_id, name="LP B")
+        commitment_a = _seed_commitment(
+            fund_id, investor_a, committed_amount=Decimal("1000.00")
+        )
+        commitment_b = _seed_commitment(
+            fund_id, investor_b, committed_amount=Decimal("500.00")
+        )
+
+        create_resp = client.post(
+            "/capital-calls",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1 Call",
+                "due_date": "2026-06-01",
+                "amount": "1000.00",
+            },
+        )
+        call_id = create_resp.json()["id"]
+
+        items_resp = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={"items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]},
+        )
+        item_id = items_resp.json()[0]["id"]
+        assert client.post(f"/capital-calls/{call_id}/send").status_code == 200
+
+        pay_resp = client.patch(
+            f"/capital-calls/{call_id}/items/{item_id}",
+            json={"amount_paid": "1000.00"},
+        )
+        assert pay_resp.status_code == 200
+        assert client.get(f"/capital-calls/{call_id}").json()["status"] == "paid"
+
+        # Adding a new allocation to a fully-paid call would push total_due
+        # above total_paid while the row still reads `paid` — reject outright
+        # rather than letting the call silently disagree with its own totals.
+        rejected = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={"items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]},
+        )
+        assert rejected.status_code == 400
+
+    def test_add_item_to_cancelled_call_rejected(self, client, override_user):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id)
+        commitment_id = _seed_commitment(fund_id, investor_id)
+
+        create_resp = client.post(
+            "/capital-calls",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1 Call",
+                "due_date": "2026-06-01",
+                "amount": "1000.00",
+            },
+        )
+        call_id = create_resp.json()["id"]
+        assert client.post(f"/capital-calls/{call_id}/cancel").status_code == 200
+
+        # Adding to a call explicitly withdrawn from collection would inflate
+        # committed/called aggregates for money no longer being pursued.
+        response = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]},
+        )
+        assert response.status_code == 400
+
+    def test_add_item_to_sent_call_succeeds_and_recomputes_status(
+        self, client, override_user
+    ):
+        org_id = _seed_org()
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+        fund_id = _seed_fund(org_id)
+        investor_a = _seed_investor(org_id, name="LP A")
+        investor_b = _seed_investor(org_id, name="LP B")
+        commitment_a = _seed_commitment(
+            fund_id, investor_a, committed_amount=Decimal("1000.00")
+        )
+        commitment_b = _seed_commitment(
+            fund_id, investor_b, committed_amount=Decimal("500.00")
+        )
+
+        create_resp = client.post(
+            "/capital-calls",
+            json={
+                "fund_id": fund_id,
+                "title": "Q1 Call",
+                # Far in the future so recompute_status's zero-paid unwind
+                # (plan 017) resolves to `sent`, not `overdue` — this test is
+                # about add_items not corrupting status into paid/partially_paid,
+                # not about overdue detection.
+                "due_date": "2099-06-01",
+                "amount": "1000.00",
+            },
+        )
+        call_id = create_resp.json()["id"]
+
+        first_items = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={"items": [{"commitment_id": commitment_a, "amount_due": "1000.00"}]},
+        )
+        assert first_items.status_code == 201
+        assert client.post(f"/capital-calls/{call_id}/send").status_code == 200
+        assert client.get(f"/capital-calls/{call_id}").json()["status"] == "sent"
+
+        second_items = client.post(
+            f"/capital-calls/{call_id}/items",
+            json={"items": [{"commitment_id": commitment_b, "amount_due": "500.00"}]},
+        )
+        assert second_items.status_code == 201
+        # Still unpaid — recompute_status must preserve `sent`, not corrupt it.
+        assert client.get(f"/capital-calls/{call_id}").json()["status"] == "sent"
 
 
 class TestCapitalCallSendCancel:
@@ -481,9 +877,7 @@ class TestCapitalCallSendCancel:
         call_id = create_resp.json()["id"]
         item_id = client.post(
             f"/capital-calls/{call_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "1000.00"}]},
         ).json()[0]["id"]
         client.post(f"/capital-calls/{call_id}/send")
         client.patch(
@@ -569,9 +963,7 @@ class TestCapitalCallRbac:
         client.post(
             f"/capital-calls/{own_call}/items",
             json={
-                "items": [
-                    {"commitment_id": own_commitment, "amount_due": "1000.00"}
-                ]
+                "items": [{"commitment_id": own_commitment, "amount_due": "1000.00"}]
             },
         )
         other_call = client.post(
@@ -586,9 +978,7 @@ class TestCapitalCallRbac:
         client.post(
             f"/capital-calls/{other_call}/items",
             json={
-                "items": [
-                    {"commitment_id": other_commitment, "amount_due": "1000.00"}
-                ]
+                "items": [{"commitment_id": other_commitment, "amount_due": "1000.00"}]
             },
         )
 
@@ -620,7 +1010,11 @@ class TestNestedFundRoute:
         fund_id = _seed_fund(org_id)
         other_fund = _seed_fund(org_id, name="Sibling Fund")
 
-        for title, fund in (("First", fund_id), ("Second", fund_id), ("Out", other_fund)):
+        for title, fund in (
+            ("First", fund_id),
+            ("Second", fund_id),
+            ("Out", other_fund),
+        ):
             client.post(
                 "/capital-calls",
                 json={

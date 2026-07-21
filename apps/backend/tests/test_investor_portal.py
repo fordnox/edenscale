@@ -165,22 +165,16 @@ class TestInvestorOrganizations:
         override_user("hanko-admin")
 
         assert client.get("/investor/organizations").json() == []
-        response = client.get(
-            "/investor/funds", headers={"X-Organization-Id": org_id}
-        )
+        response = client.get("/investor/funds", headers={"X-Organization-Id": org_id})
         assert response.status_code == 403
 
 
 class TestInvestorScopedReads:
-    def test_admin_sees_only_their_linked_investor_data(
-        self, client, override_user
-    ):
+    def test_admin_sees_only_their_linked_investor_data(self, client, override_user):
         """A fund admin who personally invested sees their own slice in the
         portal, not the org-wide view their staff role would grant."""
         org_id = _seed_org()
-        admin_id = _seed_user(
-            "hanko-admin", UserRole.admin, organization_id=org_id
-        )
+        admin_id = _seed_user("hanko-admin", UserRole.admin, organization_id=org_id)
         own = _seed_investor(org_id, name="Admin Family LP")
         other = _seed_investor(org_id, name="Other LP")
         _seed_contact(own, user_id=admin_id)
@@ -200,28 +194,20 @@ class TestInvestorScopedReads:
         commitments = client.get("/investor/commitments", headers=headers).json()
         assert len(commitments) == 1
 
-        overview = client.get(
-            "/investor/dashboard/overview", headers=headers
-        ).json()
+        overview = client.get("/investor/dashboard/overview", headers=headers).json()
         assert overview["investors_total"] == 1
 
-    def test_org_header_without_links_in_that_org_is_403(
-        self, client, override_user
-    ):
+    def test_org_header_without_links_in_that_org_is_403(self, client, override_user):
         org_a = _seed_org("Org A")
         org_b = _seed_org("Org B")
         user_id = _seed_user("hanko-inv", UserRole.lp)
         _seed_contact(_seed_investor(org_a), user_id=user_id)
         override_user("hanko-inv")
 
-        response = client.get(
-            "/investor/funds", headers={"X-Organization-Id": org_b}
-        )
+        response = client.get("/investor/funds", headers={"X-Organization-Id": org_b})
         assert response.status_code == 403
 
-    def test_single_linked_org_resolves_without_header(
-        self, client, override_user
-    ):
+    def test_single_linked_org_resolves_without_header(self, client, override_user):
         org_id = _seed_org()
         user_id = _seed_user("hanko-inv", UserRole.lp)
         investor = _seed_investor(org_id)

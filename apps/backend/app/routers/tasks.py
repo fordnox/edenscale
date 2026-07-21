@@ -41,7 +41,7 @@ def _ensure_can_attach_fund(
 
 
 @router.get("", response_model=list[TaskRead])
-async def list_tasks(
+def list_tasks(
     fund_id: uuid.UUID | None = None,
     status_filter: TaskStatus | None = None,
     assignee: uuid.UUID | None = None,
@@ -68,7 +68,7 @@ async def list_tasks(
 
 
 @router.get("/{task_id}", response_model=TaskRead)
-async def get_task(
+def get_task(
     task_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -142,7 +142,7 @@ async def update_task(
 
 
 @router.post("/{task_id}/complete", response_model=TaskRead)
-async def complete_task(
+def complete_task(
     task_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -171,7 +171,7 @@ fund_tasks_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @fund_tasks_router.get("/{fund_id}/tasks", response_model=list[TaskRead])
-async def list_tasks_for_fund(
+def list_tasks_for_fund(
     fund_id: uuid.UUID,
     status_filter: TaskStatus | None = None,
     assignee: uuid.UUID | None = None,

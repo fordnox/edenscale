@@ -6,6 +6,9 @@ from app.repositories.communication_repository import CommunicationRepository
 from app.repositories.dashboard_repository import DashboardRepository
 from app.repositories.distribution_repository import DistributionRepository
 from app.repositories.document_repository import DocumentRepository
+from app.repositories.email_ingest_message_repository import (
+    EmailIngestMessageRepository,
+)
 from app.repositories.fund_group_repository import FundGroupRepository
 from app.repositories.fund_repository import FundRepository
 from app.repositories.fund_valuation_repository import FundValuationRepository
@@ -15,6 +18,7 @@ from app.repositories.lp_scope import (
     lp_visible_contact_ids,
     lp_visible_investor_ids,
 )
+from app.repositories.notification_log_repository import NotificationLogRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.repositories.organization_invitation_repository import (
     OrganizationInvitationRepository,
@@ -35,11 +39,13 @@ __all__ = [
     "DashboardRepository",
     "DistributionRepository",
     "DocumentRepository",
+    "EmailIngestMessageRepository",
     "FundGroupRepository",
     "FundRepository",
     "FundValuationRepository",
     "InvestorContactRepository",
     "InvestorRepository",
+    "NotificationLogRepository",
     "NotificationRepository",
     "OrganizationInvitationRepository",
     "OrganizationRepository",

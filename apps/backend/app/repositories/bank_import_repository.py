@@ -1,8 +1,9 @@
 import uuid
-from datetime import datetime, time
+from dataclasses import dataclass
+from datetime import datetime, time, timezone
 from decimal import Decimal
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.bank_payment_transaction import BankPaymentTransaction
 from app.models.bank_statement_import import BankStatementImport
@@ -15,7 +16,17 @@ from app.models.enums import (
 from app.models.fund import Fund
 from app.repositories.capital_call_repository import CapitalCallRepository
 from app.schemas.bank_import import ApplyAssignment
-from app.services.iso20022 import ParsedBankEntry
+from app.services.iso20022 import ParsedBankEntry, is_synthetic_reference
+
+
+@dataclass
+class _ResolvedPayment:
+    """A validated assignment, ready to be written in phase 2 of ``apply``."""
+
+    txn: BankPaymentTransaction
+    item: CapitalCallItem
+    new_amount_paid: Decimal
+    paid_at: datetime
 
 
 class BankImportRepository:
@@ -76,7 +87,7 @@ class BankImportRepository:
     def get(self, import_id: uuid.UUID) -> BankStatementImport | None:
         return (
             self.db.query(BankStatementImport)
-            .options(joinedload(BankStatementImport.transactions))
+            .options(selectinload(BankStatementImport.transactions))
             .filter(BankStatementImport.id == import_id)
             .first()
         )
@@ -125,7 +136,17 @@ class BankImportRepository:
         Guards against a re-uploaded statement double-paying: even in a fresh
         import batch, a transaction whose reference already settled an item is
         skipped.
+
+        A *synthetic* reference (composed by us from value_date|amount|payer
+        when the bank didn't supply one — see `iso20022.py`) is excluded from
+        this check: two distinct real payments can legitimately share those
+        three values (e.g. two equal tranches from the same investor, or two
+        LPs behind one corporate payer), so a matching synthetic reference is
+        not evidence the same payment already settled. Such transactions are
+        left `unmatched` for manual review instead of being auto-ignored.
         """
+        if is_synthetic_reference(bank_reference):
+            return False
         return (
             self.db.query(BankPaymentTransaction.id)
             .join(
@@ -155,10 +176,23 @@ class BankImportRepository:
         (via ``CapitalCallRepository.set_item_payment``, which recomputes the
         call status). Transactions already applied — here or in another import
         with the same reference — are skipped.
+
+        Validation runs in a read-only phase before any write, so that a bad
+        assignment raises before anything is mutated: a 400 from this call
+        must leave the database exactly as it was, and a retry after that 400
+        must not re-apply what already landed. See plans/003-atomic-bank-apply.md.
         """
         organization_id = record.organization_id
         by_id = {txn.id: txn for txn in record.transactions}
 
+        # Phase 1 — resolve and validate every assignment. No writes here:
+        # raising partway through must leave the database untouched. Track
+        # running per-item totals locally (rather than mutating `item`) so
+        # that two assignments in the same call targeting the same item still
+        # stack correctly, matching the pre-fix sequential-mutation behavior.
+        running_totals: dict[uuid.UUID, Decimal] = {}
+        to_ignore: list[BankPaymentTransaction] = []
+        to_apply: list[_ResolvedPayment] = []
         for assignment in assignments:
             txn = by_id.get(assignment.transaction_id)
             if txn is None:
@@ -172,7 +206,7 @@ class BankImportRepository:
                 organization_id=organization_id,  # type: ignore[invalid-argument-type]
                 exclude_txn_id=txn.id,
             ):
-                txn.status = BankPaymentTransactionStatus.ignored
+                to_ignore.append(txn)
                 continue
             item = self._item_in_org(
                 assignment.capital_call_item_id,
@@ -183,15 +217,37 @@ class BankImportRepository:
                     f"Capital call item {assignment.capital_call_item_id} "
                     "not found in this organization"
                 )
-            new_amount_paid = Decimal(item.amount_paid) + assignment.amount  # type: ignore[invalid-argument-type]
+            current_amount_paid = running_totals.get(  # type: ignore[no-matching-overload]
+                item.id, Decimal(item.amount_paid)  # type: ignore[invalid-argument-type]
+            )
+            new_amount_paid = current_amount_paid + assignment.amount
+            running_totals[item.id] = new_amount_paid  # type: ignore[invalid-argument-type]
             paid_at = (
                 datetime.combine(txn.value_date, time.min)
                 if txn.value_date is not None
-                else datetime.now()
+                # Naive-UTC to match the timezone-less DateTime column, per
+                # the convention documented at user_repository.py:180-183.
+                else datetime.now(timezone.utc).replace(tzinfo=None)
             )
-            self._capital_calls.set_item_payment(item.id, new_amount_paid, paid_at)  # type: ignore[invalid-argument-type]
-            txn.capital_call_item_id = item.id
-            txn.status = BankPaymentTransactionStatus.applied
+            to_apply.append(
+                _ResolvedPayment(
+                    txn=txn, item=item, new_amount_paid=new_amount_paid, paid_at=paid_at
+                )
+            )
+
+        # Phase 2 — write. Only reached once phase 1 has validated every
+        # assignment without raising.
+        for txn in to_ignore:
+            txn.status = BankPaymentTransactionStatus.ignored
+        for resolved in to_apply:
+            self._capital_calls.set_item_payment(
+                resolved.item.id,
+                resolved.new_amount_paid,
+                resolved.paid_at,
+                commit=False,
+            )
+            resolved.txn.capital_call_item_id = resolved.item.id
+            resolved.txn.status = BankPaymentTransactionStatus.applied
 
         ignore_set = set(ignore_transaction_ids)
         for txn in record.transactions:

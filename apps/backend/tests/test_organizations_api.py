@@ -2,12 +2,18 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from app.core.slugs import slugify
 
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
-from app.models import Organization, OrganizationType, User, UserRole
+from app.models import (
+    Organization,
+    OrganizationType,
+    User,
+    UserOrganizationMembership,
+    UserRole,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -34,8 +40,12 @@ def _seed_user(
     role: UserRole,
     *,
     email: str | None = None,
-    organization_id: int | None = None,
+    organization_id: str | None = None,
 ) -> int:
+    """Seed a ``User`` and, when ``organization_id`` is given, a membership
+    row carrying ``role`` for that org — roles live on
+    ``UserOrganizationMembership``, not on the user, per the membership
+    refactor (see ``test_membership_repository.py``)."""
     db = SessionLocal()
     try:
         user = User(
@@ -45,6 +55,15 @@ def _seed_user(
             hanko_subject_id=subject_id,
         )
         db.add(user)
+        db.flush()
+        if organization_id is not None:
+            db.add(
+                UserOrganizationMembership(
+                    user_id=user.id,
+                    organization_id=organization_id,
+                    role=role,
+                )
+            )
         db.commit()
         return str(user.id)
     finally:
@@ -80,7 +99,9 @@ class TestLegacyOrganizationMutationsRemoved:
                 "legal_name": "Adminco LLC",
             },
         )
-        assert create_response.status_code == 405
+        # POST /organizations was removed outright (not method-restricted);
+        # superadmin org creation now lives on app/routers/superadmin.py.
+        assert create_response.status_code == 404
 
     def test_admin_cannot_create(self, client, override_user):
         _seed_user("hanko-admin", UserRole.admin, email="admin@example.com")
@@ -90,7 +111,8 @@ class TestLegacyOrganizationMutationsRemoved:
             "/organizations",
             json={"type": "fund_manager_firm", "name": "Adminco"},
         )
-        assert response.status_code == 405
+        # Route removed outright; see comment above.
+        assert response.status_code == 404
 
     def test_lp_cannot_create(self, client, override_user):
         _seed_user("hanko-lp", UserRole.lp, email="lp@example.com")
@@ -100,7 +122,8 @@ class TestLegacyOrganizationMutationsRemoved:
             "/organizations",
             json={"type": "investor_firm", "name": "Lpco"},
         )
-        assert response.status_code == 405
+        # Route removed outright; see comment above.
+        assert response.status_code == 404
 
 
 class TestSelfServeCreateOrganization:
@@ -219,7 +242,8 @@ class TestListAndReadOrganization:
         override_user("hanko-fm")
 
         list_response = client.get("/organizations")
-        assert list_response.status_code == 405
+        # GET /organizations (list) was removed outright, not method-restricted.
+        assert list_response.status_code == 404
 
         get_response = client.get(f"/organizations/{org_id}")
         assert get_response.status_code == 200

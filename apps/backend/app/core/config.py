@@ -1,3 +1,4 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,7 +11,16 @@ class Settings(BaseSettings):
     GENERATE_OPENAPI_DOCS: bool = False
     APP_DOMAIN: str = "example.com"
     APP_DATA_PATH: str = "/tmp"
-    APP_DATABASE_DSN: str = "sqlite:////tmp/database.db"
+    # PostgreSQL is required in every environment; SQLite is unsupported (see
+    # the validator below and app/core/database.py). A truly required field
+    # (no default) was tried first, but `ty check` (used by `make lint`)
+    # statically flags `Settings()` at app/core/config.py's module scope as
+    # missing a required argument — it does not understand that
+    # pydantic-settings populates fields from the environment/`.env` at
+    # runtime. So this keeps a default, but a PostgreSQL one pointing at
+    # localhost (matching .env.example) rather than the old SQLite default;
+    # a missing/wrong DSN is still caught immediately by the validator below.
+    APP_DATABASE_DSN: str = "postgresql://postgres:postgres@localhost:5432/taven"
     CORS_ALLOW_ORIGINS: list[str] = ["http://localhost:3000"]
     REDIS_URL: str = "redis://localhost:6379"
     HANKO_API_URL: str = ""
@@ -46,7 +56,11 @@ class Settings(BaseSettings):
 
     # S3/R2 storage settings
     STORAGE_BACKEND: str = "local"
-    DEV_STORAGE_TOKEN: str = "dev-storage"
+    # Empty means "no token configured" — the dev-storage upload/download
+    # routes treat that as a hard deny (see routers/documents.py), so an
+    # unset token now closes the route rather than admitting a published
+    # default credential.
+    DEV_STORAGE_TOKEN: str = ""
     S3_ENDPOINT_URL: str = ""
     S3_ACCESS_KEY_ID: str = ""
     S3_SECRET_ACCESS_KEY: str = ""
@@ -54,6 +68,45 @@ class Settings(BaseSettings):
     S3_REGION: str = "auto"
     S3_PUBLIC_URL: str = ""
     S3_PREFIX: str = "taven"
+
+    # HMAC secret used to sign the upload grant appended to `upload_url`
+    # (see app/routers/documents.py) so `PUT /documents/upload/{key}` can
+    # verify the key was actually issued to the caller. Empty disables
+    # verification — only acceptable in local dev; the validator below
+    # refuses to start with an empty secret in a production-shaped config.
+    UPLOAD_SIGNING_SECRET: str = ""
+
+    @model_validator(mode="after")
+    def _require_postgresql_dsn(self) -> "Settings":
+        """PostgreSQL is the only supported database. SQLite was dropped:
+        its stricter binder rejects the plain-``str`` values many test
+        fixtures pass into ``Uuid(as_uuid=True)`` columns, so the SQLite path
+        was untested, unused, and silently broken. Fail fast and clearly
+        instead of letting a wrong driver produce confusing downstream
+        errors."""
+        if not self.APP_DATABASE_DSN.startswith("postgresql"):
+            raise ValueError(
+                "APP_DATABASE_DSN must be a PostgreSQL DSN (starting with "
+                "'postgresql'); PostgreSQL is required. Set APP_DATABASE_DSN "
+                "in your environment or .env — see .env.example."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _require_upload_signing_secret_in_production(self) -> "Settings":
+        """Refuse to start in a production-shaped configuration (DEBUG is
+        false and APP_DOMAIN is not localhost) with no upload signing
+        secret — that would silently disable the upload-grant check in
+        `PUT /documents/upload/{key}`. Local development keeps working with
+        an empty secret; see the DEV_STORAGE_TOKEN validator this mirrors."""
+        domain_host = self.APP_DOMAIN.strip().split(":", 1)[0].lower()
+        is_local = self.DEBUG or domain_host in ("localhost", "127.0.0.1")
+        if not is_local and not self.UPLOAD_SIGNING_SECRET.strip():
+            raise ValueError(
+                "UPLOAD_SIGNING_SECRET must be set in a production-shaped "
+                "configuration (DEBUG=false and APP_DOMAIN is not localhost)."
+            )
+        return self
 
     @property
     def app_domain_url(self) -> str:
@@ -80,6 +133,28 @@ class Settings(BaseSettings):
             for email in self.SUPERADMIN_EMAIL.split(",")
             if email.strip()
         )
+
+    @model_validator(mode="after")
+    def _storage_backend_fails_closed(self) -> "Settings":
+        """Refuse to start on a production-shaped config with local storage.
+
+        ``STORAGE_BACKEND`` defaults to ``"local"`` so onboarding stays
+        trivial (ADR-002), but a deployment that forgets to set it would
+        otherwise silently run ``LocalDevStorage`` — a backend that is
+        documented as unsuitable for production — in production. A
+        non-debug, non-localhost domain is production-shaped; reject that
+        combination with the local backend instead of failing open.
+        """
+        if self.STORAGE_BACKEND.lower() == "local" and not self.DEBUG:
+            domain = self.APP_DOMAIN.strip().rstrip("/")
+            host = domain.split(":", 1)[0]
+            if host not in ("localhost", "127.0.0.1"):
+                raise ValueError(
+                    "STORAGE_BACKEND=local is not allowed outside DEBUG/localhost "
+                    "configurations — set STORAGE_BACKEND=s3 (or DEBUG=1 for local "
+                    "development)"
+                )
+        return self
 
 
 settings = Settings()

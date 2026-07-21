@@ -9,12 +9,12 @@ read config, never the database. No FastAPI client needed.
 
 import pytest
 from fastapi import HTTPException
-from app.core.slugs import slugify
 
 from app.core.auth import _extract_email_from_hanko_payload
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.core.rbac import require_superadmin
+from app.core.slugs import slugify
 from app.models import Organization, OrganizationType, User
 from app.repositories.user_repository import UserRepository
 
@@ -92,7 +92,11 @@ def test_auto_provision_derives_name_when_claims_missing(db):
 
 
 def test_existing_user_is_returned_unchanged(db):
-    org = Organization(name="NewTaven Capital", slug=slugify("NewTaven Capital"), type=OrganizationType.fund_manager_firm)
+    org = Organization(
+        name="NewTaven Capital",
+        slug=slugify("NewTaven Capital"),
+        type=OrganizationType.fund_manager_firm,
+    )
     db.add(org)
     db.flush()
     existing = User(
@@ -122,7 +126,11 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
     First Hanko sign-in with the matching email claim should bind the row by
     setting `hanko_subject_id`, not create a duplicate user.
     """
-    org = Organization(name="NewTaven Capital", slug=slugify("NewTaven Capital"), type=OrganizationType.fund_manager_firm)
+    org = Organization(
+        name="NewTaven Capital",
+        slug=slugify("NewTaven Capital"),
+        type=OrganizationType.fund_manager_firm,
+    )
     db.add(org)
     db.flush()
     seeded = User(
@@ -143,9 +151,7 @@ def test_seed_row_is_claimed_by_email_on_first_signin(db):
     assert is_new is False
     assert user.id == seeded_id
     assert user.hanko_subject_id == "hanko-claim-1"
-    assert (
-        db.query(User).filter(User.email == "ava.morgan@newtaven.demo").count() == 1
-    )
+    assert db.query(User).filter(User.email == "ava.morgan@newtaven.demo").count() == 1
 
 
 def test_seed_claim_refuses_when_email_already_linked(db):
@@ -154,7 +160,11 @@ def test_seed_claim_refuses_when_email_already_linked(db):
     must NOT 500 on the unique-email constraint when provisioning a duplicate.
     The repository raises `ValueError` (mapped to a 401 by auth) instead.
     """
-    org = Organization(name="NewTaven Capital", slug=slugify("NewTaven Capital"), type=OrganizationType.fund_manager_firm)
+    org = Organization(
+        name="NewTaven Capital",
+        slug=slugify("NewTaven Capital"),
+        type=OrganizationType.fund_manager_firm,
+    )
     db.add(org)
     db.flush()
     existing = User(
@@ -175,9 +185,7 @@ def test_seed_claim_refuses_when_email_already_linked(db):
 
     rebound = db.query(User).filter(User.id == existing_id).one()
     assert rebound.hanko_subject_id == "hanko-original"
-    assert (
-        db.query(User).filter(User.email == "ava.morgan@newtaven.demo").count() == 1
-    )
+    assert db.query(User).filter(User.email == "ava.morgan@newtaven.demo").count() == 1
 
 
 def _user(email: str) -> User:

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link, useParams } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
-import { ChevronLeft, Loader2, Plus, Users } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2, Plus, Users } from "lucide-react"
 import { toast } from "sonner"
 
 import { AssignAdminDialog } from "@/components/AssignAdminDialog"
@@ -64,20 +64,40 @@ interface OrganizationDetailProps {
   organizationId: string
 }
 
+// The backend now paginates this route (default limit 100). Page through it
+// rather than assuming a complete roster — a large org's membership list can
+// outgrow a single page.
+const MEMBERS_PAGE_SIZE = 50
+
 function OrganizationDetail({ organizationId }: OrganizationDetailProps) {
   const queryClient = useQueryClient()
   const [assignOpen, setAssignOpen] = useState(false)
+  const [membersPage, setMembersPage] = useState(0)
 
   const orgQuery = useApiQuery("/superadmin/organizations/{organization_id}", {
     params: { path: { organization_id: organizationId } },
   })
   const membersQuery = useApiQuery(
     "/superadmin/organizations/{organization_id}/members",
-    { params: { path: { organization_id: organizationId } } },
+    {
+      params: {
+        path: { organization_id: organizationId },
+        query: {
+          skip: membersPage * MEMBERS_PAGE_SIZE,
+          // Fetch one extra row so we know whether a next page exists.
+          limit: MEMBERS_PAGE_SIZE + 1,
+        },
+      },
+    },
   )
 
   const org = orgQuery.data
-  const members = useMemo(() => membersQuery.data ?? [], [membersQuery.data])
+  const allMembers = useMemo(() => membersQuery.data ?? [], [membersQuery.data])
+  const members = useMemo(
+    () => allMembers.slice(0, MEMBERS_PAGE_SIZE),
+    [allMembers],
+  )
+  const hasNextMembersPage = allMembers.length > MEMBERS_PAGE_SIZE
 
   const disableMutation = useApiMutation(
     "patch",
@@ -243,46 +263,84 @@ function OrganizationDetail({ organizationId }: OrganizationDetailProps) {
                       className="size-6 animate-spin"
                     />
                   </div>
-                ) : members.length === 0 ? (
+                ) : members.length === 0 && membersPage === 0 ? (
                   <EmptyState
                     icon={<Users strokeWidth={1.25} />}
                     title="No members yet"
                     body="Assign the first administrator to get this organization started."
                   />
                 ) : (
-                  <DataTable>
-                    <thead>
-                      <tr>
-                        <TH>Name</TH>
-                        <TH>Email</TH>
-                        <TH>Role</TH>
-                        <TH>Status</TH>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {members.map((m) => {
-                        const name =
-                          `${m.user.first_name} ${m.user.last_name}`.trim() ||
-                          m.user.email
-                        return (
-                          <TR key={m.id}>
-                            <TD primary>{name}</TD>
-                            <TD>{m.user.email}</TD>
-                            <TD>
-                              <Badge tone="info">{ROLE_LABELS[m.role]}</Badge>
-                            </TD>
-                            <TD>
-                              {m.user.is_active ? (
-                                <Badge tone="active">Active</Badge>
-                              ) : (
-                                <Badge tone="muted">Inactive</Badge>
-                              )}
-                            </TD>
-                          </TR>
-                        )
-                      })}
-                    </tbody>
-                  </DataTable>
+                  <>
+                    <DataTable>
+                      <thead>
+                        <tr>
+                          <TH>Name</TH>
+                          <TH>Email</TH>
+                          <TH>Role</TH>
+                          <TH>Status</TH>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {members.map((m) => {
+                          const name =
+                            `${m.user.first_name} ${m.user.last_name}`.trim() ||
+                            m.user.email
+                          return (
+                            <TR key={m.id}>
+                              <TD primary>{name}</TD>
+                              <TD>{m.user.email}</TD>
+                              <TD>
+                                <Badge tone="info">{ROLE_LABELS[m.role]}</Badge>
+                              </TD>
+                              <TD>
+                                {m.user.is_active ? (
+                                  <Badge tone="active">Active</Badge>
+                                ) : (
+                                  <Badge tone="muted">Inactive</Badge>
+                                )}
+                              </TD>
+                            </TR>
+                          )
+                        })}
+                      </tbody>
+                    </DataTable>
+
+                    <div className="flex items-center justify-between gap-4 border-t border-[color:var(--border-hairline)] px-6 py-4 md:px-8">
+                      <p className="font-sans text-[12px] text-ink-500">
+                        Showing {membersPage * MEMBERS_PAGE_SIZE + 1}–
+                        {membersPage * MEMBERS_PAGE_SIZE + members.length}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={membersPage === 0 || membersQuery.isFetching}
+                          onClick={() =>
+                            setMembersPage((p) => Math.max(0, p - 1))
+                          }
+                        >
+                          <ChevronLeft strokeWidth={1.5} className="size-4" />
+                          Previous
+                        </Button>
+                        <span className="font-sans text-[12px] text-ink-500">
+                          Page {membersPage + 1}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={
+                            !hasNextMembersPage || membersQuery.isFetching
+                          }
+                          onClick={() => setMembersPage((p) => p + 1)}
+                        >
+                          Next
+                          <ChevronRight strokeWidth={1.5} className="size-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </>
                 )}
               </CardSection>
             </Card>

@@ -101,6 +101,25 @@ class TestParser:
         with pytest.raises(Iso20022ParseError):
             parse_camt(b"not xml at all {")
 
+    def test_identical_unreferenced_entries_get_distinct_synthetic_refs(self):
+        """plans/017: two real credits sharing date+amount+payer (e.g. an
+        investor paying two equal tranches) must not collapse onto the same
+        composed fallback reference just because the bank left both
+        unreferenced. Must fail pre-fix (both entries got the same
+        ``value_date|amount|payer`` key)."""
+        xml = _camt_053(
+            [
+                {"amount": "1000.00", "name": "Acme LP", "ref": ""},
+                {"amount": "1000.00", "name": "Acme LP", "ref": ""},
+            ]
+        )
+        entries = parse_camt(xml)
+        assert len(entries) == 2
+        assert entries[0].bank_reference != entries[1].bank_reference
+        # Still composed from the same underlying fields, positionally keyed.
+        assert entries[0].bank_reference.endswith("|2026-07-01|1000.00|Acme LP")
+        assert entries[1].bank_reference.endswith("|2026-07-01|1000.00|Acme LP")
+
 
 # ---------------------------------------------------------------------------
 # Seed helpers
@@ -161,7 +180,9 @@ def _seed_fund(organization_id: str, *, currency: str = "USD") -> str:
 def _seed_investor(organization_id: str, *, name: str, code: str | None = None) -> str:
     db = SessionLocal()
     try:
-        investor = Investor(organization_id=organization_id, name=name, investor_code=code)
+        investor = Investor(
+            organization_id=organization_id, name=name, investor_code=code
+        )
         db.add(investor)
         db.commit()
         return str(investor.id)
@@ -186,7 +207,9 @@ def _seed_commitment(fund_id: str, investor_id: str) -> str:
         db.close()
 
 
-def _seed_sent_call(client, fund_id: str, commitment_id: str, amount: str) -> tuple[str, str]:
+def _seed_sent_call(
+    client, fund_id: str, commitment_id: str, amount: str
+) -> tuple[str, str]:
     """Create a capital call with one item and send it. Returns (call_id, item_id)."""
     create = client.post(
         "/capital-calls",
@@ -225,9 +248,7 @@ class TestImportFlow:
         commitment_id = _seed_commitment(fund_id, investor_id)
         call_id, item_id = _seed_sent_call(client, fund_id, commitment_id, "1000.00")
 
-        xml = _camt_053(
-            [{"amount": "1000.00", "name": "Acme LP", "ref": "BANK-REF-1"}]
-        )
+        xml = _camt_053([{"amount": "1000.00", "name": "Acme LP", "ref": "BANK-REF-1"}])
         upload = client.post(
             "/capital-call-imports",
             files={"file": ("statement.xml", xml, "application/xml")},
@@ -356,6 +377,164 @@ class TestImportFlow:
         finally:
             db.close()
 
+    def test_two_identical_unreferenced_entries_import_as_distinct_transactions(
+        self, client, override_user
+    ):
+        """plans/017: two genuinely distinct credits — e.g. an investor
+        paying two equal tranches, or two LPs behind one corporate payer —
+        sharing value_date+amount+payer and lacking a bank reference must not
+        collapse into a single imported transaction. Must fail pre-fix (the
+        composed fallback reference collided and the second was dropped in
+        `create_import`'s same-file `seen` dedupe)."""
+        org_id = _seed_org()
+        _seed_user("fm", UserRole.fund_manager, org_id)
+        override_user("fm")
+
+        xml = _camt_053(
+            [
+                {"amount": "1000.00", "name": "Acme LP", "ref": ""},
+                {"amount": "1000.00", "name": "Acme LP", "ref": ""},
+            ]
+        )
+        upload = client.post(
+            "/capital-call-imports",
+            files={"file": ("statement.xml", xml, "application/xml")},
+        )
+        assert upload.status_code == 201, upload.text
+        data = upload.json()
+        assert data["transaction_count"] == 2
+        refs = {t["bank_reference"] for t in data["transactions"]}
+        assert len(refs) == 2, "both credits must be recorded, not deduped away"
+
+    def test_synthetic_reference_is_not_auto_ignored_across_imports(
+        self, client, override_user
+    ):
+        """A *synthetic* (unreferenced) match across imports is not proof of
+        a duplicate the way a real bank reference is — two LPs, or one LP in
+        two tranches, can coincidentally share value_date+amount+payer. Unlike
+        `test_reupload_same_reference_is_skipped` (real ref -> silently
+        ignored), a matching synthetic reference must still be applicable so
+        the second real payment isn't lost."""
+        org_id = _seed_org()
+        _seed_user("fm", UserRole.fund_manager, org_id)
+        override_user("fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id, name="Acme LP")
+        commitment_id = _seed_commitment(fund_id, investor_id)
+        _call_id, item_id = _seed_sent_call(client, fund_id, commitment_id, "2000.00")
+
+        # Same fields, no reference, in two separate single-entry statements —
+        # e.g. two distinct tranches wired on the same day.
+        xml = _camt_053([{"amount": "1000.00", "name": "Acme LP", "ref": ""}])
+
+        def _upload_and_apply() -> dict:
+            imp = client.post(
+                "/capital-call-imports",
+                files={"file": ("s.xml", xml, "application/xml")},
+            ).json()
+            txn = imp["transactions"][0]
+            return client.post(
+                f"/capital-call-imports/{imp['id']}/apply",
+                json={
+                    "assignments": [
+                        {
+                            "transaction_id": txn["id"],
+                            "capital_call_item_id": item_id,
+                            "amount": "1000.00",
+                        }
+                    ]
+                },
+            ).json()
+
+        first = _upload_and_apply()
+        second = _upload_and_apply()
+        assert first["transactions"][0]["status"] == "applied"
+        # Not auto-ignored like a real-reference duplicate would be.
+        assert second["transactions"][0]["status"] == "applied"
+        assert second["applied_count"] == 1
+
+        db = SessionLocal()
+        try:
+            item = db.get(CapitalCallItem, item_id)
+            # Both real credits are recorded — 2000, not silently capped at 1000.
+            assert item.amount_paid == Decimal("2000.00")
+        finally:
+            db.close()
+
+    def test_partial_failure_does_not_apply_any_payment(self, client, override_user):
+        """A 400 from a bad assignment must not leave an earlier one applied.
+
+        Regression test for plans/003-atomic-bank-apply.md: before the fix,
+        the loop in ``apply()`` committed each assignment's payment as it was
+        written, so a later assignment raising ``ValueError`` left the first
+        payment committed while the transaction's own ``applied`` status was
+        rolled back — making a retry of the same (still-invalid) request
+        double-pay the first item.
+        """
+        org_id = _seed_org()
+        _seed_user("fm", UserRole.fund_manager, org_id)
+        override_user("fm")
+        fund_id = _seed_fund(org_id)
+        investor_id = _seed_investor(org_id, name="Acme LP")
+        commitment_id = _seed_commitment(fund_id, investor_id)
+        _call_id, item_id = _seed_sent_call(client, fund_id, commitment_id, "1000.00")
+
+        xml = _camt_053(
+            [
+                {"amount": "1000.00", "name": "Acme LP", "ref": "REF-OK"},
+                {"amount": "500.00", "name": "Someone Else", "ref": "REF-BAD"},
+            ]
+        )
+        upload = client.post(
+            "/capital-call-imports",
+            files={"file": ("statement.xml", xml, "application/xml")},
+        )
+        assert upload.status_code == 201, upload.text
+        transactions = upload.json()["transactions"]
+        import_id = upload.json()["id"]
+        txn_ok = next(t for t in transactions if t["bank_reference"] == "REF-OK")
+        txn_bad = next(t for t in transactions if t["bank_reference"] == "REF-BAD")
+
+        missing_item_id = str(uuid.uuid4())
+        body = {
+            "assignments": [
+                {
+                    "transaction_id": txn_ok["id"],
+                    "capital_call_item_id": item_id,
+                    "amount": "1000.00",
+                },
+                {
+                    "transaction_id": txn_bad["id"],
+                    "capital_call_item_id": missing_item_id,
+                    "amount": "500.00",
+                },
+            ]
+        }
+
+        response = client.post(f"/capital-call-imports/{import_id}/apply", json=body)
+        assert response.status_code == 400, response.text
+
+        db = SessionLocal()
+        try:
+            item = db.get(CapitalCallItem, item_id)
+            # The first (valid) assignment must not have been applied either —
+            # the whole call is one atomic unit.
+            assert item.amount_paid == Decimal("0")
+        finally:
+            db.close()
+
+        # Re-submitting the same (still-invalid) request must not accumulate
+        # anything either — proving there's nothing left over to double-pay.
+        retry = client.post(f"/capital-call-imports/{import_id}/apply", json=body)
+        assert retry.status_code == 400, retry.text
+
+        db = SessionLocal()
+        try:
+            item = db.get(CapitalCallItem, item_id)
+            assert item.amount_paid == Decimal("0")
+        finally:
+            db.close()
+
     def test_upload_with_no_credits_is_rejected(self, client, override_user):
         org_id = _seed_org()
         _seed_user("fm", UserRole.fund_manager, org_id)
@@ -382,3 +561,30 @@ class TestImportFlow:
         _seed_user("fm-b", UserRole.fund_manager, org_b)
         override_user("fm-b")
         assert client.get(f"/capital-call-imports/{import_id}").status_code == 404
+
+
+class TestUploadSizeEnforcement:
+    """The 25 MB cap must bound memory, not just be checked after the whole
+    file is already buffered (plans/015-input-hardening.md, item (b))."""
+
+    def test_stream_exceeding_cap_is_aborted_mid_transfer(
+        self, client, override_user, monkeypatch
+    ):
+        # Lower the cap so the test doesn't need to push real multi-MB
+        # payloads through the client. `_read_upload_within_limit` reads in
+        # fixed-size chunks and aborts once the running total crosses the
+        # cap -- this proves that streaming counter, not a check on the
+        # final buffered size, is what raises.
+        monkeypatch.setattr(
+            "app.routers.bank_imports._MAX_UPLOAD_BYTES", 10, raising=True
+        )
+        org_id = _seed_org()
+        _seed_user("fm", UserRole.fund_manager, org_id)
+        override_user("fm")
+
+        oversized = b"<Document>" + b"x" * 1000
+        resp = client.post(
+            "/capital-call-imports",
+            files={"file": ("statement.xml", oversized, "application/xml")},
+        )
+        assert resp.status_code == 413

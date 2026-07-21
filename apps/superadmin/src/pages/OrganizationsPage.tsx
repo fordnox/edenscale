@@ -1,7 +1,7 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { useNavigate } from "react-router-dom"
-import { Building2, Loader2, Plus } from "lucide-react"
+import { Building2, ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-react"
 
 import { CreateOrganizationDialog } from "@/components/CreateOrganizationDialog"
 import { PageHero } from "@edenscale/ui/PageHero"
@@ -23,13 +23,29 @@ const ORG_TYPE_LABELS: Record<OrganizationType, string> = {
   service_provider: "Service provider",
 }
 
+// The backend now paginates this route (default limit 100). Page through it
+// rather than assuming a complete list — the platform's organization roster
+// can outgrow a single page as the business grows.
+const PAGE_SIZE = 50
+
 export default function OrganizationsPage() {
   const navigate = useNavigate()
   const [createOpen, setCreateOpen] = useState(false)
+  const [page, setPage] = useState(0)
 
-  const orgsQuery = useApiQuery("/superadmin/organizations")
+  const orgsQuery = useApiQuery("/superadmin/organizations", {
+    params: {
+      query: {
+        skip: page * PAGE_SIZE,
+        // Fetch one extra row so we know whether a next page exists.
+        limit: PAGE_SIZE + 1,
+      },
+    },
+  })
 
-  const orgs = orgsQuery.data ?? []
+  const allOrgs = useMemo(() => orgsQuery.data ?? [], [orgsQuery.data])
+  const orgs = useMemo(() => allOrgs.slice(0, PAGE_SIZE), [allOrgs])
+  const hasNext = allOrgs.length > PAGE_SIZE
 
   return (
     <>
@@ -60,7 +76,7 @@ export default function OrganizationsPage() {
                 <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
               </div>
             </CardSection>
-          ) : orgs.length === 0 ? (
+          ) : orgs.length === 0 && page === 0 ? (
             <EmptyState
               icon={<Building2 strokeWidth={1.25} />}
               title="No organizations yet"
@@ -114,6 +130,37 @@ export default function OrganizationsPage() {
                   ))}
                 </tbody>
               </DataTable>
+
+              <div className="flex items-center justify-between gap-4 border-t border-[color:var(--border-hairline)] px-6 py-4 md:px-8">
+                <p className="font-sans text-[12px] text-ink-500">
+                  Showing {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + orgs.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={page === 0 || orgsQuery.isFetching}
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  >
+                    <ChevronLeft strokeWidth={1.5} className="size-4" />
+                    Previous
+                  </Button>
+                  <span className="font-sans text-[12px] text-ink-500">
+                    Page {page + 1}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={!hasNext || orgsQuery.isFetching}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Next
+                    <ChevronRight strokeWidth={1.5} className="size-4" />
+                  </Button>
+                </div>
+              </div>
             </CardSection>
           )}
         </Card>

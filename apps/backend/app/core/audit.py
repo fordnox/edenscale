@@ -39,6 +39,7 @@ from app.models.communication_recipient import CommunicationRecipient
 from app.models.distribution import Distribution
 from app.models.distribution_item import DistributionItem
 from app.models.document import Document
+from app.models.email_ingest_message import EmailIngestMessage
 from app.models.fund import Fund
 from app.models.fund_group import FundGroup
 from app.models.fund_valuation import FundValuation
@@ -79,9 +80,12 @@ _ENTITY_TYPES: dict[type, str] = {
     Notification: "notification",
 }
 
-# Deliberately not audited: the audit table itself (would recurse) and the
-# notification delivery log (pure telemetry, one row per send attempt).
-_UNAUDITED_MODELS: set[type] = {AuditLog, NotificationLog}
+# Deliberately not audited: the audit table itself (would recurse), the
+# notification delivery log (pure telemetry, one row per send attempt), and
+# the email-ingest idempotency log (pure bookkeeping — it has no
+# organization_id to attribute an audit row to, and the Document rows it
+# references are already audited via the Document listener above).
+_UNAUDITED_MODELS: set[type] = {AuditLog, NotificationLog, EmailIngestMessage}
 
 # Skip these columns from diffs — they're maintained by the ORM/db and add
 # noise without telling the auditor anything useful.

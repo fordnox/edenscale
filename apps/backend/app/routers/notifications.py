@@ -15,7 +15,7 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[NotificationRead])
-async def list_notifications(
+def list_notifications(
     status_filter: NotificationStatus | None = None,
     skip: int = 0,
     limit: int = 100,
@@ -32,7 +32,7 @@ async def list_notifications(
 
 
 @router.post("/read-all", response_model=NotificationsReadAllResponse)
-async def mark_all_notifications_read(
+def mark_all_notifications_read(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),
 ):
@@ -42,7 +42,7 @@ async def mark_all_notifications_read(
 
 
 @router.post("/{notification_id}/read", response_model=NotificationRead)
-async def mark_notification_read(
+def mark_notification_read(
     notification_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),
@@ -64,7 +64,7 @@ async def mark_notification_read(
 
 
 @router.post("/{notification_id}/archive", response_model=NotificationRead)
-async def archive_notification(
+def archive_notification(
     notification_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),

@@ -3,12 +3,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.core.config import settings
 
-engine = create_engine(
-    settings.APP_DATABASE_DSN,
-    connect_args=(
-        {"check_same_thread": False} if "sqlite" in settings.APP_DATABASE_DSN else {}
-    ),
-)
+engine = create_engine(settings.APP_DATABASE_DSN)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

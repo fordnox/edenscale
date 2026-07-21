@@ -13,6 +13,7 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
@@ -35,6 +36,27 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 
 _MANAGE_ROLES = (UserRole.admin, UserRole.fund_manager)
 _MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # bank statements are text; 25 MB is ample
+_UPLOAD_CHUNK_BYTES = 1024 * 1024
+
+
+async def _read_upload_within_limit(file: UploadFile, max_bytes: int) -> bytes:
+    """Read ``file`` in chunks, aborting with 413 once ``max_bytes`` is
+    exceeded, instead of one unbounded ``await file.read()`` that would
+    already hold an oversized payload in memory before any size check runs.
+    Mirrors the streaming enforcement in ``documents.py``'s upload proxy.
+    """
+    chunks = bytearray()
+    while True:
+        chunk = await file.read(_UPLOAD_CHUNK_BYTES)
+        if not chunk:
+            break
+        chunks.extend(chunk)
+        if len(chunks) > max_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="File exceeds the 25 MB upload limit",
+            )
+    return bytes(chunks)
 
 
 def _generate_storage_key(file_name: str) -> str:
@@ -103,41 +125,44 @@ async def create_bank_import(
         require_membership_roles(*_MANAGE_ROLES)
     ),
 ):
-    content = await file.read()
+    content = await _read_upload_within_limit(file, _MAX_UPLOAD_BYTES)
     if not content:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is empty"
         )
-    if len(content) > _MAX_UPLOAD_BYTES:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="File exceeds the 25 MB upload limit",
+
+    # Parsing the statement, writing it to storage, and the multi-write
+    # import transaction are all blocking (CPU parse + sync DB/storage I/O).
+    # Only the streaming read above needs the event loop; run the rest
+    # in the threadpool so a large statement doesn't stall other requests.
+    def _parse_and_store() -> BankImportRead:
+        try:
+            entries = parse_camt(content)
+        except Iso20022ParseError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+            ) from exc
+        if not entries:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No incoming payments (credit entries) found in the statement",
+            )
+        storage_url = _store_raw_file(file.filename or "statement.xml", content)
+        repo = BankImportRepository(db)
+        record = repo.create_import(
+            organization_id=membership.organization_id,  # type: ignore[invalid-argument-type]
+            file_name=file.filename or "statement.xml",
+            storage_url=storage_url,
+            entries=entries,
+            imported_by_user_id=membership.user_id,  # type: ignore[invalid-argument-type]
         )
-    try:
-        entries = parse_camt(content)
-    except Iso20022ParseError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
-        ) from exc
-    if not entries:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No incoming payments (credit entries) found in the statement",
-        )
-    storage_url = _store_raw_file(file.filename or "statement.xml", content)
-    repo = BankImportRepository(db)
-    record = repo.create_import(
-        organization_id=membership.organization_id,  # type: ignore[invalid-argument-type]
-        file_name=file.filename or "statement.xml",
-        storage_url=storage_url,
-        entries=entries,
-        imported_by_user_id=membership.user_id,  # type: ignore[invalid-argument-type]
-    )
-    return _to_read(db, record, with_candidates=True)
+        return _to_read(db, record, with_candidates=True)
+
+    return await run_in_threadpool(_parse_and_store)
 
 
 @router.get("", response_model=list[BankImportListItem])
-async def list_bank_imports(
+def list_bank_imports(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -152,7 +177,7 @@ async def list_bank_imports(
 
 
 @router.get("/{import_id}", response_model=BankImportRead)
-async def get_bank_import(
+def get_bank_import(
     import_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -162,7 +187,7 @@ async def get_bank_import(
 
 
 @router.post("/{import_id}/apply", response_model=BankImportRead)
-async def apply_bank_import(
+def apply_bank_import(
     import_id: uuid.UUID,
     payload: ApplyImportRequest,
     db: Session = Depends(get_db),

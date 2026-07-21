@@ -313,9 +313,19 @@ class TestCreateInvitation:
         assert response.status_code == 403
         hanko_email_mock.assert_not_awaited()
 
-    def test_superadmin_can_invite_into_any_org(
+    def test_superadmin_cannot_invite_and_must_use_superadmin_routes(
         self, client, override_user, hanko_email_mock
     ):
+        """Superadmin tenant impersonation was removed (commit 735395bc): the
+        whole ``/invitations`` router sits behind
+        ``Depends(require_tenant_user)`` (app/core/rbac.py), which
+        unconditionally 403s ``current_user.is_superadmin`` before any route
+        body runs. Superadmins grant org access via
+        ``app/routers/superadmin.py::assign_organization_admin`` instead —
+        there is no superadmin invitation route at all
+        (``grep -n "invit" app/routers/superadmin.py`` returns nothing). This
+        test pins that access-control boundary rather than a since-removed
+        capability."""
         org_id = _seed_org("Foreign Co")
         _seed_user("hanko-super", UserRole.superadmin, email="root@example.com")
         override_user("hanko-super")
@@ -329,21 +339,8 @@ class TestCreateInvitation:
             },
             headers={"X-Organization-Id": str(org_id)},
         )
-        assert response.status_code == 201
-        hanko_email_mock.assert_awaited_once()
-
-        # Synthesized superadmin membership has no row id, so the invitation
-        # records ``invited_by_user_id=None``.
-        db = SessionLocal()
-        try:
-            row = (
-                db.query(OrganizationInvitation)
-                .filter(OrganizationInvitation.id == uuid.UUID(response.json()["id"]))
-                .one()
-            )
-            assert row.invited_by_user_id is None
-        finally:
-            db.close()
+        assert response.status_code == 403
+        hanko_email_mock.assert_not_awaited()
 
     def test_superadmin_role_is_rejected_at_schema_layer(
         self, client, override_user, hanko_email_mock
@@ -368,24 +365,22 @@ class TestCreateInvitation:
         assert response.status_code == 422
         hanko_email_mock.assert_not_awaited()
 
-    def test_404_when_organization_missing(
-        self, client, override_user, hanko_email_mock
-    ):
-        _seed_user("hanko-super", UserRole.superadmin, email="root@example.com")
-        override_user("hanko-super")
-
-        missing_org_id = str(uuid.uuid4())
-        response = client.post(
-            "/invitations",
-            json={
-                "organization_id": missing_org_id,
-                "email": "x@example.com",
-                "role": "lp",
-            },
-            headers={"X-Organization-Id": missing_org_id},
-        )
-        assert response.status_code == 404
-        hanko_email_mock.assert_not_awaited()
+    # test_404_when_organization_missing was removed rather than re-seated on
+    # a tenant admin: the "organization not found" branch in
+    # create_invitation (app/routers/invitations.py) is unreachable for any
+    # non-superadmin caller. require_membership_roles resolves the caller's
+    # active UserOrganizationMembership, whose organization_id is a NOT NULL
+    # foreign key to organizations.id (app/models/user_organization_membership.py)
+    # — a membership can only ever point at a row that exists (orgs are only
+    # ever soft-disabled via superadmin's disable/enable routes, never
+    # deleted). _ensure_can_act_on_org then 403s unless
+    # data.organization_id == membership.organization_id, so a tenant admin
+    # can never submit an organization_id other than their own, already-
+    # verified-to-exist org. The only caller that could previously reach a
+    # missing-org 404 was a superadmin supplying an arbitrary
+    # X-Organization-Id, and that path is now blocked upstream by
+    # require_tenant_user (see the test above) before this branch is ever
+    # reached — so keeping a test for it would pass for the wrong reason.
 
 
 class TestListInvitations:
@@ -816,9 +811,7 @@ class TestAcceptInvitation:
             )
             assert memberships == []
             linked = (
-                db.query(InvestorContact)
-                .filter(InvestorContact.id == contact_id)
-                .one()
+                db.query(InvestorContact).filter(InvestorContact.id == contact_id).one()
             )
             assert linked.user_id == invitee_id
         finally:

@@ -63,6 +63,7 @@ const myMiddleware: Middleware = {
       }
 
       console.error(message)
+      toast.error(message)
     }
 
     return response
@@ -71,6 +72,7 @@ const myMiddleware: Middleware = {
     console.error("Network error:", error)
     const message = error instanceof Error ? error.message : "Network error occurred"
     console.error("Connection failed:", message)
+    toast.error(message)
     return undefined
   },
 }

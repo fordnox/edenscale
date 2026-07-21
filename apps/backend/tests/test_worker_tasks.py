@@ -26,9 +26,9 @@ from app.models import (
     Organization,
     OrganizationType,
     User,
-    UserRole,
 )
 from app.repositories.capital_call_repository import CapitalCallRepository
+from app.repositories.notification_log_repository import NotificationLogRepository
 from app.worker import task_send_notification
 
 
@@ -87,6 +87,33 @@ def _seed_fund():
         return fund.id
     finally:
         db.close()
+
+
+class _FakeChannel:
+    """Controllable stand-in for ``EmailChannel`` so idempotency tests can
+    drive exactly what ``channel.send`` returns (or raises) per call, without
+    touching Resend or the real channel implementation."""
+
+    channel_name = "email"
+
+    def __init__(self, results):
+        self._results = list(results)
+        self.calls: list[dict] = []
+
+    async def send(self, **kwargs):
+        self.calls.append(kwargs)
+        outcome = self._results.pop(0) if self._results else self._results[-1]
+        if isinstance(outcome, BaseException):
+            raise outcome
+        return outcome
+
+
+class _FakeRegistry:
+    def __init__(self, channel):
+        self._channel = channel
+
+    def get(self, channel_name):
+        return self._channel if channel_name == "email" else None
 
 
 class TestSendNotification:
@@ -167,6 +194,199 @@ class TestSendNotification:
         try:
             assert db.query(Notification).count() == 0
             assert db.query(NotificationLog).count() == 0
+        finally:
+            db.close()
+
+
+class TestNotificationIdempotency:
+    """Plan 014: the idempotency key that makes it safe to let
+    ``task_send_notification`` raise instead of swallowing every exception.
+    """
+
+    def test_transient_failure_propagates(self, monkeypatch):
+        """A transient failure inside the task must raise, not report success.
+
+        This is the regression test for the bug plan 014 fixes: pre-fix,
+        ``task_send_notification`` wrapped everything in a bare
+        ``except Exception`` and logged-and-swallowed, so arq saw the job as
+        successful and never retried. Verified to FAIL against the pre-fix
+        code (that code catches this RuntimeError and returns ``None``
+        instead of raising) — see the plan 014 report for the before/after.
+        """
+        org_id, user_id = _seed_org_and_user()
+        channel = _FakeChannel([RuntimeError("Resend is down")])
+        monkeypatch.setattr(
+            "app.worker.get_default_registry", lambda: _FakeRegistry(channel)
+        )
+
+        with pytest.raises(RuntimeError, match="Resend is down"):
+            _run(
+                task_send_notification(
+                    {},
+                    user_id=str(user_id),
+                    organization_id=str(org_id),
+                    notification_type="customer.welcome",
+                    title="Welcome to NewTaven",
+                    message="Your account is ready.",
+                    data={"recipient_name": "Priya"},
+                    reference_type="organization",
+                    reference_id=str(org_id),
+                )
+            )
+
+    def test_retry_does_not_resend_already_delivered_channel(self, monkeypatch):
+        """The test that matters most: a retry after a successful send must
+        not re-send an already-delivered channel — the idempotency key is
+        what makes it safe to let failures propagate and arq retry the job.
+        """
+        org_id, user_id = _seed_org_and_user()
+        channel = _FakeChannel([{"success": True}])
+        monkeypatch.setattr(
+            "app.worker.get_default_registry", lambda: _FakeRegistry(channel)
+        )
+
+        kwargs = dict(
+            user_id=str(user_id),
+            organization_id=str(org_id),
+            notification_type="customer.welcome",
+            title="Welcome to NewTaven",
+            message="Your account is ready.",
+            data={"recipient_name": "Priya"},
+            reference_type="organization",
+            reference_id=str(org_id),
+        )
+
+        _run(task_send_notification({}, **kwargs))
+        assert len(channel.calls) == 1
+
+        db = SessionLocal()
+        try:
+            logs = db.query(NotificationLog).all()
+            assert len(logs) == 1
+            assert logs[0].status == "sent"
+        finally:
+            db.close()
+
+        # Simulate arq re-invoking the same job after a retry (e.g. it raised
+        # on a later step in the real multi-channel case). The already-sent
+        # channel must not be re-sent.
+        _run(task_send_notification({}, **kwargs))
+        assert len(channel.calls) == 1, "email channel was re-sent on retry"
+
+        db = SessionLocal()
+        try:
+            logs = db.query(NotificationLog).all()
+            # Still one row: the unique constraint identifies one delivery,
+            # and the retry updates it in place rather than inserting again.
+            assert len(logs) == 1
+            assert logs[0].status == "sent"
+        finally:
+            db.close()
+
+    def test_failed_delivery_is_retried_not_skipped(self, monkeypatch):
+        """A channel that failed (never delivered) IS retried — only a
+        terminal (``sent``/``skipped``) outcome is treated as already done."""
+        org_id, user_id = _seed_org_and_user()
+        channel = _FakeChannel([{"success": False, "error": "boom"}, {"success": True}])
+        monkeypatch.setattr(
+            "app.worker.get_default_registry", lambda: _FakeRegistry(channel)
+        )
+
+        kwargs = dict(
+            user_id=str(user_id),
+            organization_id=str(org_id),
+            notification_type="customer.welcome",
+            title="Welcome to NewTaven",
+            message="Your account is ready.",
+            data={"recipient_name": "Priya"},
+            reference_type="organization",
+            reference_id=str(org_id),
+        )
+
+        _run(task_send_notification({}, **kwargs))
+        db = SessionLocal()
+        try:
+            logs = db.query(NotificationLog).all()
+            assert len(logs) == 1
+            assert logs[0].status == "failed"
+        finally:
+            db.close()
+
+        _run(task_send_notification({}, **kwargs))
+        assert len(channel.calls) == 2, "a failed channel should be retried"
+
+        db = SessionLocal()
+        try:
+            logs = db.query(NotificationLog).all()
+            # Updated in place, not a second row.
+            assert len(logs) == 1
+            assert logs[0].status == "sent"
+        finally:
+            db.close()
+
+    def test_missing_organization_is_a_noop(self):
+        """FK guard survives the fix: a deleted organization still returns
+        early without raising — a genuinely missing row is not retryable."""
+        _, user_id = _seed_org_and_user()
+        _run(
+            task_send_notification(
+                {},
+                user_id=str(user_id),
+                organization_id=str(uuid.uuid4()),
+                notification_type="customer.welcome",
+                title="Welcome",
+                message="hi",
+                data={},
+            )
+        )
+        db = SessionLocal()
+        try:
+            assert db.query(Notification).count() == 0
+            assert db.query(NotificationLog).count() == 0
+        finally:
+            db.close()
+
+    def test_same_reference_different_channels_both_delivered(self):
+        """The unique constraint keys on channel too — it must not over-dedupe
+        two different channels delivering the same underlying notification."""
+        db = SessionLocal()
+        try:
+            repo = NotificationLogRepository(db)
+            key = dict(
+                notification_type="customer.capital_call",
+                reference_type="capital_call",
+                reference_id=str(uuid.uuid4()),
+                recipient="lp@example.com",
+            )
+
+            email_log = repo.record_delivery(
+                notification_id=None,
+                user_id=None,
+                organization_id=None,
+                channel="email",
+                subject="Capital call due",
+                status="sent",
+                provider_response={"success": True},
+                error_message=None,
+                **key,
+            )
+            sms_log = repo.record_delivery(
+                notification_id=None,
+                user_id=None,
+                organization_id=None,
+                channel="sms",
+                subject="Capital call due",
+                status="sent",
+                provider_response={"success": True},
+                error_message=None,
+                **key,
+            )
+
+            assert email_log.id != sms_log.id
+            assert db.query(NotificationLog).count() == 2
+            assert repo.is_delivered(channel="email", **key) is True
+            assert repo.is_delivered(channel="sms", **key) is True
+            assert repo.is_delivered(channel="push", **key) is False
         finally:
             db.close()
 

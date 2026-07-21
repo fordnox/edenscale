@@ -55,7 +55,7 @@ def _to_list_item(
 
 
 @router.get("", response_model=list[InvestorListItem])
-async def list_investors(
+def list_investors(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -70,7 +70,7 @@ async def list_investors(
 
 
 @router.get("/{investor_id}", response_model=InvestorRead)
-async def get_investor(
+def get_investor(
     investor_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -91,7 +91,7 @@ async def get_investor(
 
 
 @router.post("", response_model=InvestorRead, status_code=status.HTTP_201_CREATED)
-async def create_investor(
+def create_investor(
     data: InvestorCreate,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(
@@ -106,7 +106,7 @@ async def create_investor(
 
 
 @router.patch("/{investor_id}", response_model=InvestorRead)
-async def update_investor(
+def update_investor(
     investor_id: uuid.UUID,
     data: InvestorUpdate,
     db: Session = Depends(get_db),
@@ -136,7 +136,7 @@ async def update_investor(
 
 
 @router.delete("/{investor_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_investor(
+def delete_investor(
     investor_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(

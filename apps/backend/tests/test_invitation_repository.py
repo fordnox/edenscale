@@ -6,11 +6,11 @@ must be idempotent and must not flip already-accepted or already-revoked rows.
 
 import uuid
 from datetime import datetime, timedelta, timezone
-from app.core.slugs import slugify
 
 import pytest
 
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.models import (
     Organization,
     OrganizationInvitation,
@@ -41,7 +41,9 @@ def db():
 
 
 def _seed_org(db, name: str = "NewTaven Capital") -> int:
-    org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+    org = Organization(
+        name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+    )
     db.add(org)
     db.commit()
     db.refresh(org)
@@ -347,9 +349,7 @@ class TestExpireStale:
     def test_is_idempotent_on_second_call(self, db):
         org_id = _seed_org(db)
         now = datetime(2026, 5, 1, 12, 0, 0, tzinfo=timezone.utc)
-        self._seed_with_expiry(
-            db, org_id, "stale@example.com", now - timedelta(days=1)
-        )
+        self._seed_with_expiry(db, org_id, "stale@example.com", now - timedelta(days=1))
 
         repo = OrganizationInvitationRepository(db)
         first = repo.expire_stale(now=now)

@@ -36,7 +36,7 @@ router = APIRouter(
     response_model=MembershipRead,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_organization_self_serve(
+def create_organization_self_serve(
     data: OrganizationOnboardingCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),
@@ -65,7 +65,7 @@ async def create_organization_self_serve(
 # parameter is typed uuid.UUID, so "demo" would otherwise 422 instead of
 # reaching these handlers.
 @router.get("/demo", response_model=OrganizationRead | None)
-async def get_demo_organization(
+def get_demo_organization(
     db: Session = Depends(get_db),
 ):
     """Return the shared demo organization, or null when none is seeded.
@@ -82,7 +82,7 @@ async def get_demo_organization(
     response_model=MembershipRead,
     status_code=status.HTTP_201_CREATED,
 )
-async def join_demo_organization(
+def join_demo_organization(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_record),
 ):
@@ -111,7 +111,7 @@ async def join_demo_organization(
 
 
 @router.get("/{organization_id}", response_model=OrganizationRead)
-async def get_organization(
+def get_organization(
     organization_id: uuid.UUID,
     db: Session = Depends(get_db),
     membership: UserOrganizationMembership = Depends(get_active_membership),
@@ -134,7 +134,7 @@ async def get_organization(
     "/{organization_id}",
     response_model=OrganizationRead,
 )
-async def update_organization(
+def update_organization(
     organization_id: uuid.UUID,
     data: OrganizationUpdate,
     db: Session = Depends(get_db),
