@@ -3,12 +3,12 @@
 
 from datetime import date
 from decimal import Decimal
-from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import (
     Commitment,
@@ -39,7 +39,9 @@ def client():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.commit()
         return str(org.id)
@@ -202,9 +204,8 @@ class TestDistributionLifecycle:
 
         db = SessionLocal()
         try:
-            assert (
-                db.get(Commitment, commitment_id).distributed_amount
-                == Decimal("200.00")
+            assert db.get(Commitment, commitment_id).distributed_amount == Decimal(
+                "200.00"
             )
         finally:
             db.close()
@@ -368,16 +369,12 @@ class TestDistributionValidation:
         ).json()["id"]
         first = client.post(
             f"/distributions/{dist_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_id, "amount_due": "500.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "500.00"}]},
         )
         assert first.status_code == 201
         dup = client.post(
             f"/distributions/{dist_id}/items",
-            json={
-                "items": [{"commitment_id": commitment_id, "amount_due": "500.00"}]
-            },
+            json={"items": [{"commitment_id": commitment_id, "amount_due": "500.00"}]},
         )
         assert dup.status_code == 400
 
@@ -572,9 +569,7 @@ class TestDistributionRbac:
         ).json()["id"]
         client.post(
             f"/distributions/{own_dist}/items",
-            json={
-                "items": [{"commitment_id": own_commitment, "amount_due": "100.00"}]
-            },
+            json={"items": [{"commitment_id": own_commitment, "amount_due": "100.00"}]},
         )
         other_dist = client.post(
             "/distributions",
@@ -620,7 +615,11 @@ class TestNestedFundRoute:
         fund_id = _seed_fund(org_id)
         other_fund = _seed_fund(org_id, name="Sibling Fund")
 
-        for title, fund in (("First", fund_id), ("Second", fund_id), ("Out", other_fund)):
+        for title, fund in (
+            ("First", fund_id),
+            ("Second", fund_id),
+            ("Out", other_fund),
+        ):
             client.post(
                 "/distributions",
                 json={

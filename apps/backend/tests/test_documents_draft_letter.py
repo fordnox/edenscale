@@ -149,9 +149,7 @@ class TestDraftLetterEndpoint:
         self, client, override_user, enable_drafting, monkeypatch
     ):
         org_id = _seed_org()
-        user_id = _seed_user(
-            "hanko-fm", UserRole.fund_manager, organization_id=org_id
-        )
+        user_id = _seed_user("hanko-fm", UserRole.fund_manager, organization_id=org_id)
         override_user("hanko-fm")
         doc_id = _seed_document(org_id)
 
@@ -175,9 +173,7 @@ class TestDraftLetterWorker:
         from app import worker
 
         org_id = _seed_org()
-        user_id = _seed_user(
-            "hanko-fm", UserRole.fund_manager, organization_id=org_id
-        )
+        user_id = _seed_user("hanko-fm", UserRole.fund_manager, organization_id=org_id)
         fund_id = _seed_fund(org_id)
         doc_id = _seed_document(org_id, fund_id=fund_id)
 

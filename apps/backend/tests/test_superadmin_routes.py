@@ -20,13 +20,13 @@ behind `Depends(get_current_user)` (JWT only) plus per-route
 """
 
 import uuid
-from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import (
     Organization,

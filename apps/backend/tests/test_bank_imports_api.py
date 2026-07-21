@@ -161,7 +161,9 @@ def _seed_fund(organization_id: str, *, currency: str = "USD") -> str:
 def _seed_investor(organization_id: str, *, name: str, code: str | None = None) -> str:
     db = SessionLocal()
     try:
-        investor = Investor(organization_id=organization_id, name=name, investor_code=code)
+        investor = Investor(
+            organization_id=organization_id, name=name, investor_code=code
+        )
         db.add(investor)
         db.commit()
         return str(investor.id)
@@ -186,7 +188,9 @@ def _seed_commitment(fund_id: str, investor_id: str) -> str:
         db.close()
 
 
-def _seed_sent_call(client, fund_id: str, commitment_id: str, amount: str) -> tuple[str, str]:
+def _seed_sent_call(
+    client, fund_id: str, commitment_id: str, amount: str
+) -> tuple[str, str]:
     """Create a capital call with one item and send it. Returns (call_id, item_id)."""
     create = client.post(
         "/capital-calls",
@@ -225,9 +229,7 @@ class TestImportFlow:
         commitment_id = _seed_commitment(fund_id, investor_id)
         call_id, item_id = _seed_sent_call(client, fund_id, commitment_id, "1000.00")
 
-        xml = _camt_053(
-            [{"amount": "1000.00", "name": "Acme LP", "ref": "BANK-REF-1"}]
-        )
+        xml = _camt_053([{"amount": "1000.00", "name": "Acme LP", "ref": "BANK-REF-1"}])
         upload = client.post(
             "/capital-call-imports",
             files={"file": ("statement.xml", xml, "application/xml")},

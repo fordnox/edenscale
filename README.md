@@ -68,9 +68,12 @@ Run `make help` for the full target list.
 
 ## Rules before each commit
 
-1. `make test` must pass (`pytest -v` in `apps/backend`).
-2. `make lint` must pass (backend import smoke test, `ruff`, `ty`, `black`,
-   `isort`).
+1. `make test` must pass (`pytest -v` in `apps/backend`; requires PostgreSQL —
+   see Prerequisites).
+2. `make lint` must pass. It **checks without writing** (backend import smoke
+   test, `ruff`, `black --check`, `isort --check-only`, `ty check app`) and
+   fails on any violation. Run `make format` if you want it to fix things for
+   you — that target is the one that rewrites files.
 3. `make openapi` must be run after any backend route/schema change, so
    `apps/backend/openapi.json` and the generated `packages/api` client stay
    in sync.

@@ -4,12 +4,12 @@
 import uuid
 from datetime import date
 from decimal import Decimal
-from app.core.slugs import slugify
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.core.database import Base, SessionLocal, engine
+from app.core.slugs import slugify
 from app.main import app
 from app.models import (
     Commitment,
@@ -45,7 +45,9 @@ def client():
 def _seed_org(name: str = "NewTaven Capital") -> int:
     db = SessionLocal()
     try:
-        org = Organization(name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm)
+        org = Organization(
+            name=name, slug=slugify(name), type=OrganizationType.fund_manager_firm
+        )
         db.add(org)
         db.commit()
         return str(org.id)
@@ -407,9 +409,7 @@ class TestLpVisibility:
         assert len(rows) == 1
         assert rows[0]["id"] == own_commitment
 
-    def test_lp_listing_global_commitments_filters_to_own(
-        self, client, override_user
-    ):
+    def test_lp_listing_global_commitments_filters_to_own(self, client, override_user):
         org_id = _seed_org()
         own_investor = _seed_investor(org_id, name="Own LP")
         other_investor = _seed_investor(org_id, name="Other LP")

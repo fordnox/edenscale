@@ -152,18 +152,14 @@ def test_create_409_falls_back_to_lookup(hanko_settings):
 
 
 def test_http_error_returns_false(hanko_settings, caplog):
-    fake = _FakeAsyncClient(
-        get_response=_FakeResponse(status_code=500, raise_exc=True)
-    )
+    fake = _FakeAsyncClient(get_response=_FakeResponse(status_code=500, raise_exc=True))
 
     with patch.object(hanko.httpx, "AsyncClient", return_value=fake):
         with caplog.at_level("ERROR"):
             result = _run(hanko.ensure_hanko_user("boom@example.com"))
 
     assert result is False
-    assert any(
-        "Hanko user provisioning failed" in r.message for r in caplog.records
-    )
+    assert any("Hanko user provisioning failed" in r.message for r in caplog.records)
 
 
 def test_request_error_returns_false(hanko_settings, caplog):
@@ -177,9 +173,7 @@ def test_request_error_returns_false(hanko_settings, caplog):
             result = _run(hanko.ensure_hanko_user("net@example.com"))
 
     assert result is False
-    assert any(
-        "Hanko user provisioning failed" in r.message for r in caplog.records
-    )
+    assert any("Hanko user provisioning failed" in r.message for r in caplog.records)
 
 
 def test_user_record_missing_id_returns_false(hanko_settings, caplog):
@@ -190,6 +184,4 @@ def test_user_record_missing_id_returns_false(hanko_settings, caplog):
             result = _run(hanko.ensure_hanko_user("no-id@example.com"))
 
     assert result is False
-    assert any(
-        "Hanko user provisioning failed" in r.message for r in caplog.records
-    )
+    assert any("Hanko user provisioning failed" in r.message for r in caplog.records)
