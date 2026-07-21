@@ -6,6 +6,8 @@ using the LocalDevStorage backend, plus RBAC checks on listing and access.
 
 import tempfile
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
 from app.core.slugs import slugify
 
 import pytest
@@ -248,6 +250,115 @@ class TestUploadProxyEndpoint:
         # The HTTP layer normalizes ../ away before routing (404); the
         # handler's own key check (400) backstops anything that gets past it.
         assert resp.status_code in (400, 404)
+
+
+class TestUploadGrantVerification:
+    """PUT /documents/upload/{key} must also carry the expires/sig grant that
+    upload-init issued to the calling user — plain authentication is not
+    enough, since storage keys are recoverable from file_url by anyone who
+    can view a document (see plans/004-bind-upload-key-to-caller.md).
+
+    Verification only activates when UPLOAD_SIGNING_SECRET is set (it is
+    empty, and therefore bypassed, in every other test in this module) —
+    otherwise these assertions would be vacuous. The S3 backend is used
+    (with a fake boto3 client) because it is the only backend whose
+    upload_url is the /documents/upload/{key} proxy this guard protects.
+    """
+
+    @pytest.fixture(autouse=True)
+    def s3_backend(self, monkeypatch):
+        monkeypatch.setattr(settings, "UPLOAD_SIGNING_SECRET", "test-signing-secret")
+        monkeypatch.setattr(settings, "S3_ENDPOINT_URL", "https://fake.r2.example.com")
+        monkeypatch.setattr(settings, "S3_ACCESS_KEY_ID", "test-key")
+        monkeypatch.setattr(settings, "S3_SECRET_ACCESS_KEY", "test-secret")
+        monkeypatch.setattr(settings, "S3_BUCKET_NAME", "uploads")
+        monkeypatch.setattr(settings, "S3_PREFIX", "")
+        storage_module.reset_storage()
+        storage = storage_module.S3Storage()
+        self.put_calls: list[dict] = []
+        put_calls = self.put_calls
+        storage._client = type(
+            "FakeClient", (), {"put_object": lambda self, **kw: put_calls.append(kw)}
+        )()
+        storage_module._storage_singleton = storage
+        yield
+        storage_module.reset_storage()
+
+    def _init_upload(self, client, file_name: str = "report.pdf") -> dict:
+        resp = client.post(
+            "/documents/upload-init",
+            json={"file_name": file_name, "mime_type": "application/pdf"},
+        )
+        assert resp.status_code == 201, resp.text
+        body = resp.json()
+        assert body["upload_url"].startswith("/documents/upload/")
+        assert "sig=" in body["upload_url"] and "expires=" in body["upload_url"]
+        return body
+
+    def test_upload_with_valid_grant_succeeds(self, client, override_user):
+        _seed_user("hanko-a", UserRole.lp, email="a@example.com")
+        override_user("hanko-a")
+
+        body = self._init_upload(client)
+        resp = client.put(body["upload_url"], content=b"%PDF-1.7")
+
+        assert resp.status_code == 204
+        assert self.put_calls, "storage.write should have reached the backend"
+
+    def test_cross_user_put_is_rejected(self, client, override_user):
+        """The regression test: B cannot use A's upload grant, even though B
+        is a distinct, validly authenticated user."""
+        _seed_user("hanko-a", UserRole.lp, email="a@example.com")
+        _seed_user("hanko-b", UserRole.lp, email="b@example.com")
+
+        override_user("hanko-a")
+        body = self._init_upload(client)
+
+        override_user("hanko-b")
+        resp = client.put(body["upload_url"], content=b"%PDF-1.7")
+
+        assert resp.status_code == 403
+        assert not self.put_calls
+
+    def test_tampered_signature_is_rejected(self, client, override_user):
+        _seed_user("hanko-a", UserRole.lp, email="a@example.com")
+        override_user("hanko-a")
+        body = self._init_upload(client)
+
+        last_char = body["upload_url"][-1]
+        flipped = "0" if last_char != "0" else "1"
+        tampered_url = body["upload_url"][:-1] + flipped
+
+        resp = client.put(tampered_url, content=b"%PDF-1.7")
+
+        assert resp.status_code == 403
+        assert not self.put_calls
+
+    def test_expired_grant_is_rejected(self, client, override_user):
+        _seed_user("hanko-a", UserRole.lp, email="a@example.com")
+        override_user("hanko-a")
+        body = self._init_upload(client)
+
+        parsed = urlsplit(body["upload_url"])
+        query = dict(parse_qsl(parsed.query))
+        query["expires"] = str(int(query["expires"]) - 3600)
+        expired_url = urlunsplit(parsed._replace(query=urlencode(query)))
+
+        resp = client.put(expired_url, content=b"%PDF-1.7")
+
+        assert resp.status_code == 403
+        assert not self.put_calls
+
+    def test_missing_grant_is_rejected(self, client, override_user):
+        _seed_user("hanko-a", UserRole.lp, email="a@example.com")
+        override_user("hanko-a")
+        body = self._init_upload(client)
+
+        bare_url = body["upload_url"].split("?")[0]
+        resp = client.put(bare_url, content=b"%PDF-1.7")
+
+        assert resp.status_code == 403
+        assert not self.put_calls
 
 
 class TestDocumentRbac:
