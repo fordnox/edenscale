@@ -191,7 +191,8 @@ async def accept_invitation(
 
     now = datetime.now(timezone.utc)
     expires_at = invitation.expires_at
-    # SQLite returns naive datetimes; treat them as UTC for comparison.
+    # ``expires_at`` is a timezone-less ``DateTime`` column, so it comes back
+    # naive; the repo convention stores UTC there. Attach UTC before comparing.
     if expires_at is not None and expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     if invitation.status is InvitationStatus.expired or (

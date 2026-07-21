@@ -31,16 +31,11 @@ Shared frontend code lives in `packages/` (`@edenscale/api`, `@edenscale/auth`,
 - Node.js and [pnpm](https://pnpm.io/)
 - Redis (used by the arq background worker; defaults to
   `redis://localhost:6379`)
-- **PostgreSQL — required to run the test suite.** `apps/backend/.env.example`
-  defaults `APP_DATABASE_DSN` to SQLite, but that default does not work for
-  `make test`: on SQLite, roughly 168 of 392 backend tests fail (test
-  fixtures pass plain `str` values into `Uuid(as_uuid=True)` columns —
-  psycopg2 coerces them under Postgres, SQLite's binder rejects them). This
-  is a known gap between the configured default and what actually works, not
-  expected/normal behavior. Point `APP_DATABASE_DSN` at a Postgres instance
-  before running `make test`. (Whether the *application itself*, as opposed
-  to the test suite, runs correctly against the SQLite default has not been
-  verified — this README does not make a claim either way.)
+- **PostgreSQL — required in every environment.** A missing or
+  non-PostgreSQL `APP_DATABASE_DSN` fails immediately at startup with a
+  clear error. Point `APP_DATABASE_DSN` at a Postgres instance before
+  running the app or `make test` — the test suite runs against a sibling
+  `<db>_test` database, created automatically.
 
 ## Setup
 

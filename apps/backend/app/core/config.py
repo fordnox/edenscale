@@ -11,7 +11,16 @@ class Settings(BaseSettings):
     GENERATE_OPENAPI_DOCS: bool = False
     APP_DOMAIN: str = "example.com"
     APP_DATA_PATH: str = "/tmp"
-    APP_DATABASE_DSN: str = "sqlite:////tmp/database.db"
+    # PostgreSQL is required in every environment; SQLite is unsupported (see
+    # the validator below and app/core/database.py). A truly required field
+    # (no default) was tried first, but `ty check` (used by `make lint`)
+    # statically flags `Settings()` at app/core/config.py's module scope as
+    # missing a required argument — it does not understand that
+    # pydantic-settings populates fields from the environment/`.env` at
+    # runtime. So this keeps a default, but a PostgreSQL one pointing at
+    # localhost (matching .env.example) rather than the old SQLite default;
+    # a missing/wrong DSN is still caught immediately by the validator below.
+    APP_DATABASE_DSN: str = "postgresql://postgres:postgres@localhost:5432/taven"
     CORS_ALLOW_ORIGINS: list[str] = ["http://localhost:3000"]
     REDIS_URL: str = "redis://localhost:6379"
     HANKO_API_URL: str = ""
@@ -66,6 +75,22 @@ class Settings(BaseSettings):
     # verification — only acceptable in local dev; the validator below
     # refuses to start with an empty secret in a production-shaped config.
     UPLOAD_SIGNING_SECRET: str = ""
+
+    @model_validator(mode="after")
+    def _require_postgresql_dsn(self) -> "Settings":
+        """PostgreSQL is the only supported database. SQLite was dropped:
+        its stricter binder rejects the plain-``str`` values many test
+        fixtures pass into ``Uuid(as_uuid=True)`` columns, so the SQLite path
+        was untested, unused, and silently broken. Fail fast and clearly
+        instead of letting a wrong driver produce confusing downstream
+        errors."""
+        if not self.APP_DATABASE_DSN.startswith("postgresql"):
+            raise ValueError(
+                "APP_DATABASE_DSN must be a PostgreSQL DSN (starting with "
+                "'postgresql'); PostgreSQL is required. Set APP_DATABASE_DSN "
+                "in your environment or .env — see .env.example."
+            )
+        return self
 
     @model_validator(mode="after")
     def _require_upload_signing_secret_in_production(self) -> "Settings":

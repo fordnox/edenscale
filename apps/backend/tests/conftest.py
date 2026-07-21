@@ -8,7 +8,7 @@ first instantiated (env vars take precedence over ``.env``).
 """
 
 import os
-from pathlib import Path, PurePath
+from pathlib import Path
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine.url import make_url
@@ -27,7 +27,15 @@ def _load_env_dsn() -> str:
             key, _, value = line.partition("=")
             if key.strip() == "APP_DATABASE_DSN":
                 return value.strip().strip('"').strip("'")
-    return "sqlite:////tmp/database.db"
+    # PostgreSQL is required — fail loudly at collection time instead of
+    # silently falling back to a SQLite DSN that produces a confusing wall of
+    # unrelated test failures (SQLite's stricter binder rejects the plain
+    # ``str`` values many fixtures pass into ``Uuid(as_uuid=True)`` columns).
+    raise RuntimeError(
+        "APP_DATABASE_DSN is not set. PostgreSQL is required to run the test "
+        "suite: set APP_DATABASE_DSN in your environment, or copy "
+        "apps/backend/.env.example to apps/backend/.env and fill it in."
+    )
 
 
 def _rewrite_to_test(dsn: str) -> str:
@@ -35,16 +43,7 @@ def _rewrite_to_test(dsn: str) -> str:
     db = url.database
     if not db:
         return dsn
-    if url.drivername.startswith("sqlite"):
-        # /tmp/database.db -> /tmp/database_test.db
-        p = PurePath(db)
-        stem = p.stem
-        if stem.endswith("_test"):
-            new_db = db
-        else:
-            new_db = str(p.with_name(f"{stem}_test{p.suffix}"))
-    else:
-        new_db = db if db.endswith("_test") else f"{db}_test"
+    new_db = db if db.endswith("_test") else f"{db}_test"
     return url.set(database=new_db).render_as_string(hide_password=False)
 
 
@@ -63,12 +62,17 @@ os.environ["SUPERADMIN_EMAIL"] = ""
 # delivery opt in by monkeypatching ``settings.RESEND_API_KEY``.
 os.environ["RESEND_API_KEY"] = ""
 
+# The Settings validator refuses to construct in a production-shaped config
+# (DEBUG=false and APP_DOMAIN not localhost) with certain settings unset —
+# see app/core/config.py. Environments with no .env (CI, a fresh git
+# worktree) have no APP_DOMAIN at all, which defaults to "example.com" and
+# trips that validator. Force localhost so the suite is self-contained.
+os.environ["APP_DOMAIN"] = "localhost"
+
 
 def _ensure_test_database() -> None:
-    """Create the ``_test`` database if it does not yet exist (Postgres only)."""
+    """Create the ``_test`` database if it does not yet exist."""
     url = make_url(_TEST_DSN)
-    if not url.drivername.startswith("postgresql"):
-        return
     admin_url = url.set(database="postgres")
     admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
     try:
