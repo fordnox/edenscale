@@ -20,6 +20,13 @@ class EmailIngestRequest(BaseModel):
     recipient: str | None = Field(default=None, max_length=320)
     subject: str = Field(default="", max_length=998)
     attachments: list[EmailIngestAttachment] = Field(min_length=1)
+    # The originating email's Message-ID header, when the Worker forwards it.
+    # Optional: the Worker does not send this yet, so most ingests have none
+    # and are processed with no dedupe, exactly as before this field existed.
+    # When present and this message was already ingested, the prior result is
+    # returned rather than re-creating documents, re-notifying, or
+    # re-enqueuing letter drafts -- see EmailIngestService.ingest.
+    message_id: str | None = Field(default=None, max_length=998)
 
 
 class EmailIngestResult(BaseModel):

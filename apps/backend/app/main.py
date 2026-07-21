@@ -4,7 +4,9 @@ from starlette.responses import Response
 
 from app.core import audit  # noqa: F401 — registers SQLAlchemy event listeners
 from app.core.config import settings
+from app.core.logging import configure_logging
 from app.middleware.audit_context import AuditContextMiddleware
+from app.middleware.request_id import RequestIdMiddleware
 from app.routers import (
     audit_logs,
     bank_imports,
@@ -28,6 +30,8 @@ from app.routers import (
     tasks,
     users,
 )
+
+configure_logging()
 
 app = FastAPI(
     title=settings.APP_DOMAIN,
@@ -64,6 +68,12 @@ app.add_middleware(
 )
 
 app.add_middleware(AuditContextMiddleware)  # type: ignore[invalid-argument-type]
+
+# Added last so it is outermost (Starlette's add_middleware inserts at index
+# 0 -- the last-added middleware wraps everything else). That means the
+# request id is set before CORS, AuditContextMiddleware, or any route/service
+# code runs, so every log line for this request can carry it.
+app.add_middleware(RequestIdMiddleware)  # type: ignore[invalid-argument-type]
 
 app.include_router(dashboard.router, prefix="/dashboard")
 app.include_router(users.router, prefix="/users", tags=["users"])

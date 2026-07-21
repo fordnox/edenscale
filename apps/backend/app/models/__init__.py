@@ -9,6 +9,7 @@ from app.models.communication_recipient import CommunicationRecipient
 from app.models.distribution import Distribution
 from app.models.distribution_item import DistributionItem
 from app.models.document import Document
+from app.models.email_ingest_message import EmailIngestMessage
 from app.models.enums import (
     AdminNotificationType,
     BankPaymentTransactionStatus,
@@ -58,6 +59,7 @@ __all__ = [
     "DistributionStatus",
     "Document",
     "DocumentType",
+    "EmailIngestMessage",
     "Fund",
     "FundValuation",
     "FundGroup",

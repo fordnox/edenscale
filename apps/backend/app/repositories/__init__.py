@@ -6,6 +6,9 @@ from app.repositories.communication_repository import CommunicationRepository
 from app.repositories.dashboard_repository import DashboardRepository
 from app.repositories.distribution_repository import DistributionRepository
 from app.repositories.document_repository import DocumentRepository
+from app.repositories.email_ingest_message_repository import (
+    EmailIngestMessageRepository,
+)
 from app.repositories.fund_group_repository import FundGroupRepository
 from app.repositories.fund_repository import FundRepository
 from app.repositories.fund_valuation_repository import FundValuationRepository
@@ -36,6 +39,7 @@ __all__ = [
     "DashboardRepository",
     "DistributionRepository",
     "DocumentRepository",
+    "EmailIngestMessageRepository",
     "FundGroupRepository",
     "FundRepository",
     "FundValuationRepository",

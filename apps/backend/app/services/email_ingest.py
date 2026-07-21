@@ -18,13 +18,18 @@ import binascii
 import logging
 import secrets
 import uuid
+from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.models.document import Document
 from app.models.enums import DocumentType, UserRole
 from app.models.user import User
 from app.repositories.document_repository import DocumentRepository
+from app.repositories.email_ingest_message_repository import (
+    EmailIngestMessageRepository,
+)
 from app.repositories.organization_repository import OrganizationRepository
 from app.repositories.user_organization_membership_repository import (
     UserOrganizationMembershipRepository,
@@ -75,14 +80,45 @@ def _parse_org_tag(recipient: str | None) -> str | None:
     return tag or None
 
 
+@dataclass
+class _ResolvedAttachment:
+    """A decoded, size-checked attachment, ready to be written in phase 2."""
+
+    safe_name: str
+    raw: bytes
+    mime_type: str | None
+
+
 class EmailIngestService:
     def __init__(self, db: Session):
         self.db = db
         self.users = UserRepository(db)
         self.memberships = UserOrganizationMembershipRepository(db)
         self.documents = DocumentRepository(db)
+        self.ingest_log = EmailIngestMessageRepository(db)
 
     async def ingest(self, payload: EmailIngestRequest) -> EmailIngestResult:
+        # 0. Idempotency short-circuit: a message_id we've already turned into
+        # documents returns that same result rather than doing it again. Only
+        # engages once a message_id is actually supplied (see the field's
+        # docstring) -- absent, this is a no-op and behavior is unchanged.
+        if payload.message_id:
+            existing = self.ingest_log.get_by_message_id(payload.message_id)
+            if existing is not None:
+                logger.info(
+                    "email-ingest: message_id %r already processed as %s; "
+                    "returning prior result without reprocessing",
+                    payload.message_id,
+                    existing.document_ids,
+                )
+                return EmailIngestResult(
+                    status="created",
+                    document_ids=[
+                        uuid.UUID(d)  # type: ignore[invalid-argument-type]
+                        for d in existing.document_ids
+                    ],
+                )
+
         # 1. Resolve the sender to a local user (case-insensitive on email).
         user = self.users.get_by_email(payload.sender_email)
         if user is None:
@@ -97,9 +133,11 @@ class EmailIngestService:
         if organization_id is None:
             return self._drop(reason or "could not resolve organization")
 
-        # 3. Store each attachment and create a Document row.
-        storage = get_storage()
-        created: list = []
+        # 3. Phase 1 -- decode and size-check every attachment. No writes here
+        # (no storage, no DB): an attachment that fails these checks is simply
+        # skipped, exactly as before, so this phase can't itself raise on bad
+        # input.
+        resolved: list[_ResolvedAttachment] = []
         for attachment in payload.attachments:
             try:
                 raw = base64.b64decode(attachment.content_base64, validate=True)
@@ -117,37 +155,85 @@ class EmailIngestService:
                     _MAX_ATTACHMENT_BYTES,
                 )
                 continue
+            resolved.append(
+                _ResolvedAttachment(
+                    safe_name=_safe_name(attachment.file_name),
+                    raw=raw,
+                    mime_type=attachment.mime_type,
+                )
+            )
 
-            safe_name = _safe_name(attachment.file_name)
-            logical_key = f"documents/{secrets.token_urlsafe(16)}/{safe_name}"
+        if not resolved:
+            return self._drop("no storable attachments")
+
+        # 4. Phase 2 -- write blobs and stage Document rows, then a single
+        # commit. Only reached once every attachment has passed phase 1, so a
+        # failure here (e.g. storage.write raising on attachment 3) rolls back
+        # every Document row added so far instead of leaving a partial email
+        # committed and returning a 500 the Worker will retry (which is what
+        # caused the duplicate documents/notifications/draft-jobs this fixes).
+        #
+        # storage.write itself is not transactional (no StoragePort rollback),
+        # so a blob already written for attachment 1 or 2 when attachment 3's
+        # write raises becomes an orphan -- unreferenced by any Document row,
+        # since the whole DB transaction below rolls back. That's accepted
+        # and intentional: an orphaned blob is inert (nothing points at it,
+        # nothing serves it), whereas the pre-fix behavior of a Worker retry
+        # re-ingesting the whole email produced *duplicated*, fully-live
+        # documents, notifications, and OpenRouter-billed draft jobs. Trading
+        # a bounded storage leak for eliminating that duplication is the
+        # right side of that tradeoff, and doing better would mean giving
+        # StoragePort a transactional/rollback contract, which is out of
+        # scope here (see plans/020, STOP conditions).
+        storage = get_storage()
+        documents: list[Document] = []
+        for r in resolved:
+            logical_key = f"documents/{secrets.token_urlsafe(16)}/{r.safe_name}"
             # presign_put applies S3_PREFIX and returns the canonical file_url;
             # key_from_file_url recovers the full (prefixed) key that write()
             # expects — exactly the browser upload path, minus the round-trip.
-            _, file_url, _ = storage.presign_put(logical_key, attachment.mime_type)
-            storage.write(key_from_file_url(file_url), raw, attachment.mime_type)
+            _, file_url, _ = storage.presign_put(logical_key, r.mime_type)
+            storage.write(key_from_file_url(file_url), r.raw, r.mime_type)
 
-            title = (payload.subject.strip() or safe_name)[:255]
+            title = (payload.subject.strip() or r.safe_name)[:255]
             document = self.documents.create(
                 DocumentCreate(
                     organization_id=organization_id,
                     document_type=DocumentType.other,
                     title=title,
-                    file_name=safe_name,
+                    file_name=r.safe_name,
                     file_url=file_url,
-                    mime_type=attachment.mime_type,
-                    file_size=len(raw),
+                    mime_type=r.mime_type,
+                    file_size=len(r.raw),
                     is_confidential=True,
                 ),
                 uploaded_by_user_id=user.id,  # type: ignore[invalid-argument-type]
+                commit=False,
             )
-            await notify_document_uploaded(self.db, document=document)
-            created.append(document.id)
+            documents.append(document)
 
-            # Auto-draft a letter from an emailed PDF (when the feature is on).
-            # Best-effort: a queue hiccup must not fail an ingest whose document
-            # is already stored — the draft is a follow-on convenience.
+        # Flush (not commit) so every Document gets its client-side UUID
+        # default assigned -- needed to record them on the idempotency row
+        # below, all inside the one transaction this commit closes out.
+        self.db.flush()
+        document_ids = [document.id for document in documents]
+        if payload.message_id:
+            self.ingest_log.record(
+                message_id=payload.message_id,
+                document_ids=document_ids,  # type: ignore[invalid-argument-type]
+                commit=False,
+            )
+        self.db.commit()
+        for document in documents:
+            self.db.refresh(document)
+
+        # 5. Best-effort side effects, only after everything above is durably
+        # committed: a notification/enqueue hiccup must not fail an ingest
+        # whose documents are already stored.
+        for document in documents:
+            await notify_document_uploaded(self.db, document=document)
             if settings.letter_drafting_enabled and _is_pdf(
-                attachment.mime_type, safe_name
+                document.mime_type, document.file_name  # type: ignore[arg-type]
             ):
                 try:
                     await enqueue_draft_letter(
@@ -160,9 +246,10 @@ class EmailIngestService:
                         document.id,
                     )
 
-        if not created:
-            return self._drop("no storable attachments")
-        return EmailIngestResult(status="created", document_ids=created)
+        return EmailIngestResult(
+            status="created",
+            document_ids=document_ids,  # type: ignore[invalid-argument-type]
+        )
 
     def _resolve_organization(
         self, user: User, recipient: str | None

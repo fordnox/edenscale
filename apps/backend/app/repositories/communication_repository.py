@@ -172,6 +172,7 @@ class CommunicationRepository:
     ) -> Communication:
         communication = Communication(
             fund_id=data.fund_id,
+            document_id=data.document_id,
             sender_user_id=sender_user_id,
             type=data.type,
             subject=data.subject,
@@ -181,6 +182,24 @@ class CommunicationRepository:
         self.db.commit()
         self.db.refresh(communication)
         return communication
+
+    def get_draft_for_document(
+        self, document_id: uuid.UUID, *, sender_user_id: uuid.UUID | None
+    ) -> Communication | None:
+        """The AI-drafted announcement (if any) already generated from this
+        document for this requester -- see ``task_draft_letter``, which uses
+        this to avoid re-drafting (and re-billing OpenRouter for) a job arq
+        redelivers after a crash between ``create_draft`` and the task
+        returning."""
+        return (
+            self.db.query(Communication)
+            .filter(
+                Communication.document_id == document_id,
+                Communication.sender_user_id == sender_user_id,
+                Communication.type == CommunicationType.announcement,
+            )
+            .first()
+        )
 
     def update(
         self, communication_id: uuid.UUID, data: CommunicationUpdate

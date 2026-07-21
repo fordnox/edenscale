@@ -202,6 +202,7 @@ async def task_draft_letter(
     *,
     document_id: str,
     user_id: str,
+    request_id: str | None = None,
 ) -> None:
     """Draft a letter from a document with Claude and save it to Letters.
 
@@ -210,9 +211,23 @@ async def task_draft_letter(
     event loop). The result is persisted as an unsent ``Communication`` (type
     ``announcement``) and the requesting manager is notified. Missing document
     or a failed draft is logged and dropped, never retried forever.
+
+    Idempotent on (document, requester): if arq redelivers this job — a crash
+    between ``create_draft``'s commit and the task returning, or any other
+    at-least-once redelivery, not just an exception (``notify_letter_drafted``
+    is itself ``try``/``except``-wrapped in ``notifications.py`` and never
+    raises, so that's not the source of retries here) — a second run must not
+    burn another OpenRouter call and leave a duplicate draft in Letters.
+
+    ``request_id``: the correlation id of the HTTP request that enqueued this
+    job (see ``app.middleware.request_id``), when the caller supplied one.
+    Optional with a default so a job enqueued before this field existed still
+    runs. Restored into this job's own request-id context so every log line
+    below carries it.
     """
     import asyncio
 
+    from app.middleware.request_id import reset_request_id, set_request_id
     from app.models.enums import CommunicationType
     from app.repositories.communication_repository import CommunicationRepository
     from app.repositories.document_repository import DocumentRepository
@@ -221,11 +236,25 @@ async def task_draft_letter(
     from app.services.notifications import notify_letter_drafted
     from app.services.storage import get_storage, key_from_file_url
 
+    request_id_token = set_request_id(request_id)
     db = SessionLocal()
     try:
         document = DocumentRepository(db).get(UUID(document_id))
         if document is None:
             logger.warning("task_draft_letter: document %s not found", document_id)
+            return
+
+        existing = CommunicationRepository(db).get_draft_for_document(
+            UUID(document_id), sender_user_id=UUID(user_id)
+        )
+        if existing is not None:
+            logger.info(
+                "task_draft_letter: draft %s already exists for document %s "
+                "and user %s; skipping re-draft",
+                existing.id,
+                document_id,
+                user_id,
+            )
             return
 
         file_bytes: bytes | None = None
@@ -256,6 +285,7 @@ async def task_draft_letter(
         communication = CommunicationRepository(db).create_draft(
             CommunicationCreate(
                 fund_id=document.fund_id,  # type: ignore[invalid-argument-type]
+                document_id=UUID(document_id),
                 type=CommunicationType.announcement,
                 subject=subject,
                 body=body,
@@ -275,6 +305,7 @@ async def task_draft_letter(
         )
     finally:
         db.close()
+        reset_request_id(request_id_token)
 
 
 class WorkerSettings:
@@ -287,7 +318,13 @@ class WorkerSettings:
         # delivery for as long as arq's default budget would.
         func(task_send_notification, max_tries=3),  # type: ignore[invalid-argument-type]
         task_fire_drip_event,
-        task_draft_letter,
+        # max_tries set explicitly (arq's default is 5): unset before now
+        # only because the idempotency check above didn't exist yet. Now that
+        # a retry is a cheap no-op instead of a duplicate OpenRouter-billed
+        # draft, 3 matches task_send_notification's rationale — enough room
+        # for a transient DB blip, not an unbounded hammer on the LLM call if
+        # it's the failure that's genuinely wedged.
+        func(task_draft_letter, max_tries=3),  # type: ignore[invalid-argument-type]
     ]
     cron_jobs = [
         cron(cron_mark_overdue_capital_calls, hour=6, minute=0)  # type: ignore[invalid-argument-type]

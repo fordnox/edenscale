@@ -24,6 +24,10 @@ class CommunicationRecipientRef(BaseModel):
 
 class CommunicationCreate(BaseModel):
     fund_id: UUID4 | None = None
+    # Set only when this draft was AI-generated from a Document (see
+    # task_draft_letter) -- lets a retried draft job recognise "already
+    # drafted this one" instead of creating a duplicate.
+    document_id: UUID4 | None = None
     type: CommunicationType
     subject: str = Field(min_length=1, max_length=255)
     body: str = Field(min_length=1)
@@ -69,6 +73,7 @@ class CommunicationRecipientRead(BaseModel):
 class CommunicationRead(BaseModel):
     id: UUID4
     fund_id: UUID4 | None
+    document_id: UUID4 | None = None
     sender_user_id: UUID4 | None
     type: CommunicationType
     subject: str
