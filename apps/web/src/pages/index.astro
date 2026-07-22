@@ -128,6 +128,27 @@ const cadenceCards = [
   },
 ];
 
+const intakeStages = [
+  {
+    n: "01",
+    label: "You forward",
+    title: "Send it from your inbox",
+    body: "A subscription agreement, a bank confirmation, a signed side letter. Forward the email as it arrived — attachments and all. No upload screen, no file picker.",
+  },
+  {
+    n: "02",
+    label: "NewTaven files",
+    title: "It lands in the right fund",
+    body: "We recognize you by your sending address and file each attachment into your organization's document vault, marked confidential, with the subject line as its title.",
+  },
+  {
+    n: "03",
+    label: "AI drafts",
+    title: "A letter is waiting for you",
+    body: "PDFs are read automatically and turned into a draft LP note in your fund's voice — sitting in communications as a draft, never sent without you.",
+  },
+];
+
 const features = [
   {
     title: "LP register",
@@ -353,6 +374,44 @@ const defaultOutput =
             </div>
           ))}
         </div>
+      </div>
+    </section>
+
+    <!-- Document intake by email -->
+    <section id="intake" class="sect">
+      <div class="container">
+        <div class="sect-head" data-reveal>
+          <span class="eyebrow">Document intake</span>
+          <h2 class="sect-title">Email a document.<br />It files itself.</h2>
+          <p class="sect-sub">
+            The paperwork already arrives by email. Forward it to your fund's intake address and
+            NewTaven stores it, files it against your fund, and drafts the LP note that usually
+            follows it.
+          </p>
+        </div>
+
+        <div class="intake-address" data-reveal>
+          <span class="intake-address-label">Your fund's intake address</span>
+          <span class="intake-address-value">ingest+<em>yourfund</em>@newtaven.com</span>
+        </div>
+
+        <div class="intake-stages" data-reveal>
+          {intakeStages.map((s) => (
+            <article class="intake-stage">
+              <div class="intake-stage-head">
+                <span class="intake-stage-index">{s.n}</span>
+                <span class="intake-stage-label">{s.label}</span>
+              </div>
+              <h3 class="intake-stage-title">{s.title}</h3>
+              <p class="card-body">{s.body}</p>
+            </article>
+          ))}
+        </div>
+
+        <p class="intake-note" data-reveal>
+          Only addresses that already belong to your fund are accepted — anything we can't place
+          with certainty is dropped rather than filed to the wrong fund.
+        </p>
       </div>
     </section>
 

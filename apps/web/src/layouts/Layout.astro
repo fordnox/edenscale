@@ -3,74 +3,78 @@ import "../styles/global.css";
 import LogoIcon from "@edenscale/brand/components/LogoIcon.astro";
 
 interface Props {
-  title?: string;
-  description?: string;
-  /* Page scope class for global.css — page-specific styles are written as
+    title?: string;
+    description?: string;
+    /* Page scope class for global.css — page-specific styles are written as
      `.page-<name> .selector` so identical class names on different pages
      (e.g. .hero, .container) never collide in the one shared stylesheet. */
-  bodyClass?: string;
+    bodyClass?: string;
 }
 
 const {
-  title = "NewTaven — Fund operations, automated",
-  description = "An end-to-end software platform built to streamline the entire lifecycle of your investment fund, from LP onboarding to seamless capital distributions.",
-  bodyClass,
+    title = "NewTaven — Fund operations, automated",
+    description = "An end-to-end software platform built to streamline the entire lifecycle of your investment fund, from LP onboarding to seamless capital distributions.",
+    bodyClass,
 } = Astro.props;
 ---
 
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content={description} />
-    <meta name="generator" content={Astro.generator} />
-    <meta name="theme-color" content="#F5F5F5" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="NewTaven" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
-    <link
-      rel="preload"
-      href="/fonts/InterTight-400.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
-    <link
-      rel="preload"
-      href="/fonts/InterTight-500.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
-    <title>{title}</title>
-    <script is:inline>
-      document.documentElement.classList.add("js");
-    </script>
-  </head>
-  <body class={bodyClass}>
-    <slot />
-    <footer class="footer">
-      <div class="container footer-row">
-        <a href="/" class="brand brand--footer">
-          <LogoIcon size={20} />
-          <span>NewTaven</span>
-        </a>
-        <nav class="footer-links" aria-label="Legal">
-          <a href="/legal/privacy">Privacy</a>
-          <a href="/legal/terms">Terms</a>
-          <a href="/legal/cookies">Cookies</a>
-        </nav>
-        <a href="mailto:hello@newtaven.com" class="footer-mail">hello@newtaven.com</a>
-        <span class="footer-copy">© 2026 NewTaven — Fund administration for small managers</span>
-      </div>
-    </footer>
-  </body>
+    <head>
+        <meta charset="utf-8" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="description" content={description} />
+        <meta name="generator" content={Astro.generator} />
+        <meta name="theme-color" content="#F5F5F5" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="NewTaven" />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
+        <link
+            rel="preload"
+            href="/fonts/InterTight-400.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="/fonts/InterTight-500.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <title>{title}</title>
+        <script is:inline>
+            document.documentElement.classList.add("js");
+        </script>
+    </head>
+    <body class={bodyClass}>
+        <slot />
+        <footer class="footer">
+            <div class="container footer-row">
+                <a href="/" class="brand brand--footer">
+                    <LogoIcon size={20} />
+                    <span>NewTaven</span>
+                </a>
+                <nav class="footer-links" aria-label="Legal">
+                    <a href="/legal/privacy">Privacy</a>
+                    <a href="/legal/terms">Terms</a>
+                    <a href="/legal/cookies">Cookies</a>
+                </nav>
+                <a href="mailto:hello@newtaven.com" class="footer-mail"
+                    >hello@newtaven.com</a
+                >
+                <span class="footer-copy"
+                    >© 2026 NewTaven — AI Fund administration</span
+                >
+            </div>
+        </footer>
+    </body>
 </html>

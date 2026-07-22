@@ -768,6 +768,100 @@ html.js [data-reveal].is-visible {
   letter-spacing: -0.02em;
 }
 
+/* ---------- Document intake by email ---------- */
+.page-index .intake-address {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  margin-bottom: 40px;
+  padding: 18px 24px;
+  border: 1px dashed rgba(0, 0, 0, 0.28);
+  border-radius: 12px;
+}
+.page-index .intake-address-label {
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+}
+.page-index .intake-address-value {
+  color: #16281f;
+  font-family: var(--font-mono);
+  font-size: clamp(15px, 2.2vw, 19px);
+  letter-spacing: -0.01em;
+}
+.page-index .intake-address-value em {
+  font-style: normal;
+  color: rgba(0, 0, 0, 0.45);
+}
+.page-index .intake-stages {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .page-index .intake-stages {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.page-index .intake-stage {
+  position: relative;
+  padding: 28px 24px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+}
+/* A connector between stages, so the three read as one flow on wide screens. */
+@media (min-width: 768px) {
+  .page-index .intake-stage + .intake-stage::before {
+    content: "";
+    position: absolute;
+    top: 44px;
+    left: -9px;
+    width: 8px;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.28);
+  }
+}
+.page-index .intake-stage-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.page-index .intake-stage-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #16281f;
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.page-index .intake-stage-label {
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.page-index .intake-stage-title {
+  margin: 0 0 10px;
+  color: #000;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+.page-index .intake-note {
+  margin: 24px 0 0;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 62ch;
+}
+
 /* ---------- The cadence ---------- */
 .page-index .cadence-card {
   position: relative;
