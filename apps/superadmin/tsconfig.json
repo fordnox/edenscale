@@ -6,6 +6,7 @@
       "@/*": ["./src/*"],
       "@edenscale/api/*": ["../../packages/api/src/*"],
       "@edenscale/auth/*": ["../../packages/auth/src/*"],
+      "@edenscale/brand/components/*": ["../../packages/brand/components/*"],
       "@edenscale/shared/*": ["../../packages/shared/src/*"],
       "@edenscale/ui/*": ["../../packages/ui/src/components/ui/*"],
       "@edenscale/ui/PageHero": ["../../packages/ui/src/components/PageHero.tsx"],

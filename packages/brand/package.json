@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./styles/*": "./styles/*",
+    "./components/BrandMark": "./components/BrandMark.tsx",
     "./components/*": "./components/*",
     "./assets/*": "./assets/*",
     "./fonts/*": "./fonts/*"
