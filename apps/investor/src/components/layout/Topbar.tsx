@@ -33,6 +33,8 @@ export function OrganizationSwitcher() {
     navigate(orgPath(orgSlug))
   }
 
+  // Single org: nothing to switch between, so this stays a plain label. The
+  // brand mark beside it is the home affordance, in every org-count case.
   if (organizations.length === 1) {
     return (
       <span

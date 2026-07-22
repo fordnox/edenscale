@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { NavLink, useNavigate } from "react-router-dom"
+import { Link, NavLink, useNavigate } from "react-router-dom"
 import { LogOut, Search, User as UserIcon } from "lucide-react"
 
 import { cn } from "@edenscale/shared/utils"
@@ -7,7 +7,10 @@ import { deriveInitials } from "@edenscale/shared/userDisplay"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { useAuth } from "@edenscale/auth/useAuth"
 import { useOrgNavItems, type NavItem } from "@/hooks/useNavItems"
+import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
+import { orgPath } from "@/lib/investorRoutes"
 import { OrganizationSwitcher } from "@/components/layout/Topbar"
+import investorMark from "@edenscale/brand/assets/mark-investor.svg"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,8 +60,37 @@ function useScrollEdges<T extends HTMLElement>(contentKey: unknown) {
   return { ref, edges }
 }
 
+// The mark is the app's home affordance and is present in every state, so it
+// works the same whether or not the org label next to it is a switcher.
+// Destination is the top of the user's world: their one org's dashboard when
+// they have exactly one, otherwise the cross-org root.
+function BrandHomeLink() {
+  const { organizations } = useInvestorOrganizations()
+  const only = organizations.length === 1 ? organizations[0] : null
+  const to = only ? orgPath(only.organization.slug) : "/investor"
+
+  return (
+    <Link
+      to={to}
+      aria-label="NewTaven investor portal — home"
+      className={cn(
+        "inline-flex shrink-0 items-center rounded-xs",
+        "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
+      )}
+    >
+      <img
+        src={investorMark}
+        alt=""
+        aria-hidden="true"
+        className="size-7 transition-opacity duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:opacity-80"
+      />
+    </Link>
+  )
+}
+
 // Horizontal top-bar navigation for the investor app — no sidebar. Tier 1 holds
-// the org switcher and the account menu; tier 2 holds the section links.
+// the brand mark, org switcher and the account menu; tier 2 holds the section
+// links.
 export function TopNav({ onOpenSearch }: TopNavProps) {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -93,8 +125,9 @@ export function TopNav({ onOpenSearch }: TopNavProps) {
 
   return (
     <header className="sticky top-0 z-20 border-b border-[color:var(--border-hairline)] bg-page/85 backdrop-blur supports-[backdrop-filter]:bg-page/75">
-      {/* Tier 1 — org + account */}
+      {/* Tier 1 — brand + org + account */}
       <div className="flex items-center gap-3 px-4 py-3 md:px-8">
+        <BrandHomeLink />
         <OrganizationSwitcher />
         <div className="ml-auto flex items-center gap-1">
           <button
