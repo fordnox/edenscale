@@ -1,6 +1,5 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import Response
 
 from app.core import audit  # noqa: F401 — registers SQLAlchemy event listeners
 from app.core.config import settings
@@ -40,23 +39,6 @@ app = FastAPI(
     docs_url="/docs" if settings.GENERATE_OPENAPI_DOCS else None,
     redoc_url="/redoc" if settings.GENERATE_OPENAPI_DOCS else None,
 )
-
-
-@app.middleware("http")
-async def options_handler(request: Request, call_next):
-    if request.method == "OPTIONS":
-        origin = request.headers.get("origin", "*")
-        return Response(
-            status_code=200,
-            headers={
-                "Access-Control-Allow-Origin": origin,
-                "Access-Control-Allow-Methods": "*",
-                "Access-Control-Allow-Headers": "*",
-                "Access-Control-Allow-Credentials": "true",
-                "Access-Control-Max-Age": "86400",
-            },
-        )
-    return await call_next(request)
 
 
 app.add_middleware(
