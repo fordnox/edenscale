@@ -2,8 +2,8 @@ import { useEffect, useMemo } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { Helmet } from "react-helmet-async"
 import { register } from "@teamhanko/hanko-elements"
-import { Landmark } from "lucide-react"
 
+import { BrandMark } from "@edenscale/brand/components/BrandMark"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { useAuth } from "@edenscale/auth/useAuth"
 import { config } from "@edenscale/api/config"
@@ -59,7 +59,7 @@ export default function LoginPage() {
               aria-hidden
               className="flex size-9 items-center justify-center border border-[color:var(--border-hairline)] text-conifer-700"
             >
-              <Landmark strokeWidth={1.5} className="size-5" />
+              <BrandMark className="size-5" />
             </span>
             <span className="font-sans text-[18px] font-semibold tracking-tight">
               {config.VITE_APP_TITLE}

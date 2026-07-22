@@ -4,7 +4,6 @@ import {
   Bell,
   Building2,
   ClipboardList,
-  Landmark,
   Loader2,
   MailOpen,
   Users,
@@ -12,6 +11,7 @@ import {
 import { useNavigate } from "react-router-dom"
 import { Helmet } from "react-helmet-async"
 
+import { BrandMark } from "@edenscale/brand/components/BrandMark"
 import { FundsListCard } from "@/components/dashboard/FundsListCard"
 import {
   OnboardingProgressCard,
@@ -370,7 +370,7 @@ export default function DashboardPage() {
                   {isLp ? (
                     <MailOpen strokeWidth={1.5} className="size-5 text-brass-700" />
                   ) : (
-                    <Landmark strokeWidth={1.5} className="size-5 text-brass-700" />
+                    <BrandMark className="size-5 text-brass-700" />
                   )}
                   <Stat
                     label={isLp ? "Recent updates" : "Recent letters"}

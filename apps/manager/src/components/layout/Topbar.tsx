@@ -9,7 +9,7 @@ import {
   User as UserIcon,
 } from "lucide-react"
 
-import managerMark from "@edenscale/brand/assets/mark-manager.svg"
+import { BrandMark } from "@edenscale/brand/components/BrandMark"
 import { cn } from "@edenscale/shared/utils"
 import { fundPath, fundSlugFromPath, orgPath } from "@/lib/managerRoutes"
 import { deriveInitials } from "@edenscale/shared/userDisplay"
@@ -404,7 +404,7 @@ export function Topbar({
             "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
           )}
         >
-          <img src={managerMark} alt="" aria-hidden="true" className="size-5" />
+          <BrandMark className="size-5" />
         </Link>
         {!organization && (
           <span className="ml-1 font-sans text-[14px] font-semibold tracking-[-0.04em] text-ink-900">

@@ -1,7 +1,8 @@
 import { Helmet } from "react-helmet-async"
 import { useNavigate } from "react-router-dom"
-import { Landmark, Mail } from "lucide-react"
+import { Mail } from "lucide-react"
 
+import { BrandMark } from "@edenscale/brand/components/BrandMark"
 import { Button } from "@edenscale/ui/button"
 import { Card } from "@edenscale/ui/card"
 import { EmptyState } from "@edenscale/ui/EmptyState"
@@ -27,7 +28,7 @@ export default function NoOrganizationHomePage() {
                 size="md"
                 onClick={() => navigate("/manager/onboarding")}
               >
-                <Landmark strokeWidth={1.5} className="size-4" />
+                <BrandMark className="size-4" />
                 Create your organization
               </Button>
             }

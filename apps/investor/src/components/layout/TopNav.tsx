@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Link, NavLink, useNavigate } from "react-router-dom"
 import { LogOut, Search, User as UserIcon } from "lucide-react"
 
+import { BrandMark } from "@edenscale/brand/components/BrandMark"
 import { cn } from "@edenscale/shared/utils"
 import { deriveInitials } from "@edenscale/shared/userDisplay"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
@@ -10,7 +11,6 @@ import { useOrgNavItems, type NavItem } from "@/hooks/useNavItems"
 import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import { orgPath } from "@/lib/investorRoutes"
 import { OrganizationSwitcher } from "@/components/layout/Topbar"
-import investorMark from "@edenscale/brand/assets/mark-investor.svg"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,12 +78,7 @@ function BrandHomeLink() {
         "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
       )}
     >
-      <img
-        src={investorMark}
-        alt=""
-        aria-hidden="true"
-        className="size-7 transition-opacity duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:opacity-80"
-      />
+      <BrandMark className="size-7 text-brass-700 transition-opacity duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:opacity-80" />
     </Link>
   )
 }

@@ -1,10 +1,10 @@
 1:"$Sreact.fragment"
-2:I[27303,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/03oholkb_nyqk.js"],"PreviewProvider"]
-b:I[33204,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/03oholkb_nyqk.js"],"Shell"]
+2:I[27303,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/059aaiyvdqw74.js"],"PreviewProvider"]
+b:I[33204,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/059aaiyvdqw74.js"],"Shell"]
 c:"$Sreact.suspense"
-d:I[76825,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/03oholkb_nyqk.js"],"default"]
-e:I[85977,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/03oholkb_nyqk.js"],"ToolbarProvider"]
-f:I[42898,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/03oholkb_nyqk.js"],"Toolbar"]
+d:I[76825,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/059aaiyvdqw74.js"],"default"]
+e:I[85977,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/059aaiyvdqw74.js"],"ToolbarProvider"]
+f:I[42898,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/059aaiyvdqw74.js"],"Toolbar"]
 10:I[97367,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js"],"OutletBoundary"]
 3:T3550,<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html dir="ltr" lang="en">
@@ -515,9 +515,9 @@ export default function CustomerTaskAssigned() {
     </Shell>
   );
 }
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"emailSlug":"customer/task_assigned","emailPath":"/Users/andy/Developer/edenscale/apps/emails/emails/customer/task_assigned.tsx","serverRenderingResult":{"prettyMarkup":"$3","markup":"$4","markupWithReferences":"$5","plainText":"{{{organization_name}}}\n\nTask\n\nA task was assigned to you.\n\nHi {{{recipient_name}}} — {{{task_title}}} is now assigned to you.\n\nTask\n\nTitle\n\n{{{task_title}}}\n\n----------------------------------------\n\nDue\n\n{{{due_date}}}\n\n{{{task_description}}}\n\nOpen in NewTaven {{{view_url}}}\n\n----------------------------------------\n\n{{{organization_name}}}\n\n{{{organization_website}}} · Delivered by NewTaven","reactMarkup":"$6","basename":"task_assigned","extname":"tsx"},"children":"$L7"}],["$L8","$L9"],"$La"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"3oh9UtUkdlgyHHEKtB9tW"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"emailSlug":"customer/task_assigned","emailPath":"/Users/andy/Developer/edenscale/apps/emails/emails/customer/task_assigned.tsx","serverRenderingResult":{"prettyMarkup":"$3","markup":"$4","markupWithReferences":"$5","plainText":"{{{organization_name}}}\n\nTask\n\nA task was assigned to you.\n\nHi {{{recipient_name}}} — {{{task_title}}} is now assigned to you.\n\nTask\n\nTitle\n\n{{{task_title}}}\n\n----------------------------------------\n\nDue\n\n{{{due_date}}}\n\n{{{task_description}}}\n\nOpen in NewTaven {{{view_url}}}\n\n----------------------------------------\n\n{{{organization_name}}}\n\n{{{organization_website}}} · Delivered by NewTaven","reactMarkup":"$6","basename":"task_assigned","extname":"tsx"},"children":"$L7"}],["$L8","$L9"],"$La"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"89SuqjL1eaZykHkZ9LUke"}
 7:["$","$Lb",null,{"currentEmailOpenSlug":"customer/task_assigned","children":["$","$c",null,{"children":[["$","$Ld",null,{"emailTitle":"task_assigned.tsx"}],["$","$Le",null,{"hasApiKey":false,"children":["$","$Lf",null,{"serverLintingRows":[{"result":{"link":"{{{view_url}}}","codeLocation":{"line":146,"column":37},"status":"error","checks":[{"passed":false,"type":"syntax"}]},"source":"link"}],"serverSpamCheckingResult":{"checks":[],"isSpam":false,"points":0},"serverCompatibilityResults":[],"serverCompatibilityClients":["gmail","apple-mail","outlook","yahoo"]}]}]]}]}]
 8:["$","script","script-0",{"src":"/_next/static/chunks/16rn0tnxz~1yc.js","async":true}]
-9:["$","script","script-1",{"src":"/_next/static/chunks/03oholkb_nyqk.js","async":true}]
+9:["$","script","script-1",{"src":"/_next/static/chunks/059aaiyvdqw74.js","async":true}]
 a:["$","$L10",null,{"children":["$","$c",null,{"name":"Next.MetadataOutlet","children":"$@11"}]}]
 11:null

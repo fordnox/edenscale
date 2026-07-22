@@ -8,5 +8,11 @@
     "./components/*": "./components/*",
     "./assets/*": "./assets/*",
     "./fonts/*": "./fonts/*"
+  },
+  "dependencies": {
+    "react": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17"
   }
 }

@@ -2,9 +2,10 @@ import { useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
-import { Landmark, Loader2, Sparkles } from "lucide-react"
+import { Loader2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 
+import { BrandMark } from "@edenscale/brand/components/BrandMark"
 import { Button } from "@edenscale/ui/button"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { Input } from "@edenscale/ui/input"
@@ -143,7 +144,7 @@ export default function OnboardingPage() {
                     aria-hidden
                     className="text-[color:var(--brass-700)] [&_svg]:size-8 [&_svg]:stroke-[1.25]"
                   >
-                    <Landmark />
+                    <BrandMark />
                   </span>
                   {step === "organization" ? (
                     <>

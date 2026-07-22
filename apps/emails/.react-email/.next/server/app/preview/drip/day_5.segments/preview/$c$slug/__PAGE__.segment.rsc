@@ -1,10 +1,10 @@
 1:"$Sreact.fragment"
-2:I[27303,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/03oholkb_nyqk.js"],"PreviewProvider"]
-c:I[33204,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/03oholkb_nyqk.js"],"Shell"]
+2:I[27303,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/059aaiyvdqw74.js"],"PreviewProvider"]
+c:I[33204,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/059aaiyvdqw74.js"],"Shell"]
 d:"$Sreact.suspense"
-e:I[76825,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/03oholkb_nyqk.js"],"default"]
-f:I[85977,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/03oholkb_nyqk.js"],"ToolbarProvider"]
-10:I[42898,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/03oholkb_nyqk.js"],"Toolbar"]
+e:I[76825,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/059aaiyvdqw74.js"],"default"]
+f:I[85977,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/059aaiyvdqw74.js"],"ToolbarProvider"]
+10:I[42898,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js","/_next/static/chunks/16rn0tnxz~1yc.js","/_next/static/chunks/059aaiyvdqw74.js"],"Toolbar"]
 11:I[97367,["/_next/static/chunks/0e6j-s.324fix.js","/_next/static/chunks/0d3shmwh5_nmn.js","/_next/static/chunks/0qr9mz_mzo25c.js"],"OutletBoundary"]
 3:T422c,<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html dir="ltr" lang="en">
@@ -682,9 +682,9 @@ export default function DripDay5() {
     </Shell>
   );
 }
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"emailSlug":"drip/day_5","emailPath":"/Users/andy/Developer/edenscale/apps/emails/emails/drip/day_5.tsx","serverRenderingResult":{"prettyMarkup":"$3","markup":"$4","markupWithReferences":"$5","plainText":"$6","reactMarkup":"$7","basename":"day_5","extname":"tsx"},"children":"$L8"}],["$L9","$La"],"$Lb"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"3oh9UtUkdlgyHHEKtB9tW"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"emailSlug":"drip/day_5","emailPath":"/Users/andy/Developer/edenscale/apps/emails/emails/drip/day_5.tsx","serverRenderingResult":{"prettyMarkup":"$3","markup":"$4","markupWithReferences":"$5","plainText":"$6","reactMarkup":"$7","basename":"day_5","extname":"tsx"},"children":"$L8"}],["$L9","$La"],"$Lb"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"89SuqjL1eaZykHkZ9LUke"}
 8:["$","$Lc",null,{"currentEmailOpenSlug":"drip/day_5","children":["$","$d",null,{"children":[["$","$Le",null,{"emailTitle":"day_5.tsx"}],["$","$Lf",null,{"hasApiKey":false,"children":["$","$L10",null,{"serverLintingRows":[{"result":{"link":"{{{app_url}}}","codeLocation":{"line":181,"column":37},"status":"error","checks":[{"passed":false,"type":"syntax"}]},"source":"link"}],"serverSpamCheckingResult":{"checks":[],"isSpam":false,"points":0},"serverCompatibilityResults":[],"serverCompatibilityClients":["gmail","apple-mail","outlook","yahoo"]}]}]]}]}]
 9:["$","script","script-0",{"src":"/_next/static/chunks/16rn0tnxz~1yc.js","async":true}]
-a:["$","script","script-1",{"src":"/_next/static/chunks/03oholkb_nyqk.js","async":true}]
+a:["$","script","script-1",{"src":"/_next/static/chunks/059aaiyvdqw74.js","async":true}]
 b:["$","$L11",null,{"children":["$","$d",null,{"name":"Next.MetadataOutlet","children":"$@12"}]}]
 12:null

@@ -6,9 +6,9 @@ import {
   ArrowUpRight,
   Building2,
   FileText,
-  Landmark,
   LockKeyhole,
 } from "lucide-react"
+import { BrandMark } from "@edenscale/brand/components/BrandMark"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { useAuth } from "@edenscale/auth/useAuth"
 import { config } from "@edenscale/api/config"
@@ -87,7 +87,7 @@ export default function LoginPage() {
                 aria-hidden
                 className="flex size-9 items-center justify-center border border-[var(--border-inverse)] text-parchment-50"
               >
-                <Landmark strokeWidth={1.5} className="size-5" />
+                <BrandMark className="size-5" />
               </span>
               <span className="font-sans text-[18px] font-semibold tracking-tight">
                 {config.VITE_APP_TITLE}

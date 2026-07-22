@@ -6,7 +6,6 @@ import {
   Bell,
   Building2,
   ClipboardList,
-  Landmark,
   Loader2,
   Users,
 } from "lucide-react"
@@ -16,6 +15,7 @@ import {
   OnboardingProgressCard,
   type OnboardingStep,
 } from "@/components/dashboard/OnboardingProgressCard"
+import { BrandMark } from "@edenscale/brand/components/BrandMark"
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Button } from "@edenscale/ui/button"
 import { Card, CardSection } from "@edenscale/ui/card"
@@ -394,7 +394,7 @@ export default function UserDashboardPage() {
                           size="sm"
                           onClick={() => navigate(orgPath(membership.organization.slug))}
                         >
-                          <Landmark strokeWidth={1.5} />
+                          <BrandMark className="size-4" />
                           Open workspace
                         </Button>
                       </CardSection>

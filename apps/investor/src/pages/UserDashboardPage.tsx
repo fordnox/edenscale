@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
-import { Landmark } from "lucide-react"
 
+import { BrandMark } from "@edenscale/brand/components/BrandMark"
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { Eyebrow } from "@edenscale/ui/eyebrow"
@@ -35,7 +35,7 @@ export default function UserDashboardPage() {
               <CardSection>
                 <div className="flex items-start gap-3">
                   <span className="flex size-10 shrink-0 items-center justify-center border border-[color:var(--border-hairline)] text-conifer-700">
-                    <Landmark strokeWidth={1.5} className="size-5" />
+                    <BrandMark className="size-5" />
                   </span>
                   <div className="flex min-w-0 flex-col">
                     <h3 className="truncate font-display text-[20px] leading-tight tracking-tight text-ink-900">

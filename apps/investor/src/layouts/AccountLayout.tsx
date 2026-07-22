@@ -1,6 +1,7 @@
 import { Link, Outlet, useNavigate } from "react-router-dom"
-import { Landmark, LogOut, User as UserIcon } from "lucide-react"
+import { LogOut, User as UserIcon } from "lucide-react"
 
+import { BrandMark } from "@edenscale/brand/components/BrandMark"
 import { PendingInvitationsBanner } from "@edenscale/ui/invitations/PendingInvitationsBanner"
 import {
   DropdownMenu,
@@ -62,7 +63,7 @@ export default function AccountLayout() {
             className="flex items-center gap-3 rounded-xs transition-opacity duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:opacity-80 focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2"
           >
             <span className="flex size-9 items-center justify-center border border-[color:var(--border-hairline)] text-conifer-700">
-              <Landmark strokeWidth={1.5} className="size-5" />
+              <BrandMark className="size-5" />
             </span>
             <span className="font-sans text-[16px] font-semibold tracking-[-0.04em] text-ink-900">
               {config.VITE_APP_TITLE}
