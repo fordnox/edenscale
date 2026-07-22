@@ -18,6 +18,11 @@ from app.schemas.distribution import DistributionCreate, DistributionUpdate
 _ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 _SENDABLE_STATUSES = {DistributionStatus.draft, DistributionStatus.scheduled}
+
+# Statuses an LP must never see — see the matching constant in
+# capital_call_repository. Showing an unsent distribution is the worst of the
+# family: the LP reads a payout figure that may still be revised or cancelled.
+_LP_HIDDEN_STATUSES = _SENDABLE_STATUSES | {DistributionStatus.cancelled}
 _TERMINAL_STATUSES = {DistributionStatus.cancelled}
 _ALLOWED_TRANSITIONS: dict[DistributionStatus, set[DistributionStatus]] = {
     DistributionStatus.draft: {
@@ -92,7 +97,10 @@ class DistributionRepository:
                 )
                 .where(Commitment.investor_id.in_(lp_visible_investor_ids(membership)))
             )
-            query = query.filter(Distribution.id.in_(visible_distribution_ids))
+            query = query.filter(
+                Distribution.id.in_(visible_distribution_ids),
+                Distribution.status.notin_(_LP_HIDDEN_STATUSES),
+            )
         if fund_id is not None:
             query = query.filter(Distribution.fund_id == fund_id)
         if status is not None:
@@ -115,6 +123,8 @@ class DistributionRepository:
             if fund is None:
                 return False
             return bool(fund.organization_id == membership.organization_id)
+        if distribution.status in _LP_HIDDEN_STATUSES:
+            return False
         return (
             self.db.query(DistributionItem.id)
             .join(Commitment, Commitment.id == DistributionItem.commitment_id)

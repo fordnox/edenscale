@@ -5,12 +5,13 @@ Revises: e5f6a7b8c9d0
 Create Date: 2026-07-05 12:00:00.000000
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = 'f6a7b8c9d0e1'
-down_revision = 'e5f6a7b8c9d0'
+revision = "f6a7b8c9d0e1"
+down_revision = "e5f6a7b8c9d0"
 branch_labels = None
 depends_on = None
 
@@ -44,9 +45,7 @@ def downgrade() -> None:
         sa.ForeignKeyConstraint(["fund_id"], ["funds.id"]),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint(
-            "fund_id", "user_id", name="uq_fund_team_member_fund_user"
-        ),
+        sa.UniqueConstraint("fund_id", "user_id", name="uq_fund_team_member_fund_user"),
     )
     op.create_index(
         op.f("ix_fund_team_members_fund_id"),

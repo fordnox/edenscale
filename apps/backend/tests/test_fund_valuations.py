@@ -17,6 +17,7 @@ from app.models import (
     Commitment,
     CommitmentStatus,
     Fund,
+    FundStatus,
     FundValuation,
     Investor,
     Organization,
@@ -55,6 +56,7 @@ def _seed_fund_with_commitment(
             name="Fund I",
             slug=slugify("Fund I"),
             currency_code="USD",
+            status=FundStatus.active,
         )
         investor = Investor(organization_id=org.id, name="LP One")
         db.add_all([fund, investor])

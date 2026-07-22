@@ -14,6 +14,7 @@ from app.models import (
     Commitment,
     CommitmentStatus,
     Fund,
+    FundStatus,
     Investor,
     InvestorContact,
     Organization,
@@ -83,7 +84,12 @@ def _seed_user(
 def _seed_fund(organization_id: int, *, name: str = "NewTaven Fund I") -> int:
     db = SessionLocal()
     try:
-        fund = Fund(organization_id=organization_id, name=name, slug=slugify(name))
+        fund = Fund(
+            organization_id=organization_id,
+            name=name,
+            slug=slugify(name),
+            status=FundStatus.active,
+        )
         db.add(fund)
         db.commit()
         return str(fund.id)
@@ -576,6 +582,9 @@ class TestDistributionRbac:
                 "items": [{"commitment_id": other_commitment, "amount_due": "100.00"}]
             },
         )
+        # Both sent — this test isolates investor scoping, not send state.
+        client.post(f"/distributions/{own_dist}/send")
+        client.post(f"/distributions/{other_dist}/send")
 
         lp_user_id = _seed_user(
             "hanko-lp",
@@ -667,6 +676,10 @@ class TestLpItemScoping:
         gp_detail = client.get(f"/distributions/{distribution_id}")
         assert gp_detail.status_code == 200
         assert len(gp_detail.json()["items"]) == 2
+
+        # Send it: this test is about per-item scoping, and LPs only ever see
+        # distributions that have actually gone out.
+        client.post(f"/distributions/{distribution_id}/send")
 
         lp_user_id = _seed_user(
             "hanko-lp",

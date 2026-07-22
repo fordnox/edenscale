@@ -15,14 +15,15 @@ Revises: c3d4e5f6a7b8
 Create Date: 2026-07-04 19:00:00.000000
 
 """
+
 import uuid
 
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = 'd4e5f6a7b8c9'
-down_revision = 'c3d4e5f6a7b8'
+revision = "d4e5f6a7b8c9"
+down_revision = "c3d4e5f6a7b8"
 branch_labels = None
 depends_on = None
 
@@ -95,18 +96,14 @@ def upgrade() -> None:
 def downgrade() -> None:
     conn = op.get_bind()
 
-    role_enum = sa.Enum(
-        "superadmin", "admin", "fund_manager", "lp", name="user_role"
-    )
+    role_enum = sa.Enum("superadmin", "admin", "fund_manager", "lp", name="user_role")
     role_enum.create(conn, checkfirst=True)
 
     with op.batch_alter_table("users") as batch_op:
         batch_op.add_column(
             sa.Column("role", role_enum, nullable=False, server_default="lp")
         )
-        batch_op.add_column(
-            sa.Column("organization_id", sa.Uuid(), nullable=True)
-        )
+        batch_op.add_column(sa.Column("organization_id", sa.Uuid(), nullable=True))
         batch_op.create_foreign_key(
             "users_organization_id_fkey",
             "organizations",

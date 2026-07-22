@@ -85,7 +85,7 @@ def _seed_fund(
     organization_id: int,
     *,
     name: str = "NewTaven Fund I",
-    status: FundStatus = FundStatus.draft,
+    status: FundStatus = FundStatus.active,
 ) -> int:
     db = SessionLocal()
     try:

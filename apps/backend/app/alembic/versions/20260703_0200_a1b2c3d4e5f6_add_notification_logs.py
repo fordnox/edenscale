@@ -5,12 +5,13 @@ Revises: c1b1878535ed
 Create Date: 2026-07-03 02:00:00.000000
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = 'a1b2c3d4e5f6'
-down_revision = 'c1b1878535ed'
+revision = "a1b2c3d4e5f6"
+down_revision = "c1b1878535ed"
 branch_labels = None
 depends_on = None
 
@@ -37,20 +38,14 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["organization_id"], ["organizations.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        "ix_notification_logs_user_id", "notification_logs", ["user_id"]
-    )
+    op.create_index("ix_notification_logs_user_id", "notification_logs", ["user_id"])
     op.create_index(
         "ix_notification_logs_notification_type",
         "notification_logs",
         ["notification_type"],
     )
-    op.create_index(
-        "ix_notification_logs_channel", "notification_logs", ["channel"]
-    )
-    op.create_index(
-        "ix_notification_logs_status", "notification_logs", ["status"]
-    )
+    op.create_index("ix_notification_logs_channel", "notification_logs", ["channel"])
+    op.create_index("ix_notification_logs_status", "notification_logs", ["status"])
     op.create_index(
         "ix_notification_logs_created_at", "notification_logs", ["created_at"]
     )

@@ -14,6 +14,12 @@ from app.schemas.fund import FundCreate, FundUpdate
 
 _ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
 
+# Fund states an LP must never see. `draft` is the FundCreate default, so an
+# unfiltered LP path exposes every fund from the moment it is created; the
+# by-slug route makes that probeable. `archived` is retired and should stop
+# appearing in the portal once archive() flips it.
+_LP_HIDDEN_STATUSES = (FundStatus.draft, FundStatus.archived)
+
 
 class FundRepository:
     def __init__(self, db: Session):
@@ -47,7 +53,10 @@ class FundRepository:
             visible_fund_ids = select(Commitment.fund_id).where(
                 Commitment.investor_id.in_(lp_visible_investor_ids(membership))
             )
-            query = query.filter(Fund.id.in_(visible_fund_ids))
+            query = query.filter(
+                Fund.id.in_(visible_fund_ids),
+                Fund.status.notin_(_LP_HIDDEN_STATUSES),
+            )
         return query.order_by(Fund.created_at, Fund.id).offset(skip).limit(limit).all()
 
     def get(self, fund_id: uuid.UUID) -> tuple[Fund, Decimal] | None:
@@ -71,6 +80,8 @@ class FundRepository:
             return False
         if membership.role in _ORG_VISIBLE_ROLES:
             return True
+        if fund.status in _LP_HIDDEN_STATUSES:
+            return False
         return (
             self.db.query(Commitment.id)
             .filter(

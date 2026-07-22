@@ -18,6 +18,7 @@ from app.models import (
     Commitment,
     CommitmentStatus,
     Fund,
+    FundStatus,
     Investor,
     InvestorContact,
     Organization,
@@ -88,7 +89,12 @@ def _seed_user(
 def _seed_fund(organization_id: int, *, name: str = "NewTaven Fund I") -> int:
     db = SessionLocal()
     try:
-        fund = Fund(organization_id=organization_id, name=name, slug=slugify(name))
+        fund = Fund(
+            organization_id=organization_id,
+            name=name,
+            slug=slugify(name),
+            status=FundStatus.active,
+        )
         db.add(fund)
         db.commit()
         return str(fund.id)
@@ -981,6 +987,9 @@ class TestCapitalCallRbac:
                 "items": [{"commitment_id": other_commitment, "amount_due": "1000.00"}]
             },
         )
+        # Both sent — this test isolates investor scoping, not send state.
+        client.post(f"/capital-calls/{own_call}/send")
+        client.post(f"/capital-calls/{other_call}/send")
 
         lp_user_id = _seed_user(
             "hanko-lp",
@@ -1068,6 +1077,9 @@ class TestLpItemScoping:
                 ]
             },
         )
+        # Send it: these tests are about per-item scoping, and LPs only ever
+        # see calls that have actually gone out.
+        client.post(f"/capital-calls/{call_id}/send")
         return org_id, fund_id, investor_a, commitment_a, call_id
 
     def test_lp_sees_only_own_items_on_detail(self, client, override_user):

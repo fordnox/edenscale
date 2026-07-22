@@ -15,6 +15,7 @@ from app.models import (
     Commitment,
     CommitmentStatus,
     Fund,
+    FundStatus,
     Investor,
     InvestorContact,
     Notification,
@@ -89,7 +90,12 @@ def _seed_user(
 def _seed_fund(organization_id: int, *, name: str = "NewTaven Fund I") -> int:
     db = SessionLocal()
     try:
-        fund = Fund(organization_id=organization_id, name=name, slug=slugify(name))
+        fund = Fund(
+            organization_id=organization_id,
+            name=name,
+            slug=slugify(name),
+            status=FundStatus.active,
+        )
         db.add(fund)
         db.commit()
         return str(fund.id)

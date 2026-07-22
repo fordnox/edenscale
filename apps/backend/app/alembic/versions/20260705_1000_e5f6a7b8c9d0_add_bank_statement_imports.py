@@ -5,12 +5,13 @@ Revises: d4e5f6a7b8c9
 Create Date: 2026-07-05 10:00:00.000000
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = 'e5f6a7b8c9d0'
-down_revision = 'd4e5f6a7b8c9'
+revision = "e5f6a7b8c9d0"
+down_revision = "d4e5f6a7b8c9"
 branch_labels = None
 depends_on = None
 
@@ -86,9 +87,7 @@ def upgrade() -> None:
             "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=True
         ),
         sa.ForeignKeyConstraint(["import_id"], ["bank_statement_imports.id"]),
-        sa.ForeignKeyConstraint(
-            ["capital_call_item_id"], ["capital_call_items.id"]
-        ),
+        sa.ForeignKeyConstraint(["capital_call_item_id"], ["capital_call_items.id"]),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
             "import_id",

@@ -18,6 +18,12 @@ from app.schemas.capital_call import CapitalCallCreate, CapitalCallUpdate
 _ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
 
 _SENDABLE_STATUSES = {CapitalCallStatus.draft, CapitalCallStatus.scheduled}
+
+# Statuses an LP must never see. The sendable set *is* the pre-send set, so
+# those two are exactly the states that have not reached an investor yet;
+# `cancelled` is included because a call cancelled straight out of draft was
+# never sent either, and nothing on the row records whether it ever was.
+_LP_HIDDEN_STATUSES = _SENDABLE_STATUSES | {CapitalCallStatus.cancelled}
 _TERMINAL_STATUSES = {CapitalCallStatus.cancelled}
 _ALLOWED_TRANSITIONS: dict[CapitalCallStatus, set[CapitalCallStatus]] = {
     CapitalCallStatus.draft: {
@@ -103,7 +109,10 @@ class CapitalCallRepository:
                 )
                 .where(Commitment.investor_id.in_(lp_visible_investor_ids(membership)))
             )
-            query = query.filter(CapitalCall.id.in_(visible_call_ids))
+            query = query.filter(
+                CapitalCall.id.in_(visible_call_ids),
+                CapitalCall.status.notin_(_LP_HIDDEN_STATUSES),
+            )
         if fund_id is not None:
             query = query.filter(CapitalCall.fund_id == fund_id)
         if status is not None:
@@ -126,6 +135,8 @@ class CapitalCallRepository:
             if fund is None:
                 return False
             return bool(fund.organization_id == membership.organization_id)
+        if call.status in _LP_HIDDEN_STATUSES:
+            return False
         return (
             self.db.query(CapitalCallItem.id)
             .join(Commitment, Commitment.id == CapitalCallItem.commitment_id)

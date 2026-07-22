@@ -18,6 +18,7 @@ from app.models import (
     Commitment,
     CommitmentStatus,
     Fund,
+    FundStatus,
     Investor,
     InvestorContact,
     Organization,
@@ -114,7 +115,12 @@ def _seed_contact(investor_id: str, *, user_id: str | None = None) -> str:
 def _seed_fund(organization_id: str, *, name: str = "NewTaven Fund I") -> str:
     db = SessionLocal()
     try:
-        fund = Fund(organization_id=organization_id, name=name, slug=slugify(name))
+        fund = Fund(
+            organization_id=organization_id,
+            name=name,
+            slug=slugify(name),
+            status=FundStatus.active,
+        )
         db.add(fund)
         db.commit()
         return str(fund.id)
@@ -196,6 +202,41 @@ class TestInvestorScopedReads:
 
         overview = client.get("/investor/dashboard/overview", headers=headers).json()
         assert overview["investors_total"] == 1
+
+    def test_admin_does_not_see_own_draft_in_the_portal(self, client, override_user):
+        """Staff who are also investors must not see drafts they authored.
+
+        In the portal the caller acts as an LP, so a draft they wrote wearing
+        their staff hat is still an unsent letter here. This is the realistic
+        leak: the same person composes and previews, so the sender match fires.
+        """
+        org_id = _seed_org()
+        admin_id = _seed_user("hanko-admin", UserRole.admin, organization_id=org_id)
+        own = _seed_investor(org_id, name="Admin Family LP")
+        _seed_contact(own, user_id=admin_id)
+        fund_id = _seed_fund(org_id)
+        _seed_commitment(fund_id, own)
+        override_user("hanko-admin")
+        headers = {"X-Organization-Id": org_id}
+
+        draft_id = client.post(
+            "/communications",
+            json={
+                "fund_id": fund_id,
+                "type": "announcement",
+                "subject": "Not ready",
+                "body": "Unreviewed",
+            },
+            headers=headers,
+        ).json()["id"]
+
+        listing = client.get("/investor/communications", headers=headers)
+        assert listing.status_code == 200
+        assert draft_id not in [row["id"] for row in listing.json()]
+
+        # Their staff role still shows it in the manager-side view.
+        manager_listing = client.get("/communications", headers=headers).json()
+        assert draft_id in [row["id"] for row in manager_listing]
 
     def test_org_header_without_links_in_that_org_is_403(self, client, override_user):
         org_a = _seed_org("Org A")

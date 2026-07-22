@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Query, Session, selectinload
 
 from app.models.commitment import Commitment
@@ -62,18 +62,17 @@ class CommunicationRepository:
                     ),
                 )
             )
-            # Drafts (sent_at IS NULL) never reach an LP through recipient
-            # visibility. Recipient rows are only written by send(), so this is
-            # belt-and-braces today — but it keeps the guarantee from resting on
-            # that one insertion site.
+            # Drafts (sent_at IS NULL) never surface on the LP path — not even
+            # ones the caller wrote. Staff who are also linked investor
+            # contacts enter the portal with role=lp, so without the outer
+            # filter a manager previewing their own unsent letter would find it
+            # waiting in their investor view.
             query = query.filter(
+                Communication.sent_at.is_not(None),
                 or_(
                     Communication.sender_user_id == membership.user_id,
-                    and_(
-                        Communication.id.in_(visible_recipient_comm_ids),
-                        Communication.sent_at.is_not(None),
-                    ),
-                )
+                    Communication.id.in_(visible_recipient_comm_ids),
+                ),
             )
         if fund_id is not None:
             query = query.filter(Communication.fund_id == fund_id)
@@ -136,6 +135,11 @@ class CommunicationRepository:
     def membership_can_view(
         self, membership: UserOrganizationMembership, communication: Communication
     ) -> bool:
+        # Checked before the sender shortcut below: on the LP path a draft is
+        # invisible even to its own author, since staff acting as investors
+        # arrive here with role=lp.
+        if membership.role not in _ORG_VISIBLE_ROLES and communication.sent_at is None:
+            return False
         if communication.sender_user_id == membership.user_id:
             return True
         if membership.role in _ORG_VISIBLE_ROLES:
@@ -145,10 +149,7 @@ class CommunicationRepository:
             return bool(
                 fund is not None and fund.organization_id == membership.organization_id
             )
-        # LP: visible if they are a recipient (directly or via investor contact)
-        # and the communication has actually been sent — never a draft.
-        if communication.sent_at is None:
-            return False
+        # LP: visible if they are a recipient (directly or via investor contact).
         own_contact_ids = lp_visible_contact_ids(membership)
         return (
             self.db.query(CommunicationRecipient.id)

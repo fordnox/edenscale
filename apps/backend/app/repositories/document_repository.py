@@ -43,7 +43,13 @@ class DocumentRepository:
                 )
             )
         # LP: only docs scoped to investors they're a contact for, plus
-        # non-confidential docs on funds they hold a commitment in.
+        # fund-wide non-confidential docs on funds they hold a commitment in.
+        #
+        # No uploader shortcut here: staff who are also linked contacts enter
+        # the portal with role=lp, and an `uploaded_by_user_id` arm would carry
+        # no organization predicate — it would pull their staff uploads from
+        # every org into this response. Uploader visibility belongs to the
+        # org-role branch above.
         visible_investor_ids = lp_visible_investor_ids(membership)
         visible_fund_ids = select(Commitment.fund_id).where(
             Commitment.investor_id.in_(lp_visible_investor_ids(membership))
@@ -51,8 +57,13 @@ class DocumentRepository:
         return query.filter(
             or_(
                 Document.investor_id.in_(visible_investor_ids),
-                Document.uploaded_by_user_id == membership.user_id,
-                ~Document.is_confidential & Document.fund_id.in_(visible_fund_ids),
+                # Fund-wide only. Without the investor_id IS NULL guard this
+                # arm matches documents scoped to *another* investor on a fund
+                # we share — and list rows carry a presigned download URL, so
+                # that is file contents, not just metadata.
+                Document.investor_id.is_(None)
+                & ~Document.is_confidential
+                & Document.fund_id.in_(visible_fund_ids),
             )
         )
 
@@ -104,9 +115,9 @@ class DocumentRepository:
                     and fund.organization_id == membership.organization_id
                 )
             return False
-        # LP
-        if document.uploaded_by_user_id == membership.user_id:
-            return True
+        # LP — mirrors the LP arm of _visibility_filter exactly, so the list
+        # and the per-object gate can never disagree. No uploader shortcut,
+        # for the reason documented there.
         if document.investor_id is not None:
             return (
                 self.db.query(InvestorContact.id)

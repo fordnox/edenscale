@@ -17,21 +17,21 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '6f03ef2aed6b'
-down_revision = '0a6846b7ba21'
+revision = "6f03ef2aed6b"
+down_revision = "0a6846b7ba21"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    op.drop_column('users', 'password_hash')
+    op.drop_column("users", "password_hash")
 
 
 def downgrade() -> None:
     # Recreated empty (default "") — never held data, see module docstring.
     op.add_column(
-        'users',
+        "users",
         sa.Column(
-            'password_hash', sa.VARCHAR(length=255), nullable=False, server_default=""
+            "password_hash", sa.VARCHAR(length=255), nullable=False, server_default=""
         ),
     )
