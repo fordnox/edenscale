@@ -1,11 +1,23 @@
-<!-- NewTaven Investor — brass leaf, outbound arrow (return / distribution).
+<!-- NewTaven Investor — brass leaf, landmark (institution / custody).
      Silhouette is shared verbatim with mark.svg; only the interior glyph
      and tint distinguish the portal.
-     Glyph is filled geometry, not strokes — some SVG rasterizers drop strokes. -->
+     Glyph is filled geometry, not strokes — some SVG rasterizers drop strokes.
+     It is lucide's `landmark` icon (pediment, four columns, base) redrawn as
+     fills: lucide draws it with stroke-width 2, so each column here is that
+     2-unit stroke expressed as a rect, scaled from the 24 grid into this 64 one. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NewTaven Investor">
   <path fill="#8A6A3F" d="M32 4 C 18 12, 10 24, 10 36 C 10 49, 20 60, 32 60 C 44 60, 54 49, 54 36 C 54 24, 46 12, 32 4 Z"/>
   <g fill="#FBF9F4">
-    <path d="M26 19 L 46 19 L 46 39 L 40 39 L 40 25 L 26 25 Z"/>
-    <path d="M22.12 47.12 L 44.12 25.12 L 39.88 20.88 L 17.88 42.88 Z"/>
+    <!-- Pediment -->
+    <path d="M32 18 L 45 26 L 19 26 Z"/>
+    <!-- Columns. Wider than a literal scaling of lucide's 2-unit stroke:
+         the mark renders at 28px in the header, where a true-to-source
+         column lands near 1.3px and aliases into mush. -->
+    <path d="M21.9 31 H 25.4 V 42 H 21.9 Z"/>
+    <path d="M27.5 31 H 31 V 42 H 27.5 Z"/>
+    <path d="M33.1 31 H 36.6 V 42 H 33.1 Z"/>
+    <path d="M38.7 31 H 42.2 V 42 H 38.7 Z"/>
+    <!-- Base -->
+    <path d="M19 45 H 45 V 48.5 H 19 Z"/>
   </g>
 </svg>
