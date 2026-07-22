@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Query, Session, selectinload
 
 from app.models.commitment import Commitment
@@ -62,10 +62,17 @@ class CommunicationRepository:
                     ),
                 )
             )
+            # Drafts (sent_at IS NULL) never reach an LP through recipient
+            # visibility. Recipient rows are only written by send(), so this is
+            # belt-and-braces today — but it keeps the guarantee from resting on
+            # that one insertion site.
             query = query.filter(
                 or_(
                     Communication.sender_user_id == membership.user_id,
-                    Communication.id.in_(visible_recipient_comm_ids),
+                    and_(
+                        Communication.id.in_(visible_recipient_comm_ids),
+                        Communication.sent_at.is_not(None),
+                    ),
                 )
             )
         if fund_id is not None:
@@ -138,7 +145,10 @@ class CommunicationRepository:
             return bool(
                 fund is not None and fund.organization_id == membership.organization_id
             )
-        # LP: visible if they are a recipient (directly or via investor contact).
+        # LP: visible if they are a recipient (directly or via investor contact)
+        # and the communication has actually been sent — never a draft.
+        if communication.sent_at is None:
+            return False
         own_contact_ids = lp_visible_contact_ids(membership)
         return (
             self.db.query(CommunicationRecipient.id)

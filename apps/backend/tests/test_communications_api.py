@@ -13,6 +13,7 @@ from app.main import app
 from app.models import (
     Commitment,
     CommitmentStatus,
+    CommunicationRecipient,
     Fund,
     Investor,
     InvestorContact,
@@ -464,6 +465,64 @@ class TestCommunicationRbac:
         ids = [row["id"] for row in listing.json()]
         assert own_comm in ids
         assert unsent_comm not in ids
+
+    def test_lp_cannot_see_draft_even_with_a_recipient_row(self, client, override_user):
+        """A draft stays hidden from LPs even if recipient rows exist for it.
+
+        Today recipient rows are only written by send(), so drafts fall out of
+        the LP query for want of a join match. That is an accident of one
+        insertion site, not a guarantee — this test pins the guarantee by
+        forging the recipient row that a compose-time change would create.
+        """
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        fund_id = _seed_fund(org_id)
+        _seed_commitment(fund_id, investor_id, status=CommitmentStatus.approved)
+        lp_user_id = _seed_user(
+            "hanko-lp",
+            UserRole.lp,
+            email="lp@example.com",
+            organization_id=org_id,
+        )
+        _seed_contact(investor_id, lp_user_id, is_primary=True)
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+
+        override_user("hanko-fm")
+        draft_id = client.post(
+            "/communications",
+            json={
+                "fund_id": fund_id,
+                "type": "announcement",
+                "subject": "Unreviewed draft",
+                "body": "Should never reach an LP",
+            },
+        ).json()["id"]
+
+        # Simulate a future change that persists a draft's recipient list.
+        db = SessionLocal()
+        try:
+            db.add(
+                CommunicationRecipient(
+                    communication_id=draft_id,
+                    user_id=lp_user_id,
+                )
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        override_user("hanko-lp")
+        listing = client.get("/communications")
+        assert listing.status_code == 200
+        assert draft_id not in [row["id"] for row in listing.json()]
+
+        # ...and the detail route must not serve the body either.
+        assert client.get(f"/communications/{draft_id}").status_code == 403
 
     def test_lp_cannot_mark_other_recipient_read(self, client, override_user):
         org_id = _seed_org()
