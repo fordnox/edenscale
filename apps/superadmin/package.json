@@ -14,6 +14,7 @@
   "dependencies": {
     "@edenscale/api": "workspace:*",
     "@edenscale/auth": "workspace:*",
+    "@edenscale/brand": "workspace:*",
     "@edenscale/shared": "workspace:*",
     "@edenscale/ui": "workspace:*",
     "@tanstack/react-query": "^5.101.2",

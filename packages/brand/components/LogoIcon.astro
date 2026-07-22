@@ -1,11 +1,17 @@
 ---
-/* Geometric "N" mark — inherits color via currentColor. */
+/* NewTaven raven mark — inherits color via currentColor.
+   Same geometry as Mark.astro; this variant takes its colour from the
+   surrounding text rather than a prop, which is what the site navbars want. */
+import { MARK_PATH, MARK_TRANSFORM, MARK_VIEWBOX } from "./markPath.ts";
+
 interface Props {
   size?: number;
 }
 const { size = 24 } = Astro.props;
 ---
 
-<svg viewBox="0 0 256 256" width={size} height={size} fill="currentColor" aria-hidden="true">
-  <path d="M 56 208 V 48 H 96 L 160 144 V 48 H 200 V 208 H 160 L 96 112 V 208 H 56 Z"></path>
+<svg viewBox={MARK_VIEWBOX} width={size} height={size} fill="currentColor" aria-hidden="true">
+  <g transform={MARK_TRANSFORM}>
+    <path fill-rule="evenodd" d={MARK_PATH}></path>
+  </g>
 </svg>

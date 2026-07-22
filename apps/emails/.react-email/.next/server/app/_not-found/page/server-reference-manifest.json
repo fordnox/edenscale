@@ -1,0 +1,17 @@
+{
+  "node": {
+    "00707f89e6e1f13da4deb8c40b7e69d89824ca5b28": {
+      "workers": {
+        "app/_not-found/page": {
+          "moduleId": 78654,
+          "async": false,
+          "exportedName": "getEmailsDirectoryMetadataAction",
+          "filename": "src/actions/get-emails-directory-metadata-action.ts"
+        }
+      },
+      "exportedName": "getEmailsDirectoryMetadataAction",
+      "filename": "src/actions/get-emails-directory-metadata-action.ts"
+    }
+  },
+  "edge": {}
+}

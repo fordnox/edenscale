@@ -1,0 +1,89 @@
+{
+  "node": {
+    "00707f89e6e1f13da4deb8c40b7e69d89824ca5b28": {
+      "workers": {
+        "app/preview/[...slug]/page": {
+          "moduleId": 94515,
+          "async": true,
+          "exportedName": "getEmailsDirectoryMetadataAction",
+          "filename": "src/actions/get-emails-directory-metadata-action.ts"
+        }
+      },
+      "exportedName": "getEmailsDirectoryMetadataAction",
+      "filename": "src/actions/get-emails-directory-metadata-action.ts"
+    },
+    "60aa2727a0a56d1548d5b18ad132c9cb21372e0a38": {
+      "workers": {
+        "app/preview/[...slug]/page": {
+          "moduleId": 94515,
+          "async": true,
+          "exportedName": "checkCompatibility",
+          "filename": "src/actions/email-validation/check-compatibility.ts"
+        }
+      },
+      "exportedName": "checkCompatibility",
+      "filename": "src/actions/email-validation/check-compatibility.ts"
+    },
+    "7f410311725c75d79b2e8b9efe7bdc436d5b3ddf8f": {
+      "workers": {
+        "app/preview/[...slug]/page": {
+          "moduleId": 94515,
+          "async": true,
+          "exportedName": "getEmailPathFromSlug",
+          "filename": "src/actions/get-email-path-from-slug.ts"
+        }
+      },
+      "exportedName": "getEmailPathFromSlug",
+      "filename": "src/actions/get-email-path-from-slug.ts"
+    },
+    "60662db4574f8f81f225737584e1beba5d0bc95927": {
+      "workers": {
+        "app/preview/[...slug]/page": {
+          "moduleId": 94515,
+          "async": true,
+          "exportedName": "renderEmailByPath",
+          "filename": "src/actions/render-email-by-path.tsx"
+        }
+      },
+      "exportedName": "renderEmailByPath",
+      "filename": "src/actions/render-email-by-path.tsx"
+    },
+    "60f6e30b643c40df79d7b80836e3180f02430bda23": {
+      "workers": {
+        "app/preview/[...slug]/page": {
+          "moduleId": 94515,
+          "async": true,
+          "exportedName": "checkImages",
+          "filename": "src/actions/email-validation/check-images.ts"
+        }
+      },
+      "exportedName": "checkImages",
+      "filename": "src/actions/email-validation/check-images.ts"
+    },
+    "40a4c0aad2cc6ff73ed8a854e20b5c7e5cd7e46eb0": {
+      "workers": {
+        "app/preview/[...slug]/page": {
+          "moduleId": 94515,
+          "async": true,
+          "exportedName": "checkLinks",
+          "filename": "src/actions/email-validation/check-links.ts"
+        }
+      },
+      "exportedName": "checkLinks",
+      "filename": "src/actions/email-validation/check-links.ts"
+    },
+    "7f4cf56a2714f01f9be2b474ecd6dc0d9abecf2062": {
+      "workers": {
+        "app/preview/[...slug]/page": {
+          "moduleId": 94515,
+          "async": true,
+          "exportedName": "exportSingleTemplate",
+          "filename": "src/actions/export-single-template.ts"
+        }
+      },
+      "exportedName": "exportSingleTemplate",
+      "filename": "src/actions/export-single-template.ts"
+    }
+  },
+  "edge": {}
+}

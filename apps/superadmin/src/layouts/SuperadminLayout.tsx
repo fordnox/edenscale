@@ -2,12 +2,12 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import {
   Building2,
   ExternalLink,
-  Landmark,
   Loader2,
   LogOut,
   Users,
 } from "lucide-react"
 
+import superadminMark from "@edenscale/brand/assets/mark-superadmin.svg"
 import { cn } from "@edenscale/shared/utils"
 import {
   DropdownMenu,
@@ -91,7 +91,7 @@ export default function SuperadminLayout() {
       <header className="sticky top-0 z-20 border-b border-[color:var(--border-hairline)] bg-page/85 backdrop-blur supports-[backdrop-filter]:bg-page/75">
         <div className="flex items-center gap-3 px-4 py-3 md:px-8 md:py-4">
           <span className="flex size-9 items-center justify-center border border-[color:var(--border-hairline)] text-conifer-700">
-            <Landmark strokeWidth={1.5} className="size-5" />
+            <img src={superadminMark} alt="" aria-hidden="true" className="size-6" />
           </span>
           <span className="font-sans text-[16px] font-semibold tracking-[-0.04em] text-ink-900">
             {config.VITE_APP_TITLE}

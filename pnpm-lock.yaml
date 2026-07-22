@@ -228,6 +228,9 @@ importers:
       '@edenscale/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@edenscale/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@edenscale/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -316,6 +319,9 @@ importers:
       '@edenscale/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@edenscale/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@edenscale/shared':
         specifier: workspace:*
         version: link:../../packages/shared
