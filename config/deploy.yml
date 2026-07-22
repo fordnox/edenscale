@@ -87,7 +87,8 @@ accessories:
       - redis-data:/data
 
 # Run alembic migrations inside a fresh copy of the just-deployed image,
-# after the new containers are healthy. Always pin --role: without it kamal
+# after the new containers are healthy. Always pin --roles: without it kamal
 # runs the command on every role (web and worker), racing two alembic
-# processes against the same database.
-#   kamal app exec --reuse --role=web "/app/.venv/bin/alembic upgrade head"
+# processes against the same database. Note the flag is plural — --role is
+# silently treated as part of the container command, not as a role filter.
+#   kamal app exec --reuse --roles=web "/app/.venv/bin/alembic upgrade head"

@@ -83,13 +83,16 @@ kamal-build: kamal-check ## Build backend image with Kamal and push to ghcr (sec
 
 kamal-deploy: kamal-check ## Deploy backend with Kamal — pulls fixed :latest image, no build (secrets via 1Password/op)
 	kamal deploy --skip-push --version=latest
-	# --role=web is load-bearing: without it kamal fans the command out to every
+	# --roles=web is load-bearing: without it kamal fans the command out to every
 	# role (web AND worker, see config/deploy.yml), so two alembic processes race
 	# on the same database. Both start at the same revision; one wins and the
 	# other dies mid-migration with a spurious "column already exists" /
 	# "duplicate key" error even though the schema is fine. Migrations must run
 	# exactly once, from one role.
-	kamal app exec --reuse --version=latest --role=web "/app/.venv/bin/alembic upgrade head"
+	# The flag is PLURAL. Kamal has no --role; the singular form is not rejected,
+	# it is passed through as the first word of the container command, so you get
+	# `exec: "--role=web": executable file not found` *and* no role filtering.
+	kamal app exec --reuse --version=latest --roles=web "/app/.venv/bin/alembic upgrade head"
 
 kamal-logs: kamal-check ## Tail logs
 	kamal app logs -f

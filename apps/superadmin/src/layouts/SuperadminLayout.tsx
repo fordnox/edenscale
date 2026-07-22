@@ -9,9 +9,6 @@ import {
 } from "lucide-react"
 
 import { cn } from "@edenscale/shared/utils"
-import { Button } from "@edenscale/ui/button"
-import { Card } from "@edenscale/ui/card"
-import { EmptyState } from "@edenscale/ui/EmptyState"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,6 +64,26 @@ export default function SuperadminLayout() {
   const handleSignOut = async () => {
     await logout()
     navigate("/superadmin/login")
+  }
+
+  // The role gate runs before any chrome. Until /users/me confirms the global
+  // superadmin role we render neither the header nor the nav — showing console
+  // navigation to someone who turns out to have no access advertises the
+  // surface and flashes links they cannot follow.
+  if (meQuery.isLoading) {
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-page text-ink-500">
+        <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
+      </div>
+    )
+  }
+
+  if (!me?.is_superadmin) {
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-page px-6 text-center text-ink-900">
+        You do not have access to this area
+      </div>
+    )
   }
 
   return (
@@ -162,27 +179,7 @@ export default function SuperadminLayout() {
         </nav>
       </header>
       <main className="flex flex-1 flex-col">
-        {meQuery.isLoading ? (
-          <div className="flex min-h-[280px] items-center justify-center text-ink-500">
-            <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
-          </div>
-        ) : !me?.is_superadmin ? (
-          <div className="px-8 py-16">
-            <Card>
-              <EmptyState
-                title="You do not have access to this area"
-                body="The superadmin console is reserved for platform superadmins. Contact a superadmin if you need access."
-                action={
-                  <Button asChild variant="secondary" size="sm">
-                    <a href="/manager">Go to manager app</a>
-                  </Button>
-                }
-              />
-            </Card>
-          </div>
-        ) : (
-          <Outlet />
-        )}
+        <Outlet />
       </main>
     </div>
   )
