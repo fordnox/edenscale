@@ -210,3 +210,4 @@ apps/gateway/node_modules/
 database.db
 .turbo
 node_modules/
+.react-email
