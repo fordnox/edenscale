@@ -2,74 +2,79 @@
 import Layout from "../layouts/Layout.astro";
 import GrainField from "../components/GrainField.astro";
 import LogoIcon from "@edenscale/brand/components/LogoIcon.astro";
+import { MARK_PATH, MARK_TRANSFORM } from "@edenscale/brand/components/markPath.ts";
 
-/* Faux-logotype styling per brand keeps the marquee feeling like a row of
-   real marks without shipping image assets. */
-const integrations = [
-  {
-    name: "Stripe",
-    style: "font-family: Georgia, 'Times New Roman', serif; font-weight: 700; letter-spacing: -0.02em; font-size: 15px;",
-  },
-  {
-    name: "DocuSign",
-    style: "font-family: Arial, sans-serif; font-weight: 900; letter-spacing: 0.08em; font-size: 13px; text-transform: uppercase;",
-  },
-  {
-    name: "Plaid",
-    style: "font-family: 'Trebuchet MS', sans-serif; font-weight: 600; letter-spacing: 0.01em; font-size: 15px; font-style: italic;",
-  },
-  {
-    name: "Carta",
-    style: "font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: 0.12em; font-size: 13px; text-transform: uppercase;",
-  },
-  {
-    name: "Xero",
-    style: "font-family: Palatino, 'Book Antiqua', serif; font-weight: 400; letter-spacing: -0.01em; font-size: 16px;",
-  },
-  {
-    name: "Salesforce",
-    style: "font-family: Impact, 'Arial Narrow', sans-serif; font-weight: 400; letter-spacing: 0.04em; font-size: 14px;",
-  },
-  {
-    name: "HubSpot",
-    style: "font-family: Verdana, sans-serif; font-weight: 700; letter-spacing: -0.03em; font-size: 13px;",
-  },
-];
+/* ---------- Hero flow diagram ----------
+   A fixed 700x420 SVG stage: documents queue on the left, route through the
+   NewTaven mark, and accumulate in the fund's vault. Everything is authored in
+   stage units so one viewBox scales the whole diagram with the hero card. */
+const FLOW_ROWS = [72, 152, 232]; // vertical centre of each visible row
+const FLOW_PILL_Y = 316; // vertical centre of the "+N more" pill
+const FLOW_ROW_H = 48;
+const FLOW_ENTER_Y = -8; // where a new row starts, above the first slot
+const FLOW_EXIT_Y = 284; // where the oldest row fades into the pill
+const NODE = { x: 352, y: 195, size: 40 };
+const LINE_START = 214;
+const CARD = { x: 392, y: 134, w: 232, h: 122 };
 
-const backers = [
-  {
-    name: "Meridian Family Office",
-    style: "font-family: 'Times New Roman', serif; font-weight: 400; letter-spacing: 0.02em; font-size: 14px;",
-  },
-  {
-    name: "Kessler Capital",
-    style: "font-family: 'Arial Black', Arial, sans-serif; font-weight: 900; letter-spacing: 0.08em; font-size: 16px; text-transform: uppercase;",
-  },
-  {
-    name: "Novak & Sons",
-    style: "font-family: Impact, 'Arial Narrow', sans-serif; font-weight: 700; letter-spacing: 0.05em; font-size: 18px;",
-  },
-  {
-    name: "Alderman Endowment",
-    style: "font-family: Georgia, serif; font-weight: 600; letter-spacing: -0.02em; font-size: 17px;",
-  },
-  {
-    name: "Beacon Family Office",
-    style: "font-family: Helvetica, Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 15px;",
-  },
-  {
-    name: "Stillwater Group",
-    style: "font-family: Verdana, sans-serif; font-weight: 700; letter-spacing: 0.06em; font-size: 14px; text-transform: uppercase;",
-  },
-  {
-    name: "Harlow Rand",
-    style: "font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: 0.18em; font-size: 14px;",
-  },
-  {
-    name: "Corminster Trust",
-    style: "font-family: Palatino, 'Book Antiqua', serif; font-weight: 500; letter-spacing: 0.03em; font-size: 15px;",
-  },
+/* Each source routes right, turns once, and joins a tight bundle at the mark.
+   Outer rows turn later so the four verticals never share an x. */
+const BENDS = [300, 282, 288, 306];
+const BUNDLE = [-4.5, -1.5, 1.5, 4.5];
+
+const elbow = (x0: number, y0: number, xb: number, y1: number, x2: number) => {
+  if (Math.abs(y1 - y0) < 0.5) return `M ${x0} ${y0} H ${x2}`;
+  const down = y1 > y0;
+  const s = down ? 1 : -1;
+  const r = Math.min(14, Math.abs(y1 - y0) / 2, Math.abs(xb - x0), Math.abs(x2 - xb));
+  return [
+    `M ${x0} ${y0}`,
+    `H ${xb - r}`,
+    `A ${r} ${r} 0 0 ${down ? 1 : 0} ${xb} ${y0 + s * r}`,
+    `V ${y1 - s * r}`,
+    `A ${r} ${r} 0 0 ${down ? 0 : 1} ${xb + r} ${y1}`,
+    `H ${x2}`,
+  ].join(" ");
+};
+
+const flowLines = [...FLOW_ROWS, FLOW_PILL_Y].map((y, i) =>
+  elbow(LINE_START, y, BENDS[i], NODE.y + BUNDLE[i], NODE.x - NODE.size / 2 - 2)
+);
+
+/* Decorative dial on the right, clipped by the stage edge. */
+const ARC = { cx: 604, cy: 195, r: 150 };
+const arc = (a0: number, a1: number) => {
+  const p = (deg: number) => [
+    (ARC.cx + ARC.r * Math.cos((deg * Math.PI) / 180)).toFixed(1),
+    (ARC.cy + ARC.r * Math.sin((deg * Math.PI) / 180)).toFixed(1),
+  ];
+  const [x0, y0] = p(a0);
+  const [x1, y1] = p(a1);
+  return `M ${x0} ${y0} A ${ARC.r} ${ARC.r} 0 ${Math.abs(a1 - a0) > 180 ? 1 : 0} ${a1 > a0 ? 1 : 0} ${x1} ${y1}`;
+};
+const arcTrack = [
+  [-132, -108],
+  [-104, -30],
+  [-24, 20],
+  [26, 64],
+  [70, 116],
+].map(([a, b]) => arc(a, b));
+const arcTicks = arc(-100, -36);
+
+/* The queue cycles through these; the register never runs out of paperwork. */
+const vaultDocs = [
+  { name: "Subscription Agreement", from: "Meridian Family Office", type: "PDF" },
+  { name: "Wire Confirmation", from: "Kessler Capital", type: "PDF" },
+  { name: "Side Letter", from: "Novak & Sons", type: "DOC" },
+  { name: "Schedule K-1 · 2025", from: "Alderman Endowment", type: "PDF" },
+  { name: "Capital Call Notice", from: "Beacon Family Office", type: "PDF" },
+  { name: "Quarterly Letter Q2", from: "Stillwater Group", type: "DOC" },
+  { name: "Bank Confirmation", from: "Harlow Rand", type: "PDF" },
+  { name: "Audited Financials", from: "Corminster Trust", type: "XLS" },
+  { name: "Form W-9", from: "Meridian Family Office", type: "PDF" },
+  { name: "Transfer Agreement", from: "Kessler Capital", type: "DOC" },
 ];
+const vaultSeed = { docs: 1284, size: 6.1, more: 1281 };
 
 const problems = [
   {
@@ -237,31 +242,100 @@ const defaultOutput =
     </nav>
 
     <section class="hero">
-      <div class="hero-card">
-        <GrainField kind="card" pattern="dots" />
+      <div class="hero-card nv-dark">
+        <GrainField kind="dark" pattern="dots" />
         <div class="hero-overlay">
-          <h1 class="hero-title">Fund Operations,<br />Automated</h1>
-          <p class="hero-sub">
-            The LP register, the capital calls, the distributions, and the follow-ups in between —
-            run in one place instead of across your inbox and a spreadsheet.
-          </p>
-          <a href="/manager" class="pill pill--hero">
-            <span>Try Now</span>
-            <span class="pill-arrow" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
-            </span>
-          </a>
+          <div class="hero-copy">
+            <h1 class="hero-title">Fund Operations,<br />Automated</h1>
+            <p class="hero-sub">
+              The LP register, the capital calls, the distributions, and the follow-ups in between —
+              run in one place instead of across your inbox and a spreadsheet.
+            </p>
+            <a href="/manager" class="pill pill--invert pill--hero">
+              <span>Try Now</span>
+              <span class="pill-arrow pill-arrow--dark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+              </span>
+            </a>
+          </div>
 
-          <div class="hero-marquee">
-            <div class="marquee-track marquee-track--hero">
-              {[0, 1].map((dup) => (
-                <div class="marquee-group" aria-hidden={dup === 1}>
-                  {integrations.map((b) => (
-                    <span class="marquee-item" style={b.style}>{b.name}</span>
-                  ))}
-                </div>
+          <div class="hero-flow-col" aria-hidden="true">
+            <svg class="hero-flow" viewBox="0 0 700 420" data-flow>
+              <!-- Decorative dial -->
+              <g class="flow-dial">
+                <circle cx={ARC.cx} cy={ARC.cy} r={ARC.r - 34} class="flow-dial-glow"></circle>
+                {arcTrack.map((d) => <path d={d} class="flow-dial-track"></path>)}
+                <path d={arcTicks} class="flow-dial-ticks"></path>
+              </g>
+
+              <!-- Connectors: queue -> mark -> vault -->
+              {flowLines.map((d) => <path d={d} class="flow-line"></path>)}
+              {[-4, 0, 4].map((dy) => (
+                <path
+                  d={`M ${NODE.x + NODE.size / 2} ${NODE.y + dy} H ${CARD.x}`}
+                  class="flow-line"
+                ></path>
               ))}
-            </div>
+
+              <!-- The NewTaven mark, where everything converges -->
+              <g class="flow-node">
+                <rect
+                  x={NODE.x - NODE.size / 2}
+                  y={NODE.y - NODE.size / 2}
+                  width={NODE.size}
+                  height={NODE.size}
+                  rx="12"
+                ></rect>
+                <g transform={`translate(${NODE.x - 11} ${NODE.y - 11}) scale(0.34375)`}>
+                  <g transform={MARK_TRANSFORM}>
+                    <path fill-rule="evenodd" d={MARK_PATH} class="flow-node-mark"></path>
+                  </g>
+                </g>
+              </g>
+
+              <!-- The vault -->
+              <g class="flow-card">
+                <rect x={CARD.x} y={CARD.y} width={CARD.w} height={CARD.h} rx="10"></rect>
+                <text x={CARD.x + 24} y={CARD.y + 32} class="flow-card-title">Document Vault</text>
+                <text x={CARD.x + 24} y={CARD.y + 62} class="flow-card-value"
+                  ><tspan data-vault-docs>1,284</tspan> docs · <tspan data-vault-size>6.1</tspan> GB</text
+                >
+                <line
+                  x1={CARD.x + 16}
+                  y1={CARD.y + 80}
+                  x2={CARD.x + CARD.w - 16}
+                  y2={CARD.y + 80}
+                  class="flow-card-rule"></line>
+                <text x={CARD.x + 24} y={CARD.y + 106} class="flow-card-foot">Fund II · 19 LPs</text>
+              </g>
+
+              <!-- The queue -->
+              <g data-flow-list>
+                {vaultDocs.slice(0, 3).map((doc, i) => (
+                  <g class="flow-row" style={`--y: ${FLOW_ROWS[i] - FLOW_ROW_H / 2}px`}>
+                    <path
+                      class="flow-page"
+                      d="M 8 2 H 22 L 33 13 V 40 A 6 6 0 0 1 27 46 H 8 A 6 6 0 0 1 2 40 V 8 A 6 6 0 0 1 8 2 Z"
+                    ></path>
+                    <path class="flow-page-fold" d="M 22 2 V 9 A 4 4 0 0 0 26 13 H 33"></path>
+                    <text x="17.5" y="32" class="flow-page-type">{doc.type}</text>
+                    <text x="54" y="21" class="flow-row-name">{doc.name}</text>
+                    <text x="54" y="40" class="flow-row-meta">{doc.from}</text>
+                  </g>
+                ))}
+              </g>
+
+              <!-- The backlog -->
+              <g class="flow-pill" transform={`translate(0 ${FLOW_PILL_Y - 22})`}>
+                <rect x="0" y="0" width="206" height="44" rx="22"></rect>
+                <text x="22" y="28"
+                  ><tspan class="flow-pill-n" data-more-count>+1,281</tspan><tspan
+                    dx="9"
+                    class="flow-pill-l">more documents</tspan
+                  ></text
+                >
+              </g>
+            </svg>
           </div>
         </div>
       </div>
@@ -332,24 +406,6 @@ const defaultOutput =
               register — not from a folder someone keeps by hand.
             </p>
           </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- Trusted by -->
-    <section id="investors" class="backers">
-      <div class="container backers-grid">
-        <p class="backers-note">The managers and family offices<br />already running on NewTaven.</p>
-        <div class="backers-marquee">
-          <div class="marquee-track marquee-track--backers">
-            {[0, 1].map((dup) => (
-              <div class="marquee-group" aria-hidden={dup === 1}>
-                {backers.map((b) => (
-                  <span class="marquee-item marquee-item--backer" style={b.style}>{b.name}</span>
-                ))}
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </section>
@@ -609,7 +665,18 @@ const defaultOutput =
   </div>
 </Layout>
 
-<script define:vars={{ presets, defaultOutput }}>
+<script
+  define:vars={{
+    presets,
+    defaultOutput,
+    vaultDocs,
+    vaultSeed,
+    FLOW_ROWS,
+    FLOW_ROW_H,
+    FLOW_ENTER_Y,
+    FLOW_EXIT_Y,
+  }}
+>
   // Scroll reveals — opacity 0 -> 1 + translateY, once
   const revealObs = new IntersectionObserver(
     (entries) => {
@@ -624,9 +691,82 @@ const defaultOutput =
   );
   document.querySelectorAll("[data-reveal]").forEach((el) => revealObs.observe(el));
 
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Hero flow — the document queue advances one slot at a time: a new document
+  // slides in at the top, the stack shifts down, the oldest drops into the
+  // backlog pill, and the vault totals tick up.
+  const flow = document.querySelector("[data-flow]");
+  if (flow) {
+    const list = flow.querySelector("[data-flow-list]");
+    const docsEl = flow.querySelector("[data-vault-docs]");
+    const sizeEl = flow.querySelector("[data-vault-size]");
+    const moreEl = flow.querySelector("[data-more-count]");
+    const rows = Array.from(list.querySelectorAll(".flow-row"));
+    const template = rows[0].cloneNode(true);
+    const slotY = (i) => FLOW_ROWS[i] - FLOW_ROW_H / 2;
+
+    let next = 3;
+    let docs = vaultSeed.docs;
+    let size = vaultSeed.size;
+    let more = vaultSeed.more;
+
+    const fill = (el, doc) => {
+      el.querySelector(".flow-page-type").textContent = doc.type;
+      el.querySelector(".flow-row-name").textContent = doc.name;
+      el.querySelector(".flow-row-meta").textContent = doc.from;
+    };
+
+    const advance = () => {
+      const leaving = rows.pop();
+      leaving.style.setProperty("--y", `${FLOW_EXIT_Y}px`);
+      leaving.style.opacity = "0";
+      setTimeout(() => leaving.remove(), 950);
+
+      rows.forEach((row, i) => row.style.setProperty("--y", `${slotY(i + 1)}px`));
+
+      const entering = template.cloneNode(true);
+      fill(entering, vaultDocs[next % vaultDocs.length]);
+      next += 1;
+      entering.style.setProperty("--y", `${FLOW_ENTER_Y - FLOW_ROW_H / 2}px`);
+      entering.style.opacity = "0";
+      list.appendChild(entering);
+      entering.getBoundingClientRect();
+      entering.style.setProperty("--y", `${slotY(0)}px`);
+      entering.style.opacity = "1";
+      rows.unshift(entering);
+
+      docs += 1;
+      more += 1;
+      // Roughly 50MB a document, so the vault size stays believable on a tab
+      // someone leaves open.
+      size = Math.round((size + 0.05) * 100) / 100;
+      docsEl.textContent = docs.toLocaleString("en-US");
+      sizeEl.textContent = size.toFixed(1);
+      moreEl.textContent = `+${more.toLocaleString("en-US")}`;
+    };
+
+    // Only run while the hero is on screen; a hidden conveyor helps no one.
+    if (!reducedMotion) {
+      let timer = null;
+      const flowObs = new IntersectionObserver(
+        (entries) => {
+          const visible = entries.some((entry) => entry.isIntersecting);
+          if (visible && timer === null) {
+            timer = setInterval(advance, 1900);
+          } else if (!visible && timer !== null) {
+            clearInterval(timer);
+            timer = null;
+          }
+        },
+        { threshold: 0.2 }
+      );
+      flowObs.observe(flow);
+    }
+  }
+
   // Cadence — draw timeline + activate markers + slide in cards
   const cadenceSection = document.getElementById("cadence-inner");
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // Background video is decorative — hold it still for reduced-motion users.
   const bgVideo = document.querySelector(".bg-video");
