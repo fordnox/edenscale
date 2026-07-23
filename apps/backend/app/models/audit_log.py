@@ -21,6 +21,11 @@ class AuditLog(Base):
     entity_id = Column(Uuid(as_uuid=True), nullable=True)
     audit_metadata = Column("metadata", Text, nullable=True)
     ip_address = Column(String(45), nullable=True)
+    # ISO 3166-1 alpha-2 from Cloudflare's CF-IPCountry ("XX" unknown, "T1"/"T2"
+    # Tor). Null for traffic that did not transit the edge — local dev, tests,
+    # and background jobs.
+    country = Column(String(2), nullable=True)
+    user_agent = Column(String(400), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
     user = relationship("User", back_populates="audit_logs")

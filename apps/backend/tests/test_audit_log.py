@@ -177,6 +177,27 @@ class TestEventListeners:
         assert len(delete_rows) == 1
         assert delete_rows[0].entity_id == fund_id_holder["id"]
 
+    def test_client_identity_is_pulled_from_context(self):
+        org_id = _seed_org()
+        user_id = _seed_user("hanko-client", UserRole.admin, organization_id=org_id)
+        set_audit_context(
+            user_id=user_id,
+            ip_address="203.0.113.7",
+            country="EE",
+            user_agent="Mozilla/5.0",
+        )
+        db = SessionLocal()
+        try:
+            db.add(Investor(organization_id=org_id, name="Geo LP"))
+            db.commit()
+        finally:
+            db.close()
+        rows = _audit_rows(entity_type="investor", action="create")
+        assert len(rows) == 1
+        assert rows[0].ip_address == "203.0.113.7"
+        assert rows[0].country == "EE"
+        assert rows[0].user_agent == "Mozilla/5.0"
+
     def test_actor_is_pulled_from_context(self):
         org_id = _seed_org()
         user_id = _seed_user("hanko-actor", UserRole.admin, organization_id=org_id)
@@ -411,9 +432,91 @@ class TestAuditLogRoute:
         assert resp.json() == []
 
 
+class TestLoginEvents:
+    """Sign-ins are org-less rows folded into the org view for its members."""
+
+    def _login_row(self, user_id: str, *, country: str = "EE") -> None:
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == user_id).one()
+            set_audit_context(
+                user_id=user.id,
+                ip_address="203.0.113.7",
+                country=country,
+                user_agent="Mozilla/5.0",
+            )
+            record_audit(
+                db,
+                user=user,
+                action="login",
+                entity_type="user",
+                entity_id=user.id,
+            )
+        finally:
+            db.close()
+
+    def test_login_row_carries_ip_and_country(self):
+        org_id = _seed_org("Login Org")
+        user_id = _seed_user("hanko-login", UserRole.admin, organization_id=org_id)
+        self._login_row(user_id)
+
+        rows = _audit_rows(action="login")
+        assert len(rows) == 1
+        assert rows[0].organization_id is None
+        assert rows[0].ip_address == "203.0.113.7"
+        assert rows[0].country == "EE"
+        assert rows[0].user_agent == "Mozilla/5.0"
+
+    def test_admin_sees_member_logins(self, client, override_user):
+        org_id = _seed_org("Login Visible Org")
+        _seed_user("hanko-login-admin", UserRole.admin, organization_id=org_id)
+        member_id = _seed_user(
+            "hanko-login-member", UserRole.lp, organization_id=org_id
+        )
+        self._login_row(member_id)
+
+        override_user("hanko-login-admin")
+        resp = client.get("/audit-logs?action=login")
+        assert resp.status_code == 200
+        rows = resp.json()
+        assert len(rows) == 1
+        assert rows[0]["user_id"] == member_id
+        assert rows[0]["country"] == "EE"
+        assert rows[0]["ip_address"] == "203.0.113.7"
+
+    def test_outsider_logins_stay_invisible(self, client, override_user):
+        org_id = _seed_org("Home Org")
+        other_org_id = _seed_org("Other Org")
+        _seed_user("hanko-home-admin", UserRole.admin, organization_id=org_id)
+        outsider_id = _seed_user(
+            "hanko-outsider", UserRole.admin, organization_id=other_org_id
+        )
+        self._login_row(outsider_id, country="US")
+
+        override_user("hanko-home-admin")
+        resp = client.get("/audit-logs?action=login")
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_lp_sees_only_own_login(self, client, override_user):
+        org_id = _seed_org("LP Login Org")
+        lp_id = _seed_user("hanko-lp-login", UserRole.lp, organization_id=org_id)
+        peer_id = _seed_user("hanko-lp-peer", UserRole.lp, organization_id=org_id)
+        self._login_row(lp_id)
+        self._login_row(peer_id)
+
+        override_user("hanko-lp-login")
+        resp = client.get("/audit-logs?action=login")
+        assert resp.status_code == 200
+        rows = resp.json()
+        assert [r["user_id"] for r in rows] == [lp_id]
+
+
 def test_audit_context_default_is_empty():
     set_audit_context()
     ctx = get_audit_context()
     assert isinstance(ctx, AuditContext)
     assert ctx.user_id is None
     assert ctx.ip_address is None
+    assert ctx.country is None
+    assert ctx.user_agent is None

@@ -103,6 +103,24 @@ function formatTimestamp(value: string | null) {
   }).format(d)
 }
 
+const REGION_NAMES =
+  typeof Intl !== "undefined" && "DisplayNames" in Intl
+    ? new Intl.DisplayNames(["en"], { type: "region" })
+    : null
+
+// Cloudflare's CF-IPCountry is ISO 3166-1 alpha-2 except for two sentinels:
+// XX when the edge cannot resolve the country, T1/T2 for Tor exit nodes.
+function formatCountry(code: string | null) {
+  if (!code) return "—"
+  if (code === "XX") return "Unknown"
+  if (code === "T1" || code === "T2") return "Tor"
+  try {
+    return REGION_NAMES?.of(code) ?? code
+  } catch {
+    return code
+  }
+}
+
 function actionTone(action: string) {
   switch (action) {
     case "create":
@@ -205,7 +223,7 @@ function AuditLogContent() {
       <PageHero
         eyebrow="Compliance"
         title="Audit log."
-        description="Every create, update, and delete recorded across the workspace, with the responsible actor and the diff."
+        description="Every sign-in, create, update, and delete recorded across the workspace, with the responsible actor, where they connected from, and the diff."
       />
 
       <div className="px-4 pb-16 sm:px-6 md:px-8">
@@ -339,6 +357,7 @@ function AuditLogContent() {
                         <TH>Action</TH>
                         <TH>Entity</TH>
                         <TH>IP address</TH>
+                        <TH>Country</TH>
                       </tr>
                     </thead>
                     <tbody>
@@ -427,6 +446,7 @@ function AuditRow({ row, actorName, isExpanded, onToggle }: AuditRowProps) {
   const entityLabel = row.entity_type
     ? `${titleCase(row.entity_type)}${row.entity_id !== null ? ` #${row.entity_id}` : ""}`
     : "—"
+  const countryLabel = formatCountry(row.country)
   const metadataPretty = useMemo(() => {
     if (!row.audit_metadata) return null
     try {
@@ -450,16 +470,25 @@ function AuditRow({ row, actorName, isExpanded, onToggle }: AuditRowProps) {
         </TD>
         <TD>{entityLabel}</TD>
         <TD>{row.ip_address ?? "—"}</TD>
+        <TD>{countryLabel}</TD>
       </TR>
       {isExpanded && (
         <tr className="border-b border-[color:var(--border-hairline)] bg-parchment-100">
-          <td colSpan={5} className="px-4 pb-6 pt-2 first:pl-0 last:pr-0">
+          <td colSpan={6} className="px-4 pb-6 pt-2 first:pl-0 last:pr-0">
             <div
               className={cn(
                 "flex flex-col gap-2",
                 !metadataPretty && "items-center text-center",
               )}
             >
+              {row.user_agent && (
+                <>
+                  <Eyebrow>Device</Eyebrow>
+                  <p className="font-mono text-[12px] leading-[1.55] text-ink-700">
+                    {row.user_agent}
+                  </p>
+                </>
+              )}
               <Eyebrow>Metadata</Eyebrow>
               {metadataPretty ? (
                 <pre

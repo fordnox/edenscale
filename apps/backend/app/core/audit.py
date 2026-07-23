@@ -2,8 +2,9 @@
 
 Every mutation on the entities listed in ``_ENTITY_TYPES`` triggers an
 ``after_insert`` / ``after_update`` / ``after_delete`` listener that writes a
-row to ``audit_logs`` directly via the active DB connection. The actor and
-client IP are pulled from the request-scoped ``AuditContext`` populated by
+row to ``audit_logs`` directly via the active DB connection. The actor and the
+client identity (IP, country, user agent) are pulled from the request-scoped
+``AuditContext`` populated by
 ``app.middleware.audit_context.AuditContextMiddleware``.
 
 Listeners run inside the same transaction as the originating change, so a
@@ -27,6 +28,7 @@ from sqlalchemy import event, inspect, select
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Mapper, Session
 
+from app.core.request_context import get_request_context
 from app.middleware.audit_context import get_audit_context
 from app.models.audit_log import AuditLog
 from app.models.bank_payment_transaction import BankPaymentTransaction
@@ -190,6 +192,8 @@ def _write_audit_via_connection(
     entity_id: uuid.UUID | None,
     metadata: dict[str, Any] | None,
     ip_address: str | None,
+    country: str | None,
+    user_agent: str | None,
 ) -> None:
     # NB: the underlying column is named ``metadata`` (the attribute on the
     # ORM class is ``audit_metadata``, but Table.c.keys() exposes the SQL
@@ -204,6 +208,8 @@ def _write_audit_via_connection(
             entity_id=entity_id,
             metadata=_serialize_metadata(metadata),
             ip_address=ip_address,
+            country=country,
+            user_agent=user_agent,
         )
     )
 
@@ -221,19 +227,23 @@ def record_audit(
 ) -> AuditLog:
     """Persist an audit row from non-listener code paths (commits its own row).
 
-    Pull actor + IP from the explicit ``user`` / ``request`` arguments when
-    given; otherwise fall back to whatever the request-scoped audit context
-    holds. This makes the helper safe to call from background jobs that have
-    set the context manually. Users belong to organizations only through
-    memberships, so callers that want org attribution pass
+    Pull actor + client identity from the explicit ``user`` / ``request``
+    arguments when given; otherwise fall back to whatever the request-scoped
+    audit context holds. This makes the helper safe to call from background
+    jobs that have set the context manually. Users belong to organizations
+    only through memberships, so callers that want org attribution pass
     ``organization_id`` explicitly.
     """
     ctx = get_audit_context()
     user_id = user.id if user is not None else ctx.user_id
     ip_address = ctx.ip_address
+    country = ctx.country
+    user_agent = ctx.user_agent
     if request is not None:
-        client = getattr(request, "client", None)
-        ip_address = client.host if client else ip_address
+        client = get_request_context(request)
+        ip_address = client.ip or ip_address
+        country = client.country or country
+        user_agent = client.user_agent or user_agent
 
     log = AuditLog(
         user_id=user_id,
@@ -243,6 +253,8 @@ def record_audit(
         entity_id=entity_id,
         audit_metadata=_serialize_metadata(metadata),
         ip_address=ip_address,
+        country=country,
+        user_agent=user_agent,
     )
     db.add(log)
     db.commit()
@@ -271,6 +283,8 @@ def _make_listener(action: str, with_diff: bool):
             entity_id=_entity_id(target),
             metadata=metadata,
             ip_address=ctx.ip_address,
+            country=ctx.country,
+            user_agent=ctx.user_agent,
         )
 
     return _listener

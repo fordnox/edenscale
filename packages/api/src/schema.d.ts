@@ -1823,6 +1823,10 @@ export interface components {
             audit_metadata: Record<string, never> | null;
             /** Ip Address */
             ip_address: string | null;
+            /** Country */
+            country: string | null;
+            /** User Agent */
+            user_agent: string | null;
             /** Created At */
             created_at: string | null;
         };

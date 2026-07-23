@@ -8,6 +8,7 @@ from jwt import PyJWKClient
 from jwt.exceptions import PyJWKClientError
 from sqlalchemy.orm import Session
 
+from app.core.audit import record_audit
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
@@ -146,7 +147,18 @@ async def get_current_user(
 
     # Stateless JWTs mean there is no login endpoint to hook, so "last
     # login" is approximated here; the touch is throttled inside the
-    # repository so it is not a write per request.
-    repo.touch_last_login(user)
+    # repository so it is not a write per request. When the stamp actually
+    # moves we treat that as a fresh sign-in and record it in the audit trail
+    # with the client's IP / country / user agent, which is what makes the
+    # "who signed in, from where" view possible at all.
+    if repo.touch_last_login(user):
+        record_audit(
+            db,
+            user=user,
+            action="login",
+            entity_type="user",
+            entity_id=user.id,  # type: ignore[invalid-argument-type]
+            request=request,
+        )
 
     return user

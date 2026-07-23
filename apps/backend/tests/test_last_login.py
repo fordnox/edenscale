@@ -11,6 +11,8 @@ throttles the write to at most one per ``min_interval``. These tests cover:
 * The full request path — ``get_current_user`` with a (faked) verified JWT —
   persists the stamp, since route tests elsewhere override the dependency
   and never exercise this.
+* A moved stamp writes exactly one ``login`` audit row carrying the client's
+  Cloudflare-resolved IP, country and user agent.
 """
 
 import uuid
@@ -22,7 +24,7 @@ from fastapi.testclient import TestClient
 from app.core import auth as auth_module
 from app.core.database import Base, SessionLocal, engine
 from app.main import app
-from app.models import User
+from app.models import AuditLog, User
 from app.repositories.user_repository import UserRepository
 
 
@@ -128,3 +130,71 @@ class TestGetCurrentUserStampsLastLogin:
         assert response.json()["last_login_at"] is not None
 
         assert _load_last_login(user_id) is not None
+
+
+class TestLoginAuditTrail:
+    """A moved ``last_login_at`` stamp is the sign-in edge — it writes one
+    audit row carrying the Cloudflare-resolved IP and country."""
+
+    def _sign_in(self, monkeypatch, *, headers: dict[str, str]) -> None:
+        async def _fake_verify(token: str) -> dict:
+            return {"sub": "hanko-trail", "email": "trail@example.com"}
+
+        monkeypatch.setattr(auth_module, "verify_hanko_token", _fake_verify)
+        client = TestClient(app)
+        response = client.get(
+            "/users/me",
+            headers={"Authorization": "Bearer test-token", **headers},
+        )
+        assert response.status_code == 200
+
+    def _login_rows(self) -> list[AuditLog]:
+        db = SessionLocal()
+        try:
+            return (
+                db.query(AuditLog)
+                .filter(AuditLog.action == "login")
+                .order_by(AuditLog.created_at)
+                .all()
+            )
+        finally:
+            db.close()
+
+    def test_sign_in_records_ip_and_country(self, monkeypatch):
+        user_id = _seed_user(subject_id="hanko-trail", email="trail@example.com")
+        self._sign_in(
+            monkeypatch,
+            headers={
+                "CF-Connecting-IP": "203.0.113.7",
+                "CF-IPCountry": "EE",
+                "User-Agent": "Mozilla/5.0 (Macintosh)",
+            },
+        )
+
+        rows = self._login_rows()
+        assert len(rows) == 1
+        assert str(rows[0].user_id) == user_id
+        assert rows[0].entity_type == "user"
+        assert rows[0].ip_address == "203.0.113.7"
+        assert rows[0].country == "EE"
+        assert rows[0].user_agent == "Mozilla/5.0 (Macintosh)"
+
+    def test_second_request_in_window_does_not_duplicate(self, monkeypatch):
+        _seed_user(subject_id="hanko-trail", email="trail@example.com")
+        self._sign_in(monkeypatch, headers={"CF-IPCountry": "EE"})
+        self._sign_in(monkeypatch, headers={"CF-IPCountry": "EE"})
+
+        assert len(self._login_rows()) == 1
+
+    def test_new_window_records_a_fresh_login(self, monkeypatch):
+        stale = datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=2)
+        _seed_user(
+            subject_id="hanko-trail",
+            email="trail@example.com",
+            last_login_at=stale,
+        )
+        self._sign_in(monkeypatch, headers={"CF-IPCountry": "DE"})
+
+        rows = self._login_rows()
+        assert len(rows) == 1
+        assert rows[0].country == "DE"

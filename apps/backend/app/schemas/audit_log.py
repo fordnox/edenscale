@@ -14,6 +14,8 @@ class AuditLogRead(BaseModel):
     entity_id: UUID4 | None
     audit_metadata: dict[str, Any] | None
     ip_address: str | None
+    country: str | None
+    user_agent: str | None
     created_at: datetime | None
 
     model_config = ConfigDict(from_attributes=True)

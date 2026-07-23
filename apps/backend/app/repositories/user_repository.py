@@ -174,7 +174,7 @@ class UserRepository:
 
     def touch_last_login(
         self, user: User, *, min_interval: timedelta = timedelta(minutes=15)
-    ) -> None:
+    ) -> bool:
         """Stamp ``last_login_at``, at most once per ``min_interval``.
 
         Auth is stateless Hanko JWTs — there is no login endpoint — so
@@ -182,12 +182,18 @@ class UserRepository:
         throttle keeps that from becoming a DB write per request; within the
         interval this is read-only. Stored naive-UTC to match the column
         (``DateTime`` without timezone, like the ``func.now()`` defaults).
+
+        Returns ``True`` when the stamp actually moved, i.e. this request
+        opened a new session window. Callers use that as the "a login just
+        happened" signal — it is the only login edge a stateless-JWT setup
+        gives us.
         """
         now = datetime.now(UTC).replace(tzinfo=None)
         last = user.last_login_at
         if last is not None and last.tzinfo is not None:
             last = last.astimezone(UTC).replace(tzinfo=None)
         if last is not None and now - last < min_interval:
-            return
+            return False
         user.last_login_at = now
         self.db.commit()
+        return True
