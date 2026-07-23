@@ -19,7 +19,6 @@ import { PageHero } from "@edenscale/ui/PageHero"
 import { CommitmentCreateDialog } from "@/components/commitments/CommitmentCreateDialog"
 import { ContactEditDialog } from "@/components/investors/ContactEditDialog"
 import { InvestorCreateDialog } from "@/components/investors/InvestorCreateDialog"
-import { InvestorEditDialog } from "@/components/investors/InvestorEditDialog"
 import { InviteContactDialog } from "@/components/investors/InviteContactDialog"
 import {
   AlertDialog,
@@ -44,6 +43,7 @@ import {
   SheetTitle,
 } from "@edenscale/ui/sheet"
 import { StatusPill } from "@edenscale/ui/StatusPill"
+import { Textarea } from "@edenscale/ui/textarea"
 import { DataTable, TD, TH, TR } from "@edenscale/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@edenscale/ui/tabs"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
@@ -63,6 +63,14 @@ import { cn } from "@edenscale/shared/utils"
 import type { components } from "@edenscale/api/schema"
 
 type InvestorContactRead = components["schemas"]["InvestorContactRead"]
+
+interface InvestorDetailsForm {
+  name: string
+  investorCode: string
+  investorType: string
+  accredited: boolean
+  notes: string
+}
 
 function parseDecimal(value: string | null | undefined) {
   if (value === null || value === undefined || value === "") return 0
@@ -159,6 +167,7 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
     {
       onSuccess: () => {
         toast.success("Contact added")
+        setAddContactOpen(false)
         invalidateInvestorScopes()
       },
     },
@@ -180,8 +189,13 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
     activeMembership?.role === "admin" ||
     activeMembership?.role === "fund_manager"
 
-  const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  // The details form is hydrated once the investor query resolves. Holding it
+  // as null until then keeps the effect from clobbering in-progress edits.
+  const [details, setDetails] = useState<InvestorDetailsForm | null>(null)
+  // With no contacts the form is the whole point of the section, so it shows
+  // itself; once one exists it hides behind a button.
+  const [addContactOpen, setAddContactOpen] = useState(false)
   const [commitmentCreateOpen, setCommitmentCreateOpen] = useState(false)
   const [inviteContact, setInviteContact] = useState<InvestorContactRead | null>(
     null,
@@ -189,6 +203,49 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
   const [editContact, setEditContact] = useState<InvestorContactRead | null>(
     null,
   )
+
+  useEffect(() => {
+    if (investor && details === null) {
+      setDetails({
+        name: investor.name,
+        investorCode: investor.investor_code ?? "",
+        investorType: investor.investor_type ?? "",
+        accredited: investor.accredited === true,
+        notes: investor.notes ?? "",
+      })
+    }
+  }, [investor, details])
+
+  const updateInvestor = useApiMutation("patch", "/investors/{investor_id}", {
+    onSuccess: (data) => {
+      toast.success("Investor updated", { description: data.name })
+      invalidateInvestorScopes()
+    },
+  })
+
+  const detailsDirty =
+    investor !== undefined &&
+    details !== null &&
+    (details.name !== investor.name ||
+      details.investorCode !== (investor.investor_code ?? "") ||
+      details.investorType !== (investor.investor_type ?? "") ||
+      details.accredited !== (investor.accredited === true) ||
+      details.notes !== (investor.notes ?? ""))
+
+  function handleDetailsSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!details || !details.name.trim() || updateInvestor.isPending) return
+    updateInvestor.mutate({
+      params: { path: { investor_id: investorId } },
+      body: {
+        name: details.name.trim(),
+        investor_code: details.investorCode.trim() || null,
+        investor_type: details.investorType.trim() || null,
+        accredited: details.accredited,
+        notes: details.notes.trim() || null,
+      },
+    })
+  }
 
   const deleteInvestor = useApiMutation("delete", "/investors/{investor_id}", {
     onSuccess: () => {
@@ -249,32 +306,11 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
       {/* pr-14 keeps a long investor name clear of the sheet's close button,
           which is absolutely positioned in this corner. */}
       <div className="border-b border-[color:var(--border-hairline)] px-6 py-5 pr-14">
-        <div>
-          <Eyebrow>Investor</Eyebrow>
-          <h2 className="es-display mt-2 text-[28px] leading-tight">
-            {investor?.name ?? "Loading…"}
-          </h2>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2 font-sans text-[12px] text-ink-500">
-          {investor?.investor_code && (
-            <span className="es-numeric">{investor.investor_code}</span>
-          )}
-          {investor?.investor_type && <span>· {investor.investor_type}</span>}
-          {investor?.accredited && (
-            <Badge tone="info" className="ml-1">
-              Accredited
-            </Badge>
-          )}
-        </div>
+        <Eyebrow>Investor</Eyebrow>
+        <h2 className="es-display mt-2 text-[28px] leading-tight">
+          {investor?.name ?? "Loading…"}
+        </h2>
       </div>
-
-      {investor && (
-        <InvestorEditDialog
-          investor={investor}
-          open={editOpen}
-          onOpenChange={setEditOpen}
-        />
-      )}
 
       {investor && (
         <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -342,6 +378,125 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
             setInviteContact(contact)
           }}
         />
+      )}
+
+      {details && (
+        <form
+          onSubmit={handleDetailsSubmit}
+          className="border-b border-[color:var(--border-hairline)] px-6 py-5"
+        >
+          <Eyebrow>Details</Eyebrow>
+          <div className="mt-4 flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="investor-details-name">Name</Label>
+              <Input
+                id="investor-details-name"
+                value={details.name}
+                onChange={(event) =>
+                  setDetails({ ...details, name: event.target.value })
+                }
+                disabled={!canManageCommitments}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="investor-details-code">Investor code</Label>
+                <Input
+                  id="investor-details-code"
+                  value={details.investorCode}
+                  onChange={(event) =>
+                    setDetails({ ...details, investorCode: event.target.value })
+                  }
+                  disabled={!canManageCommitments}
+                  placeholder="BCN-001"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="investor-details-type">Investor type</Label>
+                <Input
+                  id="investor-details-type"
+                  value={details.investorType}
+                  onChange={(event) =>
+                    setDetails({ ...details, investorType: event.target.value })
+                  }
+                  disabled={!canManageCommitments}
+                  placeholder="Family office"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                id="investor-details-accredited"
+                type="checkbox"
+                checked={details.accredited}
+                onChange={(event) =>
+                  setDetails({ ...details, accredited: event.target.checked })
+                }
+                disabled={!canManageCommitments}
+                className="size-4 accent-conifer-700"
+              />
+              <Label
+                htmlFor="investor-details-accredited"
+                className="font-sans text-sm"
+              >
+                Accredited investor
+              </Label>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="investor-details-notes">Notes</Label>
+              <Textarea
+                id="investor-details-notes"
+                value={details.notes}
+                onChange={(event) =>
+                  setDetails({ ...details, notes: event.target.value })
+                }
+                disabled={!canManageCommitments}
+                rows={3}
+                placeholder="Source of capital, KYC packet status, mandate notes"
+              />
+            </div>
+            {canManageCommitments && (
+              <div className="flex items-center justify-end gap-2">
+                {/* Discard only appears once there is something to discard. */}
+                {detailsDirty && investor && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={updateInvestor.isPending}
+                    onClick={() =>
+                      setDetails({
+                        name: investor.name,
+                        investorCode: investor.investor_code ?? "",
+                        investorType: investor.investor_type ?? "",
+                        accredited: investor.accredited === true,
+                        notes: investor.notes ?? "",
+                      })
+                    }
+                  >
+                    Discard
+                  </Button>
+                )}
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={
+                    updateInvestor.isPending ||
+                    !detailsDirty ||
+                    !details.name.trim()
+                  }
+                >
+                  {updateInvestor.isPending && (
+                    <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+                  )}
+                  Save details
+                </Button>
+              </div>
+            )}
+          </div>
+        </form>
       )}
 
       <Tabs defaultValue="contacts" className="min-h-0 flex-1 gap-0">
@@ -461,85 +616,113 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
             </DataTable>
           )}
 
-          {canManageCommitments && (
-          <div className="border-t border-[color:var(--border-hairline)] pt-5">
-            <Eyebrow>Add contact</Eyebrow>
-            <form
-              onSubmit={handleAddContact}
-              className="mt-3 flex flex-col gap-3"
-            >
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="contact-first-name">First name</Label>
-                  <Input
-                    id="contact-first-name"
-                    value={firstName}
-                    onChange={(event) => setFirstName(event.target.value)}
-                    required
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="contact-last-name">Last name</Label>
-                  <Input
-                    id="contact-last-name"
-                    value={lastName}
-                    onChange={(event) => setLastName(event.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="contact-title">Title</Label>
-                  <Input
-                    id="contact-title"
-                    value={title}
-                    onChange={(event) => setTitle(event.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="contact-email">Email</Label>
-                  <Input
-                    id="contact-email"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="contact-phone">Phone</Label>
-                <Input
-                  id="contact-phone"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                />
-              </div>
-              <div className="flex justify-end">
+          {canManageCommitments &&
+            (contacts.length > 0 && !addContactOpen ? (
+              <div className="border-t border-[color:var(--border-hairline)] pt-5">
                 <Button
-                  type="submit"
-                  variant="primary"
+                  type="button"
+                  variant="secondary"
                   size="sm"
-                  disabled={
-                    createContact.isPending ||
-                    !firstName.trim() ||
-                    !lastName.trim()
-                  }
+                  onClick={() => setAddContactOpen(true)}
                 >
-                  {createContact.isPending ? (
-                    <Loader2
-                      strokeWidth={1.5}
-                      className="size-4 animate-spin"
-                    />
-                  ) : (
-                    <Plus strokeWidth={1.5} className="size-4" />
-                  )}
+                  <Plus strokeWidth={1.5} className="size-4" />
                   Add contact
                 </Button>
               </div>
-            </form>
-          </div>
-          )}
+            ) : (
+              <div className="border-t border-[color:var(--border-hairline)] pt-5">
+                <Eyebrow>Add contact</Eyebrow>
+                <form
+                  onSubmit={handleAddContact}
+                  className="mt-3 flex flex-col gap-3"
+                >
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="contact-first-name">First name</Label>
+                      <Input
+                        id="contact-first-name"
+                        value={firstName}
+                        onChange={(event) => setFirstName(event.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="contact-last-name">Last name</Label>
+                      <Input
+                        id="contact-last-name"
+                        value={lastName}
+                        onChange={(event) => setLastName(event.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="contact-title">Title</Label>
+                      <Input
+                        id="contact-title"
+                        value={title}
+                        onChange={(event) => setTitle(event.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="contact-email">Email</Label>
+                      <Input
+                        id="contact-email"
+                        type="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="contact-phone">Phone</Label>
+                    <Input
+                      id="contact-phone"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    {/* No way back out when this is the only contact form there is. */}
+                    {contacts.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={createContact.isPending}
+                        onClick={() => {
+                          resetContactForm()
+                          setAddContactOpen(false)
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="sm"
+                      disabled={
+                        createContact.isPending ||
+                        !firstName.trim() ||
+                        !lastName.trim()
+                      }
+                    >
+                      {createContact.isPending ? (
+                        <Loader2
+                          strokeWidth={1.5}
+                          className="size-4 animate-spin"
+                        />
+                      ) : (
+                        <Plus strokeWidth={1.5} className="size-4" />
+                      )}
+                      Add contact
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            ))}
         </TabsContent>
 
         <TabsContent
@@ -633,8 +816,10 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
         </TabsContent>
       </Tabs>
 
+      {/* Editing is inline above; deletion is the only thing left that needs a
+          drawer-level action. */}
       {investor && canManageCommitments && (
-        <div className="flex items-center justify-end gap-2 border-t border-[color:var(--border-hairline)] px-6 py-4">
+        <div className="flex items-center justify-end border-t border-[color:var(--border-hairline)] px-6 py-4">
           <Button
             variant="ghost"
             size="sm"
@@ -643,14 +828,6 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
           >
             <Trash2 strokeWidth={1.5} className="size-4" />
             Delete
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setEditOpen(true)}
-          >
-            <Pencil strokeWidth={1.5} className="size-4" />
-            Edit
           </Button>
         </div>
       )}
