@@ -35,6 +35,16 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Headings run on the display serif; everything else stays on --font-sans. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+}
+
 ::selection {
   background: rgba(184, 145, 92, 0.28);
 }
@@ -312,11 +322,9 @@ a {
 }
 
 .footer {
-  padding: 24px 24px 32px;
+  padding: 24px 24px;
 }
 .footer-row {
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  padding-top: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -396,26 +404,29 @@ html.js [data-reveal].is-visible {
   pointer-events: none;
 }
 
-/* Everything below the hero rides on a light sheet, leaving gutters where
-   the fixed video shows through while scrolling. */
+/* Below the hero, each section floats as its own panel on the same footprint
+   as the hero card, with the fixed background video showing through the gaps.
+   position/z-index lift them above that video. */
 .page-index .sheet {
   position: relative;
-  background: #f5f5f5;
-  border-radius: 24px 24px 0 0;
-  margin: 0 24px;
+  z-index: 1;
 }
-/* The footer (defined in Layout.astro) continues the sheet panel: same side
-   gutters and background, rounding the bottom. position/z-index lift it above
-   the fixed background video, which the static footer would otherwise sit under. */
 .page-index .footer {
   position: relative;
   z-index: 1;
   background: #f5f5f5;
-  border-radius: 0 0 24px 24px;
-  margin: 0 24px 24px;
+  border-radius: 24px;
 }
 
+.page-index .sect,
+.page-index .footer {
+  width: calc(100% - 48px);
+  max-width: 88rem;
+  margin: 0 auto 24px;
+}
 .page-index .sect {
+  background: #f5f5f5;
+  border-radius: 24px;
   padding: 72px 24px;
 }
 .page-index .sect-head {

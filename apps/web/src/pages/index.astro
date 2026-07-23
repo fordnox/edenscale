@@ -83,7 +83,10 @@ for (let j = 0; j < FIELD.rows; j++) {
         ) {
             continue;
         }
-        const d = Math.hypot(x + TILE.w / 2 - FOCAL.x, y + TILE.h / 2 - FOCAL.y);
+        const d = Math.hypot(
+            x + TILE.w / 2 - FOCAL.x,
+            y + TILE.h / 2 - FOCAL.y,
+        );
         const t = Math.max(0, 1 - d / FIELD_REACH);
         let o = Math.pow(t, 1.7) * 0.42 * (0.3 + 0.7 * r1);
         if (r2 > 0.94) o = Math.min(0.6, o + 0.3 * t); // a few read as fully filed
@@ -274,7 +277,7 @@ const defaultOutput =
                     <a href="#use-cases">Use cases</a>
                     <a href="#pricing">Pricing</a>
                 </div>
-                <a href="/manager" class="pill pill--nav">Try Now</a>
+                <a href="/manager" class="pill pill--nav">Manage Fund</a>
             </div>
         </nav>
 
@@ -293,7 +296,7 @@ const defaultOutput =
                             spreadsheet.
                         </p>
                         <a href="/manager" class="pill pill--invert pill--hero">
-                            <span>Try Now</span>
+                            <span>Manage Fund</span>
                             <span
                                 class="pill-arrow pill-arrow--dark"
                                 aria-hidden="true"
@@ -1004,7 +1007,7 @@ const defaultOutput =
                                 to build.
                             </h2>
                             <a href="/manager" class="pill pill--invert">
-                                <span>Try Now</span>
+                                <span>Manage Fund</span>
                                 <span
                                     class="pill-arrow pill-arrow--dark"
                                     aria-hidden="true"
@@ -1079,7 +1082,9 @@ const defaultOutput =
         let size = vaultSeed.size;
         let more = vaultSeed.more;
 
-        const nearTiles = Array.from(flow.querySelectorAll(".flow-tile[data-near]"));
+        const nearTiles = Array.from(
+            flow.querySelectorAll(".flow-tile[data-near]"),
+        );
 
         const fill = (el, doc) => {
             el.querySelector(".flow-page-type").textContent = doc.type;
@@ -1120,7 +1125,8 @@ const defaultOutput =
             sizeEl.textContent = size.toFixed(1);
             moreEl.textContent = `+${more.toLocaleString("en-US")}`;
 
-            const tile = nearTiles[Math.floor(Math.random() * nearTiles.length)];
+            const tile =
+                nearTiles[Math.floor(Math.random() * nearTiles.length)];
             if (tile) {
                 tile.classList.add("is-filed");
                 setTimeout(() => tile.classList.remove("is-filed"), 1400);
