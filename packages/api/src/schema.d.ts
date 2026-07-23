@@ -2624,7 +2624,7 @@ export interface components {
          * DocumentType
          * @enum {string}
          */
-        DocumentType: "legal" | "kyc_aml" | "financial" | "report" | "notice" | "other";
+        DocumentType: "deck" | "legal" | "kyc_aml" | "financial" | "report" | "notice" | "other";
         /** DocumentUpdate */
         DocumentUpdate: {
             /** Organization Id */

@@ -65,3 +65,18 @@ export function titleCase(s: string) {
     .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
     .join(" ")
 }
+
+/** Short display label for an outbound URL — the host, minus a leading `www.`.
+ *  Returns null for anything that isn't an absolute http(s) URL, so callers can
+ *  skip rendering rather than emit a link to an unsafe scheme. The backend
+ *  validates on write; this is the render-side guard for data already stored. */
+export function formatUrlHost(value: string | null | undefined) {
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null
+    return url.host.replace(/^www\./, "")
+  } catch {
+    return null
+  }
+}

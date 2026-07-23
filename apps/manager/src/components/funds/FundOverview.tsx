@@ -1,4 +1,5 @@
 import { useMemo } from "react"
+import { ExternalLink } from "lucide-react"
 import {
   Area,
   AreaChart,
@@ -26,6 +27,7 @@ import {
   formatDate,
   formatDateLong,
   formatPercent,
+  formatUrlHost,
   titleCase,
 } from "@edenscale/shared/format"
 import type { components } from "@edenscale/api/schema"
@@ -211,6 +213,7 @@ export function FundOverview({
                 label="Close date"
                 value={fund.close_date ? formatDateLong(fund.close_date) : null}
               />
+              <InfoLinkRow label="Website" href={fund.website_url} />
             </dl>
             {fund.description && (
               <p className="mt-5 border-t border-[color:var(--border-hairline)] pt-4 font-sans text-[14px] leading-[1.55] text-ink-700">
@@ -463,6 +466,40 @@ export function FundOverview({
           </CardSection>
         </Card>
       </div>
+    </div>
+  )
+}
+
+/** Same shape as InfoRow, but renders an outbound link. formatUrlHost returns
+ *  null for anything that isn't http(s), which falls back to the em dash. */
+function InfoLinkRow({
+  label,
+  href,
+}: {
+  label: string
+  href: string | null | undefined
+}) {
+  const host = formatUrlHost(href)
+  return (
+    <div className="flex flex-col gap-0.5">
+      <dt className="font-sans text-[11px] uppercase tracking-[0.12em] text-ink-500">
+        {label}
+      </dt>
+      <dd className="font-sans text-[14px] text-ink-900">
+        {host && href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-ink-700"
+          >
+            {host}
+            <ExternalLink strokeWidth={1.5} className="size-3.5" />
+          </a>
+        ) : (
+          "—"
+        )}
+      </dd>
     </div>
   )
 }

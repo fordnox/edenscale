@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react"
 
 import { PageHero } from "@edenscale/ui/PageHero"
 import { Card, CardSection } from "@edenscale/ui/card"
@@ -14,7 +14,12 @@ import { useInvestorOrganizations } from "@/hooks/useInvestorOrganizations"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { orgPath } from "@/lib/investorRoutes"
 import { config } from "@edenscale/api/config"
-import { formatCurrency, formatDate, formatPercent } from "@edenscale/shared/format"
+import {
+  formatCurrency,
+  formatDate,
+  formatPercent,
+  formatUrlHost,
+} from "@edenscale/shared/format"
 
 function parseDecimal(value: string | null | undefined) {
   if (value === null || value === undefined || value === "") return 0
@@ -83,6 +88,8 @@ export default function FundDetailPage({
 
   const calls = callsQuery.data ?? []
   const distributions = distributionsQuery.data ?? []
+  // null unless the stored value is an absolute http(s) URL — see formatUrlHost.
+  const websiteHost = formatUrlHost(fund?.website_url)
 
   return (
     <>
@@ -111,9 +118,20 @@ export default function FundDetailPage({
       />
 
       <div className="px-4 pb-16 sm:px-6 md:px-8">
-        {fund?.status && (
-          <div className="mb-6">
-            <StatusPill kind="fund" value={fund.status} />
+        {(fund?.status || websiteHost) && (
+          <div className="mb-6 flex flex-wrap items-center gap-4">
+            {fund?.status && <StatusPill kind="fund" value={fund.status} />}
+            {websiteHost && fund?.website_url && (
+              <a
+                href={fund.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 font-sans text-[13px] text-conifer-700 underline-offset-4 hover:underline"
+              >
+                <ExternalLink strokeWidth={1.5} className="size-4" />
+                {websiteHost}
+              </a>
+            )}
           </div>
         )}
 

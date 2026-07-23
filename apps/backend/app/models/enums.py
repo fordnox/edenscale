@@ -69,6 +69,7 @@ class BankPaymentTransactionStatus(str, enum.Enum):
 
 
 class DocumentType(str, enum.Enum):
+    deck = "deck"
     legal = "legal"
     kyc_aml = "kyc_aml"
     financial = "financial"
