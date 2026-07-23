@@ -2,7 +2,17 @@ import { useEffect, useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
-import { Loader2, Mail, Pencil, Plus, Star, Trash2 } from "lucide-react"
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronsUpDown,
+  Loader2,
+  Mail,
+  Pencil,
+  Plus,
+  Star,
+  Trash2,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { PageHero } from "@edenscale/ui/PageHero"
@@ -34,6 +44,12 @@ import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { fundPath } from "@/lib/managerRoutes"
+import {
+  nextSortState,
+  sortInvestors,
+  type SortKey,
+  type SortState,
+} from "@/lib/investorSort"
 import { config } from "@edenscale/api/config"
 import { formatCurrency, formatDate } from "@edenscale/shared/format"
 import { cn } from "@edenscale/shared/utils"
@@ -45,6 +61,49 @@ function parseDecimal(value: string | null | undefined) {
   if (value === null || value === undefined || value === "") return 0
   const n = Number(value)
   return Number.isFinite(n) ? n : 0
+}
+
+/** A TH whose label toggles the sort. Typography is inherited from TH, so the
+ *  button only carries layout and the affordance. */
+function SortableTH({
+  label,
+  sortKey,
+  sort,
+  onSort,
+  align = "left",
+}: {
+  label: string
+  sortKey: SortKey
+  sort: SortState
+  onSort: (key: SortKey) => void
+  align?: "left" | "right"
+}) {
+  const active = sort.key === sortKey
+  const Icon = !active ? ChevronsUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown
+  return (
+    <TH
+      align={align}
+      aria-sort={
+        active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"
+      }
+    >
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={cn(
+          "inline-flex items-center gap-1 font-sans text-[11px] font-semibold uppercase tracking-[0.08em]",
+          "transition-colors hover:text-ink-700",
+          active ? "text-ink-900" : "text-ink-500",
+        )}
+      >
+        {label}
+        <Icon
+          strokeWidth={1.5}
+          className={cn("size-3.5", !active && "opacity-40")}
+        />
+      </button>
+    </TH>
+  )
 }
 
 function InvestorDetailPanel({ investorId }: { investorId: string }) {
@@ -597,20 +656,30 @@ export default function InvestorsPage() {
   const { data, isLoading, isError } = useApiQuery("/investors")
   const investors = useMemo(() => data ?? [], [data])
 
+  const [sort, setSort] = useState<SortState>({ key: "name", dir: "asc" })
+  const sortedInvestors = useMemo(
+    () => sortInvestors(investors, sort),
+    [investors, sort],
+  )
+
+  function handleSort(key: SortKey) {
+    setSort((current) => nextSortState(current, key))
+  }
+
   // Auto-select the first investor when the list loads
   useEffect(() => {
-    if (selectedId === null && investors.length > 0) {
-      setSelectedId(investors[0].id)
+    if (selectedId === null && sortedInvestors.length > 0) {
+      setSelectedId(sortedInvestors[0].id)
     }
     // If the previously selected investor was removed, fall back to the first
     if (
       selectedId !== null &&
-      investors.length > 0 &&
-      !investors.some((inv) => inv.id === selectedId)
+      sortedInvestors.length > 0 &&
+      !sortedInvestors.some((inv) => inv.id === selectedId)
     ) {
-      setSelectedId(investors[0].id)
+      setSelectedId(sortedInvestors[0].id)
     }
-  }, [investors, selectedId])
+  }, [sortedInvestors, selectedId])
 
   const showEmptyState = !isLoading && !isError && investors.length === 0
 
@@ -695,14 +764,37 @@ export default function InvestorsPage() {
                 <DataTable>
                   <thead>
                     <tr>
-                      <TH>Investor</TH>
-                      <TH>Type</TH>
-                      <TH align="right">Funds</TH>
-                      <TH align="right">Committed</TH>
+                      <TH className="w-8">#</TH>
+                      <SortableTH
+                        label="Investor"
+                        sortKey="name"
+                        sort={sort}
+                        onSort={handleSort}
+                      />
+                      <SortableTH
+                        label="Type"
+                        sortKey="investor_type"
+                        sort={sort}
+                        onSort={handleSort}
+                      />
+                      <SortableTH
+                        label="Funds"
+                        sortKey="fund_count"
+                        sort={sort}
+                        onSort={handleSort}
+                        align="right"
+                      />
+                      <SortableTH
+                        label="Committed"
+                        sortKey="total_committed"
+                        sort={sort}
+                        onSort={handleSort}
+                        align="right"
+                      />
                     </tr>
                   </thead>
                   <tbody>
-                    {investors.map((inv) => {
+                    {sortedInvestors.map((inv, index) => {
                       const isSelected = inv.id === selectedId
                       return (
                         <TR
@@ -713,6 +805,10 @@ export default function InvestorsPage() {
                           )}
                           onClick={() => setSelectedId(inv.id)}
                         >
+                          {/* Position in the current sort, not a stable id. */}
+                          <TD className="text-ink-500 tabular-nums">
+                            {index + 1}
+                          </TD>
                           <TD primary>
                             <div className="flex flex-col gap-1">
                               <span>{inv.name}</span>
