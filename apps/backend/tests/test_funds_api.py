@@ -389,6 +389,73 @@ class TestCrossOrgScopingViaHeader:
         assert response.status_code == 403
 
 
+class TestFundWebsiteUrl:
+    def _as_fund_manager(self, override_user, org_id):
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+
+    def test_round_trips_on_update(self, client, override_user):
+        org_id = _seed_org()
+        fund_id = _seed_fund(org_id)
+        self._as_fund_manager(override_user, org_id)
+
+        response = client.patch(
+            f"/funds/{fund_id}",
+            json={"website_url": "https://fund.example.com/overview"},
+        )
+        assert response.status_code == 200
+        assert response.json()["website_url"] == "https://fund.example.com/overview"
+
+        get_response = client.get(f"/funds/{fund_id}")
+        assert get_response.json()["website_url"] == "https://fund.example.com/overview"
+
+    def test_defaults_to_none_and_clears(self, client, override_user):
+        org_id = _seed_org()
+        fund_id = _seed_fund(org_id)
+        self._as_fund_manager(override_user, org_id)
+
+        assert client.get(f"/funds/{fund_id}").json()["website_url"] is None
+
+        client.patch(f"/funds/{fund_id}", json={"website_url": "https://a.example"})
+        # Blank is treated as "clear it", not as an invalid URL.
+        cleared = client.patch(f"/funds/{fund_id}", json={"website_url": "   "})
+        assert cleared.status_code == 200
+        assert cleared.json()["website_url"] is None
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "javascript:alert(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "fund.example.com",
+            "/relative/path",
+        ],
+    )
+    def test_rejects_non_http_urls(self, client, override_user, value):
+        org_id = _seed_org()
+        fund_id = _seed_fund(org_id)
+        self._as_fund_manager(override_user, org_id)
+
+        response = client.patch(f"/funds/{fund_id}", json={"website_url": value})
+        assert response.status_code == 422
+
+    def test_accepted_on_create(self, client, override_user):
+        org_id = _seed_org()
+        self._as_fund_manager(override_user, org_id)
+
+        response = client.post(
+            "/funds",
+            json={"name": "Linked Fund", "website_url": "http://linked.example"},
+        )
+        assert response.status_code == 201
+        assert response.json()["website_url"] == "http://linked.example"
+
+
 class TestArchiveFund:
     def test_archive_flips_status(self, client, override_user):
         org_id = _seed_org()

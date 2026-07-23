@@ -2731,6 +2731,8 @@ export interface components {
             close_date?: string | null;
             /** Description */
             description?: string | null;
+            /** Website Url */
+            website_url?: string | null;
         };
         /** FundGroupCreate */
         FundGroupCreate: {
@@ -2878,6 +2880,8 @@ export interface components {
             close_date: string | null;
             /** Description */
             description: string | null;
+            /** Website Url */
+            website_url: string | null;
             /** Created At */
             created_at: string | null;
             /** Updated At */
@@ -2940,6 +2944,8 @@ export interface components {
             close_date?: string | null;
             /** Description */
             description?: string | null;
+            /** Website Url */
+            website_url?: string | null;
         };
         /** FundValuationCreate */
         FundValuationCreate: {

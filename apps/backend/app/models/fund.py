@@ -53,6 +53,9 @@ class Fund(Base):
     inception_date = Column(Date, nullable=True)
     close_date = Column(Date, nullable=True)
     description = Column(Text, nullable=True)
+    # Public page with more information about the fund — usually its own website.
+    # Rendered as an outbound link, so the schema restricts it to http(s).
+    website_url = Column(String(2048), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

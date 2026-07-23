@@ -49,6 +49,7 @@ def _to_read_dict(
         "inception_date": fund.inception_date,
         "close_date": fund.close_date,
         "description": fund.description,
+        "website_url": fund.website_url,
         "created_at": fund.created_at,
         "updated_at": fund.updated_at,
     }

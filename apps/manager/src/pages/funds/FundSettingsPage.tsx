@@ -61,6 +61,7 @@ export default function FundSettingsPage() {
   const [hardCap, setHardCap] = useState(fund.hard_cap ?? "")
   const [status, setStatus] = useState<FundStatus>(fund.status)
   const [description, setDescription] = useState(fund.description ?? "")
+  const [websiteUrl, setWebsiteUrl] = useState(fund.website_url ?? "")
   const [fundGroupId, setFundGroupId] = useState(fund.fund_group_id ?? "")
   const [archiveOpen, setArchiveOpen] = useState(false)
 
@@ -110,6 +111,7 @@ export default function FundSettingsPage() {
         hard_cap: trimmedHardCap ? trimmedHardCap : null,
         status,
         description: description.trim() || null,
+        website_url: websiteUrl.trim() || null,
         fund_group_id: fundGroupId || null,
       },
     })
@@ -247,6 +249,21 @@ export default function FundSettingsPage() {
                 onChange={(event) => setDescription(event.target.value)}
                 rows={3}
               />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="fund-settings-website-url">Website</Label>
+              <Input
+                id="fund-settings-website-url"
+                type="url"
+                inputMode="url"
+                placeholder="https://fund.example.com"
+                value={websiteUrl}
+                onChange={(event) => setWebsiteUrl(event.target.value)}
+              />
+              <p className="font-sans text-[12px] leading-[1.5] text-ink-500">
+                Where LPs can read more about this fund. Must start with
+                http:// or https://.
+              </p>
             </div>
             <div className="mt-2">
               <Button

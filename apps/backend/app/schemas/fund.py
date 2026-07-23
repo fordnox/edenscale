@@ -1,9 +1,28 @@
 from datetime import date, datetime
 from decimal import Decimal
+from urllib.parse import urlparse
 
-from pydantic import UUID4, BaseModel, ConfigDict, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field, field_validator
 
 from app.models.enums import FundStatus
+
+
+def _clean_website_url(value: str | None) -> str | None:
+    """Normalise a fund's website to an absolute http(s) URL, or None.
+
+    The value is rendered as an outbound link in the manager and LP apps, so
+    schemes other than http/https (`javascript:`, `data:`) are rejected here
+    rather than relying on every render site to sanitise it.
+    """
+    if value is None:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    parsed = urlparse(cleaned)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise ValueError("website_url must be an absolute http:// or https:// URL")
+    return cleaned
 
 
 class FundCreate(BaseModel):
@@ -20,6 +39,9 @@ class FundCreate(BaseModel):
     inception_date: date | None = None
     close_date: date | None = None
     description: str | None = None
+    website_url: str | None = Field(default=None, max_length=2048)
+
+    _clean_website_url = field_validator("website_url")(_clean_website_url)
 
 
 class FundUpdate(BaseModel):
@@ -35,6 +57,9 @@ class FundUpdate(BaseModel):
     inception_date: date | None = None
     close_date: date | None = None
     description: str | None = None
+    website_url: str | None = Field(default=None, max_length=2048)
+
+    _clean_website_url = field_validator("website_url")(_clean_website_url)
 
 
 class FundRead(BaseModel):
@@ -56,6 +81,7 @@ class FundRead(BaseModel):
     inception_date: date | None
     close_date: date | None
     description: str | None
+    website_url: str | None
     created_at: datetime | None
     updated_at: datetime | None
 
