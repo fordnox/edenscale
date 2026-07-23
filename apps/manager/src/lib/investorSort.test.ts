@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest"
 
+import type { components } from "@edenscale/api/schema"
+
 import {
   nextSortState,
   primaryContactName,
@@ -7,24 +9,29 @@ import {
   type SortState,
 } from "./investorSort"
 
+type InvestorListItem = components["schemas"]["InvestorListItem"]
+
 function investor(
   name: string,
   overrides: {
+    investor_code?: string | null
     investor_type?: string | null
     fund_count?: number
     total_committed?: string
     contact?: { first_name: string; last_name: string } | null
   } = {},
-) {
+): InvestorListItem {
   return {
     id: name.toLowerCase().replace(/\s+/g, "-"),
     organization_id: "org",
-    investor_code: null,
+    investor_code: overrides.investor_code ?? null,
     name,
-    // `??` would swallow an explicit null, which is exactly the case the
-    // untyped-investor tests need to set up.
+    // A plain `??` would swallow an explicit null, which is exactly the case
+    // the untyped-investor tests need to set up.
     investor_type:
-      "investor_type" in overrides ? overrides.investor_type! : "family_office",
+      "investor_type" in overrides
+        ? (overrides.investor_type ?? null)
+        : "family_office",
     accredited: null,
     total_committed: overrides.total_committed ?? "0",
     fund_count: overrides.fund_count ?? 0,
@@ -34,7 +41,7 @@ function investor(
   }
 }
 
-const names = (rows: ReturnType<typeof investor>[]) => rows.map((r) => r.name)
+const names = (rows: InvestorListItem[]) => rows.map((r) => r.name)
 
 describe("sortInvestors", () => {
   it("sorts by name in both directions", () => {
@@ -71,6 +78,20 @@ describe("sortInvestors", () => {
     expect(
       names(sortInvestors(rows, { key: "fund_count", dir: "desc" })),
     ).toEqual(["Four", "Two", "One"])
+  })
+
+  it("sorts by investor code, unset last in both directions", () => {
+    const rows = [
+      investor("NoCode"),
+      investor("Zed", { investor_code: "Z-1" }),
+      investor("Ann", { investor_code: "A-1" }),
+    ]
+    expect(
+      names(sortInvestors(rows, { key: "investor_code", dir: "asc" })),
+    ).toEqual(["Ann", "Zed", "NoCode"])
+    expect(
+      names(sortInvestors(rows, { key: "investor_code", dir: "desc" })),
+    ).toEqual(["Zed", "Ann", "NoCode"])
   })
 
   it("keeps untyped investors last in both directions", () => {
@@ -158,6 +179,10 @@ describe("nextSortState", () => {
   it("starts text columns ascending and numeric columns descending", () => {
     expect(nextSortState(nameAsc, "investor_type")).toEqual({
       key: "investor_type",
+      dir: "asc",
+    })
+    expect(nextSortState(nameAsc, "investor_code")).toEqual({
+      key: "investor_code",
       dir: "asc",
     })
     expect(nextSortState(nameAsc, "primary_contact")).toEqual({

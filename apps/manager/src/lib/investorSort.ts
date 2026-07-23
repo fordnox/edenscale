@@ -4,6 +4,7 @@ type InvestorListItem = components["schemas"]["InvestorListItem"]
 
 export type SortKey =
   | "name"
+  | "investor_code"
   | "investor_type"
   | "primary_contact"
   | "fund_count"
@@ -53,6 +54,8 @@ export function compareInvestors(
         (parseDecimal(a.total_committed) - parseDecimal(b.total_committed)) *
           sign || byName()
       )
+    case "investor_code":
+      return compareNullableText(a.investor_code, b.investor_code, sign, byName)
     case "investor_type":
       return compareNullableText(a.investor_type, b.investor_type, sign, byName)
     case "primary_contact":

@@ -84,7 +84,7 @@ class InvestorRepository:
         )
         primary: dict[uuid.UUID, InvestorContact] = {}
         for contact in rows:
-            primary.setdefault(contact.investor_id, contact)
+            primary.setdefault(contact.investor_id, contact)  # type: ignore[no-matching-overload]
         return primary
 
     def get(self, investor_id: uuid.UUID) -> tuple[Investor, Decimal, int] | None:

@@ -69,9 +69,16 @@ def list_investors(
     repo = InvestorRepository(db)
     rows = repo.list_for_membership(membership, skip=skip, limit=limit)
     # One lookup for the whole page rather than a contacts query per investor.
-    primary = repo.primary_contacts_for([investor.id for investor, _, _ in rows])
+    primary = repo.primary_contacts_for(
+        [investor.id for investor, _, _ in rows]  # type: ignore[invalid-argument-type]
+    )
     return [
-        _to_list_item(investor, total_committed, fund_count, primary.get(investor.id))
+        _to_list_item(
+            investor,
+            total_committed,
+            fund_count,
+            primary.get(investor.id),  # type: ignore[invalid-argument-type]
+        )
         for investor, total_committed, fund_count in rows
     ]
 

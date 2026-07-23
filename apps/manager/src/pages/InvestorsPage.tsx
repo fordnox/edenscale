@@ -37,6 +37,12 @@ import { Card, CardSection } from "@edenscale/ui/card"
 import { Eyebrow } from "@edenscale/ui/eyebrow"
 import { Input } from "@edenscale/ui/input"
 import { Label } from "@edenscale/ui/label"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@edenscale/ui/sheet"
 import { StatusPill } from "@edenscale/ui/StatusPill"
 import { DataTable, TD, TH, TR } from "@edenscale/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@edenscale/ui/tabs"
@@ -240,35 +246,14 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-[color:var(--border-hairline)] px-6 py-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <Eyebrow>Investor</Eyebrow>
-            <h2 className="es-display mt-2 text-[28px] leading-tight">
-              {investor?.name ?? "Loading…"}
-            </h2>
-          </div>
-          {investor && canManageCommitments && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={deleteInvestor.isPending}
-                onClick={() => setDeleteOpen(true)}
-              >
-                <Trash2 strokeWidth={1.5} className="size-4" />
-                Delete
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setEditOpen(true)}
-              >
-                <Pencil strokeWidth={1.5} className="size-4" />
-                Edit
-              </Button>
-            </div>
-          )}
+      {/* pr-14 keeps a long investor name clear of the sheet's close button,
+          which is absolutely positioned in this corner. */}
+      <div className="border-b border-[color:var(--border-hairline)] px-6 py-5 pr-14">
+        <div>
+          <Eyebrow>Investor</Eyebrow>
+          <h2 className="es-display mt-2 text-[28px] leading-tight">
+            {investor?.name ?? "Loading…"}
+          </h2>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 font-sans text-[12px] text-ink-500">
           {investor?.investor_code && (
@@ -359,7 +344,7 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
         />
       )}
 
-      <Tabs defaultValue="contacts" className="flex-1 gap-0">
+      <Tabs defaultValue="contacts" className="min-h-0 flex-1 gap-0">
         <div className="px-6 pt-4">
           <TabsList className="bg-parchment-100">
             <TabsTrigger value="contacts">
@@ -373,7 +358,10 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
           </TabsList>
         </div>
 
-        <TabsContent value="contacts" className="px-6 py-5">
+        <TabsContent
+          value="contacts"
+          className="min-h-0 overflow-y-auto px-6 py-5"
+        >
           {contactsQuery.isLoading ? (
             <div className="flex min-h-[120px] items-center justify-center text-ink-500">
               <Loader2 strokeWidth={1.5} className="size-5 animate-spin" />
@@ -554,7 +542,10 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
           )}
         </TabsContent>
 
-        <TabsContent value="commitments" className="px-6 py-5">
+        <TabsContent
+          value="commitments"
+          className="min-h-0 overflow-y-auto px-6 py-5"
+        >
           {canManageCommitments && commitments.length > 0 && (
             <div className="mb-3 flex justify-end">
               <Button
@@ -641,6 +632,28 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
           )}
         </TabsContent>
       </Tabs>
+
+      {investor && canManageCommitments && (
+        <div className="flex items-center justify-end gap-2 border-t border-[color:var(--border-hairline)] px-6 py-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={deleteInvestor.isPending}
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 strokeWidth={1.5} className="size-4" />
+            Delete
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setEditOpen(true)}
+          >
+            <Pencil strokeWidth={1.5} className="size-4" />
+            Edit
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
@@ -668,17 +681,15 @@ export default function InvestorsPage() {
   }
 
   // Auto-select the first investor when the list loads
+  // Nothing is selected on load — the drawer only opens on a row click. If the
+  // open investor is deleted underneath us, close it rather than jumping to
+  // another investor's record.
   useEffect(() => {
-    if (selectedId === null && sortedInvestors.length > 0) {
-      setSelectedId(sortedInvestors[0].id)
-    }
-    // If the previously selected investor was removed, fall back to the first
     if (
       selectedId !== null &&
-      sortedInvestors.length > 0 &&
       !sortedInvestors.some((inv) => inv.id === selectedId)
     ) {
-      setSelectedId(sortedInvestors[0].id)
+      setSelectedId(null)
     }
   }, [sortedInvestors, selectedId])
 
@@ -759,115 +770,118 @@ export default function InvestorsPage() {
         )}
 
         {!isLoading && !isError && investors.length > 0 && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-            <Card>
-              <CardSection className="pt-2 pb-0">
-                <DataTable>
-                  <thead>
-                    <tr>
-                      <TH className="w-8">#</TH>
-                      <SortableTH
-                        label="Investor"
-                        sortKey="name"
-                        sort={sort}
-                        onSort={handleSort}
-                      />
-                      <SortableTH
-                        label="Type"
-                        sortKey="investor_type"
-                        sort={sort}
-                        onSort={handleSort}
-                      />
-                      <SortableTH
-                        label="Contact"
-                        sortKey="primary_contact"
-                        sort={sort}
-                        onSort={handleSort}
-                      />
-                      <SortableTH
-                        label="Funds"
-                        sortKey="fund_count"
-                        sort={sort}
-                        onSort={handleSort}
-                        align="right"
-                      />
-                      <SortableTH
-                        label="Committed"
-                        sortKey="total_committed"
-                        sort={sort}
-                        onSort={handleSort}
-                        align="right"
-                      />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedInvestors.map((inv, index) => {
-                      const isSelected = inv.id === selectedId
-                      return (
-                        <TR
-                          key={inv.id}
-                          className={cn(
-                            "cursor-pointer",
-                            isSelected && "bg-parchment-100",
-                          )}
-                          onClick={() => setSelectedId(inv.id)}
-                        >
-                          {/* Position in the current sort, not a stable id. */}
-                          <TD className="text-ink-500 tabular-nums">
-                            {index + 1}
-                          </TD>
-                          <TD primary>
-                            <div className="flex flex-col gap-1">
-                              <span>{inv.name}</span>
-                              <div className="flex items-center gap-2">
-                                {inv.investor_code && (
-                                  <span className="font-sans text-[11px] font-normal text-ink-500">
-                                    {inv.investor_code}
-                                  </span>
-                                )}
-                                {inv.accredited && (
-                                  <Badge tone="info">Accredited</Badge>
-                                )}
-                              </div>
-                            </div>
-                          </TD>
-                          <TD>{inv.investor_type ?? "—"}</TD>
-                          <TD>{primaryContactName(inv) ?? "—"}</TD>
-                          <TD align="right">{inv.fund_count}</TD>
-                          <TD align="right" primary>
-                            {formatCurrency(
-                              parseDecimal(inv.total_committed),
-                              "USD",
-                              { compact: true },
+          <Card>
+            <CardSection className="pt-2 pb-0">
+              <DataTable>
+                <thead>
+                  <tr>
+                    <TH className="w-8">#</TH>
+                    <SortableTH
+                      label="Investor"
+                      sortKey="name"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
+                    <SortableTH
+                      label="Code"
+                      sortKey="investor_code"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
+                    <SortableTH
+                      label="Type"
+                      sortKey="investor_type"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
+                    <SortableTH
+                      label="Contact"
+                      sortKey="primary_contact"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
+                    <SortableTH
+                      label="Funds"
+                      sortKey="fund_count"
+                      sort={sort}
+                      onSort={handleSort}
+                      align="right"
+                    />
+                    <SortableTH
+                      label="Committed"
+                      sortKey="total_committed"
+                      sort={sort}
+                      onSort={handleSort}
+                      align="right"
+                    />
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedInvestors.map((inv, index) => {
+                    const isSelected = inv.id === selectedId
+                    return (
+                      <TR
+                        key={inv.id}
+                        className={cn(
+                          "cursor-pointer",
+                          isSelected && "bg-parchment-100",
+                        )}
+                        onClick={() => setSelectedId(inv.id)}
+                      >
+                        {/* Position in the current sort, not a stable id. */}
+                        <TD className="text-ink-500 tabular-nums">
+                          {index + 1}
+                        </TD>
+                        <TD primary>
+                          <div className="flex items-center gap-2">
+                            <span>{inv.name}</span>
+                            {inv.accredited && (
+                              <Badge tone="info">Accredited</Badge>
                             )}
-                          </TD>
-                        </TR>
-                      )
-                    })}
-                  </tbody>
-                </DataTable>
-              </CardSection>
-            </Card>
-
-            <Card raised className="overflow-hidden">
-              {selectedId !== null ? (
-                <InvestorDetailPanel
-                  key={selectedId}
-                  investorId={selectedId}
-                />
-              ) : (
-                <CardSection>
-                  <Eyebrow>Select an investor</Eyebrow>
-                  <p className="mt-3 font-sans text-[14px] text-ink-700">
-                    Choose a partner from the list to view their contacts and
-                    commitments.
-                  </p>
-                </CardSection>
-              )}
-            </Card>
-          </div>
+                          </div>
+                        </TD>
+                        <TD className="text-ink-500">
+                          {inv.investor_code ?? "—"}
+                        </TD>
+                        <TD>{inv.investor_type ?? "—"}</TD>
+                        <TD>{primaryContactName(inv) ?? "—"}</TD>
+                        <TD align="right">{inv.fund_count}</TD>
+                        <TD align="right" primary>
+                          {formatCurrency(
+                            parseDecimal(inv.total_committed),
+                            "USD",
+                            { compact: true },
+                          )}
+                        </TD>
+                      </TR>
+                    )
+                  })}
+                </tbody>
+              </DataTable>
+            </CardSection>
+          </Card>
         )}
       </div>
+
+      <Sheet
+        open={selectedId !== null}
+        onOpenChange={(next) => {
+          if (!next) setSelectedId(null)
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-2xl flex flex-col gap-0 p-0"
+        >
+          <SheetTitle className="sr-only">Investor detail</SheetTitle>
+          <SheetDescription className="sr-only">
+            Contacts and commitments for the selected investor.
+          </SheetDescription>
+          {selectedId !== null && (
+            <InvestorDetailPanel key={selectedId} investorId={selectedId} />
+          )}
+        </SheetContent>
+      </Sheet>
 
       <InvestorCreateDialog
         open={createOpen}
