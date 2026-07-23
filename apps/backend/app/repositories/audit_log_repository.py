@@ -6,6 +6,8 @@ from sqlalchemy.orm import Query, Session
 
 from app.models.audit_log import AuditLog
 from app.models.enums import UserRole
+from app.models.organization import Organization
+from app.models.user import User
 from app.models.user_organization_membership import UserOrganizationMembership
 
 _ORG_VISIBLE_ROLES = (UserRole.admin, UserRole.fund_manager)
@@ -83,4 +85,50 @@ class AuditLogRepository:
             .offset(skip)
             .limit(limit)
             .all()
+        )
+
+    def list_platform_wide(
+        self,
+        *,
+        entity_type: str | None = None,
+        user_id: uuid.UUID | None = None,
+        organization_id: uuid.UUID | None = None,
+        action: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[tuple[AuditLog, User | None, Organization | None]]:
+        """Every audit event on the platform, unscoped — superadmin only.
+
+        Unlike :meth:`list_for_membership` there is no visibility filter: this
+        is the only view that shows org-less rows (superadmin sign-ins,
+        platform-level user records) to anyone. The actor and organization are
+        joined in because the caller renders events across every org and can't
+        resolve names from a single roster.
+        """
+        query = (
+            self.db.query(AuditLog, User, Organization)
+            .outerjoin(User, AuditLog.user_id == User.id)
+            .outerjoin(Organization, AuditLog.organization_id == Organization.id)
+        )
+        if entity_type is not None:
+            query = query.filter(AuditLog.entity_type == entity_type)
+        if user_id is not None:
+            query = query.filter(AuditLog.user_id == user_id)
+        if organization_id is not None:
+            query = query.filter(AuditLog.organization_id == organization_id)
+        if action is not None:
+            query = query.filter(AuditLog.action == action)
+        if date_from is not None:
+            query = query.filter(AuditLog.created_at >= date_from)
+        if date_to is not None:
+            query = query.filter(AuditLog.created_at <= date_to)
+        return (
+            query.order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
+            .offset(skip)
+            .limit(limit)
+            # Outer joins make the User / Organization slots nullable at
+            # runtime; the row typing does not model that.
+            .all()  # type: ignore[invalid-return-type]
         )

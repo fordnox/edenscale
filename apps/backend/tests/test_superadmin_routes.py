@@ -17,6 +17,8 @@ behind `Depends(get_current_user)` (JWT only) plus per-route
   without dropping memberships (distinct from `DELETE /organizations/{id}`).
 * `GET /superadmin/organizations/{id}/members` returns the roster with
   nested user payloads.
+* `GET /superadmin/audit-logs` is the platform-wide audit view — the only
+  one that surfaces org-less rows such as superadmin sign-ins.
 """
 
 import uuid
@@ -293,6 +295,23 @@ class TestNonSuperadminForbidden:
         override_user(subject)
 
         response = client.get("/superadmin/users")
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize(
+        "role,subject,email",
+        [
+            (UserRole.admin, "hanko-admin", "admin@example.com"),
+            (UserRole.fund_manager, "hanko-fm", "fm@example.com"),
+            (UserRole.lp, "hanko-lp", "lp@example.com"),
+        ],
+    )
+    def test_list_audit_logs_forbidden(
+        self, client, override_user, role, subject, email
+    ):
+        _seed_user(subject, role, email=email)
+        override_user(subject)
+
+        response = client.get("/superadmin/audit-logs")
         assert response.status_code == 403
 
 
@@ -756,3 +775,92 @@ class TestListOrganizationMembers:
         )
         assert second_page.status_code == 200
         assert [row["user_id"] for row in second_page.json()] == user_ids[2:4]
+
+
+class TestPlatformAuditLog:
+    """`GET /superadmin/audit-logs` is the only view onto org-less rows —
+    superadmin sign-ins above all, since superadmins hold no memberships."""
+
+    def _record_login(self, user_id: str, *, country: str = "EE") -> None:
+        from app.core.audit import record_audit
+        from app.middleware.audit_context import set_audit_context
+
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == user_id).one()
+            set_audit_context(
+                user_id=user.id,
+                ip_address="203.0.113.7",
+                country=country,
+                user_agent="Mozilla/5.0",
+            )
+            record_audit(
+                db,
+                user=user,
+                action="login",
+                entity_type="user",
+                entity_id=user.id,
+            )
+        finally:
+            set_audit_context()
+            db.close()
+
+    def test_surfaces_superadmin_login(self, client, override_user):
+        super_id = _login_as_superadmin(override_user)
+        self._record_login(super_id)
+
+        response = client.get("/superadmin/audit-logs", params={"action": "login"})
+        assert response.status_code == 200
+        rows = response.json()
+        assert len(rows) == 1
+        row = rows[0]
+        assert row["user_id"] == super_id
+        assert row["user_email"] == "super@example.com"
+        assert row["is_superadmin"] is True
+        # No membership → no organization to attribute the sign-in to.
+        assert row["organization_id"] is None
+        assert row["organization_name"] is None
+        assert row["ip_address"] == "203.0.113.7"
+        assert row["country"] == "EE"
+        assert row["user_agent"] == "Mozilla/5.0"
+
+    def test_includes_org_scoped_events_with_org_name(self, client, override_user):
+        _login_as_superadmin(override_user)
+        org_id = _seed_org("Audited Org")
+
+        response = client.get(
+            "/superadmin/audit-logs", params={"entity_type": "organization"}
+        )
+        assert response.status_code == 200
+        rows = response.json()
+        assert any(
+            row["entity_id"] == org_id and row["organization_name"] == "Audited Org"
+            for row in rows
+        )
+
+    def test_filters_by_organization(self, client, override_user):
+        _login_as_superadmin(override_user)
+        org_id = _seed_org("Wanted Org")
+        _seed_org("Unwanted Org")
+
+        response = client.get(
+            "/superadmin/audit-logs", params={"organization_id": org_id}
+        )
+        assert response.status_code == 200
+        rows = response.json()
+        assert rows
+        assert all(row["organization_id"] == org_id for row in rows)
+
+    def test_respects_skip_and_limit(self, client, override_user):
+        _login_as_superadmin(override_user)
+        for i in range(4):
+            _seed_org(f"Paged Org {i}")
+
+        first = client.get("/superadmin/audit-logs", params={"limit": 2})
+        assert first.status_code == 200
+        assert len(first.json()) == 2
+
+        second = client.get("/superadmin/audit-logs", params={"skip": 2, "limit": 2})
+        assert second.status_code == 200
+        first_ids = {row["id"] for row in first.json()}
+        assert all(row["id"] not in first_ids for row in second.json())

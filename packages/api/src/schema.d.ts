@@ -382,6 +382,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/superadmin/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Platform Audit Logs
+         * @description Every audit event on the platform, across all organizations.
+         *
+         *     The tenant-facing `GET /audit-logs` is scoped to the caller's active
+         *     membership, which leaves platform-level rows — superadmin sign-ins above
+         *     all, since superadmins hold no memberships — with nowhere to surface.
+         *     This is that view.
+         */
+        get: operations["list_platform_audit_logs_superadmin_audit_logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/invitations": {
         parameters: {
             query?: never;
@@ -3552,6 +3577,52 @@ export interface components {
             /** Last Name */
             last_name?: string | null;
         };
+        /**
+         * SuperadminAuditLogRead
+         * @description An audit row plus the actor / organization labels for a cross-org view.
+         *
+         *     ``organization_name`` is null for platform-level events — chiefly
+         *     superadmin sign-ins, since superadmins hold no memberships and so their
+         *     activity is attributed to no organization.
+         */
+        SuperadminAuditLogRead: {
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /** User Id */
+            user_id: string | null;
+            /** Organization Id */
+            organization_id: string | null;
+            /** Action */
+            action: string;
+            /** Entity Type */
+            entity_type: string | null;
+            /** Entity Id */
+            entity_id: string | null;
+            /** Audit Metadata */
+            audit_metadata: Record<string, never> | null;
+            /** Ip Address */
+            ip_address: string | null;
+            /** Country */
+            country: string | null;
+            /** User Agent */
+            user_agent: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** User Email */
+            user_email?: string | null;
+            /** User Name */
+            user_name?: string | null;
+            /**
+             * Is Superadmin
+             * @default false
+             */
+            is_superadmin: boolean;
+            /** Organization Name */
+            organization_name?: string | null;
+        };
         /** SuperadminDripStartResponse */
         SuperadminDripStartResponse: {
             /**
@@ -4487,6 +4558,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MembershipWithUserRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_platform_audit_logs_superadmin_audit_logs_get: {
+        parameters: {
+            query?: {
+                entity_type?: string | null;
+                action?: string | null;
+                user_id?: string | null;
+                organization_id?: string | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                skip?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuperadminAuditLogRead"][];
                 };
             };
             /** @description Validation Error */

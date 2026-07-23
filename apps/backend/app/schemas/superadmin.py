@@ -13,6 +13,9 @@ the per-tenant `OrganizationRead` / `MembershipRead` are not:
   `email` rules, but for already-existing orgs.
 * `MembershipWithUserRead` is the roster payload — nested `UserRead` is
   needed so the UI can render names/emails without a follow-up call.
+* `SuperadminAuditLogRead` denormalizes the actor and organization onto each
+  audit row: the platform-wide view spans every org, so the UI cannot resolve
+  those from one roster the way the tenant audit page does.
 """
 
 from datetime import datetime
@@ -20,6 +23,7 @@ from datetime import datetime
 from pydantic import UUID4, BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.models.enums import OrganizationType, UserRole
+from app.schemas.audit_log import AuditLogRead
 from app.schemas.organization import OrganizationCreate, OrganizationRead
 from app.schemas.user import UserRead
 from app.schemas.user_organization_membership import MembershipRead
@@ -78,6 +82,20 @@ class SuperadminDripStartResponse(BaseModel):
     user_id: UUID4
     organization_id: UUID4
     recipient_email: EmailStr
+
+
+class SuperadminAuditLogRead(AuditLogRead):
+    """An audit row plus the actor / organization labels for a cross-org view.
+
+    ``organization_name`` is null for platform-level events — chiefly
+    superadmin sign-ins, since superadmins hold no memberships and so their
+    activity is attributed to no organization.
+    """
+
+    user_email: str | None = None
+    user_name: str | None = None
+    is_superadmin: bool = False
+    organization_name: str | None = None
 
 
 class MembershipWithUserRead(BaseModel):

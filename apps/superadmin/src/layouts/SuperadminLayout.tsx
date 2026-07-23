@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import {
   Building2,
   ExternalLink,
+  History,
   Loader2,
   LogOut,
   Users,
@@ -40,6 +41,13 @@ const NAV_LINKS = [
     label: "Users",
     icon: Users,
     isActive: (pathname: string) => pathname.startsWith("/superadmin/users"),
+  },
+  {
+    to: "/superadmin/audit-logs",
+    label: "Audit log",
+    icon: History,
+    isActive: (pathname: string) =>
+      pathname.startsWith("/superadmin/audit-logs"),
   },
 ]
 

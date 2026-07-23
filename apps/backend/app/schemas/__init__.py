@@ -113,6 +113,7 @@ from app.schemas.organization_invitation import (
 from app.schemas.superadmin import (
     MembershipWithUserRead,
     SuperadminAdminAssignment,
+    SuperadminAuditLogRead,
     SuperadminDripStartResponse,
     SuperadminOrganizationCreate,
     SuperadminOrganizationCreateResponse,
@@ -226,6 +227,7 @@ __all__ = [
     "OrganizationRead",
     "OrganizationUpdate",
     "SuperadminAdminAssignment",
+    "SuperadminAuditLogRead",
     "SuperadminDripStartResponse",
     "SuperadminOrganizationCreate",
     "SuperadminOrganizationCreateResponse",

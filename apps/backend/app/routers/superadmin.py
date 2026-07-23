@@ -14,6 +14,7 @@ rather than going through the per-entity eager-commit repository helpers.
 """
 
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -21,13 +22,17 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import require_superadmin
+from app.models.audit_log import AuditLog
 from app.models.enums import UserRole
+from app.models.organization import Organization
 from app.models.user import User
+from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.organization_repository import OrganizationRepository
 from app.repositories.user_organization_membership_repository import (
     UserOrganizationMembershipRepository,
 )
 from app.repositories.user_repository import UserRepository
+from app.schemas.audit_log import AuditLogRead
 from app.schemas.organization import (
     OrganizationCreate,
     OrganizationRead,
@@ -36,6 +41,7 @@ from app.schemas.organization import (
 from app.schemas.superadmin import (
     MembershipWithUserRead,
     SuperadminAdminAssignment,
+    SuperadminAuditLogRead,
     SuperadminDripStartResponse,
     SuperadminOrganizationCreate,
     SuperadminOrganizationCreateResponse,
@@ -48,6 +54,31 @@ from app.services.drip import fire_investor_signup
 from app.services.notifications import notify_welcome
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
+
+
+def _denormalize_audit_row(
+    log: AuditLog,
+    user: User | None,
+    organization: Organization | None,
+) -> SuperadminAuditLogRead:
+    """Fold the joined actor / organization onto one audit row.
+
+    Both are outer-joined, so either can be absent: ``user`` for system-driven
+    events, ``organization`` for platform-level ones (superadmin sign-ins).
+    """
+    full_name = (
+        f"{user.first_name or ''} {user.last_name or ''}".strip()
+        if user is not None
+        else ""
+    )
+    org_name: str | None = organization.name if organization is not None else None  # type: ignore[invalid-assignment]
+    return SuperadminAuditLogRead(
+        **AuditLogRead.model_validate(log).model_dump(),
+        user_email=user.email if user is not None else None,  # type: ignore[invalid-argument-type]
+        user_name=full_name or None,
+        is_superadmin=bool(user.is_superadmin) if user is not None else False,
+        organization_name=org_name,
+    )
 
 
 def _resolve_or_create_user_or_404(
@@ -361,3 +392,42 @@ def list_organization_members(
         organization_id, skip=skip, limit=limit
     )
     return [MembershipWithUserRead.model_validate(m) for m in memberships]
+
+
+@router.get(
+    "/audit-logs",
+    response_model=list[SuperadminAuditLogRead],
+    dependencies=[Depends(require_superadmin)],
+)
+def list_platform_audit_logs(
+    entity_type: str | None = None,
+    action: str | None = None,
+    user_id: uuid.UUID | None = None,
+    organization_id: uuid.UUID | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+) -> list[SuperadminAuditLogRead]:
+    """Every audit event on the platform, across all organizations.
+
+    The tenant-facing `GET /audit-logs` is scoped to the caller's active
+    membership, which leaves platform-level rows — superadmin sign-ins above
+    all, since superadmins hold no memberships — with nowhere to surface.
+    This is that view.
+    """
+    rows = AuditLogRepository(db).list_platform_wide(
+        entity_type=entity_type,
+        action=action,
+        user_id=user_id,
+        organization_id=organization_id,
+        date_from=date_from,
+        date_to=date_to,
+        skip=skip,
+        limit=limit,
+    )
+    return [
+        _denormalize_audit_row(log, user, organization)
+        for log, user, organization in rows
+    ]

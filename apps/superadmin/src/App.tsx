@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedLayout } from '@edenscale/ui/ProtectedLayout'
 import SuperadminLayout from './layouts/SuperadminLayout'
+import AuditLogPage from './pages/AuditLogPage'
 import LoginPage from './pages/LoginPage'
 import OrganizationsPage from './pages/OrganizationsPage'
 import OrganizationDetailPage from './pages/OrganizationDetailPage'
@@ -23,6 +24,7 @@ function App() {
             element={<OrganizationDetailPage />}
           />
           <Route path="/superadmin/users" element={<UsersPage />} />
+          <Route path="/superadmin/audit-logs" element={<AuditLogPage />} />
         </Route>
       </Route>
 
