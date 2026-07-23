@@ -21,6 +21,29 @@ class OrganizationType(str, enum.Enum):
     service_provider = "service_provider"
 
 
+class InvestorType(str, enum.Enum):
+    """What kind of limited partner this is.
+
+    A standard private-funds LP taxonomy. `other` is the escape hatch for
+    anything that doesn't fit — it exists so the column never has to accept
+    free text again.
+    """
+
+    individual = "individual"
+    family_office = "family_office"
+    trust = "trust"
+    endowment = "endowment"
+    foundation = "foundation"
+    pension = "pension"
+    insurance = "insurance"
+    sovereign_wealth_fund = "sovereign_wealth_fund"
+    fund_of_funds = "fund_of_funds"
+    asset_manager = "asset_manager"
+    bank = "bank"
+    corporate = "corporate"
+    other = "other"
+
+
 class FundStatus(str, enum.Enum):
     draft = "draft"
     active = "active"

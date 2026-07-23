@@ -19,6 +19,7 @@ import { PageHero } from "@edenscale/ui/PageHero"
 import { CommitmentCreateDialog } from "@/components/commitments/CommitmentCreateDialog"
 import { ContactEditDialog } from "@/components/investors/ContactEditDialog"
 import { InvestorCreateDialog } from "@/components/investors/InvestorCreateDialog"
+import { InvestorTypeSelect } from "@/components/investors/InvestorTypeSelect"
 import { InviteContactDialog } from "@/components/investors/InviteContactDialog"
 import {
   AlertDialog,
@@ -57,6 +58,7 @@ import {
   type SortKey,
   type SortState,
 } from "@/lib/investorSort"
+import { investorTypeLabel, type InvestorType } from "@/lib/investorTypes"
 import { config } from "@edenscale/api/config"
 import { formatCurrency, formatDate } from "@edenscale/shared/format"
 import { cn } from "@edenscale/shared/utils"
@@ -67,7 +69,7 @@ type InvestorContactRead = components["schemas"]["InvestorContactRead"]
 interface InvestorDetailsForm {
   name: string
   investorCode: string
-  investorType: string
+  investorType: InvestorType | ""
   accredited: boolean
   notes: string
 }
@@ -209,7 +211,7 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
       setDetails({
         name: investor.name,
         investorCode: investor.investor_code ?? "",
-        investorType: investor.investor_type ?? "",
+        investorType: (investor.investor_type ?? "") as InvestorType | "",
         accredited: investor.accredited === true,
         notes: investor.notes ?? "",
       })
@@ -240,7 +242,7 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
       body: {
         name: details.name.trim(),
         investor_code: details.investorCode.trim() || null,
-        investor_type: details.investorType.trim() || null,
+        investor_type: details.investorType || null,
         accredited: details.accredited,
         notes: details.notes.trim() || null,
       },
@@ -414,14 +416,13 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="investor-details-type">Investor type</Label>
-                <Input
+                <InvestorTypeSelect
                   id="investor-details-type"
                   value={details.investorType}
-                  onChange={(event) =>
-                    setDetails({ ...details, investorType: event.target.value })
+                  onValueChange={(value) =>
+                    setDetails({ ...details, investorType: value })
                   }
                   disabled={!canManageCommitments}
-                  placeholder="Family office"
                 />
               </div>
             </div>
@@ -469,7 +470,7 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
                       setDetails({
                         name: investor.name,
                         investorCode: investor.investor_code ?? "",
-                        investorType: investor.investor_type ?? "",
+                        investorType: (investor.investor_type ?? "") as InvestorType | "",
                         accredited: investor.accredited === true,
                         notes: investor.notes ?? "",
                       })
@@ -1020,7 +1021,7 @@ export default function InvestorsPage() {
                         <TD className="text-ink-500">
                           {inv.investor_code ?? "—"}
                         </TD>
-                        <TD>{inv.investor_type ?? "—"}</TD>
+                        <TD>{investorTypeLabel(inv.investor_type) ?? "—"}</TD>
                         <TD>{primaryContactName(inv) ?? "—"}</TD>
                         <TD align="right">{inv.fund_count}</TD>
                         <TD align="right" primary>

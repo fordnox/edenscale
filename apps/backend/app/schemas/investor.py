@@ -3,12 +3,14 @@ from decimal import Decimal
 
 from pydantic import UUID4, BaseModel, ConfigDict, Field
 
+from app.models.enums import InvestorType
+
 
 class InvestorCreate(BaseModel):
     organization_id: UUID4 | None = None
     investor_code: str | None = Field(default=None, max_length=50)
     name: str = Field(min_length=1, max_length=255)
-    investor_type: str | None = Field(default=None, max_length=100)
+    investor_type: InvestorType | None = None
     accredited: bool | None = False
     notes: str | None = None
 
@@ -16,7 +18,7 @@ class InvestorCreate(BaseModel):
 class InvestorUpdate(BaseModel):
     investor_code: str | None = Field(default=None, max_length=50)
     name: str | None = Field(default=None, min_length=1, max_length=255)
-    investor_type: str | None = Field(default=None, max_length=100)
+    investor_type: InvestorType | None = None
     accredited: bool | None = None
     notes: str | None = None
 
@@ -26,6 +28,9 @@ class InvestorRead(BaseModel):
     organization_id: UUID4
     investor_code: str | None
     name: str
+    # Permissive on read: writes are constrained to InvestorType, but rows
+    # written before that could hold anything, and a response model must not
+    # 500 on data already in the table.
     investor_type: str | None
     accredited: bool | None
     notes: str | None

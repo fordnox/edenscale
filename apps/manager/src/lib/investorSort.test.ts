@@ -95,6 +95,7 @@ describe("sortInvestors", () => {
   })
 
   it("keeps untyped investors last in both directions", () => {
+    // Ordered by label ("Endowment" < "Pension"), which is what the column shows.
     const rows = [
       investor("Blank", { investor_type: null }),
       investor("Pension", { investor_type: "pension" }),

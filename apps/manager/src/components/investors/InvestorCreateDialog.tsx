@@ -13,6 +13,8 @@ import {
   DialogTitle,
 } from "@edenscale/ui/dialog"
 import { Input } from "@edenscale/ui/input"
+import { InvestorTypeSelect } from "@/components/investors/InvestorTypeSelect"
+import type { InvestorType } from "@/lib/investorTypes"
 import { Label } from "@edenscale/ui/label"
 import { Textarea } from "@edenscale/ui/textarea"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
@@ -30,7 +32,7 @@ export function InvestorCreateDialog({
 }: InvestorCreateDialogProps) {
   const [name, setName] = useState("")
   const [investorCode, setInvestorCode] = useState("")
-  const [investorType, setInvestorType] = useState("")
+  const [investorType, setInvestorType] = useState<InvestorType | "">("")
   const [accredited, setAccredited] = useState(false)
   const [notes, setNotes] = useState("")
 
@@ -69,7 +71,7 @@ export function InvestorCreateDialog({
       body: {
         name: name.trim(),
         investor_code: investorCode.trim() || null,
-        investor_type: investorType.trim() || null,
+        investor_type: investorType || null,
         accredited,
         notes: notes.trim() || null,
       },
@@ -110,11 +112,10 @@ export function InvestorCreateDialog({
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="investor-type">Investor type</Label>
-              <Input
+              <InvestorTypeSelect
                 id="investor-type"
                 value={investorType}
-                onChange={(event) => setInvestorType(event.target.value)}
-                placeholder="Family office"
+                onValueChange={setInvestorType}
               />
             </div>
           </div>

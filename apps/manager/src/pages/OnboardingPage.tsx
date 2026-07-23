@@ -9,6 +9,8 @@ import { BrandMark } from "@edenscale/brand/components/BrandMark"
 import { Button } from "@edenscale/ui/button"
 import { Card, CardSection } from "@edenscale/ui/card"
 import { Input } from "@edenscale/ui/input"
+import { InvestorTypeSelect } from "@/components/investors/InvestorTypeSelect"
+import type { InvestorType } from "@/lib/investorTypes"
 import { Label } from "@edenscale/ui/label"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiMutation } from "@edenscale/api/hooks/useApiMutation"
@@ -32,7 +34,7 @@ export default function OnboardingPage() {
   const [fundSlug, setFundSlug] = useState<string | null>(null)
 
   const [investorName, setInvestorName] = useState("")
-  const [investorType, setInvestorType] = useState("")
+  const [investorType, setInvestorType] = useState<InvestorType | "">("")
 
   // The seeded demo organization, if the deployment has one. Joining it (as a
   // fund manager) is offered as an alternative to founding an empty organization.
@@ -123,7 +125,7 @@ export default function OnboardingPage() {
     createInvestor.mutate({
       body: {
         name: investorName.trim(),
-        investor_type: investorType.trim() || null,
+        investor_type: investorType || null,
         accredited: false,
       },
     })
@@ -348,11 +350,10 @@ export default function OnboardingPage() {
                       <Label htmlFor="onboarding-investor-type">
                         Investor type (optional)
                       </Label>
-                      <Input
+                      <InvestorTypeSelect
                         id="onboarding-investor-type"
                         value={investorType}
-                        onChange={(event) => setInvestorType(event.target.value)}
-                        placeholder="Family office"
+                        onValueChange={setInvestorType}
                       />
                     </div>
                     <div className="mt-2 flex items-center gap-2">

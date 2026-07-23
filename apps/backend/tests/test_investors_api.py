@@ -286,6 +286,104 @@ class TestInvestorWithContacts:
         assert rows[original_primary] is False
 
 
+class TestInvestorType:
+    def _as_fund_manager(self, override_user, org_id):
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+
+    def test_accepts_an_enum_member(self, client, override_user):
+        org_id = _seed_org()
+        self._as_fund_manager(override_user, org_id)
+
+        response = client.post(
+            "/investors",
+            json={"name": "Beacon", "investor_type": "family_office"},
+        )
+        assert response.status_code == 201
+        assert response.json()["investor_type"] == "family_office"
+
+    @pytest.mark.parametrize(
+        "value", ["Family Office", "family office", "hedge_fund", "", "  "]
+    )
+    def test_writes_reject_anything_outside_the_enum(
+        self, client, override_user, value
+    ):
+        org_id = _seed_org()
+        self._as_fund_manager(override_user, org_id)
+
+        response = client.post(
+            "/investors", json={"name": "Beacon", "investor_type": value}
+        )
+        assert response.status_code == 422
+
+    def test_null_is_allowed_and_round_trips(self, client, override_user):
+        org_id = _seed_org()
+        self._as_fund_manager(override_user, org_id)
+
+        created = client.post("/investors", json={"name": "Untyped"})
+        assert created.status_code == 201
+        assert created.json()["investor_type"] is None
+
+    def test_patch_changes_and_clears_the_type(self, client, override_user):
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        self._as_fund_manager(override_user, org_id)
+
+        changed = client.patch(
+            f"/investors/{investor_id}", json={"investor_type": "pension"}
+        )
+        assert changed.status_code == 200
+        assert changed.json()["investor_type"] == "pension"
+
+        cleared = client.patch(
+            f"/investors/{investor_id}", json={"investor_type": None}
+        )
+        assert cleared.status_code == 200
+        assert cleared.json()["investor_type"] is None
+
+    def test_reads_tolerate_legacy_free_text(self, client, override_user):
+        """Rows written before the enum existed must still be readable.
+
+        The column is plain text, so the response models stay permissive; only
+        writes are constrained.
+        """
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        db = SessionLocal()
+        try:
+            row = db.query(Investor).filter(Investor.id == investor_id).one()
+            row.investor_type = "Hedge Fund"
+            db.commit()
+        finally:
+            db.close()
+        self._as_fund_manager(override_user, org_id)
+
+        assert (
+            client.get(f"/investors/{investor_id}").json()["investor_type"]
+            == "Hedge Fund"
+        )
+        rows = client.get("/investors").json()
+        assert (
+            next(r for r in rows if r["id"] == investor_id)["investor_type"]
+            == "Hedge Fund"
+        )
+
+    def test_type_appears_in_the_list(self, client, override_user):
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        self._as_fund_manager(override_user, org_id)
+        client.patch(f"/investors/{investor_id}", json={"investor_type": "endowment"})
+
+        rows = client.get("/investors").json()
+        row = next(r for r in rows if r["id"] == investor_id)
+        assert row["investor_type"] == "endowment"
+
+
 class TestListPrimaryContact:
     """The register shows each investor's primary contact, or nothing."""
 

@@ -1,5 +1,7 @@
 import type { components } from "@edenscale/api/schema"
 
+import { investorTypeLabel } from "./investorTypes"
+
 type InvestorListItem = components["schemas"]["InvestorListItem"]
 
 export type SortKey =
@@ -57,7 +59,14 @@ export function compareInvestors(
     case "investor_code":
       return compareNullableText(a.investor_code, b.investor_code, sign, byName)
     case "investor_type":
-      return compareNullableText(a.investor_type, b.investor_type, sign, byName)
+      // Compare the labels, not the raw enum values, so the order matches what
+      // the column actually shows.
+      return compareNullableText(
+        investorTypeLabel(a.investor_type),
+        investorTypeLabel(b.investor_type),
+        sign,
+        byName,
+      )
     case "primary_contact":
       return compareNullableText(
         primaryContactName(a),

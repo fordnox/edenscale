@@ -3087,8 +3087,7 @@ export interface components {
             investor_code?: string | null;
             /** Name */
             name: string;
-            /** Investor Type */
-            investor_type?: string | null;
+            investor_type?: components["schemas"]["InvestorType"] | null;
             /**
              * Accredited
              * @default false
@@ -3169,14 +3168,23 @@ export interface components {
             /** Updated At */
             updated_at: string | null;
         };
+        /**
+         * InvestorType
+         * @description What kind of limited partner this is.
+         *
+         *     A standard private-funds LP taxonomy. `other` is the escape hatch for
+         *     anything that doesn't fit — it exists so the column never has to accept
+         *     free text again.
+         * @enum {string}
+         */
+        InvestorType: "individual" | "family_office" | "trust" | "endowment" | "foundation" | "pension" | "insurance" | "sovereign_wealth_fund" | "fund_of_funds" | "asset_manager" | "bank" | "corporate" | "other";
         /** InvestorUpdate */
         InvestorUpdate: {
             /** Investor Code */
             investor_code?: string | null;
             /** Name */
             name?: string | null;
-            /** Investor Type */
-            investor_type?: string | null;
+            investor_type?: components["schemas"]["InvestorType"] | null;
             /** Accredited */
             accredited?: boolean | null;
             /** Notes */

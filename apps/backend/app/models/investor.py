@@ -24,6 +24,8 @@ class Investor(Base):
     )
     investor_code = Column(String(50), nullable=True, unique=True)
     name = Column(String(255), nullable=False)
+    # Constrained to the InvestorType enum by the schemas, not by the column:
+    # the storage stays free text so rows predating the enum still read back.
     investor_type = Column(String(100), nullable=True)
     accredited = Column(Boolean, nullable=True, default=False)
     notes = Column(Text, nullable=True)
