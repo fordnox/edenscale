@@ -623,19 +623,24 @@ html.js [data-reveal].is-visible {
   stroke-width: 1;
 }
 
-.page-index .flow-dial-glow {
-  fill: rgba(251, 249, 244, 0.035);
+.page-index .flow-tile {
+  fill: #fbf9f4;
+  opacity: var(--o);
 }
-.page-index .flow-dial-track {
-  fill: none;
-  stroke: rgba(251, 249, 244, 0.09);
-  stroke-width: 26;
+/* One page in the field lights up as each document lands. */
+.page-index .flow-tile.is-filed {
+  animation: flow-tile-filed 1400ms var(--ease-standard);
 }
-.page-index .flow-dial-ticks {
-  fill: none;
-  stroke: rgba(251, 249, 244, 0.66);
-  stroke-width: 26;
-  stroke-dasharray: 3 6 2 8 5 4 2 10 6 3 3 7 2 5;
+@keyframes flow-tile-filed {
+  0% {
+    opacity: var(--o);
+  }
+  18% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: var(--o);
+  }
 }
 
 .page-index .flow-node rect {

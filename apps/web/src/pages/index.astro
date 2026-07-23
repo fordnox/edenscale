@@ -2,7 +2,10 @@
 import Layout from "../layouts/Layout.astro";
 import GrainField from "../components/GrainField.astro";
 import LogoIcon from "@edenscale/brand/components/LogoIcon.astro";
-import { MARK_PATH, MARK_TRANSFORM } from "@edenscale/brand/components/markPath.ts";
+import {
+    MARK_PATH,
+    MARK_TRANSFORM,
+} from "@edenscale/brand/components/markPath.ts";
 
 /* ---------- Hero flow diagram ----------
    A fixed 700x420 SVG stage: documents queue on the left, route through the
@@ -23,839 +26,1224 @@ const BENDS = [300, 282, 288, 306];
 const BUNDLE = [-4.5, -1.5, 1.5, 4.5];
 
 const elbow = (x0: number, y0: number, xb: number, y1: number, x2: number) => {
-  if (Math.abs(y1 - y0) < 0.5) return `M ${x0} ${y0} H ${x2}`;
-  const down = y1 > y0;
-  const s = down ? 1 : -1;
-  const r = Math.min(14, Math.abs(y1 - y0) / 2, Math.abs(xb - x0), Math.abs(x2 - xb));
-  return [
-    `M ${x0} ${y0}`,
-    `H ${xb - r}`,
-    `A ${r} ${r} 0 0 ${down ? 1 : 0} ${xb} ${y0 + s * r}`,
-    `V ${y1 - s * r}`,
-    `A ${r} ${r} 0 0 ${down ? 0 : 1} ${xb + r} ${y1}`,
-    `H ${x2}`,
-  ].join(" ");
+    if (Math.abs(y1 - y0) < 0.5) return `M ${x0} ${y0} H ${x2}`;
+    const down = y1 > y0;
+    const s = down ? 1 : -1;
+    const r = Math.min(
+        14,
+        Math.abs(y1 - y0) / 2,
+        Math.abs(xb - x0),
+        Math.abs(x2 - xb),
+    );
+    return [
+        `M ${x0} ${y0}`,
+        `H ${xb - r}`,
+        `A ${r} ${r} 0 0 ${down ? 1 : 0} ${xb} ${y0 + s * r}`,
+        `V ${y1 - s * r}`,
+        `A ${r} ${r} 0 0 ${down ? 0 : 1} ${xb + r} ${y1}`,
+        `H ${x2}`,
+    ].join(" ");
 };
 
 const flowLines = [...FLOW_ROWS, FLOW_PILL_Y].map((y, i) =>
-  elbow(LINE_START, y, BENDS[i], NODE.y + BUNDLE[i], NODE.x - NODE.size / 2 - 2)
+    elbow(
+        LINE_START,
+        y,
+        BENDS[i],
+        NODE.y + BUNDLE[i],
+        NODE.x - NODE.size / 2 - 2,
+    ),
 );
 
-/* Decorative dial on the right, clipped by the stage edge. */
-const ARC = { cx: 604, cy: 195, r: 150 };
-const arc = (a0: number, a1: number) => {
-  const p = (deg: number) => [
-    (ARC.cx + ARC.r * Math.cos((deg * Math.PI) / 180)).toFixed(1),
-    (ARC.cy + ARC.r * Math.sin((deg * Math.PI) / 180)).toFixed(1),
-  ];
-  const [x0, y0] = p(a0);
-  const [x1, y1] = p(a1);
-  return `M ${x0} ${y0} A ${ARC.r} ${ARC.r} 0 ${Math.abs(a1 - a0) > 180 ? 1 : 0} ${a1 > a0 ? 1 : 0} ${x1} ${y1}`;
+/* What's already in the vault: a field of filed pages behind the card, densest
+   against it and dissolving into the panel edge. Jitter and brightness come
+   from a hash rather than Math.random so the build output is stable. */
+const TILE = { w: 13, h: 17 };
+const FIELD = { cols: 17, rows: 19, gapX: 21, gapY: 25, x0: 380, y0: -14 };
+const FOCAL = { x: 624, y: 195 };
+const FIELD_REACH = 260; // tiles fade to nothing well inside the grid extents
+const hash = (a: number, b: number) => {
+    const n = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
+    return n - Math.floor(n);
 };
-const arcTrack = [
-  [-132, -108],
-  [-104, -30],
-  [-24, 20],
-  [26, 64],
-  [70, 116],
-].map(([a, b]) => arc(a, b));
-const arcTicks = arc(-100, -36);
+
+const vaultField: { x: number; y: number; o: number; near: boolean }[] = [];
+for (let j = 0; j < FIELD.rows; j++) {
+    for (let i = 0; i < FIELD.cols; i++) {
+        const r1 = hash(i, j);
+        const r2 = hash(j + 7, i + 3);
+        const x = FIELD.x0 + i * FIELD.gapX + (r1 - 0.5) * 5;
+        const y = FIELD.y0 + j * FIELD.gapY + (r2 - 0.5) * 5;
+        // Tiles wholly behind the opaque card would never be seen.
+        if (
+            x >= CARD.x &&
+            x + TILE.w <= CARD.x + CARD.w &&
+            y >= CARD.y &&
+            y + TILE.h <= CARD.y + CARD.h
+        ) {
+            continue;
+        }
+        const d = Math.hypot(x + TILE.w / 2 - FOCAL.x, y + TILE.h / 2 - FOCAL.y);
+        const t = Math.max(0, 1 - d / FIELD_REACH);
+        let o = Math.pow(t, 1.7) * 0.42 * (0.3 + 0.7 * r1);
+        if (r2 > 0.94) o = Math.min(0.6, o + 0.3 * t); // a few read as fully filed
+        if (o < 0.015) continue; // below this it is not worth the markup
+        vaultField.push({
+            x: Math.round(x * 10) / 10,
+            y: Math.round(y * 10) / 10,
+            o: Math.round(o * 1000) / 1000,
+            near: t > 0.55,
+        });
+    }
+}
 
 /* The queue cycles through these; the register never runs out of paperwork. */
 const vaultDocs = [
-  { name: "Subscription Agreement", from: "Meridian Family Office", type: "PDF" },
-  { name: "Wire Confirmation", from: "Kessler Capital", type: "PDF" },
-  { name: "Side Letter", from: "Novak & Sons", type: "DOC" },
-  { name: "Schedule K-1 · 2025", from: "Alderman Endowment", type: "PDF" },
-  { name: "Capital Call Notice", from: "Beacon Family Office", type: "PDF" },
-  { name: "Quarterly Letter Q2", from: "Stillwater Group", type: "DOC" },
-  { name: "Bank Confirmation", from: "Harlow Rand", type: "PDF" },
-  { name: "Audited Financials", from: "Corminster Trust", type: "XLS" },
-  { name: "Form W-9", from: "Meridian Family Office", type: "PDF" },
-  { name: "Transfer Agreement", from: "Kessler Capital", type: "DOC" },
+    {
+        name: "Subscription Agreement",
+        from: "Meridian Family Office",
+        type: "PDF",
+    },
+    { name: "Wire Confirmation", from: "Kessler Capital", type: "PDF" },
+    { name: "Side Letter", from: "Novak & Sons", type: "DOC" },
+    { name: "Bank Statement · Q1", from: "Alderman Endowment", type: "PDF" },
+    { name: "Capital Call Notice", from: "Beacon Family Office", type: "PDF" },
+    { name: "Quarterly Letter Q2", from: "Stillwater Group", type: "DOC" },
+    { name: "Bank Confirmation", from: "Harlow Rand", type: "PDF" },
+    { name: "Audited Financials", from: "Corminster Trust", type: "XLS" },
+    { name: "Form W-9", from: "Meridian Family Office", type: "PDF" },
+    { name: "Transfer Agreement", from: "Kessler Capital", type: "DOC" },
 ];
 const vaultSeed = { docs: 1284, size: 6.1, more: 1281 };
 
 const problems = [
-  {
-    n: "01",
-    title: "Capital calls live in your inbox.",
-    body: "Amounts, wire dates, and confirmations scattered across threads. No single view of who has funded and who hasn't.",
-  },
-  {
-    n: "02",
-    title: "LP records drift out of date.",
-    body: "A commitment changes, a contact leaves, an entity is restructured — and the spreadsheet quietly stops matching reality.",
-  },
-  {
-    n: "03",
-    title: "Follow-ups depend on remembering.",
-    body: "The polite second nudge is the one that gets the wire in. It is also the first thing to fall off a busy week.",
-  },
+    {
+        n: "01",
+        title: "Capital calls live in your inbox.",
+        body: "Amounts, wire dates, and confirmations scattered across threads. No single view of who has funded and who hasn't.",
+    },
+    {
+        n: "02",
+        title: "LP records drift out of date.",
+        body: "A commitment changes, a contact leaves, an entity is restructured — and the spreadsheet quietly stops matching reality.",
+    },
+    {
+        n: "03",
+        title: "Follow-ups depend on remembering.",
+        body: "The polite second nudge is the one that gets the wire in. It is also the first thing to fall off a busy week.",
+    },
 ];
 
 const steps = [
-  {
-    n: "Step 01",
-    title: "Bring your LPs in",
-    body: "Import commitments, contacts, and entities. NewTaven becomes the register of record for the whole fund.",
-  },
-  {
-    n: "Step 02",
-    title: "Issue a call",
-    body: "Draft a capital call once. Each LP receives their exact figure, wire details, and due date — no mail merge.",
-  },
-  {
-    n: "Step 03",
-    title: "Let the cadence run",
-    body: "Wires reconcile against the register. Anyone outstanding gets a measured follow-up on schedule — in your voice.",
-  },
+    {
+        n: "Step 01",
+        title: "Bring your LPs in",
+        body: "Import commitments, contacts, and entities. NewTaven becomes the register of record for the whole fund.",
+    },
+    {
+        n: "Step 02",
+        title: "Issue a call",
+        body: "Draft a capital call once. Each LP receives their exact figure, wire details, and due date — no mail merge.",
+    },
+    {
+        n: "Step 03",
+        title: "Let the cadence run",
+        body: "Wires reconcile against the register. Anyone outstanding gets a measured follow-up on schedule — in your voice.",
+    },
 ];
 
 const cadenceCards = [
-  {
-    label: "Draft · T+72h",
-    tone: "Gentle",
-    subject: "A quick note on the Fund II call",
-    body: "The Fund II call is at 68% funded. A reminder that your portion — $900,000 — is due by the 30th. Wire details are unchanged, and attached again for convenience.",
-  },
-  {
-    label: "Draft · T+7d",
-    tone: "Warm",
-    subject: "Following up on the Fund II call",
-    body: "One week out. We are holding your allocation. If the timing is tight on your end, reply here and we will work with your team on the date.",
-  },
-  {
-    label: "Draft · T+14d",
-    tone: "Direct",
-    subject: "Final reminder — Fund II",
-    body: "The call closes Friday. Please confirm your wire, or let us know if anything has changed on your end. We would rather adjust than assume.",
-  },
+    {
+        label: "Draft · T+72h",
+        tone: "Gentle",
+        subject: "A quick note on the Fund II call",
+        body: "The Fund II call is at 68% funded. A reminder that your portion — $900,000 — is due by the 30th. Wire details are unchanged, and attached again for convenience.",
+    },
+    {
+        label: "Draft · T+7d",
+        tone: "Warm",
+        subject: "Following up on the Fund II call",
+        body: "One week out. We are holding your allocation. If the timing is tight on your end, reply here and we will work with your team on the date.",
+    },
+    {
+        label: "Draft · T+14d",
+        tone: "Direct",
+        subject: "Final reminder — Fund II",
+        body: "The call closes Friday. Please confirm your wire, or let us know if anything has changed on your end. We would rather adjust than assume.",
+    },
 ];
 
 const intakeStages = [
-  {
-    n: "01",
-    label: "You forward",
-    title: "Send it from your inbox",
-    body: "A subscription agreement, a bank confirmation, a signed side letter. Forward the email as it arrived — attachments and all. No upload screen, no file picker.",
-  },
-  {
-    n: "02",
-    label: "NewTaven files",
-    title: "It lands in the right fund",
-    body: "We recognize you by your sending address and file each attachment into your organization's document vault, marked confidential, with the subject line as its title.",
-  },
-  {
-    n: "03",
-    label: "AI drafts",
-    title: "A letter is waiting for you",
-    body: "PDFs are read automatically and turned into a draft LP note in your fund's voice — sitting in communications as a draft, never sent without you.",
-  },
+    {
+        n: "01",
+        label: "You forward",
+        title: "Send it from your inbox",
+        body: "A subscription agreement, a bank confirmation, a signed side letter. Forward the email as it arrived — attachments and all. No upload screen, no file picker.",
+    },
+    {
+        n: "02",
+        label: "NewTaven files",
+        title: "It lands in the right fund",
+        body: "We recognize you by your sending address and file each attachment into your organization's document vault, marked confidential, with the subject line as its title.",
+    },
+    {
+        n: "03",
+        label: "AI drafts",
+        title: "A letter is waiting for you",
+        body: "PDFs are read automatically and turned into a draft LP note in your fund's voice — sitting in communications as a draft, never sent without you.",
+    },
 ];
 
 const features = [
-  {
-    title: "LP register",
-    body: "A single record of every commitment, contact, and entity — always current, always exportable.",
-    icon: "M3 4h18v16H3zM3 9.5h18M3 15h18M9 4v16",
-  },
-  {
-    title: "Capital calls & distributions",
-    body: "Issue a call once; each LP gets their exact figure and wire instructions. Distributions run the same way, in reverse.",
-    icon: "M12 3v10M8 9l4 4 4-4M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3",
-  },
-  {
-    title: "Automated cadence",
-    body: "Measured follow-ups on outstanding wires — 72h, 7d, 14d — sent in your fund's voice, only until the wire clears.",
-    icon: "M19 13a7 7 0 1 1-7-7M12 10v3l2 1.5M9 2h6",
-  },
-  {
-    title: "Investor portal",
-    body: "Each LP sees their commitments, calls, distributions, and documents — without another login you have to support.",
-    icon: "M4 10h16v11H4zM8 10V7a4 4 0 0 1 8 0v3",
-  },
-  {
-    title: "Quarterly letters",
-    body: "Compose the letter once; NewTaven personalizes and delivers it on the fifteenth, with read receipts by LP.",
-    icon: "M3 5h18v14H3zM3 6l9 7 9-7",
-  },
-  {
-    title: "Wire reconciliation",
-    body: "Incoming wires match against the register automatically. What clears is marked funded; what doesn't enters the cadence.",
-    icon: "M3 12a9 9 0 1 1 9 9M3 12v5h5M9 12l2 2 4-4",
-  },
+    {
+        title: "LP register",
+        body: "A single record of every commitment, contact, and entity — always current, always exportable.",
+        icon: "M3 4h18v16H3zM3 9.5h18M3 15h18M9 4v16",
+    },
+    {
+        title: "Capital calls & distributions",
+        body: "Issue a call once; each LP gets their exact figure and wire instructions. Distributions run the same way, in reverse.",
+        icon: "M12 3v10M8 9l4 4 4-4M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3",
+    },
+    {
+        title: "Automated cadence",
+        body: "Measured follow-ups on outstanding wires — 72h, 7d, 14d — sent in your fund's voice, only until the wire clears.",
+        icon: "M19 13a7 7 0 1 1-7-7M12 10v3l2 1.5M9 2h6",
+    },
+    {
+        title: "Investor portal",
+        body: "Each LP sees their commitments, calls, distributions, and documents — without another login you have to support.",
+        icon: "M4 10h16v11H4zM8 10V7a4 4 0 0 1 8 0v3",
+    },
+    {
+        title: "Quarterly letters",
+        body: "Compose the letter once; NewTaven personalizes and delivers it on the fifteenth, with read receipts by LP.",
+        icon: "M3 5h18v14H3zM3 6l9 7 9-7",
+    },
+    {
+        title: "Wire reconciliation",
+        body: "Incoming wires match against the register automatically. What clears is marked funded; what doesn't enters the cadence.",
+        icon: "M3 12a9 9 0 1 1 9 9M3 12v5h5M9 12l2 2 4-4",
+    },
 ];
 
 const presets = [
-  {
-    label: "Delay in a distribution",
-    input: "There will be a short delay in the Q2 distribution while we finalize a portfolio company's audit.",
-    output:
-      "Subject: A short delay on the Q2 distribution\n\nThe Q2 distribution will be a few weeks later than planned while we finalize a portfolio company's audit. The amount is unchanged. We will confirm the new date as soon as the audit closes.\n\nWe appreciate your patience.",
-  },
-  {
-    label: "New portfolio company",
-    input: "We've completed a new investment — a control position in a founder-led logistics business — and want to introduce it.",
-    output:
-      "Subject: A new addition to the portfolio\n\nWe have completed a control investment in a founder-led logistics business. The founder remains in an operating role, and we are supporting the next phase of growth alongside the existing team.\n\nMore detail will follow in the next quarterly letter.",
-  },
-  {
-    label: "Quarterly update is live",
-    input: "Our Q2 quarterly letter is now live in the investor portal.",
-    output:
-      "Subject: Q2 letter is now available\n\nThe Q2 quarterly letter is live in the investor portal, along with updated capital account statements. Please let us know if anything is unclear.\n\nAs always, we are glad to schedule a call to walk through it.",
-  },
+    {
+        label: "Delay in a distribution",
+        input: "There will be a short delay in the Q2 distribution while we finalize a portfolio company's audit.",
+        output: "Subject: A short delay on the Q2 distribution\n\nThe Q2 distribution will be a few weeks later than planned while we finalize a portfolio company's audit. The amount is unchanged. We will confirm the new date as soon as the audit closes.\n\nWe appreciate your patience.",
+    },
+    {
+        label: "New portfolio company",
+        input: "We've completed a new investment — a control position in a founder-led logistics business — and want to introduce it.",
+        output: "Subject: A new addition to the portfolio\n\nWe have completed a control investment in a founder-led logistics business. The founder remains in an operating role, and we are supporting the next phase of growth alongside the existing team.\n\nMore detail will follow in the next quarterly letter.",
+    },
+    {
+        label: "Quarterly update is live",
+        input: "Our Q2 quarterly letter is now live in the investor portal.",
+        output: "Subject: Q2 letter is now available\n\nThe Q2 quarterly letter is live in the investor portal, along with updated capital account statements. Please let us know if anything is unclear.\n\nAs always, we are glad to schedule a call to walk through it.",
+    },
 ];
 
 const defaultOutput =
-  "Subject: A note for our limited partners\n\nThank you for the context. Here is a short, plain draft based on what you described — ready to review, edit, and send from NewTaven.\n\nWe will follow up directly if anything changes.";
+    "Subject: A note for our limited partners\n\nThank you for the context. Here is a short, plain draft based on what you described — ready to review, edit, and send from NewTaven.\n\nWe will follow up directly if anything changes.";
 ---
 
 <Layout bodyClass="page-index">
-  <!-- Fixed background video — shows in the gutters around the content -->
-  <video
-    class="bg-video"
-    src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260329_050842_be71947f-f16e-4a14-810c-06e83d23ddb5.mp4"
-    autoplay
-    muted
-    loop
-    playsinline
-    aria-hidden="true"></video>
+    <!-- Fixed background video — shows in the gutters around the content -->
+    <video
+        class="bg-video"
+        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260329_050842_be71947f-f16e-4a14-810c-06e83d23ddb5.mp4"
+        autoplay
+        muted
+        loop
+        playsinline
+        aria-hidden="true"></video>
 
-  <!-- Navbar + hero fill the first viewport -->
-  <div class="screen" id="top">
-    <nav class="navbar" aria-label="Primary">
-      <div class="navbar-row">
-        <a href="#top" class="brand">
-          <LogoIcon size={28} />
-          <span>NewTaven</span>
-        </a>
-        <div class="nav-links">
-          <a href="#platform">Platform</a>
-          <a href="#how">How it works</a>
-          <a href="#use-cases">Use cases</a>
-          <a href="#pricing">Pricing</a>
-        </div>
-        <a href="/manager" class="pill pill--nav">Try Now</a>
-      </div>
-    </nav>
-
-    <section class="hero">
-      <div class="hero-card nv-dark">
-        <GrainField kind="dark" pattern="dots" />
-        <div class="hero-overlay">
-          <div class="hero-copy">
-            <h1 class="hero-title">Fund Operations,<br />Automated</h1>
-            <p class="hero-sub">
-              The LP register, the capital calls, the distributions, and the follow-ups in between —
-              run in one place instead of across your inbox and a spreadsheet.
-            </p>
-            <a href="/manager" class="pill pill--invert pill--hero">
-              <span>Try Now</span>
-              <span class="pill-arrow pill-arrow--dark" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
-              </span>
-            </a>
-          </div>
-
-          <div class="hero-flow-col" aria-hidden="true">
-            <svg class="hero-flow" viewBox="0 0 700 420" data-flow>
-              <!-- Decorative dial -->
-              <g class="flow-dial">
-                <circle cx={ARC.cx} cy={ARC.cy} r={ARC.r - 34} class="flow-dial-glow"></circle>
-                {arcTrack.map((d) => <path d={d} class="flow-dial-track"></path>)}
-                <path d={arcTicks} class="flow-dial-ticks"></path>
-              </g>
-
-              <!-- Connectors: queue -> mark -> vault -->
-              {flowLines.map((d) => <path d={d} class="flow-line"></path>)}
-              {[-4, 0, 4].map((dy) => (
-                <path
-                  d={`M ${NODE.x + NODE.size / 2} ${NODE.y + dy} H ${CARD.x}`}
-                  class="flow-line"
-                ></path>
-              ))}
-
-              <!-- The NewTaven mark, where everything converges -->
-              <g class="flow-node">
-                <rect
-                  x={NODE.x - NODE.size / 2}
-                  y={NODE.y - NODE.size / 2}
-                  width={NODE.size}
-                  height={NODE.size}
-                  rx="12"
-                ></rect>
-                <g transform={`translate(${NODE.x - 11} ${NODE.y - 11}) scale(0.34375)`}>
-                  <g transform={MARK_TRANSFORM}>
-                    <path fill-rule="evenodd" d={MARK_PATH} class="flow-node-mark"></path>
-                  </g>
-                </g>
-              </g>
-
-              <!-- The vault -->
-              <g class="flow-card">
-                <rect x={CARD.x} y={CARD.y} width={CARD.w} height={CARD.h} rx="10"></rect>
-                <text x={CARD.x + 24} y={CARD.y + 32} class="flow-card-title">Document Vault</text>
-                <text x={CARD.x + 24} y={CARD.y + 62} class="flow-card-value"
-                  ><tspan data-vault-docs>1,284</tspan> docs · <tspan data-vault-size>6.1</tspan> GB</text
-                >
-                <line
-                  x1={CARD.x + 16}
-                  y1={CARD.y + 80}
-                  x2={CARD.x + CARD.w - 16}
-                  y2={CARD.y + 80}
-                  class="flow-card-rule"></line>
-                <text x={CARD.x + 24} y={CARD.y + 106} class="flow-card-foot">Fund II · 19 LPs</text>
-              </g>
-
-              <!-- The queue -->
-              <g data-flow-list>
-                {vaultDocs.slice(0, 3).map((doc, i) => (
-                  <g class="flow-row" style={`--y: ${FLOW_ROWS[i] - FLOW_ROW_H / 2}px`}>
-                    <path
-                      class="flow-page"
-                      d="M 8 2 H 22 L 33 13 V 40 A 6 6 0 0 1 27 46 H 8 A 6 6 0 0 1 2 40 V 8 A 6 6 0 0 1 8 2 Z"
-                    ></path>
-                    <path class="flow-page-fold" d="M 22 2 V 9 A 4 4 0 0 0 26 13 H 33"></path>
-                    <text x="17.5" y="32" class="flow-page-type">{doc.type}</text>
-                    <text x="54" y="21" class="flow-row-name">{doc.name}</text>
-                    <text x="54" y="40" class="flow-row-meta">{doc.from}</text>
-                  </g>
-                ))}
-              </g>
-
-              <!-- The backlog -->
-              <g class="flow-pill" transform={`translate(0 ${FLOW_PILL_Y - 22})`}>
-                <rect x="0" y="0" width="206" height="44" rx="22"></rect>
-                <text x="22" y="28"
-                  ><tspan class="flow-pill-n" data-more-count>+1,281</tspan><tspan
-                    dx="9"
-                    class="flow-pill-l">more documents</tspan
-                  ></text
-                >
-              </g>
-            </svg>
-          </div>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <div class="sheet">
-  <main>
-    <!-- The problem -->
-    <section id="problem" class="sect">
-      <div class="container">
-        <div class="sect-head" data-reveal>
-          <span class="eyebrow">The problem</span>
-          <h2 class="sect-title">Managers run funds on<br />memory and spreadsheets.</h2>
-        </div>
-        <div class="cards-3" data-reveal>
-          {problems.map((p) => (
-            <article class="card">
-              <span class="card-index">{p.n}</span>
-              <div>
-                <h3 class="card-title">{p.title}</h3>
-                <p class="card-body">{p.body}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <!-- Meet NewTaven -->
-    <section id="platform" class="sect">
-      <div class="container">
-        <div class="info-head" data-reveal>
-          <div>
-            <h2 class="sect-title">Meet NewTaven.</h2>
-            <a href="#features" class="pill pill--base">
-              <span>Explore features</span>
-              <span class="pill-arrow" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
-              </span>
-            </a>
-          </div>
-          <p class="info-lede">
-            NewTaven runs the back office of a fund — the register, the calls, the distributions,
-            the reminders nobody gets around to — so your week goes to investing instead of admin.
-          </p>
-        </div>
-
-        <div class="info-cards" data-reveal>
-          <article class="info-card info-card--visual">
-            <h3>Capital Calls</h3>
-            <p>
-              Issue the notice once. Each LP gets their own figure and wire details, incoming wires
-              match themselves against the register, and nothing is keyed in twice.
-            </p>
-          </article>
-          <article class="info-card info-card--green nv-dark">
-            <h3>One Login<br />for Your LPs</h3>
-            <p>
-              Your limited partners see their commitments, statements, tax documents, and
-              performance in a white-labeled portal — without emailing you for a PDF.
-            </p>
-          </article>
-          <article class="info-card info-card--green nv-dark">
-            <h3>Compliance in<br />the Background</h3>
-            <p>
-              KYC and AML checks run as each LP onboards, and regulatory reports build from the
-              register — not from a folder someone keeps by hand.
-            </p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- How it works -->
-    <section id="how" class="sect">
-      <div class="container">
-        <div class="sect-head" data-reveal>
-          <span class="eyebrow">How it works</span>
-          <h2 class="sect-title">Three steps, then it runs itself.</h2>
-          <p class="sect-sub">
-            Bring your fund in once. From there, NewTaven handles the mechanics you would otherwise
-            do by hand.
-          </p>
-        </div>
-        <div class="steps" data-reveal>
-          {steps.map((s) => (
-            <div class="step">
-              <span class="step-index">{s.n}</span>
-              <h3 class="step-title">{s.title}</h3>
-              <p class="card-body">{s.body}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <!-- Document intake by email -->
-    <section id="intake" class="sect">
-      <div class="container">
-        <div class="sect-head" data-reveal>
-          <span class="eyebrow">Document intake</span>
-          <h2 class="sect-title">Email a document.<br />It files itself.</h2>
-          <p class="sect-sub">
-            The paperwork already arrives by email. Forward it to your fund's intake address and
-            NewTaven stores it, files it against your fund, and drafts the LP note that usually
-            follows it.
-          </p>
-        </div>
-
-        <div class="intake-address" data-reveal>
-          <span class="intake-address-label">Your fund's intake address</span>
-          <span class="intake-address-value">ingest+<em>yourfund</em>@newtaven.com</span>
-        </div>
-
-        <div class="intake-stages" data-reveal>
-          {intakeStages.map((s) => (
-            <article class="intake-stage">
-              <div class="intake-stage-head">
-                <span class="intake-stage-index">{s.n}</span>
-                <span class="intake-stage-label">{s.label}</span>
-              </div>
-              <h3 class="intake-stage-title">{s.title}</h3>
-              <p class="card-body">{s.body}</p>
-            </article>
-          ))}
-        </div>
-
-        <p class="intake-note" data-reveal>
-          Only addresses that already belong to your fund are accepted — anything we can't place
-          with certainty is dropped rather than filed to the wrong fund.
-        </p>
-      </div>
-    </section>
-
-    <!-- The cadence -->
-    <section id="cadence" class="sect">
-      <div class="container">
-        <div class="cadence-card nv-dark">
-          <GrainField kind="dark" />
-          <div class="cadence-inner" id="cadence-inner">
-            <span class="eyebrow eyebrow--light">The cadence</span>
-            <h2 class="sect-title sect-title--light">The follow-ups you'd<br />never get around to.</h2>
-            <p class="sect-sub sect-sub--light">
-              When a wire is still outstanding, NewTaven sends a measured reminder — at 72 hours,
-              7 days, and 14 days. Considerate, never pushy. You approve the voice once.
-            </p>
-
-            <svg viewBox="0 0 1120 96" width="100%" class="cadence-timeline" aria-hidden="true">
-              <line x1="8" y1="48" x2="1112" y2="48" stroke="rgba(255,255,255,0.16)" stroke-width="1"></line>
-              <path id="cadence-line" d="M8 48 H 1112" fill="none" stroke="#FFFFFF" stroke-width="2"></path>
-              <g>
-                <circle data-marker cx="200" cy="48" r="7" fill="#FFFFFF" class="cadence-marker"></circle>
-                <circle cx="200" cy="48" r="7" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"></circle>
-              </g>
-              <g>
-                <circle data-marker cx="560" cy="48" r="7" fill="#FFFFFF" class="cadence-marker"></circle>
-                <circle cx="560" cy="48" r="7" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"></circle>
-              </g>
-              <g>
-                <circle data-marker cx="920" cy="48" r="7" fill="#FFFFFF" class="cadence-marker"></circle>
-                <circle cx="920" cy="48" r="7" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"></circle>
-              </g>
-              <text x="200" y="82" text-anchor="middle" fill="rgba(255,255,255,0.62)" class="cadence-tag">T+72h</text>
-              <text x="560" y="82" text-anchor="middle" fill="rgba(255,255,255,0.62)" class="cadence-tag">T+7d</text>
-              <text x="920" y="82" text-anchor="middle" fill="rgba(255,255,255,0.62)" class="cadence-tag">T+14d</text>
-            </svg>
-
-            <div class="cadence-mails">
-              {cadenceCards.map((c) => (
-                <div data-cadence-card class="cadence-mail">
-                  <div class="cadence-mail-head">
-                    <span class="cadence-mail-label">{c.label}</span>
-                    <span class="cadence-mail-tone">{c.tone}</span>
-                  </div>
-                  <div class="cadence-mail-subject">{c.subject}</div>
-                  <p class="cadence-mail-body">{c.body}</p>
+    <!-- Navbar + hero fill the first viewport -->
+    <div class="screen" id="top">
+        <nav class="navbar" aria-label="Primary">
+            <div class="navbar-row">
+                <a href="#top" class="brand">
+                    <LogoIcon size={28} />
+                    <span>NewTaven</span>
+                </a>
+                <div class="nav-links">
+                    <a href="#platform">Platform</a>
+                    <a href="#how">How it works</a>
+                    <a href="#use-cases">Use cases</a>
+                    <a href="#pricing">Pricing</a>
                 </div>
-              ))}
+                <a href="/manager" class="pill pill--nav">Try Now</a>
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
+        </nav>
 
-    <!-- Features -->
-    <section id="features" class="sect">
-      <div class="container">
-        <div class="sect-head" data-reveal>
-          <span class="eyebrow">Features</span>
-          <h2 class="sect-title">Everything a fund<br />runs on.</h2>
-        </div>
-        <div class="features-grid" data-reveal>
-          {features.map((f) => (
-            <article class="card card--feature">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16281F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d={f.icon}></path>
-              </svg>
-              <div>
-                <h3 class="card-title">{f.title}</h3>
-                <p class="card-body">{f.body}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
+        <section class="hero">
+            <div class="hero-card nv-dark">
+                <GrainField kind="dark" pattern="dots" />
+                <div class="hero-overlay">
+                    <div class="hero-copy">
+                        <h1 class="hero-title">
+                            Fund Operations,<br />Automated
+                        </h1>
+                        <p class="hero-sub">
+                            The LP register, the capital calls, the
+                            distributions, and the follow-ups in between — run
+                            in one place instead of across your inbox and a
+                            spreadsheet.
+                        </p>
+                        <a href="/manager" class="pill pill--invert pill--hero">
+                            <span>Try Now</span>
+                            <span
+                                class="pill-arrow pill-arrow--dark"
+                                aria-hidden="true"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    ><path d="M5 12h14M12 5l7 7-7 7"
+                                    ></path></svg
+                                >
+                            </span>
+                        </a>
+                    </div>
 
-    <!-- Use cases -->
-    <section id="use-cases" class="sect">
-      <div class="container usecases-grid">
-        <div class="usecases-left">
-          <span class="eyebrow">NewTaven in practice</span>
-          <h2>Built for how funds run</h2>
-          <p>
-            The mechanics are the same whether you run venture, private equity, or a hedge fund:
-            money in, money out, and a record of both that has to hold up years later.
-          </p>
-        </div>
-        <div class="usecase-card nv-dark">
-          <GrainField kind="dark" />
-          <div class="usecase-overlay">
-            <h3>Automated Distributions</h3>
-            <p>
-              Waterfalls calculate from the register, each LP gets their own figure and payment
-              detail, and every step leaves an audit trail you can hand to an auditor.
-            </p>
-            <a href="mailto:hello@newtaven.com" class="usecase-link">
-              <span class="usecase-link-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
-              </span>
-              Ask us how it works
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
+                    <div class="hero-flow-col" aria-hidden="true">
+                        <svg class="hero-flow" viewBox="0 0 700 420" data-flow>
+                            <!-- Everything already filed -->
+                            <defs>
+                                <path
+                                    id="vault-tile"
+                                    d="M3 0 H9 L13 4 V15 A2 2 0 0 1 11 17 H3 A2 2 0 0 1 1 15 V2 A2 2 0 0 1 3 0 Z"
+                                ></path>
+                            </defs>
+                            <g class="flow-field">
+                                {
+                                    vaultField.map((t) => (
+                                        <use
+                                            href="#vault-tile"
+                                            class="flow-tile"
+                                            x={t.x}
+                                            y={t.y}
+                                            style={`--o: ${t.o}`}
+                                            data-near={t.near ? "" : null}
+                                        />
+                                    ))
+                                }
+                            </g>
 
-    <!-- Try it -->
-    <section id="try" class="sect">
-      <div class="container">
-        <div class="tryit-frame" data-reveal>
-          <div class="tryit-left">
-            <span class="eyebrow">Try it</span>
-            <h2 class="tryit-title">Draft an LP note in NewTaven's voice.</h2>
-            <p class="tryit-body">
-              Describe the situation. NewTaven writes a short, plain email you could send to your
-              limited partners — no puffery, no exclamation marks.
-            </p>
-            <div class="tryit-form">
-              <label class="tryit-label" for="tryit-input">What do you need to say?</label>
-              <textarea
-                id="tryit-input"
-                class="tryit-textarea"
-                rows="4"
-                placeholder="e.g. Fund II is closing next month and we're at 82% of target."></textarea>
-              <div class="tryit-presets">
-                {presets.map((p, i) => (
-                  <button type="button" class="tryit-preset" data-preset-index={i}>{p.label}</button>
-                ))}
-              </div>
-              <button type="button" id="tryit-draft" class="pill pill--submit">Draft the note</button>
-              <span id="tryit-error" class="tryit-error" hidden></span>
+                            <!-- Connectors: queue -> mark -> vault -->
+                            {
+                                flowLines.map((d) => (
+                                    <path d={d} class="flow-line" />
+                                ))
+                            }
+                            {
+                                [-4, 0, 4].map((dy) => (
+                                    <path
+                                        d={`M ${NODE.x + NODE.size / 2} ${NODE.y + dy} H ${CARD.x}`}
+                                        class="flow-line"
+                                    />
+                                ))
+                            }
+
+                            <!-- The NewTaven mark, where everything converges -->
+                            <g class="flow-node">
+                                <rect
+                                    x={NODE.x - NODE.size / 2}
+                                    y={NODE.y - NODE.size / 2}
+                                    width={NODE.size}
+                                    height={NODE.size}
+                                    rx="12"></rect>
+                                <g
+                                    transform={`translate(${NODE.x - 11} ${NODE.y - 11}) scale(0.34375)`}
+                                >
+                                    <g transform={MARK_TRANSFORM}>
+                                        <path
+                                            fill-rule="evenodd"
+                                            d={MARK_PATH}
+                                            class="flow-node-mark"></path>
+                                    </g>
+                                </g>
+                            </g>
+
+                            <!-- The vault -->
+                            <g class="flow-card">
+                                <rect
+                                    x={CARD.x}
+                                    y={CARD.y}
+                                    width={CARD.w}
+                                    height={CARD.h}
+                                    rx="10"></rect>
+                                <text
+                                    x={CARD.x + 24}
+                                    y={CARD.y + 32}
+                                    class="flow-card-title"
+                                    >AI & Human Review</text
+                                >
+                                <text
+                                    x={CARD.x + 24}
+                                    y={CARD.y + 62}
+                                    class="flow-card-value"
+                                    ><tspan data-vault-docs>1,284</tspan> docs · <tspan
+                                        data-vault-size>6.1</tspan
+                                    > GB</text
+                                >
+                                <line
+                                    x1={CARD.x + 16}
+                                    y1={CARD.y + 80}
+                                    x2={CARD.x + CARD.w - 16}
+                                    y2={CARD.y + 80}
+                                    class="flow-card-rule"></line>
+                                <text
+                                    x={CARD.x + 24}
+                                    y={CARD.y + 106}
+                                    class="flow-card-foot"
+                                    >Fund II · 19 LPs</text
+                                >
+                            </g>
+
+                            <!-- The queue -->
+                            <g data-flow-list>
+                                {
+                                    vaultDocs.slice(0, 3).map((doc, i) => (
+                                        <g
+                                            class="flow-row"
+                                            style={`--y: ${FLOW_ROWS[i] - FLOW_ROW_H / 2}px`}
+                                        >
+                                            <path
+                                                class="flow-page"
+                                                d="M 8 2 H 22 L 33 13 V 40 A 6 6 0 0 1 27 46 H 8 A 6 6 0 0 1 2 40 V 8 A 6 6 0 0 1 8 2 Z"
+                                            />
+                                            <path
+                                                class="flow-page-fold"
+                                                d="M 22 2 V 9 A 4 4 0 0 0 26 13 H 33"
+                                            />
+                                            <text
+                                                x="17.5"
+                                                y="32"
+                                                class="flow-page-type"
+                                            >
+                                                {doc.type}
+                                            </text>
+                                            <text
+                                                x="54"
+                                                y="21"
+                                                class="flow-row-name"
+                                            >
+                                                {doc.name}
+                                            </text>
+                                            <text
+                                                x="54"
+                                                y="40"
+                                                class="flow-row-meta"
+                                            >
+                                                {doc.from}
+                                            </text>
+                                        </g>
+                                    ))
+                                }
+                            </g>
+
+                            <!-- The backlog -->
+                            <g
+                                class="flow-pill"
+                                transform={`translate(0 ${FLOW_PILL_Y - 22})`}
+                            >
+                                <rect
+                                    x="0"
+                                    y="0"
+                                    width="206"
+                                    height="44"
+                                    rx="22"></rect>
+                                <text x="22" y="28"
+                                    ><tspan class="flow-pill-n" data-more-count
+                                        >+1,281</tspan
+                                    ><tspan dx="9" class="flow-pill-l"
+                                        >more documents</tspan
+                                    ></text
+                                >
+                            </g>
+                        </svg>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div class="tryit-preview">
-            <div class="tryit-preview-head">
-              <span class="tryit-preview-label">Draft preview</span>
-              <span class="tryit-preview-to">to: limited partners</span>
-            </div>
-            <div id="tryit-loading" class="tryit-loading" hidden>
-              <span class="tryit-dot"></span>Drafting a note…
-            </div>
-            <div id="tryit-result" class="tryit-result" hidden></div>
-            <div id="tryit-placeholder" class="tryit-placeholder">
-              Your drafted note will appear here — ready to review, edit, and send from NewTaven.
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+        </section>
+    </div>
 
-    <!-- Pricing -->
-    <section id="pricing" class="sect">
-      <div class="container pricing-grid" data-reveal>
-        <div>
-          <span class="eyebrow">Pricing</span>
-          <h2 class="sect-title">Pricing is<br />a conversation.</h2>
-        </div>
-        <div>
-          <p class="pricing-body">
-            Every fund is a different size, at a different stage, with a different LP base. We
-            would rather understand yours than post a number that fits no one. A short call, a
-            fair quote, no obligation.
-          </p>
-          <div class="pricing-actions">
-            <a href="mailto:hello@newtaven.com" class="pill pill--base">
-              <span>Contact us for pricing</span>
-              <span class="pill-arrow" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
-              </span>
-            </a>
-            <a href="mailto:hello@newtaven.com" class="pricing-mail">hello@newtaven.com</a>
-          </div>
-        </div>
-      </div>
-    </section>
+    <div class="sheet">
+        <main>
+            <!-- The problem -->
+            <section id="problem" class="sect">
+                <div class="container">
+                    <div class="sect-head" data-reveal>
+                        <span class="eyebrow">The problem</span>
+                        <h2 class="sect-title">
+                            Managers run funds on<br />memory and spreadsheets.
+                        </h2>
+                    </div>
+                    <div class="cards-3" data-reveal>
+                        {
+                            problems.map((p) => (
+                                <article class="card">
+                                    <span class="card-index">{p.n}</span>
+                                    <div>
+                                        <h3 class="card-title">{p.title}</h3>
+                                        <p class="card-body">{p.body}</p>
+                                    </div>
+                                </article>
+                            ))
+                        }
+                    </div>
+                </div>
+            </section>
 
-    <!-- Closing CTA -->
-    <section class="sect">
-      <div class="container">
-        <div class="cta-card nv-dark">
-          <GrainField kind="dark" />
-          <div class="cta-inner">
-            <h2>Give your fund the back office it never had time to build.</h2>
-            <a href="/manager" class="pill pill--invert">
-              <span>Try Now</span>
-              <span class="pill-arrow pill-arrow--dark" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
-              </span>
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-  </div>
+            <!-- Meet NewTaven -->
+            <section id="platform" class="sect">
+                <div class="container">
+                    <div class="info-head" data-reveal>
+                        <div>
+                            <h2 class="sect-title">Meet NewTaven.</h2>
+                            <a href="#features" class="pill pill--base">
+                                <span>Explore features</span>
+                                <span class="pill-arrow" aria-hidden="true">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        ><path d="M5 12h14M12 5l7 7-7 7"
+                                        ></path></svg
+                                    >
+                                </span>
+                            </a>
+                        </div>
+                        <p class="info-lede">
+                            NewTaven runs the back office of a fund — the
+                            register, the calls, the distributions, the
+                            reminders nobody gets around to — so your week goes
+                            to investing instead of admin.
+                        </p>
+                    </div>
+
+                    <div class="info-cards" data-reveal>
+                        <article class="info-card info-card--visual">
+                            <h3>Capital Calls</h3>
+                            <p>
+                                Issue the notice once. Each LP gets their own
+                                figure and wire details, incoming wires match
+                                themselves against the register, and nothing is
+                                keyed in twice.
+                            </p>
+                        </article>
+                        <article class="info-card info-card--green nv-dark">
+                            <h3>One Login<br />for Your LPs</h3>
+                            <p>
+                                Your limited partners see their commitments,
+                                statements, tax documents, and performance in a
+                                white-labeled portal — without emailing you for
+                                a PDF.
+                            </p>
+                        </article>
+                        <article class="info-card info-card--green nv-dark">
+                            <h3>Compliance in<br />the Background</h3>
+                            <p>
+                                KYC and AML checks run as each LP onboards, and
+                                regulatory reports build from the register — not
+                                from a folder someone keeps by hand.
+                            </p>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <!-- How it works -->
+            <section id="how" class="sect">
+                <div class="container">
+                    <div class="sect-head" data-reveal>
+                        <span class="eyebrow">How it works</span>
+                        <h2 class="sect-title">
+                            Three steps, then it runs itself.
+                        </h2>
+                        <p class="sect-sub">
+                            Bring your fund in once. From there, NewTaven
+                            handles the mechanics you would otherwise do by
+                            hand.
+                        </p>
+                    </div>
+                    <div class="steps" data-reveal>
+                        {
+                            steps.map((s) => (
+                                <div class="step">
+                                    <span class="step-index">{s.n}</span>
+                                    <h3 class="step-title">{s.title}</h3>
+                                    <p class="card-body">{s.body}</p>
+                                </div>
+                            ))
+                        }
+                    </div>
+                </div>
+            </section>
+
+            <!-- Document intake by email -->
+            <section id="intake" class="sect">
+                <div class="container">
+                    <div class="sect-head" data-reveal>
+                        <span class="eyebrow">Document intake</span>
+                        <h2 class="sect-title">
+                            Email a document.<br />It files itself.
+                        </h2>
+                        <p class="sect-sub">
+                            The paperwork already arrives by email. Forward it
+                            to your fund's intake address and NewTaven stores
+                            it, files it against your fund, and drafts the LP
+                            note that usually follows it.
+                        </p>
+                    </div>
+
+                    <div class="intake-address" data-reveal>
+                        <span class="intake-address-label"
+                            >Your fund's intake address</span
+                        >
+                        <span class="intake-address-value"
+                            >ingest+<em>yourfund</em>@newtaven.com</span
+                        >
+                    </div>
+
+                    <div class="intake-stages" data-reveal>
+                        {
+                            intakeStages.map((s) => (
+                                <article class="intake-stage">
+                                    <div class="intake-stage-head">
+                                        <span class="intake-stage-index">
+                                            {s.n}
+                                        </span>
+                                        <span class="intake-stage-label">
+                                            {s.label}
+                                        </span>
+                                    </div>
+                                    <h3 class="intake-stage-title">
+                                        {s.title}
+                                    </h3>
+                                    <p class="card-body">{s.body}</p>
+                                </article>
+                            ))
+                        }
+                    </div>
+
+                    <p class="intake-note" data-reveal>
+                        Only addresses that already belong to your fund are
+                        accepted — anything we can't place with certainty is
+                        dropped rather than filed to the wrong fund.
+                    </p>
+                </div>
+            </section>
+
+            <!-- The cadence -->
+            <section id="cadence" class="sect">
+                <div class="container">
+                    <div class="cadence-card nv-dark">
+                        <GrainField kind="dark" />
+                        <div class="cadence-inner" id="cadence-inner">
+                            <span class="eyebrow eyebrow--light"
+                                >The cadence</span
+                            >
+                            <h2 class="sect-title sect-title--light">
+                                The follow-ups you'd<br />never get around to.
+                            </h2>
+                            <p class="sect-sub sect-sub--light">
+                                When a wire is still outstanding, NewTaven sends
+                                a measured reminder — at 72 hours, 7 days, and
+                                14 days. Considerate, never pushy. You approve
+                                the voice once.
+                            </p>
+
+                            <svg
+                                viewBox="0 0 1120 96"
+                                width="100%"
+                                class="cadence-timeline"
+                                aria-hidden="true"
+                            >
+                                <line
+                                    x1="8"
+                                    y1="48"
+                                    x2="1112"
+                                    y2="48"
+                                    stroke="rgba(255,255,255,0.16)"
+                                    stroke-width="1"></line>
+                                <path
+                                    id="cadence-line"
+                                    d="M8 48 H 1112"
+                                    fill="none"
+                                    stroke="#FFFFFF"
+                                    stroke-width="2"></path>
+                                <g>
+                                    <circle
+                                        data-marker
+                                        cx="200"
+                                        cy="48"
+                                        r="7"
+                                        fill="#FFFFFF"
+                                        class="cadence-marker"></circle>
+                                    <circle
+                                        cx="200"
+                                        cy="48"
+                                        r="7"
+                                        fill="none"
+                                        stroke="rgba(255,255,255,0.3)"
+                                        stroke-width="1"></circle>
+                                </g>
+                                <g>
+                                    <circle
+                                        data-marker
+                                        cx="560"
+                                        cy="48"
+                                        r="7"
+                                        fill="#FFFFFF"
+                                        class="cadence-marker"></circle>
+                                    <circle
+                                        cx="560"
+                                        cy="48"
+                                        r="7"
+                                        fill="none"
+                                        stroke="rgba(255,255,255,0.3)"
+                                        stroke-width="1"></circle>
+                                </g>
+                                <g>
+                                    <circle
+                                        data-marker
+                                        cx="920"
+                                        cy="48"
+                                        r="7"
+                                        fill="#FFFFFF"
+                                        class="cadence-marker"></circle>
+                                    <circle
+                                        cx="920"
+                                        cy="48"
+                                        r="7"
+                                        fill="none"
+                                        stroke="rgba(255,255,255,0.3)"
+                                        stroke-width="1"></circle>
+                                </g>
+                                <text
+                                    x="200"
+                                    y="82"
+                                    text-anchor="middle"
+                                    fill="rgba(255,255,255,0.62)"
+                                    class="cadence-tag">T+72h</text
+                                >
+                                <text
+                                    x="560"
+                                    y="82"
+                                    text-anchor="middle"
+                                    fill="rgba(255,255,255,0.62)"
+                                    class="cadence-tag">T+7d</text
+                                >
+                                <text
+                                    x="920"
+                                    y="82"
+                                    text-anchor="middle"
+                                    fill="rgba(255,255,255,0.62)"
+                                    class="cadence-tag">T+14d</text
+                                >
+                            </svg>
+
+                            <div class="cadence-mails">
+                                {
+                                    cadenceCards.map((c) => (
+                                        <div
+                                            data-cadence-card
+                                            class="cadence-mail"
+                                        >
+                                            <div class="cadence-mail-head">
+                                                <span class="cadence-mail-label">
+                                                    {c.label}
+                                                </span>
+                                                <span class="cadence-mail-tone">
+                                                    {c.tone}
+                                                </span>
+                                            </div>
+                                            <div class="cadence-mail-subject">
+                                                {c.subject}
+                                            </div>
+                                            <p class="cadence-mail-body">
+                                                {c.body}
+                                            </p>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features -->
+            <section id="features" class="sect">
+                <div class="container">
+                    <div class="sect-head" data-reveal>
+                        <span class="eyebrow">Features</span>
+                        <h2 class="sect-title">
+                            Everything a fund<br />runs on.
+                        </h2>
+                    </div>
+                    <div class="features-grid" data-reveal>
+                        {
+                            features.map((f) => (
+                                <article class="card card--feature">
+                                    <svg
+                                        width="28"
+                                        height="28"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="#16281F"
+                                        stroke-width="1.5"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        aria-hidden="true"
+                                    >
+                                        <path d={f.icon} />
+                                    </svg>
+                                    <div>
+                                        <h3 class="card-title">{f.title}</h3>
+                                        <p class="card-body">{f.body}</p>
+                                    </div>
+                                </article>
+                            ))
+                        }
+                    </div>
+                </div>
+            </section>
+
+            <!-- Use cases -->
+            <section id="use-cases" class="sect">
+                <div class="container usecases-grid">
+                    <div class="usecases-left">
+                        <span class="eyebrow">NewTaven in practice</span>
+                        <h2>Built for how funds run</h2>
+                        <p>
+                            The mechanics are the same whether you run venture,
+                            private equity, or a hedge fund: money in, money
+                            out, and a record of both that has to hold up years
+                            later.
+                        </p>
+                    </div>
+                    <div class="usecase-card nv-dark">
+                        <GrainField kind="dark" />
+                        <div class="usecase-overlay">
+                            <h3>Automated Distributions</h3>
+                            <p>
+                                Waterfalls calculate from the register, each LP
+                                gets their own figure and payment detail, and
+                                every step leaves an audit trail you can hand to
+                                an auditor.
+                            </p>
+                            <a
+                                href="mailto:hello@newtaven.com"
+                                class="usecase-link"
+                            >
+                                <span
+                                    class="usecase-link-icon"
+                                    aria-hidden="true"
+                                >
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        ><path d="M5 12h14M12 5l7 7-7 7"
+                                        ></path></svg
+                                    >
+                                </span>
+                                Ask us how it works
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Try it -->
+            <section id="try" class="sect">
+                <div class="container">
+                    <div class="tryit-frame" data-reveal>
+                        <div class="tryit-left">
+                            <span class="eyebrow">Try it</span>
+                            <h2 class="tryit-title">
+                                Draft an LP note in NewTaven's voice.
+                            </h2>
+                            <p class="tryit-body">
+                                Describe the situation. NewTaven writes a short,
+                                plain email you could send to your limited
+                                partners — no puffery, no exclamation marks.
+                            </p>
+                            <div class="tryit-form">
+                                <label class="tryit-label" for="tryit-input"
+                                    >What do you need to say?</label
+                                >
+                                <textarea
+                                    id="tryit-input"
+                                    class="tryit-textarea"
+                                    rows="4"
+                                    placeholder="e.g. Fund II is closing next month and we're at 82% of target."
+                                ></textarea>
+                                <div class="tryit-presets">
+                                    {
+                                        presets.map((p, i) => (
+                                            <button
+                                                type="button"
+                                                class="tryit-preset"
+                                                data-preset-index={i}
+                                            >
+                                                {p.label}
+                                            </button>
+                                        ))
+                                    }
+                                </div>
+                                <button
+                                    type="button"
+                                    id="tryit-draft"
+                                    class="pill pill--submit"
+                                    >Draft the note</button
+                                >
+                                <span
+                                    id="tryit-error"
+                                    class="tryit-error"
+                                    hidden></span>
+                            </div>
+                        </div>
+                        <div class="tryit-preview">
+                            <div class="tryit-preview-head">
+                                <span class="tryit-preview-label"
+                                    >Draft preview</span
+                                >
+                                <span class="tryit-preview-to"
+                                    >to: limited partners</span
+                                >
+                            </div>
+                            <div
+                                id="tryit-loading"
+                                class="tryit-loading"
+                                hidden
+                            >
+                                <span class="tryit-dot"></span>Drafting a note…
+                            </div>
+                            <div id="tryit-result" class="tryit-result" hidden>
+                            </div>
+                            <div
+                                id="tryit-placeholder"
+                                class="tryit-placeholder"
+                            >
+                                Your drafted note will appear here — ready to
+                                review, edit, and send from NewTaven.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pricing -->
+            <section id="pricing" class="sect">
+                <div class="container pricing-grid" data-reveal>
+                    <div>
+                        <span class="eyebrow">Pricing</span>
+                        <h2 class="sect-title">
+                            Pricing is<br />a conversation.
+                        </h2>
+                    </div>
+                    <div>
+                        <p class="pricing-body">
+                            Every fund is a different size, at a different
+                            stage, with a different LP base. We would rather
+                            understand yours than post a number that fits no
+                            one. A short call, a fair quote, no obligation.
+                        </p>
+                        <div class="pricing-actions">
+                            <a
+                                href="mailto:hello@newtaven.com"
+                                class="pill pill--base"
+                            >
+                                <span>Contact us for pricing</span>
+                                <span class="pill-arrow" aria-hidden="true">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        ><path d="M5 12h14M12 5l7 7-7 7"
+                                        ></path></svg
+                                    >
+                                </span>
+                            </a>
+                            <a
+                                href="mailto:hello@newtaven.com"
+                                class="pricing-mail">hello@newtaven.com</a
+                            >
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Closing CTA -->
+            <section class="sect">
+                <div class="container">
+                    <div class="cta-card nv-dark">
+                        <GrainField kind="dark" />
+                        <div class="cta-inner">
+                            <h2>
+                                Give your fund the back office it never had time
+                                to build.
+                            </h2>
+                            <a href="/manager" class="pill pill--invert">
+                                <span>Try Now</span>
+                                <span
+                                    class="pill-arrow pill-arrow--dark"
+                                    aria-hidden="true"
+                                >
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        ><path d="M5 12h14M12 5l7 7-7 7"
+                                        ></path></svg
+                                    >
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
 </Layout>
 
 <script
-  define:vars={{
-    presets,
-    defaultOutput,
-    vaultDocs,
-    vaultSeed,
-    FLOW_ROWS,
-    FLOW_ROW_H,
-    FLOW_ENTER_Y,
-    FLOW_EXIT_Y,
-  }}
+    define:vars={{
+        presets,
+        defaultOutput,
+        vaultDocs,
+        vaultSeed,
+        FLOW_ROWS,
+        FLOW_ROW_H,
+        FLOW_ENTER_Y,
+        FLOW_EXIT_Y,
+    }}
 >
-  // Scroll reveals — opacity 0 -> 1 + translateY, once
-  const revealObs = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-visible");
-          revealObs.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.15 }
-  );
-  document.querySelectorAll("[data-reveal]").forEach((el) => revealObs.observe(el));
-
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  // Hero flow — the document queue advances one slot at a time: a new document
-  // slides in at the top, the stack shifts down, the oldest drops into the
-  // backlog pill, and the vault totals tick up.
-  const flow = document.querySelector("[data-flow]");
-  if (flow) {
-    const list = flow.querySelector("[data-flow-list]");
-    const docsEl = flow.querySelector("[data-vault-docs]");
-    const sizeEl = flow.querySelector("[data-vault-size]");
-    const moreEl = flow.querySelector("[data-more-count]");
-    const rows = Array.from(list.querySelectorAll(".flow-row"));
-    const template = rows[0].cloneNode(true);
-    const slotY = (i) => FLOW_ROWS[i] - FLOW_ROW_H / 2;
-
-    let next = 3;
-    let docs = vaultSeed.docs;
-    let size = vaultSeed.size;
-    let more = vaultSeed.more;
-
-    const fill = (el, doc) => {
-      el.querySelector(".flow-page-type").textContent = doc.type;
-      el.querySelector(".flow-row-name").textContent = doc.name;
-      el.querySelector(".flow-row-meta").textContent = doc.from;
-    };
-
-    const advance = () => {
-      const leaving = rows.pop();
-      leaving.style.setProperty("--y", `${FLOW_EXIT_Y}px`);
-      leaving.style.opacity = "0";
-      setTimeout(() => leaving.remove(), 950);
-
-      rows.forEach((row, i) => row.style.setProperty("--y", `${slotY(i + 1)}px`));
-
-      const entering = template.cloneNode(true);
-      fill(entering, vaultDocs[next % vaultDocs.length]);
-      next += 1;
-      entering.style.setProperty("--y", `${FLOW_ENTER_Y - FLOW_ROW_H / 2}px`);
-      entering.style.opacity = "0";
-      list.appendChild(entering);
-      entering.getBoundingClientRect();
-      entering.style.setProperty("--y", `${slotY(0)}px`);
-      entering.style.opacity = "1";
-      rows.unshift(entering);
-
-      docs += 1;
-      more += 1;
-      // Roughly 50MB a document, so the vault size stays believable on a tab
-      // someone leaves open.
-      size = Math.round((size + 0.05) * 100) / 100;
-      docsEl.textContent = docs.toLocaleString("en-US");
-      sizeEl.textContent = size.toFixed(1);
-      moreEl.textContent = `+${more.toLocaleString("en-US")}`;
-    };
-
-    // Only run while the hero is on screen; a hidden conveyor helps no one.
-    if (!reducedMotion) {
-      let timer = null;
-      const flowObs = new IntersectionObserver(
+    // Scroll reveals — opacity 0 -> 1 + translateY, once
+    const revealObs = new IntersectionObserver(
         (entries) => {
-          const visible = entries.some((entry) => entry.isIntersecting);
-          if (visible && timer === null) {
-            timer = setInterval(advance, 1900);
-          } else if (!visible && timer !== null) {
-            clearInterval(timer);
-            timer = null;
-          }
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add("is-visible");
+                    revealObs.unobserve(entry.target);
+                }
+            });
         },
-        { threshold: 0.2 }
-      );
-      flowObs.observe(flow);
-    }
-  }
-
-  // Cadence — draw timeline + activate markers + slide in cards
-  const cadenceSection = document.getElementById("cadence-inner");
-
-  // Background video is decorative — hold it still for reduced-motion users.
-  const bgVideo = document.querySelector(".bg-video");
-  if (bgVideo && reducedMotion) {
-    bgVideo.removeAttribute("autoplay");
-    bgVideo.pause();
-  }
-  const runCadence = () => {
-    if (reducedMotion) {
-      document.querySelectorAll("[data-marker]").forEach((m) => m.classList.add("is-active"));
-      document.querySelectorAll("[data-cadence-card]").forEach((c) => c.classList.add("is-visible"));
-      return;
-    }
-    const line = document.getElementById("cadence-line");
-    if (line && line.getTotalLength) {
-      const len = line.getTotalLength();
-      line.style.transition = "none";
-      line.style.strokeDasharray = String(len);
-      line.style.strokeDashoffset = String(len);
-      line.getBoundingClientRect();
-      line.style.transition = "stroke-dashoffset 1100ms cubic-bezier(0.4,0,0.2,1)";
-      line.style.strokeDashoffset = "0";
-    }
-    const markers = document.querySelectorAll("[data-marker]");
-    const cards = document.querySelectorAll("[data-cadence-card]");
-    const delays = [420, 820, 1220];
-    markers.forEach((marker, i) => {
-      setTimeout(() => {
-        marker.classList.add("is-active");
-        const card = cards[i];
-        if (card) card.classList.add("is-visible");
-      }, delays[i]);
-    });
-  };
-  if (cadenceSection) {
-    const cadObs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            runCadence();
-            cadObs.disconnect();
-          }
-        });
-      },
-      { threshold: 0.3 }
+        { threshold: 0.15 },
     );
-    cadObs.observe(cadenceSection);
-  }
+    document
+        .querySelectorAll("[data-reveal]")
+        .forEach((el) => revealObs.observe(el));
 
-  // Try it — client-side demo draft (no backend call)
-  const input = document.getElementById("tryit-input");
-  const draftBtn = document.getElementById("tryit-draft");
-  const errorEl = document.getElementById("tryit-error");
-  const loadingEl = document.getElementById("tryit-loading");
-  const resultEl = document.getElementById("tryit-result");
-  const placeholderEl = document.getElementById("tryit-placeholder");
+    const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+    ).matches;
 
-  const showState = (state) => {
-    loadingEl.hidden = state !== "loading";
-    resultEl.hidden = state !== "result";
-    placeholderEl.hidden = state !== "placeholder";
-  };
-  showState("placeholder");
+    // Hero flow — the document queue advances one slot at a time: a new document
+    // slides in at the top, the stack shifts down, the oldest drops into the
+    // backlog pill, and the vault totals tick up.
+    const flow = document.querySelector("[data-flow]");
+    if (flow) {
+        const list = flow.querySelector("[data-flow-list]");
+        const docsEl = flow.querySelector("[data-vault-docs]");
+        const sizeEl = flow.querySelector("[data-vault-size]");
+        const moreEl = flow.querySelector("[data-more-count]");
+        const rows = Array.from(list.querySelectorAll(".flow-row"));
+        const template = rows[0].cloneNode(true);
+        const slotY = (i) => FLOW_ROWS[i] - FLOW_ROW_H / 2;
 
-  const draft = () => {
-    const value = (input.value || "").trim();
-    errorEl.hidden = true;
-    if (!value) {
-      errorEl.hidden = false;
-      errorEl.textContent = "Tell us what you need to say first.";
-      return;
+        let next = 3;
+        let docs = vaultSeed.docs;
+        let size = vaultSeed.size;
+        let more = vaultSeed.more;
+
+        const nearTiles = Array.from(flow.querySelectorAll(".flow-tile[data-near]"));
+
+        const fill = (el, doc) => {
+            el.querySelector(".flow-page-type").textContent = doc.type;
+            el.querySelector(".flow-row-name").textContent = doc.name;
+            el.querySelector(".flow-row-meta").textContent = doc.from;
+        };
+
+        const advance = () => {
+            const leaving = rows.pop();
+            leaving.style.setProperty("--y", `${FLOW_EXIT_Y}px`);
+            leaving.style.opacity = "0";
+            setTimeout(() => leaving.remove(), 950);
+
+            rows.forEach((row, i) =>
+                row.style.setProperty("--y", `${slotY(i + 1)}px`),
+            );
+
+            const entering = template.cloneNode(true);
+            fill(entering, vaultDocs[next % vaultDocs.length]);
+            next += 1;
+            entering.style.setProperty(
+                "--y",
+                `${FLOW_ENTER_Y - FLOW_ROW_H / 2}px`,
+            );
+            entering.style.opacity = "0";
+            list.appendChild(entering);
+            entering.getBoundingClientRect();
+            entering.style.setProperty("--y", `${slotY(0)}px`);
+            entering.style.opacity = "1";
+            rows.unshift(entering);
+
+            docs += 1;
+            more += 1;
+            // Roughly 50MB a document, so the vault size stays believable on a tab
+            // someone leaves open.
+            size = Math.round((size + 0.05) * 100) / 100;
+            docsEl.textContent = docs.toLocaleString("en-US");
+            sizeEl.textContent = size.toFixed(1);
+            moreEl.textContent = `+${more.toLocaleString("en-US")}`;
+
+            const tile = nearTiles[Math.floor(Math.random() * nearTiles.length)];
+            if (tile) {
+                tile.classList.add("is-filed");
+                setTimeout(() => tile.classList.remove("is-filed"), 1400);
+            }
+        };
+
+        // Only run while the hero is on screen; a hidden conveyor helps no one.
+        if (!reducedMotion) {
+            let timer = null;
+            const flowObs = new IntersectionObserver(
+                (entries) => {
+                    const visible = entries.some(
+                        (entry) => entry.isIntersecting,
+                    );
+                    if (visible && timer === null) {
+                        timer = setInterval(advance, 1900);
+                    } else if (!visible && timer !== null) {
+                        clearInterval(timer);
+                        timer = null;
+                    }
+                },
+                { threshold: 0.2 },
+            );
+            flowObs.observe(flow);
+        }
     }
-    showState("loading");
-    const match = presets.find((p) => p.input === value);
-    setTimeout(() => {
-      resultEl.textContent = match ? match.output : defaultOutput;
-      showState("result");
-    }, 500);
-  };
 
-  if (draftBtn) draftBtn.addEventListener("click", draft);
+    // Cadence — draw timeline + activate markers + slide in cards
+    const cadenceSection = document.getElementById("cadence-inner");
 
-  document.querySelectorAll(".tryit-preset").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const i = Number(btn.getAttribute("data-preset-index"));
-      const preset = presets[i];
-      if (!preset) return;
-      input.value = preset.input;
-      draft();
+    // Background video is decorative — hold it still for reduced-motion users.
+    const bgVideo = document.querySelector(".bg-video");
+    if (bgVideo && reducedMotion) {
+        bgVideo.removeAttribute("autoplay");
+        bgVideo.pause();
+    }
+    const runCadence = () => {
+        if (reducedMotion) {
+            document
+                .querySelectorAll("[data-marker]")
+                .forEach((m) => m.classList.add("is-active"));
+            document
+                .querySelectorAll("[data-cadence-card]")
+                .forEach((c) => c.classList.add("is-visible"));
+            return;
+        }
+        const line = document.getElementById("cadence-line");
+        if (line && line.getTotalLength) {
+            const len = line.getTotalLength();
+            line.style.transition = "none";
+            line.style.strokeDasharray = String(len);
+            line.style.strokeDashoffset = String(len);
+            line.getBoundingClientRect();
+            line.style.transition =
+                "stroke-dashoffset 1100ms cubic-bezier(0.4,0,0.2,1)";
+            line.style.strokeDashoffset = "0";
+        }
+        const markers = document.querySelectorAll("[data-marker]");
+        const cards = document.querySelectorAll("[data-cadence-card]");
+        const delays = [420, 820, 1220];
+        markers.forEach((marker, i) => {
+            setTimeout(() => {
+                marker.classList.add("is-active");
+                const card = cards[i];
+                if (card) card.classList.add("is-visible");
+            }, delays[i]);
+        });
+    };
+    if (cadenceSection) {
+        const cadObs = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        runCadence();
+                        cadObs.disconnect();
+                    }
+                });
+            },
+            { threshold: 0.3 },
+        );
+        cadObs.observe(cadenceSection);
+    }
+
+    // Try it — client-side demo draft (no backend call)
+    const input = document.getElementById("tryit-input");
+    const draftBtn = document.getElementById("tryit-draft");
+    const errorEl = document.getElementById("tryit-error");
+    const loadingEl = document.getElementById("tryit-loading");
+    const resultEl = document.getElementById("tryit-result");
+    const placeholderEl = document.getElementById("tryit-placeholder");
+
+    const showState = (state) => {
+        loadingEl.hidden = state !== "loading";
+        resultEl.hidden = state !== "result";
+        placeholderEl.hidden = state !== "placeholder";
+    };
+    showState("placeholder");
+
+    const draft = () => {
+        const value = (input.value || "").trim();
+        errorEl.hidden = true;
+        if (!value) {
+            errorEl.hidden = false;
+            errorEl.textContent = "Tell us what you need to say first.";
+            return;
+        }
+        showState("loading");
+        const match = presets.find((p) => p.input === value);
+        setTimeout(() => {
+            resultEl.textContent = match ? match.output : defaultOutput;
+            showState("result");
+        }, 500);
+    };
+
+    if (draftBtn) draftBtn.addEventListener("click", draft);
+
+    document.querySelectorAll(".tryit-preset").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const i = Number(btn.getAttribute("data-preset-index"));
+            const preset = presets[i];
+            if (!preset) return;
+            input.value = preset.input;
+            draft();
+        });
     });
-  });
 </script>
