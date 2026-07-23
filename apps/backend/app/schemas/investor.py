@@ -37,6 +37,17 @@ class InvestorRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class InvestorContactSummary(BaseModel):
+    """The contact shown against an investor in the register."""
+
+    id: UUID4
+    first_name: str
+    last_name: str
+    email: str | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class InvestorListItem(BaseModel):
     id: UUID4
     organization_id: UUID4
@@ -46,5 +57,8 @@ class InvestorListItem(BaseModel):
     accredited: bool | None
     total_committed: Decimal
     fund_count: int
+    # The contact flagged is_primary, or None when the investor has no contacts
+    # or none of them is flagged.
+    primary_contact: InvestorContactSummary | None = None
 
     model_config = ConfigDict(from_attributes=True)

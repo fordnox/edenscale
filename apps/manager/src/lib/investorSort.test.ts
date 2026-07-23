@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 
-import { nextSortState, sortInvestors, type SortState } from "./investorSort"
+import {
+  nextSortState,
+  primaryContactName,
+  sortInvestors,
+  type SortState,
+} from "./investorSort"
 
 function investor(
   name: string,
@@ -8,6 +13,7 @@ function investor(
     investor_type?: string | null
     fund_count?: number
     total_committed?: string
+    contact?: { first_name: string; last_name: string } | null
   } = {},
 ) {
   return {
@@ -22,6 +28,9 @@ function investor(
     accredited: null,
     total_committed: overrides.total_committed ?? "0",
     fund_count: overrides.fund_count ?? 0,
+    primary_contact: overrides.contact
+      ? { id: "c", email: null, ...overrides.contact }
+      : null,
   }
 }
 
@@ -108,6 +117,36 @@ describe("sortInvestors", () => {
   })
 })
 
+describe("primaryContactName", () => {
+  it("joins the contact name", () => {
+    expect(
+      primaryContactName(
+        investor("Acme", { contact: { first_name: "Ada", last_name: "Byron" } }),
+      ),
+    ).toBe("Ada Byron")
+  })
+
+  it("returns null when no contact is assigned", () => {
+    expect(primaryContactName(investor("Acme"))).toBeNull()
+  })
+})
+
+describe("sortInvestors by contact", () => {
+  it("sorts by contact name and keeps unassigned last both ways", () => {
+    const rows = [
+      investor("NoContact"),
+      investor("Zed", { contact: { first_name: "Zoe", last_name: "Zhang" } }),
+      investor("Ann", { contact: { first_name: "Ada", last_name: "Byron" } }),
+    ]
+    expect(
+      names(sortInvestors(rows, { key: "primary_contact", dir: "asc" })),
+    ).toEqual(["Ann", "Zed", "NoContact"])
+    expect(
+      names(sortInvestors(rows, { key: "primary_contact", dir: "desc" })),
+    ).toEqual(["Zed", "Ann", "NoContact"])
+  })
+})
+
 describe("nextSortState", () => {
   const nameAsc: SortState = { key: "name", dir: "asc" }
 
@@ -119,6 +158,10 @@ describe("nextSortState", () => {
   it("starts text columns ascending and numeric columns descending", () => {
     expect(nextSortState(nameAsc, "investor_type")).toEqual({
       key: "investor_type",
+      dir: "asc",
+    })
+    expect(nextSortState(nameAsc, "primary_contact")).toEqual({
+      key: "primary_contact",
       dir: "asc",
     })
     expect(nextSortState(nameAsc, "fund_count")).toEqual({

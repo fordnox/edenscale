@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.core.rbac import get_active_membership, require_membership_roles
 from app.models.enums import UserRole
 from app.models.investor import Investor as InvestorModel
+from app.models.investor_contact import InvestorContact as InvestorContactModel
 from app.models.user_organization_membership import UserOrganizationMembership
 from app.repositories.investor_repository import InvestorRepository
 from app.schemas.investor import (
@@ -40,7 +41,10 @@ def _to_read_dict(
 
 
 def _to_list_item(
-    investor: InvestorModel, total_committed: Decimal, fund_count: int
+    investor: InvestorModel,
+    total_committed: Decimal,
+    fund_count: int,
+    primary_contact: InvestorContactModel | None = None,
 ) -> dict:
     return {
         "id": investor.id,
@@ -51,6 +55,7 @@ def _to_list_item(
         "accredited": investor.accredited,
         "total_committed": total_committed,
         "fund_count": fund_count,
+        "primary_contact": primary_contact,
     }
 
 
@@ -63,8 +68,10 @@ def list_investors(
 ):
     repo = InvestorRepository(db)
     rows = repo.list_for_membership(membership, skip=skip, limit=limit)
+    # One lookup for the whole page rather than a contacts query per investor.
+    primary = repo.primary_contacts_for([investor.id for investor, _, _ in rows])
     return [
-        _to_list_item(investor, total_committed, fund_count)
+        _to_list_item(investor, total_committed, fund_count, primary.get(investor.id))
         for investor, total_committed, fund_count in rows
     ]
 

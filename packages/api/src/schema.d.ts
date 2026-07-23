@@ -3043,6 +3043,23 @@ export interface components {
             /** Updated At */
             updated_at: string | null;
         };
+        /**
+         * InvestorContactSummary
+         * @description The contact shown against an investor in the register.
+         */
+        InvestorContactSummary: {
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Email */
+            email: string | null;
+        };
         /** InvestorContactUpdate */
         InvestorContactUpdate: {
             /** User Id */
@@ -3102,6 +3119,7 @@ export interface components {
             total_committed: string;
             /** Fund Count */
             fund_count: number;
+            primary_contact?: components["schemas"]["InvestorContactSummary"] | null;
         };
         /**
          * InvestorOrganizationRead

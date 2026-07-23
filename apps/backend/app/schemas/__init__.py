@@ -80,6 +80,7 @@ from app.schemas.fund_valuation import (
     FundValuationRead,
 )
 from app.schemas.investor import (
+    InvestorContactSummary,
     InvestorCreate,
     InvestorListItem,
     InvestorRead,
@@ -203,6 +204,7 @@ __all__ = [
     "InvestorOrganizationRead",
     "InvestorContactUpdate",
     "InvestorCreate",
+    "InvestorContactSummary",
     "InvestorListItem",
     "InvestorRead",
     "InvestorUpdate",

@@ -286,6 +286,69 @@ class TestInvestorWithContacts:
         assert rows[original_primary] is False
 
 
+class TestListPrimaryContact:
+    """The register shows each investor's primary contact, or nothing."""
+
+    def _as_fund_manager(self, override_user, org_id):
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+
+    def _row(self, client, investor_id):
+        response = client.get("/investors")
+        assert response.status_code == 200
+        return next(r for r in response.json() if r["id"] == investor_id)
+
+    def test_returns_the_primary_contact(self, client, override_user):
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        _seed_contact(investor_id, first_name="Ada", last_name="Byron", is_primary=True)
+        self._as_fund_manager(override_user, org_id)
+
+        contact = self._row(client, investor_id)["primary_contact"]
+        assert contact is not None
+        assert (contact["first_name"], contact["last_name"]) == ("Ada", "Byron")
+
+    def test_none_when_investor_has_no_contacts(self, client, override_user):
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        self._as_fund_manager(override_user, org_id)
+
+        assert self._row(client, investor_id)["primary_contact"] is None
+
+    def test_none_when_no_contact_is_flagged_primary(self, client, override_user):
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        _seed_contact(investor_id, first_name="Grace", is_primary=False)
+        _seed_contact(investor_id, first_name="Alan", is_primary=False)
+        self._as_fund_manager(override_user, org_id)
+
+        assert self._row(client, investor_id)["primary_contact"] is None
+
+    def test_picks_only_the_flagged_contact(self, client, override_user):
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        _seed_contact(investor_id, first_name="Grace", is_primary=False)
+        _seed_contact(investor_id, first_name="Alan", is_primary=True)
+        self._as_fund_manager(override_user, org_id)
+
+        assert self._row(client, investor_id)["primary_contact"]["first_name"] == "Alan"
+
+    def test_contacts_do_not_leak_across_investors(self, client, override_user):
+        org_id = _seed_org()
+        with_contact = _seed_investor(org_id, name="Has Contact")
+        without = _seed_investor(org_id, name="No Contact")
+        _seed_contact(with_contact, first_name="Ada", is_primary=True)
+        self._as_fund_manager(override_user, org_id)
+
+        assert self._row(client, with_contact)["primary_contact"] is not None
+        assert self._row(client, without)["primary_contact"] is None
+
+
 class TestDeleteInvestor:
     def test_delete_with_commitments_returns_409(self, client, override_user):
         org_id = _seed_org()

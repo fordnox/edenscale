@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 from decimal import Decimal
 
 from sqlalchemy import func
@@ -59,6 +60,32 @@ class InvestorRepository:
             .limit(limit)
             .all()
         )
+
+    def primary_contacts_for(
+        self, investor_ids: Sequence[uuid.UUID]
+    ) -> dict[uuid.UUID, InvestorContact]:
+        """Map investor id -> its primary contact, in one query for the page.
+
+        `is_primary` is a nullable flag with no uniqueness constraint, so an
+        investor can end up with more than one flagged; ties break on
+        created_at/id to keep the register stable between requests. Investors
+        with no flagged contact are simply absent from the map.
+        """
+        if not investor_ids:
+            return {}
+        rows = (
+            self.db.query(InvestorContact)
+            .filter(
+                InvestorContact.investor_id.in_(investor_ids),
+                InvestorContact.is_primary.is_(True),
+            )
+            .order_by(InvestorContact.created_at, InvestorContact.id)
+            .all()
+        )
+        primary: dict[uuid.UUID, InvestorContact] = {}
+        for contact in rows:
+            primary.setdefault(contact.investor_id, contact)
+        return primary
 
     def get(self, investor_id: uuid.UUID) -> tuple[Investor, Decimal, int] | None:
         return self._base_query().filter(Investor.id == investor_id).first()

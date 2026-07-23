@@ -46,6 +46,7 @@ import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { fundPath } from "@/lib/managerRoutes"
 import {
   nextSortState,
+  primaryContactName,
   sortInvestors,
   type SortKey,
   type SortState,
@@ -778,6 +779,12 @@ export default function InvestorsPage() {
                         onSort={handleSort}
                       />
                       <SortableTH
+                        label="Contact"
+                        sortKey="primary_contact"
+                        sort={sort}
+                        onSort={handleSort}
+                      />
+                      <SortableTH
                         label="Funds"
                         sortKey="fund_count"
                         sort={sort}
@@ -825,6 +832,7 @@ export default function InvestorsPage() {
                             </div>
                           </TD>
                           <TD>{inv.investor_type ?? "—"}</TD>
+                          <TD>{primaryContactName(inv) ?? "—"}</TD>
                           <TD align="right">{inv.fund_count}</TD>
                           <TD align="right" primary>
                             {formatCurrency(

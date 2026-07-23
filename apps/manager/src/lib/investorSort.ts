@@ -2,7 +2,12 @@ import type { components } from "@edenscale/api/schema"
 
 type InvestorListItem = components["schemas"]["InvestorListItem"]
 
-export type SortKey = "name" | "investor_type" | "fund_count" | "total_committed"
+export type SortKey =
+  | "name"
+  | "investor_type"
+  | "primary_contact"
+  | "fund_count"
+  | "total_committed"
 export type SortDir = "asc" | "desc"
 
 export interface SortState {
@@ -16,12 +21,21 @@ function parseDecimal(value: string | null | undefined) {
   return Number.isFinite(n) ? n : 0
 }
 
+/** Display label for an investor's primary contact, or null when unassigned. */
+export function primaryContactName(investor: InvestorListItem): string | null {
+  const contact = investor.primary_contact
+  if (!contact) return null
+  const name = `${contact.first_name} ${contact.last_name}`.trim()
+  return name || null
+}
+
 /** Comparator for the investor register.
  *
- * Two deliberate rules: investors with no type always sort last regardless of
- * direction, so the em-dash rows never break up the typed ones; and name is the
- * tiebreaker on every key, so equal values keep a stable, predictable order
- * instead of depending on the order the API happened to return.
+ * Two deliberate rules: investors with a missing value (no type, no assigned
+ * contact) always sort last regardless of direction, so the em-dash rows never
+ * break up the populated ones; and name is the tiebreaker on every key, so
+ * equal values keep a stable, predictable order instead of depending on the
+ * order the API happened to return.
  */
 export function compareInvestors(
   a: InvestorListItem,
@@ -39,18 +53,33 @@ export function compareInvestors(
         (parseDecimal(a.total_committed) - parseDecimal(b.total_committed)) *
           sign || byName()
       )
-    case "investor_type": {
-      const left = a.investor_type
-      const right = b.investor_type
-      if (!left && !right) return byName()
-      if (!left) return 1
-      if (!right) return -1
-      return left.localeCompare(right) * sign || byName()
-    }
+    case "investor_type":
+      return compareNullableText(a.investor_type, b.investor_type, sign, byName)
+    case "primary_contact":
+      return compareNullableText(
+        primaryContactName(a),
+        primaryContactName(b),
+        sign,
+        byName,
+      )
     case "name":
     default:
       return byName() * sign
   }
+}
+
+/** Empty values sort last in both directions — the `return 1` / `return -1`
+ *  deliberately sidestep the direction sign. */
+function compareNullableText(
+  left: string | null | undefined,
+  right: string | null | undefined,
+  sign: number,
+  byName: () => number,
+) {
+  if (!left && !right) return byName()
+  if (!left) return 1
+  if (!right) return -1
+  return left.localeCompare(right) * sign || byName()
 }
 
 export function sortInvestors(
