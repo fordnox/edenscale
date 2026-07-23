@@ -13,20 +13,20 @@ export function PageHero({
   actions?: ReactNode
 }) {
   return (
-    <section className="flex flex-col gap-5 px-4 pt-6 pb-6 sm:px-6 md:flex-row md:items-end md:justify-between md:gap-6 md:px-8 md:pt-10 md:pb-8">
-      <div className="flex max-w-3xl flex-col gap-3">
+    <section className="flex flex-col gap-3 px-4 pt-4 pb-4 sm:px-5 md:flex-row md:items-end md:justify-between md:gap-4 md:px-6 md:pt-6 md:pb-5">
+      <div className="flex max-w-3xl flex-col gap-2">
         {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-        <h1 className="es-display text-[32px] sm:text-[40px] md:text-[52px]">
+        <h1 className="es-display text-[24px] sm:text-[28px] md:text-[34px]">
           {title}
         </h1>
         {description && (
-          <p className="font-sans text-[15px] md:text-[16px] leading-[1.55] text-ink-700 max-w-xl">
+          <p className="font-sans text-[14px] md:text-[15px] leading-[1.5] text-ink-700 max-w-xl">
             {description}
           </p>
         )}
       </div>
       {actions && (
-        <div className="flex flex-wrap items-center gap-3 md:shrink-0">
+        <div className="flex flex-wrap items-center gap-2 md:shrink-0">
           {actions}
         </div>
       )}

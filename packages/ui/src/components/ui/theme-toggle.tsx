@@ -41,7 +41,7 @@ export function ThemeToggle({ className }: { className?: string }) {
             title={label}
             onClick={() => setTheme(value)}
             className={cn(
-              "flex flex-1 items-center justify-center rounded-xs py-1.5",
+              "flex flex-1 items-center justify-center rounded-xs py-1",
               "transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
               "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-1",
               active
@@ -49,7 +49,7 @@ export function ThemeToggle({ className }: { className?: string }) {
                 : "text-ink-500 hover:text-ink-900",
             )}
           >
-            <Icon strokeWidth={1.5} className="size-4" />
+            <Icon strokeWidth={1.5} className="size-3.5" />
           </button>
         )
       })}

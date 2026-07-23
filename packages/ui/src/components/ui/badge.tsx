@@ -39,8 +39,8 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5",
-        "font-sans text-[11px] font-medium tracking-[0.04em]",
+        "inline-flex items-center gap-1 rounded-full border px-2 py-px",
+        "font-sans text-[10px] font-medium tracking-[0.04em]",
         toneStyles[tone],
         className,
       )}
@@ -48,7 +48,7 @@ export function Badge({
     >
       <span
         className={cn(
-          "inline-block size-1.5 rounded-full",
+          "inline-block size-1 rounded-full",
           tone === "active" && "bg-conifer-600",
           tone === "positive" && "bg-[color:var(--status-positive)]",
           tone === "negative" && "bg-[color:var(--status-negative)]",
