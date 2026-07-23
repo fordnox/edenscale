@@ -271,6 +271,7 @@ class DashboardRepository:
                 FundSummary(
                     id=fund.id,
                     name=fund.name,
+                    slug=fund.slug,
                     vintage_year=fund.vintage_year,
                     strategy=fund.strategy,
                     status=fund.status,

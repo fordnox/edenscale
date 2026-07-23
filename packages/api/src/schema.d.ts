@@ -2897,6 +2897,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Slug */
+            slug: string;
             /** Vintage Year */
             vintage_year?: number | null;
             /** Strategy */

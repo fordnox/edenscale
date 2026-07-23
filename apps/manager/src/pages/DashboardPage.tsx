@@ -28,7 +28,7 @@ import { ProgressBar } from "@edenscale/ui/progress"
 import { DataTable, TH, TR, TD } from "@edenscale/ui/table"
 import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import api from "@edenscale/api/client"
-import { orgPath } from "@/lib/managerRoutes"
+import { fundPath, orgPath } from "@/lib/managerRoutes"
 import { config } from "@edenscale/api/config"
 import {
   formatCurrency,
@@ -258,6 +258,109 @@ export default function DashboardPage() {
               </div>
             </Card>
 
+            <div className="mt-12">
+              <div className="mb-6 flex items-end justify-between gap-4">
+                <div className="flex flex-col gap-2">
+                  <Eyebrow>Recent funds</Eyebrow>
+                  <h2 className="es-display text-[32px]">
+                    Programmes in flight.
+                  </h2>
+                </div>
+                <Button variant="link" size="sm" onClick={() => navigate(orgPath(activeOrgSlug, "funds"))}>
+                  All funds →
+                </Button>
+              </div>
+
+              {overview.recent_funds.length === 0 ? (
+                <Card>
+                  <CardSection className="flex flex-col gap-2">
+                    <Eyebrow>No funds yet</Eyebrow>
+                    <p className="font-sans text-[14px] text-ink-700 max-w-xl">
+                      Once your organization sets up its first fund, it will appear here with committed and called capital figures.
+                    </p>
+                  </CardSection>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  {overview.recent_funds.map((fund) => {
+                    const committed = parseDecimal(fund.committed_amount)
+                    const called = parseDecimal(fund.called_amount)
+                    const calledPct = committed > 0 ? called / committed : 0
+                    const dpi = parseDecimal(fund.dpi)
+                    const irr = parseDecimal(fund.irr)
+                    return (
+                      <Card key={fund.id} className="flex flex-col">
+                        <CardSection className="flex flex-1 flex-col gap-5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex flex-col gap-1.5">
+                              {fund.vintage_year && (
+                                <Eyebrow>Vintage {fund.vintage_year}</Eyebrow>
+                              )}
+                              <h3 className="font-display text-[26px] font-medium leading-[1.1] tracking-[-0.015em] text-ink-900">
+                                {fund.name}
+                              </h3>
+                            </div>
+                            <StatusPill kind="fund" value={fund.status} />
+                          </div>
+                          {fund.strategy && (
+                            <p className="font-sans text-[13px] leading-[1.55] text-ink-500">
+                              {fund.strategy}
+                            </p>
+                          )}
+                          <div className="grid grid-cols-3 gap-4 border-t border-[color:var(--border-hairline)] pt-5">
+                            <div className="flex flex-col gap-1">
+                              <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-ink-500">
+                                Committed
+                              </span>
+                              <span className="es-numeric font-sans text-[15px] font-semibold text-ink-900">
+                                {formatCurrency(committed, fund.currency_code, { compact: true })}
+                              </span>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-ink-500">
+                                DPI
+                              </span>
+                              <span className="es-numeric font-sans text-[15px] font-semibold text-ink-900">
+                                {fund.dpi ? `${dpi.toFixed(2)}x` : "—"}
+                              </span>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-ink-500">
+                                Net IRR
+                              </span>
+                              <span className="es-numeric font-sans text-[15px] font-semibold text-ink-900">
+                                {fund.irr ? formatPercent(irr) : "—"}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between text-[11px] text-ink-500">
+                              <span>Capital called</span>
+                              <span className="es-numeric">
+                                {formatPercent(calledPct)}
+                              </span>
+                            </div>
+                            <ProgressBar value={calledPct} />
+                          </div>
+                          {/* mt-auto pins the link to the card floor so it lines
+                              up across cards with and without a strategy line. */}
+                          <div className="mt-auto flex border-t border-[color:var(--border-hairline)] pt-4">
+                            <Button
+                              variant="link"
+                              size="sm"
+                              onClick={() => navigate(fundPath(activeOrgSlug, fund.slug))}
+                            >
+                              Manage fund →
+                            </Button>
+                          </div>
+                        </CardSection>
+                      </Card>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
             <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
               {nextStep ? (
                 <OnboardingProgressCard steps={onboardingSteps} />
@@ -452,98 +555,6 @@ export default function DashboardPage() {
                   )}
                 </CardSection>
               </Card>
-            </div>
-
-            <div className="mt-12">
-              <div className="mb-6 flex items-end justify-between gap-4">
-                <div className="flex flex-col gap-2">
-                  <Eyebrow>Recent funds</Eyebrow>
-                  <h2 className="es-display text-[32px]">
-                    Programmes in flight.
-                  </h2>
-                </div>
-                <Button variant="link" size="sm" onClick={() => navigate(orgPath(activeOrgSlug, "funds"))}>
-                  All funds →
-                </Button>
-              </div>
-
-              {overview.recent_funds.length === 0 ? (
-                <Card>
-                  <CardSection className="flex flex-col gap-2">
-                    <Eyebrow>No funds yet</Eyebrow>
-                    <p className="font-sans text-[14px] text-ink-700 max-w-xl">
-                      Once your organization sets up its first fund, it will appear here with committed and called capital figures.
-                    </p>
-                  </CardSection>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-                  {overview.recent_funds.map((fund) => {
-                    const committed = parseDecimal(fund.committed_amount)
-                    const called = parseDecimal(fund.called_amount)
-                    const calledPct = committed > 0 ? called / committed : 0
-                    const dpi = parseDecimal(fund.dpi)
-                    const irr = parseDecimal(fund.irr)
-                    return (
-                      <Card key={fund.id} className="flex flex-col">
-                        <CardSection className="flex flex-1 flex-col gap-5">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex flex-col gap-1.5">
-                              {fund.vintage_year && (
-                                <Eyebrow>Vintage {fund.vintage_year}</Eyebrow>
-                              )}
-                              <h3 className="font-display text-[26px] font-medium leading-[1.1] tracking-[-0.015em] text-ink-900">
-                                {fund.name}
-                              </h3>
-                            </div>
-                            <StatusPill kind="fund" value={fund.status} />
-                          </div>
-                          {fund.strategy && (
-                            <p className="font-sans text-[13px] leading-[1.55] text-ink-500">
-                              {fund.strategy}
-                            </p>
-                          )}
-                          <div className="grid grid-cols-3 gap-4 border-t border-[color:var(--border-hairline)] pt-5">
-                            <div className="flex flex-col gap-1">
-                              <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-ink-500">
-                                Committed
-                              </span>
-                              <span className="es-numeric font-sans text-[15px] font-semibold text-ink-900">
-                                {formatCurrency(committed, fund.currency_code, { compact: true })}
-                              </span>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-ink-500">
-                                DPI
-                              </span>
-                              <span className="es-numeric font-sans text-[15px] font-semibold text-ink-900">
-                                {fund.dpi ? `${dpi.toFixed(2)}x` : "—"}
-                              </span>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-ink-500">
-                                Net IRR
-                              </span>
-                              <span className="es-numeric font-sans text-[15px] font-semibold text-ink-900">
-                                {fund.irr ? formatPercent(irr) : "—"}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center justify-between text-[11px] text-ink-500">
-                              <span>Capital called</span>
-                              <span className="es-numeric">
-                                {formatPercent(calledPct)}
-                              </span>
-                            </div>
-                            <ProgressBar value={calledPct} />
-                          </div>
-                        </CardSection>
-                      </Card>
-                    )
-                  })}
-                </div>
-              )}
             </div>
           </>
         )}

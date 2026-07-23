@@ -9,6 +9,7 @@ from app.models.enums import CapitalCallStatus, CommunicationType, FundStatus
 class FundSummary(BaseModel):
     id: UUID4
     name: str
+    slug: str
     vintage_year: int | None = None
     strategy: str | None = None
     status: FundStatus
