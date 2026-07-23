@@ -447,6 +447,81 @@ class TestListPrimaryContact:
         assert self._row(client, without)["primary_contact"] is None
 
 
+class TestDeleteContact:
+    def _as_fund_manager(self, override_user, org_id):
+        _seed_user(
+            "hanko-fm",
+            UserRole.fund_manager,
+            email="fm@example.com",
+            organization_id=org_id,
+        )
+        override_user("hanko-fm")
+
+    def test_deletes_a_non_primary_contact(self, client, override_user):
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        _seed_contact(investor_id, first_name="Ada", is_primary=True)
+        secondary = _seed_contact(investor_id, first_name="Sam", is_primary=False)
+        self._as_fund_manager(override_user, org_id)
+
+        response = client.delete(f"/investors/{investor_id}/contacts/{secondary}")
+        assert response.status_code == 200
+
+        remaining = client.get(f"/investors/{investor_id}/contacts").json()
+        assert [c["first_name"] for c in remaining] == ["Ada"]
+
+    def test_refuses_to_delete_the_primary_contact(self, client, override_user):
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        primary = _seed_contact(investor_id, first_name="Ada", is_primary=True)
+        _seed_contact(investor_id, first_name="Sam", is_primary=False)
+        self._as_fund_manager(override_user, org_id)
+
+        response = client.delete(f"/investors/{investor_id}/contacts/{primary}")
+        assert response.status_code == 409
+
+        remaining = client.get(f"/investors/{investor_id}/contacts").json()
+        assert len(remaining) == 2
+
+    def test_refuses_even_when_it_is_the_only_contact(self, client, override_user):
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        primary = _seed_contact(investor_id, first_name="Ada", is_primary=True)
+        self._as_fund_manager(override_user, org_id)
+
+        assert (
+            client.delete(f"/investors/{investor_id}/contacts/{primary}").status_code
+            == 409
+        )
+
+    def test_deletable_once_another_contact_is_promoted(self, client, override_user):
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        was_primary = _seed_contact(investor_id, first_name="Ada", is_primary=True)
+        other = _seed_contact(investor_id, first_name="Sam", is_primary=False)
+        self._as_fund_manager(override_user, org_id)
+
+        # Promoting Sam clears Ada's flag, which unblocks the deletion.
+        promoted = client.patch(
+            f"/investors/{investor_id}/contacts/{other}",
+            json={"is_primary": True},
+        )
+        assert promoted.status_code == 200
+
+        response = client.delete(f"/investors/{investor_id}/contacts/{was_primary}")
+        assert response.status_code == 200
+
+    def test_lp_cannot_delete(self, client, override_user):
+        org_id = _seed_org()
+        investor_id = _seed_investor(org_id)
+        contact_id = _seed_contact(investor_id, is_primary=False)
+        _seed_user("hanko-lp", UserRole.lp, organization_id=org_id)
+        override_user("hanko-lp")
+
+        response = client.delete(f"/investors/{investor_id}/contacts/{contact_id}")
+        assert response.status_code == 403
+
+
 class TestDeleteInvestor:
     def test_delete_with_commitments_returns_409(self, client, override_user):
         org_id = _seed_org()

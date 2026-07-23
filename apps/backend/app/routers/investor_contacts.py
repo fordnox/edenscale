@@ -132,6 +132,17 @@ def delete_investor_contact(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found"
         )
+    # The primary contact is who capital call notices and letters address, so
+    # it cannot simply be removed — promote another contact first, which clears
+    # this flag, and then delete this one.
+    if contact.is_primary:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Cannot delete the primary contact — make another contact "
+                "primary first"
+            ),
+        )
     deleted = repo.delete(contact_id)
     assert deleted is not None
     return deleted

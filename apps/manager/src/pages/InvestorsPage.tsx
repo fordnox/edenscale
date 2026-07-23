@@ -175,6 +175,18 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
     },
   )
 
+  const deleteContact = useApiMutation(
+    "delete",
+    "/investors/{investor_id}/contacts/{contact_id}",
+    {
+      onSuccess: () => {
+        toast.success("Contact removed")
+        setContactToDelete(null)
+        invalidateInvestorScopes()
+      },
+    },
+  )
+
   const contacts = contactsQuery.data ?? []
   const commitments = commitmentsQuery.data ?? []
   const investor = investorQuery.data
@@ -205,6 +217,8 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
   const [editContact, setEditContact] = useState<InvestorContactRead | null>(
     null,
   )
+  const [contactToDelete, setContactToDelete] =
+    useState<InvestorContactRead | null>(null)
 
   useEffect(() => {
     if (investor && details === null) {
@@ -340,6 +354,43 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
           </AlertDialogContent>
         </AlertDialog>
       )}
+
+      <AlertDialog
+        open={contactToDelete !== null}
+        onOpenChange={(next) => {
+          if (!next) setContactToDelete(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Remove {contactToDelete?.first_name} {contactToDelete?.last_name}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              They will no longer receive capital call notices or letters for
+              this investor. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep contact</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!contactToDelete) return
+                deleteContact.mutate({
+                  params: {
+                    path: {
+                      investor_id: investorId,
+                      contact_id: contactToDelete.id,
+                    },
+                  },
+                })
+              }}
+            >
+              Remove contact
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {investor && (
         <CommitmentCreateDialog
@@ -539,7 +590,7 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
                   <TH>Email</TH>
                   <TH>Phone</TH>
                   <TH>Access</TH>
-                  {canManageCommitments && <TH className="w-10"> </TH>}
+                  {canManageCommitments && <TH className="w-20"> </TH>}
                 </tr>
               </thead>
               <tbody>
@@ -599,15 +650,31 @@ function InvestorDetailPanel({ investorId }: { investorId: string }) {
                       </TD>
                       {canManageCommitments && (
                         <TD>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            aria-label={`Edit ${contact.first_name} ${contact.last_name}`}
-                            onClick={() => setEditContact(contact)}
-                          >
-                            <Pencil strokeWidth={1.5} className="size-4" />
-                          </Button>
+                          <div className="flex items-center justify-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              aria-label={`Edit ${contact.first_name} ${contact.last_name}`}
+                              onClick={() => setEditContact(contact)}
+                            >
+                              <Pencil strokeWidth={1.5} className="size-4" />
+                            </Button>
+                            {/* The primary contact is what notices address, so
+                                the backend refuses to delete it; no button. */}
+                            {!isPrimary && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={deleteContact.isPending}
+                                aria-label={`Remove ${contact.first_name} ${contact.last_name}`}
+                                onClick={() => setContactToDelete(contact)}
+                              >
+                                <Trash2 strokeWidth={1.5} className="size-4" />
+                              </Button>
+                            )}
+                          </div>
                         </TD>
                       )}
                     </TR>
