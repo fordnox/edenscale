@@ -73,6 +73,7 @@ def _to_list_item(
         "irr": metrics.irr if metrics else None,
         "status": fund.status,
         "vintage_year": fund.vintage_year,
+        "website_url": fund.website_url,
     }
 
 

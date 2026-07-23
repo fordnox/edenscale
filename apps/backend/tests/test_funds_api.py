@@ -444,6 +444,27 @@ class TestFundWebsiteUrl:
         response = client.patch(f"/funds/{fund_id}", json={"website_url": value})
         assert response.status_code == 422
 
+    def test_appears_in_the_funds_list(self, client, override_user):
+        org_id = _seed_org()
+        fund_id = _seed_fund(org_id)
+        self._as_fund_manager(override_user, org_id)
+        client.patch(
+            f"/funds/{fund_id}", json={"website_url": "https://listed.example"}
+        )
+
+        rows = client.get("/funds").json()
+        row = next(r for r in rows if r["id"] == fund_id)
+        assert row["website_url"] == "https://listed.example"
+
+    def test_list_website_is_none_when_unset(self, client, override_user):
+        org_id = _seed_org()
+        fund_id = _seed_fund(org_id)
+        self._as_fund_manager(override_user, org_id)
+
+        rows = client.get("/funds").json()
+        row = next(r for r in rows if r["id"] == fund_id)
+        assert row["website_url"] is None
+
     def test_accepted_on_create(self, client, override_user):
         org_id = _seed_org()
         self._as_fund_manager(override_user, org_id)

@@ -103,6 +103,7 @@ class FundListItem(BaseModel):
     irr: Decimal | None = None
     status: FundStatus
     vintage_year: int | None
+    website_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

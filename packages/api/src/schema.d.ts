@@ -2808,6 +2808,8 @@ export interface components {
             status: components["schemas"]["FundStatus"];
             /** Vintage Year */
             vintage_year: number | null;
+            /** Website Url */
+            website_url?: string | null;
         };
         /** FundOverview */
         FundOverview: {

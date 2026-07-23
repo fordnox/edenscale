@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react"
 import { Helmet } from "react-helmet-async"
 import { Link, useNavigate } from "react-router-dom"
-import { Loader2 } from "lucide-react"
+import { ExternalLink, Loader2 } from "lucide-react"
 
 import { PageHero } from "@edenscale/ui/PageHero"
 import { FundCreateDialog } from "@/components/funds/FundCreateDialog"
@@ -15,7 +15,11 @@ import { useActiveOrganization } from "@/hooks/useActiveOrganization"
 import { useApiQuery } from "@edenscale/api/hooks/useApiQuery"
 import { fundPath } from "@/lib/managerRoutes"
 import { config } from "@edenscale/api/config"
-import { formatCurrency, formatPercent } from "@edenscale/shared/format"
+import {
+  formatCurrency,
+  formatPercent,
+  formatUrlHost,
+} from "@edenscale/shared/format"
 import { cn } from "@edenscale/shared/utils"
 import type { components } from "@edenscale/api/schema"
 
@@ -116,6 +120,8 @@ export default function FundsPage() {
                 const target = parseDecimal(fund.target_size)
                 const current = parseDecimal(fund.current_size)
                 const calledPct = target > 0 ? Math.min(current / target, 1) : 0
+                // null unless the stored value is an absolute http(s) URL.
+                const websiteHost = formatUrlHost(fund.website_url)
                 return (
                   <TR
                     key={fund.id}
@@ -129,17 +135,34 @@ export default function FundsPage() {
                     }}
                   >
                     <TD primary>
-                      <Link
-                        to={
-                          activeMembership
-                            ? fundPath(activeMembership.organization.slug, fund.slug)
-                            : "#"
-                        }
-                        onClick={(event) => event.stopPropagation()}
-                        className="text-ink-900 hover:text-conifer-700"
-                      >
-                        {fund.name}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={
+                            activeMembership
+                              ? fundPath(activeMembership.organization.slug, fund.slug)
+                              : "#"
+                          }
+                          onClick={(event) => event.stopPropagation()}
+                          className="text-ink-900 hover:text-conifer-700"
+                        >
+                          {fund.name}
+                        </Link>
+                        {/* stopPropagation so following the outbound link does
+                            not also navigate the row into the fund workspace. */}
+                        {websiteHost && fund.website_url && (
+                          <a
+                            href={fund.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(event) => event.stopPropagation()}
+                            title={`Open ${websiteHost} in a new tab`}
+                            aria-label={`${fund.name} website (${websiteHost})`}
+                            className="text-ink-500 transition-colors hover:text-conifer-700"
+                          >
+                            <ExternalLink strokeWidth={1.5} className="size-4" />
+                          </a>
+                        )}
+                      </div>
                     </TD>
                     <TD align="right">{fund.vintage_year ?? "—"}</TD>
                     <TD align="right" primary>
