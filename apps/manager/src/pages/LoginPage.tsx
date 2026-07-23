@@ -79,7 +79,7 @@ export default function LoginPage() {
         />
       </Helmet>
 
-      <div className="grid min-h-svh bg-page text-ink-900 lg:grid-cols-[minmax(0,0.95fr)_minmax(480px,1.05fr)]">
+      <div className="grid min-h-svh es-paper text-ink-900 lg:grid-cols-[minmax(0,0.95fr)_minmax(480px,1.05fr)]">
         <div className="hidden border-r border-[var(--border-inverse)] bg-conifer-700 text-parchment-50 lg:flex lg:flex-col">
           <div className="flex items-center justify-between border-b border-[var(--border-inverse)] px-10 py-8">
             <div className="flex items-center gap-3">

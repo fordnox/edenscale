@@ -13,7 +13,7 @@ export default function AccountLayout() {
     usePendingInvitations()
 
   return (
-    <div className="flex min-h-svh flex-col bg-page text-ink-900">
+    <div className="flex min-h-svh flex-col es-paper text-ink-900">
       {showBanner && (
         <PendingInvitationsBanner
           invitations={visibleInvitations}

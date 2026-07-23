@@ -135,6 +135,13 @@
   --border-default: rgba(26, 26, 24, 0.18);
   --border-strong: rgba(26, 26, 24, 0.32);
   --border-inverse: rgba(251, 249, 244, 0.18);
+
+  /* Texture — the grain of fine paper over page fields, per the brand's
+     parchment-texture allowance. An inline SVG turbulence tile: no asset
+     request, and `stitchTiles` makes it repeat seamlessly at any viewport.
+     The filter paints flat black at a noisy alpha, so it reads as grain in
+     the stock rather than a colour cast. Dark mode swaps it for white. */
+  --texture-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E");
 }
 
 @theme {
@@ -199,7 +206,8 @@
 
 @layer base {
   html {
-    background: var(--bg-page);
+    background-color: var(--bg-page);
+    background-image: var(--texture-grain);
     color: var(--fg-primary);
     font-family: var(--font-sans);
     font-size: 16px;
@@ -209,7 +217,8 @@
     text-rendering: optimizeLegibility;
   }
   body {
-    background: var(--bg-page);
+    background-color: var(--bg-page);
+    background-image: var(--texture-grain);
     color: var(--fg-primary);
     text-wrap: pretty;
   }
@@ -234,6 +243,16 @@
    ============================================================ */
 
 @layer components {
+  /* Page shell. Use instead of `bg-page` on any element that fills the
+     viewport and so paints over the textured body background — the grain has
+     to be reapplied there or it is lost under a flat field. Not for the
+     translucent sticky headers (`bg-page/85` + backdrop-blur): those sample
+     what scrolls beneath them, texture included. */
+  .es-paper {
+    background-color: var(--bg-page);
+    background-image: var(--texture-grain);
+  }
+
   .es-display {
     font-family: var(--font-display);
     font-weight: 500;
@@ -356,6 +375,11 @@
   --border-default: rgba(243, 240, 232, 0.15);
   --border-strong: rgba(243, 240, 232, 0.26);
   --border-inverse: rgba(20, 20, 18, 0.24);
+
+  /* Texture: white grain, since black speckle is invisible on a dark field.
+     Held a touch lighter than the light-mode tile — noise reads louder as
+     the surface it sits on gets darker. */
+  --texture-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)' opacity='0.04'/%3E%3C/svg%3E");
 
   /* Tailwind @theme color mirror — drives the bg, text and border utilities */
   --color-conifer-50: #16241b;

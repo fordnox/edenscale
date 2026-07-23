@@ -136,7 +136,7 @@ export default function OnboardingPage() {
       <Helmet>
         <title>{`Set up your organization · ${config.VITE_APP_TITLE}`}</title>
       </Helmet>
-      <div className="flex min-h-svh items-center justify-center bg-page p-6">
+      <div className="flex min-h-svh items-center justify-center es-paper p-6">
         <div className="w-full max-w-lg">
           <Card>
             <CardSection>

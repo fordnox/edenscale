@@ -174,7 +174,7 @@ function Frame({ title, children }: FrameProps) {
       <Helmet>
         <title>{`${title} · ${config.VITE_APP_TITLE}`}</title>
       </Helmet>
-      <div className="flex min-h-svh items-center justify-center bg-page p-4">
+      <div className="flex min-h-svh items-center justify-center es-paper p-4">
         <div className="w-full max-w-lg">{children}</div>
       </div>
     </>

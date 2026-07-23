@@ -80,7 +80,7 @@ export default function SuperadminLayout() {
   // surface and flashes links they cannot follow.
   if (meQuery.isLoading) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-page text-ink-500">
+      <div className="flex min-h-svh items-center justify-center es-paper text-ink-500">
         <Loader2 strokeWidth={1.5} className="size-6 animate-spin" />
       </div>
     )
@@ -88,14 +88,14 @@ export default function SuperadminLayout() {
 
   if (!me?.is_superadmin) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-page px-6 text-center text-ink-900">
+      <div className="flex min-h-svh items-center justify-center es-paper px-6 text-center text-ink-900">
         You do not have access to this area
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-page text-ink-900">
+    <div className="flex min-h-svh flex-col es-paper text-ink-900">
       <header className="sticky top-0 z-20 border-b border-[color:var(--border-hairline)] bg-page/85 backdrop-blur supports-[backdrop-filter]:bg-page/75">
         <div className="flex items-center gap-3 px-4 py-3 md:px-8 md:py-4">
           <span className="flex size-9 items-center justify-center border border-[color:var(--border-hairline)] text-conifer-700">

@@ -52,7 +52,7 @@ export default function LoginPage() {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <main className="flex min-h-svh items-center justify-center bg-page px-5 py-10 text-ink-900 md:px-8">
+      <main className="flex min-h-svh items-center justify-center es-paper px-5 py-10 text-ink-900 md:px-8">
         <div className="w-full max-w-[440px]">
           <div className="mb-8 flex items-center gap-3">
             <span
