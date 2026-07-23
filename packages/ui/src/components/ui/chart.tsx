@@ -174,7 +174,7 @@ function ChartTooltipContent({
   return (
     <div
       className={cn(
-        'border-border/50 bg-background grid min-w-[8rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl',
+        'border-border/50 bg-background grid min-w-[8rem] items-start gap-1 rounded-lg border px-2 py-1 text-[11px] shadow-xl',
         className,
       )}
     >
@@ -271,7 +271,7 @@ function ChartLegendContent({
   return (
     <div
       className={cn(
-        'flex items-center justify-center gap-4',
+        'flex items-center justify-center gap-3',
         verticalAlign === 'top' ? 'pb-3' : 'pt-3',
         className,
       )}

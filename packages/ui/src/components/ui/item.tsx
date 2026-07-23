@@ -40,8 +40,8 @@ const itemVariants = cva(
         muted: 'bg-muted/50',
       },
       size: {
-        default: 'p-4 gap-4 ',
-        sm: 'py-3 px-4 gap-2.5',
+        default: 'p-3 gap-3 ',
+        sm: 'py-2 px-3 gap-2',
       },
     },
     defaultVariants: {
@@ -77,9 +77,9 @@ const itemMediaVariants = cva(
     variants: {
       variant: {
         default: 'bg-transparent',
-        icon: "size-8 border rounded-sm bg-muted [&_svg:not([class*='size-'])]:size-4",
+        icon: "size-7 border rounded-sm bg-muted [&_svg:not([class*='size-'])]:size-4",
         image:
-          'size-10 rounded-sm overflow-hidden [&_img]:size-full [&_img]:object-cover',
+          'size-9 rounded-sm overflow-hidden [&_img]:size-full [&_img]:object-cover',
       },
     },
     defaultVariants: {
@@ -121,7 +121,7 @@ function ItemTitle({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="item-title"
       className={cn(
-        'flex w-fit items-center gap-2 text-sm leading-snug font-medium',
+        'flex w-fit items-center gap-2 text-[13px] leading-snug font-medium',
         className,
       )}
       {...props}
@@ -134,7 +134,7 @@ function ItemDescription({ className, ...props }: React.ComponentProps<'p'>) {
     <p
       data-slot="item-description"
       className={cn(
-        'text-muted-foreground line-clamp-2 text-sm leading-normal font-normal text-balance',
+        'text-muted-foreground line-clamp-2 text-[13px] leading-normal font-normal text-balance',
         '[&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4',
         className,
       )}

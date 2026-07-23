@@ -62,7 +62,7 @@ export function PendingInvitationsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="es-display text-[24px]">
+          <DialogTitle className="es-display text-[20px]">
             Pending invitations
           </DialogTitle>
           <DialogDescription>
@@ -71,7 +71,7 @@ export function PendingInvitationsDialog({
             account.
           </DialogDescription>
         </DialogHeader>
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-2">
           {invitations.map((invitation) => {
             const isAcceptingThis =
               acceptMutation.isPending &&
@@ -80,20 +80,20 @@ export function PendingInvitationsDialog({
             return (
               <li
                 key={invitation.id}
-                className="flex flex-col gap-3 rounded-xs border border-[color:var(--border-hairline)] bg-raised p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 rounded-xs border border-[color:var(--border-hairline)] bg-raised p-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div className="flex min-w-0 items-start gap-3">
+                <div className="flex min-w-0 items-start gap-2">
                   <span
                     aria-hidden
-                    className="text-[color:var(--brass-700)] [&_svg]:size-5 [&_svg]:stroke-[1.5]"
+                    className="text-[color:var(--brass-700)] [&_svg]:size-4 [&_svg]:stroke-[1.5]"
                   >
                     <MailCheck />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-display text-[15px] font-medium text-ink-900">
+                    <p className="font-display text-[14px] font-medium text-ink-900">
                       {invitation.organization.name}
                     </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 font-sans text-[12px] text-ink-700">
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 font-sans text-[11px] text-ink-700">
                       <Badge tone="info">
                         {ROLE_LABELS[invitation.role]}
                       </Badge>

@@ -6,12 +6,12 @@ import { cn } from "@edenscale/shared/utils"
 
 export const buttonVariants = cva(
   [
-    "inline-flex items-center justify-center gap-2 whitespace-nowrap",
+    "inline-flex items-center justify-center gap-1.5 whitespace-nowrap",
     "font-sans font-medium tracking-tight select-none",
     "transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
     "outline-none focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
     "disabled:cursor-not-allowed disabled:opacity-60",
-    "[&_svg]:size-4 [&_svg]:stroke-[1.5] [&_svg]:shrink-0",
+    "[&_svg]:size-3.5 [&_svg]:stroke-[1.5] [&_svg]:shrink-0",
   ].join(" "),
   {
     variants: {
@@ -30,10 +30,10 @@ export const buttonVariants = cva(
           "bg-parchment-50 text-ink-900 hover:bg-parchment-200 rounded-xs",
       },
       size: {
-        sm: "px-4 py-2 text-[13px]",
-        md: "px-5 py-3 text-[14px]",
-        lg: "px-6 py-3.5 text-[15px]",
-        icon: "p-2",
+        sm: "px-3 py-1.5 text-[12px]",
+        md: "px-4 py-2 text-[13px]",
+        lg: "px-5 py-2.5 text-[14px]",
+        icon: "p-1.5",
       },
     },
     defaultVariants: {

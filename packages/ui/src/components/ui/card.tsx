@@ -23,7 +23,7 @@ export function CardSection({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-6 md:p-8", className)} {...props} />
+  return <div className={cn("p-4 md:p-5", className)} {...props} />
 }
 
 export function CardHeader({
@@ -33,7 +33,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "flex items-end justify-between gap-4 px-6 md:px-8 pt-6 md:pt-8",
+        "flex items-end justify-between gap-3 px-4 md:px-5 pt-4 md:pt-5",
         className,
       )}
       {...props}

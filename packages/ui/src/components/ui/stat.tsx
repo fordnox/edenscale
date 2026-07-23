@@ -22,18 +22,18 @@ export function Stat({
   ...props
 }: StatProps) {
   return (
-    <div className={cn("flex flex-col gap-2", className)} {...props}>
+    <div className={cn("flex flex-col gap-1", className)} {...props}>
       <Eyebrow>{label}</Eyebrow>
       <div className="flex items-baseline gap-2">
-        <span className="es-numeric font-display text-[44px] leading-[1] font-medium tracking-[-0.02em] text-ink-900">
+        <span className="es-numeric font-display text-[30px] leading-[1] font-medium tracking-[-0.02em] text-ink-900">
           {value}
         </span>
         {unit ? (
-          <span className="font-sans text-sm text-ink-500">{unit}</span>
+          <span className="font-sans text-[13px] text-ink-500">{unit}</span>
         ) : null}
       </div>
       {(caption || trendLabel) && (
-        <div className="mt-1 flex items-center gap-2 text-[13px] text-ink-500">
+        <div className="mt-0.5 flex items-center gap-2 text-[12px] text-ink-500">
           {trend && (
             <span
               className={cn(

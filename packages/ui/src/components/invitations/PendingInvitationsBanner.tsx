@@ -34,7 +34,7 @@ export function PendingInvitationsBanner({
           emphasize && "border-b-2",
         )}
       >
-        <div className="flex items-center gap-3 px-4 py-2 md:px-8">
+        <div className="flex items-center gap-2 px-4 py-1.5 md:px-6">
           <span
             aria-hidden
             className="text-brass-700 [&_svg]:size-4 [&_svg]:stroke-[1.5]"
@@ -43,7 +43,7 @@ export function PendingInvitationsBanner({
           </span>
           <p
             className={cn(
-              "min-w-0 flex-1 truncate font-sans text-[13px] text-ink-900",
+              "min-w-0 flex-1 truncate font-sans text-[12px] text-ink-900",
               emphasize && "font-medium",
             )}
           >
@@ -53,8 +53,8 @@ export function PendingInvitationsBanner({
             type="button"
             onClick={() => setDialogOpen(true)}
             className={cn(
-              "inline-flex shrink-0 items-center gap-1 rounded-xs px-2 py-1",
-              "font-sans text-[13px] font-medium text-brass-700",
+              "inline-flex shrink-0 items-center gap-1 rounded-xs px-1.5 py-0.5",
+              "font-sans text-[12px] font-medium text-brass-700",
               "transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
               "hover:bg-brass-100 hover:text-ink-900",
               "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",
@@ -68,7 +68,7 @@ export function PendingInvitationsBanner({
             onClick={onDismiss}
             aria-label="Dismiss invitations banner"
             className={cn(
-              "inline-flex size-8 shrink-0 items-center justify-center rounded-xs text-ink-700",
+              "inline-flex size-7 shrink-0 items-center justify-center rounded-xs text-ink-700",
               "transition-colors duration-[140ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
               "hover:bg-brass-100 hover:text-ink-900",
               "focus-visible:outline-2 focus-visible:outline-conifer-600 focus-visible:outline-offset-2",

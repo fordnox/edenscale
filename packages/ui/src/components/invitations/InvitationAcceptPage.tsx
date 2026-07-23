@@ -125,21 +125,21 @@ export function InvitationAcceptPage({
     <Frame title="Accept invitation">
       <Card>
         <CardSection>
-          <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex flex-col items-center gap-3 text-center">
             <span
               aria-hidden
-              className="text-[color:var(--brass-700)] [&_svg]:size-8 [&_svg]:stroke-[1.25]"
+              className="text-[color:var(--brass-700)] [&_svg]:size-6 [&_svg]:stroke-[1.25]"
             >
               <MailCheck />
             </span>
-            <h1 className="font-display text-[28px] leading-[1.1] font-medium tracking-[-0.015em] text-ink-900">
+            <h1 className="font-display text-[22px] leading-[1.15] font-medium tracking-[-0.015em] text-ink-900">
               You're being invited to join an organization.
             </h1>
-            <p className="max-w-md font-sans text-[14px] leading-[1.6] text-ink-700">
+            <p className="max-w-md font-sans text-[13px] leading-[1.5] text-ink-700">
               Accept this invitation to add the organization to your account.
               You'll be able to switch between organizations from the top bar.
             </p>
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-1 flex items-center gap-2">
               <Button
                 type="button"
                 variant="primary"
@@ -174,7 +174,7 @@ function Frame({ title, children }: FrameProps) {
       <Helmet>
         <title>{`${title} · ${config.VITE_APP_TITLE}`}</title>
       </Helmet>
-      <div className="flex min-h-svh items-center justify-center bg-page p-6">
+      <div className="flex min-h-svh items-center justify-center bg-page p-4">
         <div className="w-full max-w-lg">{children}</div>
       </div>
     </>

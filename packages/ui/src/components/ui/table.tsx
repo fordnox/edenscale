@@ -29,8 +29,8 @@ export function TH({
     <th
       className={cn(
         "border-b border-[color:var(--border-default)]",
-        "px-4 py-4 first:pl-0 last:pr-0",
-        "font-sans text-[11px] font-semibold tracking-[0.08em] uppercase",
+        "px-3 py-2.5 first:pl-0 last:pr-0",
+        "font-sans text-[10px] font-semibold tracking-[0.07em] uppercase",
         "text-ink-500 whitespace-nowrap",
         align === "right" && "text-right",
         align === "center" && "text-center",
@@ -70,10 +70,10 @@ export function TD({
   return (
     <td
       className={cn(
-        "px-4 py-5 first:pl-0 last:pr-0 align-middle",
+        "px-3 py-2.5 first:pl-0 last:pr-0 align-middle",
         primary
-          ? "text-ink-900 font-semibold text-[15px] tracking-[-0.01em]"
-          : "text-ink-700 text-[14px]",
+          ? "text-ink-900 font-semibold text-[14px] tracking-[-0.01em]"
+          : "text-ink-700 text-[13px]",
         align === "right" && "text-right",
         align === "center" && "text-center",
         className,

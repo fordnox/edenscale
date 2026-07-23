@@ -61,9 +61,9 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           // Base + desktop centered modal
-          'bg-surface text-ink-900 fixed z-50 grid gap-4 border border-[color:var(--border-hairline)] p-6 shadow-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 top-[50%] left-[50%] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg sm:max-w-lg data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',
+          'bg-surface text-ink-900 fixed z-50 grid gap-3 border border-[color:var(--border-hairline)] p-4 shadow-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 top-[50%] left-[50%] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg sm:max-w-lg data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',
           // Mobile (<md) override: bottom-sheet
-          'max-md:inset-x-0 max-md:bottom-0 max-md:left-0 max-md:right-0 max-md:top-auto max-md:max-w-none max-md:translate-x-0 max-md:translate-y-0 max-md:max-h-[92svh] max-md:overflow-y-auto max-md:rounded-t-lg max-md:rounded-b-none max-md:pb-[calc(env(safe-area-inset-bottom)+1.5rem)] max-md:data-[state=open]:slide-in-from-bottom max-md:data-[state=closed]:slide-out-to-bottom max-md:data-[state=open]:zoom-in-100 max-md:data-[state=closed]:zoom-out-100',
+          'max-md:inset-x-0 max-md:bottom-0 max-md:left-0 max-md:right-0 max-md:top-auto max-md:max-w-none max-md:translate-x-0 max-md:translate-y-0 max-md:max-h-[92svh] max-md:overflow-y-auto max-md:rounded-t-lg max-md:rounded-b-none max-md:pb-[calc(env(safe-area-inset-bottom)+1rem)] max-md:data-[state=open]:slide-in-from-bottom max-md:data-[state=closed]:slide-out-to-bottom max-md:data-[state=open]:zoom-in-100 max-md:data-[state=closed]:zoom-out-100',
           className,
         )}
         {...props}
@@ -71,13 +71,13 @@ function DialogContent({
         {/* Mobile drag-handle */}
         <div
           aria-hidden="true"
-          className="mx-auto h-1.5 w-10 rounded-full bg-ink-300 md:hidden"
+          className="mx-auto h-1 w-8 rounded-full bg-ink-300 md:hidden"
         />
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute top-3 right-3 inline-flex h-11 w-11 items-center justify-center p-2 rounded-xs text-ink-700 opacity-70 transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-conifer-600 focus:ring-offset-2 focus:ring-offset-[color:var(--bg-surface)] data-[state=open]:bg-parchment-200 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            className="absolute top-2 right-2 inline-flex size-9 md:size-8 items-center justify-center p-1.5 rounded-xs text-ink-700 opacity-70 transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-conifer-600 focus:ring-offset-2 focus:ring-offset-[color:var(--bg-surface)] data-[state=open]:bg-parchment-200 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
             <span className="sr-only">Close</span>
@@ -92,7 +92,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn('flex flex-col gap-2 text-center sm:text-left', className)}
+      className={cn('flex flex-col gap-1 text-center sm:text-left', className)}
       {...props}
     />
   )
@@ -119,7 +119,7 @@ function DialogTitle({
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        'font-display text-ink-900 text-lg leading-none font-semibold',
+        'font-display text-ink-900 text-base leading-none font-semibold',
         className,
       )}
       {...props}
@@ -134,7 +134,7 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn('text-ink-500 text-sm', className)}
+      className={cn('text-ink-500 text-[13px]', className)}
       {...props}
     />
   )

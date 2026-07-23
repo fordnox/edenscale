@@ -203,7 +203,7 @@
     color: var(--fg-primary);
     font-family: var(--font-sans);
     font-size: 16px;
-    line-height: 1.55;
+    line-height: 1.45;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -244,10 +244,10 @@
   }
   .es-eyebrow {
     font-family: var(--font-sans);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.14em;
     color: var(--brass-700);
     line-height: 1;
   }
